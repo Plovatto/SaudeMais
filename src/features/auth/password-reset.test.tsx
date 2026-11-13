@@ -21,7 +21,9 @@ describe('forgot password', () => {
     await user.type(await screen.findByLabelText('E-mail'), 'ana@email.com');
     await user.click(screen.getByRole('button', { name: 'Enviar link' }));
 
-    expect(await screen.findByText(/Se houver uma conta com o e-mail/)).toHaveAttribute('role', 'status');
+    const confirmation = await screen.findByText(/Se houver uma conta com o e-mail/);
+    expect(confirmation.closest('[role="status"]')).not.toBeNull();
+    expect(confirmation).toHaveFocus();
     expect(screen.getByText('ana@email.com')).toBeInTheDocument();
     expect(body(fetchMock)).toEqual({ email: 'ana@email.com' });
   });
@@ -122,6 +124,26 @@ describe('reset password', () => {
     expect(await screen.findByText(/Este link é inválido ou já venceu/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Peça um novo link' })).toHaveAttribute('href', '/esqueci-senha');
     expect(screen.queryByLabelText('Nova senha')).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(document.activeElement).toContainElement(
+        screen.getByRole('link', { name: 'Peça um novo link' }),
+      ),
+    );
+  });
+
+  it.each([
+    [429, 'TOO_MANY_REQUESTS', 'Muitas tentativas. Aguarde alguns minutos e tente de novo.'],
+    [503, 'SERVER_BUSY', 'O servidor está ocupado. Tente de novo em instantes.'],
+  ])('keeps the form and explains a %i response', async (status, code, message) => {
+    mockApi({ status, body: { message, code } });
+    const { user } = renderApp(`/redefinir-senha#token=${RESET_TOKEN}`);
+
+    await fill(user);
+
+    await waitFor(() =>
+      expect(screen.getAllByRole('alert').some((element) => element.textContent?.trim())).toBe(true),
+    );
+    expect(screen.getByLabelText('Nova senha')).toBeInTheDocument();
   });
 
   it.each([
