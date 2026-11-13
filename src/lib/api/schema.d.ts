@@ -24,6 +24,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/password-reset/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pedir link para redefinir a senha
+         * @description Envia ao e-mail um link válido por 30 minutos. A resposta é sempre 204, exista ou não a conta. Cada conta recebe no máximo um link a cada 15 minutos e 3 por dia; contas de demonstração e desativadas não recebem. Pedir de novo invalida o link anterior. Limite: 10 pedidos por IP a cada 15 minutos.
+         */
+        post: operations["requestPasswordReset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/password-reset/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Criar uma nova senha com o link
+         * @description Troca a senha usando o token do link. O token vale uma vez só; depois da troca, todas as sessões da conta são encerradas. Limite: 20 tentativas por IP a cada 15 minutos.
+         */
+        post: operations["confirmPasswordReset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/register": {
         parameters: {
             query?: never;
@@ -282,6 +322,18 @@ export interface components {
             expiresAt: string;
             user: components["schemas"]["User"];
         };
+        PasswordResetRequest: {
+            /** @example ana.silva@email.com */
+            email: string;
+        };
+        PasswordResetConfirmation: {
+            /** @description Token recebido no link do e-mail, depois de `#token=`. */
+            token: string;
+            /** @example senha-segura-123 */
+            password: string;
+            /** @example nova-senha-segura-456 */
+            passwordConfirmation: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -319,6 +371,161 @@ export interface operations {
                      * @example {
                      *       "message": "Erro interno do servidor.",
                      *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    requestPasswordReset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PasswordResetRequest"];
+            };
+        };
+        responses: {
+            /** @description Pedido recebido. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    confirmPasswordReset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PasswordResetConfirmation"];
+            };
+        };
+        responses: {
+            /** @description Senha redefinida. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados inválidos, ou link inválido, usado ou vencido (`INVALID_RESET_TOKEN`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Este link é inválido ou já venceu. Peça um novo.",
+                     *       "code": "INVALID_RESET_TOKEN",
+                     *       "fields": {
+                     *         "token": "Este link é inválido ou já venceu. Peça um novo."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Servidor ocupado conferindo outras senhas (`SERVER_BUSY`). Tente de novo em instantes. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "O servidor está ocupado. Tente de novo em instantes.",
+                     *       "code": "SERVER_BUSY"
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];
