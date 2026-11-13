@@ -24,6 +24,7 @@ function isFieldErrors(value: unknown): value is FieldErrors {
   return (
     typeof value === 'object' &&
     value !== null &&
+    !Array.isArray(value) &&
     Object.values(value).every((message) => typeof message === 'string')
   );
 }

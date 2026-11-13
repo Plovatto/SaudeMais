@@ -34,8 +34,23 @@ export function setTokenProvider(provider: () => string | null): void {
 
 function connectionError(timeout: AbortSignal, signal: AbortSignal | undefined, error: unknown): unknown {
   if (signal?.aborted) return error;
-  if (timeout.aborted) return new ApiError(0, 'TIMEOUT', 'O servidor demorou para responder.');
-  return new ApiError(0, 'NETWORK_ERROR', 'Não foi possível conectar ao servidor.');
+  if (timeout.aborted) return new ApiError(0, 'TIMEOUT', '');
+  return new ApiError(0, 'NETWORK_ERROR', '');
+}
+
+async function readBody(
+  response: Response,
+  timeout: AbortSignal,
+  signal: AbortSignal | undefined,
+): Promise<unknown> {
+  if (response.status === 204) return undefined;
+  try {
+    return (await response.json()) as unknown;
+  } catch (error) {
+    if (signal?.aborted || timeout.aborted) throw connectionError(timeout, signal, error);
+    if (response.ok) throw new ApiError(response.status, 'INVALID_RESPONSE', '');
+    return undefined;
+  }
 }
 
 export async function apiFetch<P extends keyof paths, M extends MethodOf<P>>(
@@ -61,7 +76,7 @@ export async function apiFetch<P extends keyof paths, M extends MethodOf<P>>(
     throw connectionError(timeout, signal, error);
   }
 
-  const data: unknown = response.status === 204 ? undefined : await response.json().catch(() => undefined);
+  const data = await readBody(response, timeout, signal);
   if (!response.ok) throw toApiError(response.status, data);
   return data as ResponseOf<P, M>;
 }

@@ -2,11 +2,12 @@ import { QueryClient } from '@tanstack/react-query';
 import { ApiError } from '@lib/api/api-error';
 
 const MAX_RETRIES = 2;
-const TRANSIENT_CODES = new Set(['NETWORK_ERROR', 'TIMEOUT']);
+const MAX_TIMEOUT_RETRIES = 1;
 
 export function shouldRetry(failureCount: number, error: unknown): boolean {
-  if (failureCount >= MAX_RETRIES || !(error instanceof ApiError)) return false;
-  return TRANSIENT_CODES.has(error.code) || error.status >= 500;
+  if (!(error instanceof ApiError)) return false;
+  if (error.code === 'TIMEOUT') return failureCount < MAX_TIMEOUT_RETRIES;
+  return failureCount < MAX_RETRIES && (error.code === 'NETWORK_ERROR' || error.status >= 500);
 }
 
 export function createQueryClient(): QueryClient {

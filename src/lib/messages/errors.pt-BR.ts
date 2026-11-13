@@ -16,9 +16,11 @@ export const errorMessages: Record<string, string> = {
   INTERNAL_ERROR: GENERIC_ERROR_MESSAGE,
   NETWORK_ERROR: 'Não foi possível conectar. Verifique sua internet e tente de novo.',
   TIMEOUT: 'O servidor demorou para responder. Tente de novo.',
+  INVALID_RESPONSE: GENERIC_ERROR_MESSAGE,
 };
 
 export function errorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) return GENERIC_ERROR_MESSAGE;
-  return errorMessages[error.code] ?? (error.message || GENERIC_ERROR_MESSAGE);
+  if (Object.hasOwn(errorMessages, error.code)) return errorMessages[error.code] ?? GENERIC_ERROR_MESSAGE;
+  return error.message || GENERIC_ERROR_MESSAGE;
 }
