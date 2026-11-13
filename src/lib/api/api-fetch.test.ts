@@ -23,6 +23,19 @@ afterEach(() => {
 });
 
 describe('apiFetch', () => {
+  it('fills path parameters and adds query values, skipping empty ones', async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(jsonResponse(200, [])));
+
+    await apiFetch('get', '/api/admin/units/{id}/exam-offers', { params: { id: 'a b/c' } });
+    await apiFetch('get', '/api/admin/specialties', { query: { page: 2, pageSize: 20 } });
+    await apiFetch('get', '/api/units', { query: { examTypeId: undefined } });
+
+    const urls = fetchMock.mock.calls.map(([url]) => (url instanceof Request ? url.url : url.toString()));
+    expect(urls[0]?.endsWith('/api/admin/units/a%20b%2Fc/exam-offers')).toBe(true);
+    expect(urls[1]?.endsWith('/api/admin/specialties?page=2&pageSize=20')).toBe(true);
+    expect(urls[2]?.endsWith('/api/units')).toBe(true);
+  });
+
   it('calls the API URL and returns the parsed body', async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, { status: 'ok' }));
 
