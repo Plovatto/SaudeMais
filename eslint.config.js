@@ -7,7 +7,7 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig(
-  { ignores: ['dist', 'node_modules', 'coverage'] },
+  { ignores: ['dist', 'coverage'] },
   js.configs.recommended,
   tseslint.configs.recommendedTypeChecked,
   {
@@ -26,6 +26,7 @@ export default defineConfig(
       '@typescript-eslint/consistent-type-imports': 'error',
     },
   },
+  { files: ['*.config.{js,ts}'], languageOptions: { globals: globals.node } },
   { files: ['eslint.config.js'], extends: [tseslint.configs.disableTypeChecked] },
   prettier,
 );
