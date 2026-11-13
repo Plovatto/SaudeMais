@@ -138,7 +138,25 @@ describe('followSystemTheme', () => {
 });
 
 describe('theme-init script', () => {
-  it('reads the same storage key before the app loads, so the page never flashes', () => {
-    expect(themeInit).toContain(`'${THEME_STORAGE_KEY}'`);
-  });
+  it.each([
+    ['dark', false],
+    ['light', true],
+    ['purple', true],
+    [null, true],
+    [null, false],
+  ])(
+    'applies the same theme as the app before it loads (stored %s, system dark %s)',
+    (stored, systemDark) => {
+      if (stored) localStorage.setItem(THEME_STORAGE_KEY, stored);
+      mockSystemDark(systemDark);
+
+      // eslint-disable-next-line @typescript-eslint/no-implied-eval -- runs the real pre-paint script
+      const runThemeInit = new Function('document', 'localStorage', 'matchMedia', themeInit) as (
+        ...globals: unknown[]
+      ) => void;
+      runThemeInit(document, localStorage, (query: string) => window.matchMedia(query));
+
+      expect(document.documentElement.dataset.theme).toBe(resolveTheme(getThemePreference()));
+    },
+  );
 });

@@ -33,9 +33,7 @@ export function setThemePreference(preference: ThemePreference): void {
   try {
     if (preference === 'system') localStorage.removeItem(THEME_STORAGE_KEY);
     else localStorage.setItem(THEME_STORAGE_KEY, preference);
-  } catch {
-    /* empty */
-  }
+  } catch {}
   applyTheme(resolveTheme(preference));
 }
 
