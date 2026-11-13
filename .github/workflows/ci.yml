@@ -38,4 +38,9 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - name: check the static hosting output
+        run: |
+          cmp dist/index.html dist/404.html
+          head -c 300 dist/index.html | grep -q 'http-equiv="Content-Security-Policy"'
+          grep -q 'src="/SaudeMais/assets/' dist/index.html
       - run: npm audit --omit=dev --audit-level=moderate

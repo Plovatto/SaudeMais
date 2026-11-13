@@ -121,13 +121,15 @@ Veja o [guia de contribuição](CONTRIBUTING.md) e a [política de segurança](S
 
 ## Publicação
 
-Cada merge na `main` publica o site no GitHub Pages pelo workflow [Pages](.github/workflows/pages.yml). `VITE_API_URL` vem da variável de mesmo nome no Environment `github-pages`.
+Cada merge na `main` publica o site no GitHub Pages pelo workflow [Pages](.github/workflows/pages.yml). `VITE_API_URL` vem da variável de mesmo nome do repositório (Settings → Secrets and variables → Actions → Variables). Antes do build, o workflow roda lint e testes.
 
 O build de produção:
 
-- usa `/SaudeMais/` como caminho base;
+- usa `/SaudeMais/` como caminho base (o `npm run preview` também);
+- exige `VITE_API_URL` com `https`;
 - copia `index.html` para `404.html`, para que links diretos para rotas internas abram a aplicação;
-- injeta uma Content Security Policy que só permite scripts, estilos e fontes do próprio site e chamadas para a origem da API.
+- injeta uma Content Security Policy que só permite scripts, estilos e fontes do próprio site e chamadas para a origem da API;
+- impede que o site seja exibido dentro de outra página (`frame-ancestors` não funciona em meta tag, então o `theme-init.js` faz essa proteção).
 
 A API precisa aceitar a origem `https://plovatto.github.io` no CORS.
 
