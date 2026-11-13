@@ -13,7 +13,7 @@ Interface do Saúde+, aplicação de agendamento de consultas e exames com três
 
 - SPA criada com React e Vite, organizada por domínios da aplicação
 - Estilos com Tailwind CSS
-- Configuração validada por variáveis de ambiente
+- Endereço da API validado no build: sem `VITE_API_URL` válida, o build falha em vez de publicar uma página em branco
 - Alias de importação configurados no Vite
 - Testes automatizados com Vitest e Testing Library
 
@@ -81,7 +81,7 @@ As variáveis são definidas no arquivo `.env`, que não deve ser versionado. Ut
 VITE_API_URL=http://localhost:3001
 ```
 
-`VITE_API_URL` é o endereço da API, com `http` ou `https`. Como toda variável `VITE_`, ela fica visível no código publicado; nunca coloque segredos nela.
+`VITE_API_URL` é o endereço da API, com `http` ou `https`, sem query string. O build é recusado se ela faltar ou for inválida. Como toda variável `VITE_`, ela fica visível no código publicado; nunca coloque segredos nela.
 
 ## Scripts
 
@@ -92,17 +92,19 @@ VITE_API_URL=http://localhost:3001
 | `npm run preview`      | Serve localmente a versão de produção |
 | `npm run typecheck`    | Verifica os tipos                     |
 | `npm run lint`         | Analisa o código                      |
+| `npm run lint:fix`     | Corrige o que o lint resolve sozinho  |
 | `npm run format`       | Formata o código com Prettier         |
 | `npm run format:check` | Confere a formatação                  |
 | `npm test`             | Roda os testes                        |
+| `npm run test:watch`   | Roda os testes a cada alteração       |
 
 ## Estrutura
 
 ```text
 src/
-  app/        Componente raiz, provedores e rotas
+  app/        Componente raiz
   config/     Variáveis de ambiente validadas
-  styles/     CSS global e tokens do Tailwind
+  styles/     CSS global
   test/       Configuração dos testes
 ```
 
