@@ -1,17 +1,10 @@
 import type { ReactNode } from 'react';
 import { LuCircleAlert } from 'react-icons/lu';
 import { cx } from '@lib/cx';
+import type { FieldProps } from './field-props';
 import { IconSlot } from './IconSlot';
 import { controlBox } from './styles';
 import { useField, type FieldControlAttributes } from './useField';
-
-export interface FieldProps {
-  label: string;
-  labelHidden?: boolean | undefined;
-  hint?: string | undefined;
-  error?: string | undefined;
-  'aria-describedby'?: string | undefined;
-}
 
 interface FieldControlProps extends FieldProps {
   id?: string | undefined;

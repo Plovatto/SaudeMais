@@ -5,6 +5,7 @@ export { Dialog, type DialogProps } from './Dialog';
 export { EmptyState, type EmptyStateProps } from './EmptyState';
 export { IconButton, type IconButtonProps } from './IconButton';
 export { IconSlot, type IconSlotProps } from './IconSlot';
+export type { FieldProps } from './field-props';
 export { Input, type InputProps } from './Input';
 export { Menu, type MenuItem, type MenuProps } from './Menu';
 export { Pagination, type PaginationProps } from './Pagination';
