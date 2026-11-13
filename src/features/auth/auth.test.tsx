@@ -121,7 +121,38 @@ describe('login', () => {
     await user.type(screen.getByLabelText('Senha'), 'errada');
     await user.click(screen.getByRole('button', { name: 'Entrar' }));
 
-    expect(await screen.findByText('E-mail ou senha incorretos.')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getAllByRole('alert').map((alert) => alert.textContent)).toContain(
+        'E-mail ou senha incorretos.',
+      ),
+    );
+  });
+
+  it('gives the form an accessible name', async () => {
+    renderAt('/login');
+
+    expect(await screen.findByRole('form', { name: 'Entrar' })).toBeInTheDocument();
+    expect(screen.getByLabelText('E-mail')).toHaveAttribute('autocomplete', 'username');
+  });
+
+  it('ignores Enter while the login is running', async () => {
+    let release: () => void = () => undefined;
+    const fetchMock = vi.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          release = () => resolve(new Response(JSON.stringify(session(['patient'])), { status: 200 }));
+        }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const { user } = renderAt('/login');
+
+    await user.type(await screen.findByLabelText('E-mail'), 'ana@email.com');
+    await user.type(screen.getByLabelText('Senha'), 'senha-segura-123{Enter}');
+    await screen.findByRole('button', { name: 'Entrar, Carregando' });
+    await user.type(screen.getByLabelText('Senha'), '{Enter}');
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    release();
   });
 
   it('keeps the button busy while the request runs', async () => {
@@ -163,8 +194,10 @@ describe('register', () => {
     renderAt('/cadastro');
 
     expect(await screen.findByRole('note')).toHaveTextContent('Ambiente de demonstração');
-    expect(screen.getByRole('link', { name: 'termos de uso' })).toHaveAttribute('href', '/termos');
-    expect(screen.getByRole('link', { name: 'política de privacidade' })).toHaveAttribute(
+    const terms = screen.getByRole('link', { name: /^termos de uso.*abre em nova aba/ });
+    expect(terms).toHaveAttribute('href', '/termos');
+    expect(terms).toHaveAttribute('target', '_blank');
+    expect(screen.getByRole('link', { name: /^política de privacidade.*abre em nova aba/ })).toHaveAttribute(
       'href',
       '/privacidade',
     );
@@ -201,6 +234,57 @@ describe('register', () => {
     expect(requestBody(fetchMock)).toMatchObject({ fullName: 'Ana Maria Silva', acceptTerms: true });
   });
 
+  it.each([
+    ['a single emoji as the name', 'Nome completo', '😀', 'Informe seu nome completo (2 a 120 caracteres).'],
+    [
+      'a name with 121 characters',
+      'Nome completo',
+      'a'.repeat(121),
+      'Informe seu nome completo (2 a 120 caracteres).',
+    ],
+    [
+      'a control character in the name',
+      'Nome completo',
+      'Ana\u0007Silva',
+      'O nome não pode ter caracteres de controle.',
+    ],
+    ['an invalid e-mail', 'E-mail', 'ana@', 'Informe um e-mail válido.'],
+    [
+      'an e-mail over 254 characters',
+      'E-mail',
+      `${'a'.repeat(250)}@email.com`,
+      'O e-mail pode ter até 254 caracteres.',
+    ],
+    ['a phone starting with zero', 'Telefone', '011987654321', 'Informe um telefone válido com DDD.'],
+    ['a password over 128 characters', 'Senha', 'a'.repeat(129), 'A senha pode ter até 128 caracteres.'],
+  ])('rejects %s before calling the API', async (_case, label, value, message) => {
+    const fetchMock = mockApi();
+    const { user } = renderAt('/cadastro');
+
+    await user.click(await screen.findByLabelText(label));
+    await user.paste(value);
+    await user.click(screen.getByRole('button', { name: 'Cadastrar-se' }));
+
+    expect(await screen.findByText(message)).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('accepts international phones the API accepts and sends an empty phone as empty', async () => {
+    const fetchMock = mockApi({
+      status: 201,
+      body: { ...session(['patient']).user, email: 'ana@email.com' },
+    });
+    const { router, user } = renderAt('/cadastro');
+
+    await fillForm(user);
+    await user.clear(screen.getByLabelText('Telefone'));
+    await user.type(screen.getByLabelText('Telefone'), '+44 20 7946 0958');
+    await user.click(screen.getByRole('button', { name: 'Cadastrar-se' }));
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/login'));
+    expect(requestBody(fetchMock)).toMatchObject({ phone: '+44 20 7946 0958' });
+  });
+
   it('puts an API field error on the right field', async () => {
     mockApi({
       status: 409,
@@ -232,5 +316,13 @@ describe('legal pages', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: title })).toBeInTheDocument();
     expect(screen.getByText(/Versão de 13 de novembro de 2026/)).toBeInTheDocument();
+  });
+
+  it('goes back to the sign-up when opened directly', async () => {
+    const { router, user } = renderAt('/termos');
+
+    await user.click(await screen.findByRole('button', { name: 'Voltar' }));
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/cadastro'));
   });
 });
