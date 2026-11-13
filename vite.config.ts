@@ -1,17 +1,38 @@
 import { fileURLToPath, URL } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import { loadEnv } from 'vite';
+import { loadEnv, type Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
+import { buildCsp } from './src/config/csp';
 import { parseEnv } from './src/config/parse-env';
 
 const src = (path = '') => fileURLToPath(new URL(`./src/${path}`, import.meta.url));
 
-export default defineConfig(({ command, mode }) => {
-  if (command === 'build') parseEnv(loadEnv(mode, process.cwd(), 'VITE_'));
+function staticHosting(apiUrl: string): Plugin {
+  return {
+    name: 'saudemais:static-hosting',
+    apply: 'build',
+    enforce: 'post',
+    transformIndexHtml: () => [
+      {
+        tag: 'meta',
+        attrs: { 'http-equiv': 'Content-Security-Policy', content: buildCsp(apiUrl) },
+        injectTo: 'head-prepend',
+      },
+    ],
+    generateBundle(_, bundle) {
+      const html = bundle['index.html'];
+      if (html?.type === 'asset') this.emitFile({ type: 'asset', fileName: '404.html', source: html.source });
+    },
+  };
+}
+
+export default defineConfig(({ command, mode, isPreview }) => {
+  const env = command === 'build' ? parseEnv(loadEnv(mode, process.cwd(), 'VITE_')) : null;
 
   return {
-    plugins: [react(), tailwindcss()],
+    base: env || isPreview ? '/SaudeMais/' : '/',
+    plugins: [react(), tailwindcss(), env && staticHosting(env.apiUrl)],
     resolve: {
       alias: {
         '@': src(),

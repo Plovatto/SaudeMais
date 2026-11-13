@@ -1,6 +1,7 @@
 # Saúde+ Web
 
 [![CI](https://github.com/Plovatto/SaudeMais/actions/workflows/ci.yml/badge.svg)](https://github.com/Plovatto/SaudeMais/actions/workflows/ci.yml)
+[![Pages](https://github.com/Plovatto/SaudeMais/actions/workflows/pages.yml/badge.svg)](https://github.com/Plovatto/SaudeMais/actions/workflows/pages.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Plovatto/SaudeMais/badge)](https://scorecard.dev/viewer/?uri=github.com/Plovatto/SaudeMais)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D22.13-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
@@ -8,6 +9,8 @@
 Interface do Saúde+, aplicação de agendamento de consultas e exames com três perfis: paciente, médico e administrador. Desenvolvida com React, TypeScript e Vite.
 
 > Projeto em desenvolvimento. O andamento está no [quadro do projeto](https://github.com/users/Plovatto/projects/2).
+
+**Site:** https://plovatto.github.io/SaudeMais/
 
 **API:** https://p01--saudemais--pgj2h2jjxzb4.code.run/docs/ · [Plovatto/API-SaudeMais](https://github.com/Plovatto/API-SaudeMais)
 
@@ -105,7 +108,7 @@ VITE_API_URL=http://localhost:3001
 ```text
 src/
   app/        Componente raiz
-  config/     Variáveis de ambiente validadas
+  config/     Variáveis de ambiente validadas e CSP do build
   styles/     CSS global
   test/       Configuração dos testes
 ```
@@ -115,6 +118,20 @@ As pastas `features`, `components`, `hooks`, `lib` e `constants` entram conforme
 ## Contribuindo
 
 Veja o [guia de contribuição](CONTRIBUTING.md) e a [política de segurança](SECURITY.md).
+
+## Publicação
+
+Cada merge na `main` publica o site no GitHub Pages pelo workflow [Pages](.github/workflows/pages.yml). `VITE_API_URL` vem da variável de mesmo nome do repositório (Settings → Secrets and variables → Actions → Variables). Antes do build, o workflow roda lint e testes.
+
+O build de produção:
+
+- usa `/SaudeMais/` como caminho base (o `npm run preview` também);
+- exige `VITE_API_URL` com `https`;
+- copia `index.html` para `404.html`, para que links diretos para rotas internas abram a aplicação;
+- injeta uma Content Security Policy que só permite scripts, estilos e fontes do próprio site e chamadas para a origem da API;
+- impede que o site seja exibido dentro de outra página (`frame-ancestors` não funciona em meta tag, então o `theme-init.js` esconde a página quando ela é carregada dentro de um frame).
+
+A API precisa aceitar a origem `https://plovatto.github.io` no CORS.
 
 ## Licença
 

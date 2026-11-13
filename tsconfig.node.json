@@ -15,5 +15,5 @@
     "moduleDetection": "force",
     "noEmit": true
   },
-  "include": ["vite.config.ts", "src/config/parse-env.ts"]
+  "include": ["vite.config.ts", "src/config/parse-env.ts", "src/config/csp.ts"]
 }
