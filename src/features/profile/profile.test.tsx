@@ -176,6 +176,36 @@ describe('sessions', () => {
   });
 });
 
+describe('sessions failures', () => {
+  it('explains when the sessions cannot be loaded', async () => {
+    serve(testUser(), {
+      '/api/me/sessions': (method) =>
+        method === 'GET' ? { status: 403, body: { message: 'Sem acesso.', code: 'FORBIDDEN' } } : undefined,
+    });
+    openProfile();
+
+    await waitFor(() =>
+      expect(screen.getAllByRole('alert').some((element) => element.textContent?.trim())).toBe(true),
+    );
+  });
+
+  it('keeps the session and shows the error when signing out everywhere fails', async () => {
+    serve(testUser(), {
+      '/api/me/sessions': (method) =>
+        method === 'DELETE' ? { status: 500, body: { message: 'Erro', code: 'INTERNAL_ERROR' } } : undefined,
+    });
+    const { router, user } = openProfile();
+
+    await user.click(await screen.findByRole('button', { name: 'Sair de todas as sessões' }));
+    await user.click(await screen.findByRole('button', { name: 'Sair de todas' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(screen.getAllByRole('alert').some((element) => element.textContent?.trim())).toBe(true);
+    expect(router.state.location.pathname).toBe('/paciente/perfil');
+    expect(sessionStorage.getItem(SESSION_STORAGE_KEY)).toBe(TEST_TOKEN);
+  });
+});
+
 describe('protected demo account', () => {
   it('shows the fields locked with an explanation', async () => {
     serve({ ...testUser(), email: DEMO_PATIENT.email });
@@ -204,5 +234,31 @@ describe('protected demo account', () => {
 
     expect(await screen.findByText(/conta de demonstração, compartilhada/)).toBeInTheDocument();
     expect(screen.getByLabelText('Nome completo')).toBeDisabled();
+    expect(screen.getByLabelText('Nome completo')).toHaveValue('Ana Maria Silva');
+    expect(
+      screen.queryByText('Esta é uma conta de demonstração e não pode ser alterada.'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('locks and clears the password form when the API refuses it for a protected account', async () => {
+    serve(testUser(), {
+      '/api/me/password': () => ({
+        status: 403,
+        body: {
+          message: 'Esta é uma conta de demonstração e não pode ser alterada.',
+          code: 'PROTECTED_ACCOUNT',
+        },
+      }),
+    });
+    const { user } = openProfile();
+
+    await user.type(await screen.findByLabelText('Senha atual'), 'senha-segura-123');
+    await user.type(screen.getByLabelText('Nova senha'), 'nova-senha-456');
+    await user.type(screen.getByLabelText('Confirmar nova senha'), 'nova-senha-456');
+    await user.click(screen.getByRole('button', { name: 'Trocar senha' }));
+
+    expect(await screen.findByText(/conta de demonstração, compartilhada/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Senha atual')).toBeDisabled();
+    expect(screen.getByLabelText('Senha atual')).toHaveValue('');
   });
 });

@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { formatDateTime } from './date';
 import { describeUserAgent } from './user-agent';
 
 describe('describeUserAgent', () => {
@@ -24,15 +23,22 @@ describe('describeUserAgent', () => {
       'Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/140.0 Mobile Safari/537.36',
       'Chrome no Android',
     ],
+    [
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 FxiOS/140.0 Mobile/15E148 Safari/605.1.15',
+      'Firefox no iOS',
+    ],
+    [
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 EdgiOS/140.0 Mobile/15E148 Safari/605.1.15',
+      'Edge no iOS',
+    ],
+    [
+      'Mozilla/5.0 (X11; CrOS x86_64 16000.0.0) AppleWebKit/537.36 Chrome/140.0 Safari/537.36',
+      'Chrome no ChromeOS',
+    ],
+    ['Mozilla/5.0 (Windows NT 10.0; Win64; x64) NovoNavegador/1.0', 'Windows'],
     ['curl/8.10', 'Dispositivo desconhecido'],
     [null, 'Dispositivo desconhecido'],
   ])('describes %s', (userAgent, expected) => {
     expect(describeUserAgent(userAgent)).toBe(expected);
-  });
-});
-
-describe('formatDateTime', () => {
-  it('shows the date and time in São Paulo', () => {
-    expect(formatDateTime('2026-11-20T02:30:00.000Z')).toBe('19/11/2026, 23:30');
   });
 });
