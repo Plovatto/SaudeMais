@@ -11,6 +11,7 @@ export interface DialogProps {
   description?: ReactNode;
   icon?: ReactNode;
   centered?: boolean;
+  placement?: 'center' | 'side';
   closeLabel?: string;
   children?: ReactNode;
 }
@@ -22,6 +23,7 @@ export function Dialog({
   description,
   icon,
   centered = false,
+  placement = 'center',
   closeLabel = 'Fechar',
   children,
 }: DialogProps) {
@@ -68,7 +70,11 @@ export function Dialog({
       onClick={(event) => {
         if (pressedBackdrop.current && event.target === event.currentTarget) ref.current?.close();
       }}
-      className="rounded-card border-role bg-surface text-text shadow-card m-auto w-[calc(100%-2rem)] max-w-sm border p-0"
+      className={cx(
+        'rounded-card border-role bg-surface text-text shadow-card m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-sm overflow-y-auto border p-0',
+        placement === 'side' &&
+          'lg:rounded-s-card max-w-lg lg:me-0 lg:h-dvh lg:max-h-dvh lg:w-full lg:rounded-none lg:border-y-0 lg:border-e-0',
+      )}
     >
       <div className={cx('relative flex flex-col gap-4 p-6 pt-8', centered && 'items-center text-center')}>
         <IconButton

@@ -4,6 +4,12 @@ export const GENERIC_ERROR_MESSAGE = 'Algo deu errado. Tente de novo em instante
 
 export const errorMessages: Record<string, string> = {
   EMAIL_TAKEN: 'Este e-mail já está cadastrado.',
+  NAME_TAKEN: 'Já existe um cadastro com esse nome.',
+  CODE_TAKEN: 'Já existe um tipo de exame com esse código.',
+  EXAM_TYPE_INACTIVE: 'Este tipo de exame está desativado. Ative-o antes de oferecê-lo.',
+  IN_USE:
+    'Há agendamentos futuros ligados a este item. Cancele ou conclua esses agendamentos antes de desativá-lo.',
+  NOT_FOUND: 'Este item não existe mais. Atualize a lista.',
   INVALID_CREDENTIALS: 'E-mail ou senha incorretos.',
   USER_INACTIVE: 'Esta conta está desativada.',
   UNAUTHENTICATED: 'Sua sessão expirou. Entre novamente.',
