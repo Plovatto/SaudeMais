@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
 import { LuTriangleAlert } from 'react-icons/lu';
 import { isRouteErrorResponse, useRouteError } from 'react-router';
+import { pageSurface } from '@components/layout/MainContent';
 import { APP_NAME } from '@components/layout/route-handle';
 import { Button } from '@components/ui';
+import { cx } from '@lib/cx';
 import { ErrorScreen } from './ErrorScreen';
 import { ConnectionErrorPage, NotFoundPage } from './ErrorPages';
 
@@ -37,7 +39,7 @@ export function RouteErrorBoundary() {
     );
 
   return (
-    <main data-role="patient" className="bg-canvas text-text min-h-dvh px-4">
+    <main data-role="patient" className={cx(pageSurface, 'px-4')}>
       {content}
     </main>
   );
