@@ -18,6 +18,10 @@ describe('errorMessage', () => {
     );
   });
 
+  it('does not mistake built-in object keys for known codes', () => {
+    expect(errorMessage(new ApiError(400, 'constructor', 'Texto da API.'))).toBe('Texto da API.');
+  });
+
   it('uses a generic text when there is nothing better', () => {
     expect(errorMessage(new ApiError(400, 'UNKNOWN_ERROR', ''))).toBe(GENERIC_ERROR_MESSAGE);
     expect(errorMessage(new Error('boom'))).toBe(GENERIC_ERROR_MESSAGE);

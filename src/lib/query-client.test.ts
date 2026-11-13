@@ -3,9 +3,15 @@ import { ApiError } from '@lib/api/api-error';
 import { createQueryClient, shouldRetry } from './query-client';
 
 describe('query retry policy', () => {
+  it('retries a timeout only once, so a slow server does not keep the screen waiting', () => {
+    const timeout = new ApiError(0, 'TIMEOUT', '');
+
+    expect(shouldRetry(0, timeout)).toBe(true);
+    expect(shouldRetry(1, timeout)).toBe(false);
+  });
+
   it.each([
     ['a network failure', new ApiError(0, 'NETWORK_ERROR', '')],
-    ['a timeout', new ApiError(0, 'TIMEOUT', '')],
     ['a server error', new ApiError(503, 'SERVER_BUSY', '')],
   ])('retries %s up to twice', (_case, error) => {
     expect(shouldRetry(0, error)).toBe(true);

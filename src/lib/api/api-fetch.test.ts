@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ApiError } from './api-error';
+import { ApiError, toApiError } from './api-error';
 import { apiFetch, setTokenProvider } from './api-fetch';
 import { getHealth } from './system-api';
 
@@ -76,6 +76,31 @@ describe('apiFetch', () => {
     fetchMock.mockResolvedValue(new Response('Bad Gateway', { status: 502 }));
 
     await expect(apiFetch('get', '/health')).rejects.toMatchObject({ status: 502, code: 'INTERNAL_ERROR' });
+  });
+
+  it('rejects a successful response whose body is not JSON', async () => {
+    fetchMock.mockResolvedValue(new Response('<html>SPA fallback</html>', { status: 200 }));
+
+    await expect(apiFetch('get', '/health')).rejects.toMatchObject({ status: 200, code: 'INVALID_RESPONSE' });
+  });
+
+  it('reports a timeout while the body is still arriving as TIMEOUT', async () => {
+    fetchMock.mockImplementation((_url, init) => {
+      const body = new ReadableStream({
+        start(controller) {
+          init?.signal?.addEventListener('abort', () => {
+            controller.error(init.signal?.reason);
+          });
+        },
+      });
+      return Promise.resolve(new Response(body, { status: 200 }));
+    });
+
+    await expect(apiFetch('get', '/health', { timeoutMs: 10 })).rejects.toMatchObject({ code: 'TIMEOUT' });
+  });
+
+  it('ignores field errors that are not an object of messages', () => {
+    expect(toApiError(400, { code: 'VALIDATION_ERROR', fields: ['email'] }).fields).toEqual({});
   });
 
   it('reports a failed connection as NETWORK_ERROR', async () => {
