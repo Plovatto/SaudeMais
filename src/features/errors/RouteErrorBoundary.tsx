@@ -1,6 +1,5 @@
 import { isRouteErrorResponse, useRouteError } from 'react-router';
-import { MainContent, pageSurface } from '@components/layout/MainContent';
-import { DEFAULT_ROLE } from '@constants/areas';
+import { StandaloneScreen } from '@components/layout/StandaloneScreen';
 import { ConnectionErrorPage, NotFoundPage, UnexpectedErrorPage } from './ErrorPages';
 
 const reload = () => window.location.reload();
@@ -21,10 +20,8 @@ export function RouteError() {
 
 export function RouteErrorBoundary() {
   return (
-    <div data-role={DEFAULT_ROLE} className={pageSurface}>
-      <MainContent className="px-4">
-        <RouteError />
-      </MainContent>
-    </div>
+    <StandaloneScreen>
+      <RouteError />
+    </StandaloneScreen>
   );
 }

@@ -23,7 +23,11 @@ export function LoginPage() {
   const [alert, setAlert] = useState<string | null>(
     state?.expired ? 'Sua sessão expirou. Entre novamente.' : null,
   );
-  useEffect(acknowledgeSessionExpiry, []);
+  const { pathname, search } = useLocation();
+  useEffect(() => {
+    acknowledgeSessionExpiry();
+    if (state?.expired) void navigate({ pathname, search }, { replace: true, state: null });
+  }, [state, pathname, search, navigate]);
   const {
     register,
     handleSubmit,

@@ -1,13 +1,15 @@
 import { setTokenProvider } from '@lib/api/api-fetch';
-import { clearToken, readToken, saveToken } from './token-store';
+import { clearToken, readToken, saveToken, SESSION_STORAGE_KEY } from './token-store';
 
 const CHANNEL_NAME = 'saudemais:v1:session';
 const SIGNED_OUT = 'signed-out';
 
+export type SessionEndReason = 'signed-out' | 'expired';
+
 type Listener = () => void;
 
 const listeners = new Set<Listener>();
-let expired = false;
+let endReason: SessionEndReason | null = null;
 
 const channel = typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel(CHANNEL_NAME);
 
@@ -19,10 +21,18 @@ setTokenProvider(readToken);
 
 channel?.addEventListener('message', (event: MessageEvent) => {
   if (event.data !== SIGNED_OUT) return;
-  expired = false;
+  endReason = 'signed-out';
   clearToken();
   notify();
 });
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event: StorageEvent) => {
+    if (event.key !== SESSION_STORAGE_KEY && event.key !== null) return;
+    if (readToken() === null) endReason = 'signed-out';
+    notify();
+  });
+}
 
 export function subscribeSession(listener: Listener): () => void {
   listeners.add(listener);
@@ -31,23 +41,24 @@ export function subscribeSession(listener: Listener): () => void {
 
 export const sessionToken = readToken;
 
-export function sessionExpired(): boolean {
-  return expired;
+export function sessionEndReason(): SessionEndReason | null {
+  return endReason;
 }
 
 export function acknowledgeSessionExpiry(): void {
-  expired = false;
+  if (endReason === 'expired') endReason = null;
 }
 
 export function startSession(token: string, remember: boolean): void {
-  expired = false;
+  endReason = null;
   saveToken(token, remember);
   notify();
 }
 
-export function endSession(reason: 'signed-out' | 'expired'): void {
-  if (reason === 'expired' && readToken() === null) return;
-  expired = reason === 'expired';
+export function endSession(reason: SessionEndReason, failedToken?: string | null): void {
+  const current = readToken();
+  if (reason === 'expired' && (current === null || failedToken !== current)) return;
+  endReason = reason;
   clearToken();
   if (reason === 'signed-out') channel?.postMessage(SIGNED_OUT);
   notify();

@@ -1,15 +1,14 @@
-import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 import { apiFetch } from '@lib/api/api-fetch';
-import { endSession } from './session';
+import { endSession, sessionToken } from './session';
 
 export function useSignOut(): () => Promise<void> {
-  const queryClient = useQueryClient();
   const navigate = useNavigate();
   return async () => {
-    await apiFetch('post', '/api/users/logout').catch(() => undefined);
+    const token = sessionToken();
     endSession('signed-out');
-    queryClient.clear();
-    await navigate('/login', { replace: true });
+    const leaving = navigate('/login', { replace: true });
+    if (token) await apiFetch('post', '/api/users/logout', { token }).catch(() => undefined);
+    await leaving;
   };
 }

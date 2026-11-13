@@ -1,20 +1,10 @@
-import type { ReactNode } from 'react';
 import { Navigate, Outlet, useLocation, useSearchParams } from 'react-router';
-import { MainContent, pageSurface } from '@components/layout/MainContent';
 import { RootFallback } from '@components/layout/RootRoute';
+import { StandaloneScreen } from '@components/layout/StandaloneScreen';
 import { useRouteHandle } from '@components/layout/route-handle';
-import { DEFAULT_ROLE } from '@constants/areas';
 import { ConnectionErrorPage, ForbiddenPage } from '@features/errors';
 import { homeFor } from '@lib/auth/return-to';
 import { useSession } from '@lib/auth/useSession';
-
-function StandaloneScreen({ children }: { children: ReactNode }) {
-  return (
-    <div data-role={DEFAULT_ROLE} className={pageSurface}>
-      <MainContent className="px-4">{children}</MainContent>
-    </div>
-  );
-}
 
 export function RequireSession() {
   const session = useSession();
@@ -28,8 +18,11 @@ export function RequireSession() {
     );
   }
   if (session.status === 'anonymous') {
+    if (session.ended === 'signed-out') return <Navigate to="/login" replace />;
     const returnTo = encodeURIComponent(`${pathname}${search}`);
-    return <Navigate to={`/login?returnTo=${returnTo}`} replace state={{ expired: session.expired }} />;
+    return (
+      <Navigate to={`/login?returnTo=${returnTo}`} replace state={{ expired: session.ended === 'expired' }} />
+    );
   }
   return <Outlet />;
 }

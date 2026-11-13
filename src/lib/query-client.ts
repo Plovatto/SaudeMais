@@ -1,6 +1,6 @@
 import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
-import { ApiError } from '@lib/api/api-error';
-import { endSession } from '@lib/auth/session';
+import { ApiError, isUnauthenticated } from '@lib/api/api-error';
+import { endSession, sessionToken, subscribeSession } from '@lib/auth/session';
 
 const MAX_RETRIES = 2;
 const MAX_TIMEOUT_RETRIES = 1;
@@ -12,11 +12,11 @@ export function shouldRetry(failureCount: number, error: unknown): boolean {
 }
 
 function expireOnUnauthenticated(error: unknown): void {
-  if (error instanceof ApiError && error.code === 'UNAUTHENTICATED') endSession('expired');
+  if (isUnauthenticated(error)) endSession('expired', error.token);
 }
 
 export function createQueryClient(): QueryClient {
-  return new QueryClient({
+  const client = new QueryClient({
     queryCache: new QueryCache({ onError: expireOnUnauthenticated }),
     mutationCache: new MutationCache({ onError: expireOnUnauthenticated }),
     defaultOptions: {
@@ -24,4 +24,12 @@ export function createQueryClient(): QueryClient {
       mutations: { retry: false },
     },
   });
+  let token = sessionToken();
+  subscribeSession(() => {
+    const next = sessionToken();
+    if (next === token) return;
+    token = next;
+    client.clear();
+  });
+  return client;
 }
