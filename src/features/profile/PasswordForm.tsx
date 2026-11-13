@@ -1,12 +1,14 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
+import { NewPasswordFields } from '@components/forms/NewPasswordFields';
 import { Button, FormAlert, PasswordInput, useToast } from '@components/ui';
 import { queryKeys } from '@lib/query-keys';
+import { useFormSubmit } from '@lib/useFormSubmit';
 import { changePassword } from './profile-api';
 import { passwordSchema, type PasswordValues } from './profile-schemas';
 import { ProfileSection } from './ProfileSection';
-import { useProfileSubmit } from './useProfileSubmit';
+import { handleProtectedAccount } from './protected-account';
 
 const emptyPassword: PasswordValues = { currentPassword: '', password: '', passwordConfirmation: '' };
 
@@ -20,10 +22,10 @@ export function PasswordForm({ locked, onProtected }: { locked: boolean; onProte
     reset,
     formState: { errors, isSubmitting },
   } = useForm<PasswordValues>({ resolver: zodResolver(passwordSchema), defaultValues: emptyPassword });
-  const { alert, run } = useProfileSubmit(
+  const { alert, run } = useFormSubmit(
     setError,
     ['currentPassword', 'password', 'passwordConfirmation'],
-    onProtected,
+    handleProtectedAccount(onProtected, () => reset(emptyPassword)),
   );
 
   const onSubmit = handleSubmit((values) =>
@@ -45,20 +47,11 @@ export function PasswordForm({ locked, onProtected }: { locked: boolean; onProte
           error={errors.currentPassword?.message}
           {...register('currentPassword')}
         />
-        <PasswordInput
-          label="Nova senha"
-          autoComplete="new-password"
-          hint="Pelo menos 8 caracteres."
+        <NewPasswordFields
+          password={register('password')}
+          confirmation={register('passwordConfirmation')}
+          errors={{ password: errors.password?.message, confirmation: errors.passwordConfirmation?.message }}
           disabled={locked}
-          error={errors.password?.message}
-          {...register('password')}
-        />
-        <PasswordInput
-          label="Confirmar nova senha"
-          autoComplete="new-password"
-          disabled={locked}
-          error={errors.passwordConfirmation?.message}
-          {...register('passwordConfirmation')}
         />
         {alert && <FormAlert>{alert}</FormAlert>}
         <Button type="submit" loading={isSubmitting} disabled={locked} className="self-start">

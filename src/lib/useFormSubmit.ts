@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import type { FieldValues, Path, UseFormSetError } from 'react-hook-form';
-import { ApiError } from '@lib/api/api-error';
 import { applyApiErrors } from '@lib/form-errors';
 
-export function useProfileSubmit<T extends FieldValues>(
+export function useFormSubmit<T extends FieldValues>(
   setError: UseFormSetError<T>,
   fields: readonly Path<T>[],
-  onProtected: () => void,
+  onError?: (error: unknown) => boolean,
 ) {
   const [alert, setAlert] = useState<string | null>(null);
   const run = async (action: () => Promise<void>) => {
@@ -14,7 +13,7 @@ export function useProfileSubmit<T extends FieldValues>(
     try {
       await action();
     } catch (error) {
-      if (error instanceof ApiError && error.code === 'PROTECTED_ACCOUNT') onProtected();
+      if (onError?.(error)) return;
       setAlert(applyApiErrors(error, setError, fields));
     }
   };

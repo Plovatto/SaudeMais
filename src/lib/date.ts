@@ -10,5 +10,6 @@ const dateTime = new Intl.DateTimeFormat('pt-BR', {
 });
 
 export function formatDateTime(iso: string): string {
-  return dateTime.format(new Date(iso));
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? 'data indisponível' : dateTime.format(date);
 }

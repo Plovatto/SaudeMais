@@ -5,16 +5,19 @@ import { LuMail, LuPhone, LuUser } from 'react-icons/lu';
 import { Button, FormAlert, Input, useToast } from '@components/ui';
 import type { CurrentUser } from '@lib/auth/useSession';
 import { queryKeys } from '@lib/query-keys';
+import { useFormSubmit } from '@lib/useFormSubmit';
 import { updateProfile } from './profile-api';
 import { profileSchema, type ProfileValues } from './profile-schemas';
 import { ProfileSection } from './ProfileSection';
-import { useProfileSubmit } from './useProfileSubmit';
+import { handleProtectedAccount } from './protected-account';
 
 export interface PersonalDataFormProps {
   user: CurrentUser;
   locked: boolean;
   onProtected: () => void;
 }
+
+const valuesOf = (user: CurrentUser): ProfileValues => ({ fullName: user.fullName, phone: user.phone ?? '' });
 
 export function PersonalDataForm({ user, locked, onProtected }: PersonalDataFormProps) {
   const queryClient = useQueryClient();
@@ -25,17 +28,18 @@ export function PersonalDataForm({ user, locked, onProtected }: PersonalDataForm
     setError,
     reset,
     formState: { errors, isSubmitting, isDirty },
-  } = useForm<ProfileValues>({
-    resolver: zodResolver(profileSchema),
-    defaultValues: { fullName: user.fullName, phone: user.phone ?? '' },
-  });
-  const { alert, run } = useProfileSubmit(setError, ['fullName', 'phone'], onProtected);
+  } = useForm<ProfileValues>({ resolver: zodResolver(profileSchema), defaultValues: valuesOf(user) });
+  const { alert, run } = useFormSubmit(
+    setError,
+    ['fullName', 'phone'],
+    handleProtectedAccount(onProtected, () => reset(valuesOf(user))),
+  );
 
   const onSubmit = handleSubmit((values) =>
     run(async () => {
       const updated = await updateProfile(values);
       queryClient.setQueryData(queryKeys.session, updated);
-      reset({ fullName: updated.fullName, phone: updated.phone ?? '' });
+      reset(valuesOf(updated));
       show({ message: 'Dados atualizados.', tone: 'success' });
     }),
   );
