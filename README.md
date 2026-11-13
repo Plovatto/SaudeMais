@@ -4,7 +4,7 @@
 [![Pages](https://github.com/Plovatto/SaudeMais/actions/workflows/pages.yml/badge.svg)](https://github.com/Plovatto/SaudeMais/actions/workflows/pages.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Plovatto/SaudeMais/badge)](https://scorecard.dev/viewer/?uri=github.com/Plovatto/SaudeMais)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Node](https://img.shields.io/badge/node-%3E%3D22.13-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Node](https://img.shields.io/badge/node-22%20%7C%2024%20%7C%2026-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 
 Interface do Saúde+, aplicação de agendamento de consultas e exames com três perfis: paciente, médico e administrador. Desenvolvida com React, TypeScript e Vite.
 
@@ -36,7 +36,7 @@ Interface do Saúde+, aplicação de agendamento de consultas e exames com três
 
 ### Pré-requisitos
 
-- [Node.js](https://nodejs.org/) 22.13 ou superior
+- [Node.js](https://nodejs.org/) 22.22.2+, 24.15+ ou 26+
 - npm
 - A [API do Saúde+](https://github.com/Plovatto/API-SaudeMais) rodando localmente ou o endereço da API publicada
 
