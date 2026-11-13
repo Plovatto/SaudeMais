@@ -12,7 +12,7 @@ import { TOAST_DURATION_MS, ToastProvider } from './ToastProvider';
 import { useToast } from './useToast';
 
 describe('Button', () => {
-  it('blocks repeated clicks while loading and announces it', async () => {
+  it('blocks clicks while loading, keeps focus and says it is loading', async () => {
     const user = userEvent.setup();
     const onClick = vi.fn();
     render(
@@ -21,11 +21,12 @@ describe('Button', () => {
       </Button>,
     );
 
-    const button = screen.getByRole('button', { name: 'Entrar' });
+    const button = screen.getByRole('button', { name: 'Entrar, Carregando' });
+    button.focus();
     await user.click(button);
 
-    expect(button).toBeDisabled();
-    expect(button).toHaveAttribute('aria-busy', 'true');
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).toHaveFocus();
     expect(onClick).not.toHaveBeenCalled();
   });
 
@@ -78,6 +79,8 @@ describe('Tabs', () => {
   it('links the selected tab to its panel', () => {
     render(<Harness />);
 
+    expect(screen.getByRole('tab', { name: 'A confirmar' })).not.toHaveAttribute('aria-controls');
+
     expect(screen.getByRole('tab', { name: 'Confirmadas' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('tabpanel', { name: 'Confirmadas' })).toHaveTextContent('Conteúdo confirmadas');
   });
@@ -109,15 +112,30 @@ describe('Pagination', () => {
     expect(paginationRange(page, total)).toEqual(expected);
   });
 
-  it('marks the current page and blocks moving past the edges', async () => {
+  it('marks the current page and blocks moving past the edges without losing focus', async () => {
     const user = userEvent.setup();
     const onPageChange = vi.fn();
     render(<Pagination page={1} totalPages={3} onPageChange={onPageChange} />);
+    const previous = screen.getByRole('button', { name: 'Página anterior' });
 
     expect(screen.getByRole('button', { name: 'Página 1' })).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByRole('button', { name: 'Página anterior' })).toBeDisabled();
+    expect(previous).toHaveAttribute('aria-disabled', 'true');
+    await user.click(previous);
+    expect(previous).toHaveFocus();
+    expect(onPageChange).not.toHaveBeenCalled();
+
     await user.click(screen.getByRole('button', { name: 'Próxima página' }));
     expect(onPageChange).toHaveBeenCalledWith(2);
+  });
+
+  it('treats a page past the end as the last page', async () => {
+    const user = userEvent.setup();
+    const onPageChange = vi.fn();
+    render(<Pagination page={5} totalPages={2} onPageChange={onPageChange} />);
+
+    expect(screen.getByRole('button', { name: 'Página 2' })).toHaveAttribute('aria-current', 'page');
+    await user.click(screen.getByRole('button', { name: 'Página anterior' }));
+    expect(onPageChange).toHaveBeenCalledWith(1);
   });
 
   it('renders nothing for a single page', () => {
@@ -189,6 +207,48 @@ describe('Toast', () => {
       vi.advanceTimersByTime(TOAST_DURATION_MS);
     });
     expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    vi.useRealTimers();
+  });
+
+  it('waits while the pointer is over it', () => {
+    vi.useFakeTimers();
+    render(
+      <ToastProvider>
+        <Trigger />
+      </ToastProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar consulta' }));
+    const toast = screen.getByText('Consulta cancelada').closest('div');
+    if (toast) fireEvent.pointerEnter(toast);
+    act(() => {
+      vi.advanceTimersByTime(TOAST_DURATION_MS * 2);
+    });
+    expect(screen.getByRole('status')).toHaveTextContent('Sucesso: Consulta cancelada');
+    vi.useRealTimers();
+  });
+
+  it('keeps errors until they are closed and announces them as alerts', () => {
+    vi.useFakeTimers();
+    function ErrorTrigger() {
+      const { show } = useToast();
+      return (
+        <button type="button" onClick={() => show({ message: 'Não foi possível salvar', tone: 'danger' })}>
+          Salvar
+        </button>
+      );
+    }
+    render(
+      <ToastProvider>
+        <ErrorTrigger />
+      </ToastProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+    act(() => {
+      vi.advanceTimersByTime(TOAST_DURATION_MS * 3);
+    });
+    expect(screen.getByRole('alert')).toHaveTextContent('Erro: Não foi possível salvar');
     vi.useRealTimers();
   });
 

@@ -1,8 +1,9 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { Dialog } from './Dialog';
+import { Menu } from './Menu';
 
 function Harness({ onClose = () => undefined }: { onClose?: () => void }) {
   const [open, setOpen] = useState(false);
@@ -66,6 +67,35 @@ describe('Dialog', () => {
 
     await user.click(dialog);
     expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('does not report a close the parent asked for', () => {
+    const onClose = vi.fn();
+    const { rerender } = render(<Dialog open onClose={onClose} title="Cancelar consulta" />);
+
+    rerender(<Dialog open={false} onClose={onClose} title="Cancelar consulta" />);
+
+    expect(screen.getByRole('dialog', { hidden: true })).not.toHaveAttribute('open');
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('lets Escape close a menu inside it without closing the dialog too', async () => {
+    const user = userEvent.setup();
+    render(
+      <Dialog open onClose={() => undefined} title="Ações">
+        <Menu label="Mais ações" items={[{ label: 'Editar', onSelect: () => undefined }]} />
+      </Dialog>,
+    );
+    await user.click(screen.getByRole('button', { name: 'Mais ações' }));
+
+    const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    const item = screen.getByRole('menuitem', { name: 'Editar' });
+    act(() => {
+      item.dispatchEvent(escape);
+    });
+
+    expect(escape.defaultPrevented).toBe(true);
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   });
 
   it('reports a native close, as triggered by the Escape key', async () => {

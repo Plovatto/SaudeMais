@@ -24,6 +24,19 @@ describe('Input', () => {
     expect(input).toHaveAccessibleDescription('Informe um e-mail válido Usamos para o login');
   });
 
+  it('adds its own description to the error and the hint instead of replacing them', () => {
+    render(
+      <>
+        <p id="extra">Formato DDD + número</p>
+        <Input label="Telefone" error="Telefone inválido" aria-describedby="extra" />
+      </>,
+    );
+
+    expect(screen.getByLabelText('Telefone')).toHaveAccessibleDescription(
+      'Telefone inválido Formato DDD + número',
+    );
+  });
+
   it('keeps the accessible name when the label is visually hidden', () => {
     render(<Input label="Buscar" labelHidden />);
 
@@ -40,7 +53,7 @@ describe('PasswordInput', () => {
     expect(input).toHaveAttribute('type', 'password');
     await user.click(screen.getByRole('button', { name: 'Mostrar senha' }));
     expect(input).toHaveAttribute('type', 'text');
-    expect(screen.getByRole('button', { name: 'Ocultar senha' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Mostrar senha' })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('carries the error to the input', () => {
@@ -53,7 +66,7 @@ describe('PasswordInput', () => {
 describe('Select', () => {
   it('starts on the placeholder, which cannot be chosen again', () => {
     render(
-      <Select label="Especialidade" placeholder="Escolha" defaultValue="">
+      <Select label="Especialidade" placeholder="Escolha">
         <option value="1">Cardiologia</option>
       </Select>,
     );
