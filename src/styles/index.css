@@ -16,21 +16,27 @@
   --surface: #ffffff;
   --surface-muted: #f9f9f9;
   --border: #e4e4e4;
-  --border-strong: #939393;
+  --border-field: #8e8e8e;
   --text: #424242;
   --text-secondary: #6e6e6e;
   --text-muted: #707070;
   --success: #31c66f;
   --success-soft: #e6f8ee;
   --success-text: #1f7d46;
+  --success-strong: #1f7d46;
+  --on-success: #ffffff;
   --danger: #ce5454;
   --danger-soft: #feeaea;
   --danger-text: #b94040;
+  --danger-strong: #b94040;
+  --on-danger: #ffffff;
   --warning: #f2b53b;
   --warning-soft: #fdf6e7;
   --warning-text: #8c6922;
-  --shadow-card: 0 5px 33px 2px rgb(0 0 0 / 0.15);
-  --shadow-button: 0 4px 7px 0 rgb(0 0 0 / 0.11);
+  --focus: #424242;
+  --overlay: rgb(20 28 29 / 0.45);
+  --elevation-card: 0 5px 33px 2px rgb(0 0 0 / 0.15);
+  --elevation-button: 0 4px 7px 0 rgb(0 0 0 / 0.11);
   color-scheme: light;
 }
 
@@ -39,21 +45,27 @@
   --surface: #162123;
   --surface-muted: #1c2a2c;
   --border: #2a3a3c;
-  --border-strong: #606e70;
+  --border-field: #667476;
   --text: #e8eef0;
   --text-secondary: #a9b6b8;
   --text-muted: #8a9799;
   --success: #31c66f;
   --success-soft: #1b3f31;
   --success-text: #31c66f;
+  --success-strong: #31c66f;
+  --on-success: #0e1516;
   --danger: #f45454;
   --danger-soft: #3e2a2c;
   --danger-text: #f66c6c;
+  --danger-strong: #f45454;
+  --on-danger: #0e1516;
   --warning: #f2b53b;
   --warning-soft: #3e3c27;
   --warning-text: #f2b53b;
-  --shadow-card: 0 5px 33px 2px rgb(0 0 0 / 0.45);
-  --shadow-button: 0 4px 7px 0 rgb(0 0 0 / 0.35);
+  --focus: #e8eef0;
+  --overlay: rgb(0 0 0 / 0.6);
+  --elevation-card: 0 5px 33px 2px rgb(0 0 0 / 0.45);
+  --elevation-button: 0 4px 7px 0 rgb(0 0 0 / 0.35);
   color-scheme: dark;
 }
 
@@ -63,6 +75,7 @@
   --on-role: #ffffff;
   --role-soft: #e0f6f6;
   --role-text: #15787a;
+  --focus: #168284;
 }
 
 [data-role='doctor'] {
@@ -71,6 +84,7 @@
   --on-role: #ffffff;
   --role-soft: #e9f3fe;
   --role-text: #436fa2;
+  --focus: #4877ae;
 }
 
 [data-role='admin'] {
@@ -79,6 +93,7 @@
   --on-role: #ffffff;
   --role-soft: #efefef;
   --role-text: #6b6b6b;
+  --focus: #757575;
 }
 
 :root[data-theme='dark'] [data-role='patient'] {
@@ -86,6 +101,7 @@
   --on-role: #0e1516;
   --role-soft: #184446;
   --role-text: #21bfc2;
+  --focus: #21bfc2;
 }
 
 :root[data-theme='dark'] [data-role='doctor'] {
@@ -93,6 +109,7 @@
   --on-role: #0e1516;
   --role-soft: #273f51;
   --role-text: #6dacf6;
+  --focus: #65a8f5;
 }
 
 :root[data-theme='dark'] [data-role='admin'] {
@@ -100,25 +117,26 @@
   --on-role: #0e1516;
   --role-soft: #31393b;
   --role-text: #a2a2a2;
+  --focus: #909090;
 }
 
 @theme {
   --color-*: initial;
   --font-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
   --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --radius-card: 22px;
   --radius-field: 10px;
   --radius-tile: 14px;
+  --radius-card: 22px;
 }
 
 @theme inline {
-  --color-transparent: transparent;
-  --color-current: currentColor;
   --color-canvas: var(--canvas);
   --color-surface: var(--surface);
   --color-surface-muted: var(--surface-muted);
   --color-border: var(--border);
-  --color-border-strong: var(--border-strong);
+  --color-border-field: var(--border-field);
   --color-text: var(--text);
   --color-text-secondary: var(--text-secondary);
   --color-text-muted: var(--text-muted);
@@ -130,27 +148,41 @@
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
   --color-success-text: var(--success-text);
+  --color-success-strong: var(--success-strong);
+  --color-on-success: var(--on-success);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-danger-text: var(--danger-text);
+  --color-danger-strong: var(--danger-strong);
+  --color-on-danger: var(--on-danger);
   --color-warning: var(--warning);
   --color-warning-soft: var(--warning-soft);
   --color-warning-text: var(--warning-text);
-  --shadow-card: var(--shadow-card);
-  --shadow-button: var(--shadow-button);
+  --color-focus: var(--focus);
+  --color-overlay: var(--overlay);
+  --shadow-card: var(--elevation-card);
+  --shadow-button: var(--elevation-button);
 }
 
 @layer base {
   html {
     background-color: var(--canvas);
     color: var(--text);
-    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
+  ::placeholder {
+    color: var(--text-muted);
+    opacity: 1;
+  }
+
+  ::backdrop {
+    background-color: var(--overlay);
+  }
+
   :focus-visible {
-    outline: 2px solid var(--role-strong, var(--text));
+    outline: 2px solid var(--focus);
     outline-offset: 2px;
   }
 
