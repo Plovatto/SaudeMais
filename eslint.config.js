@@ -14,7 +14,7 @@ export default defineConfig(
     languageOptions: {
       globals: globals.browser,
       parserOptions: {
-        projectService: { allowDefaultProject: ['eslint.config.js'] },
+        projectService: { allowDefaultProject: ['eslint.config.js', 'public/*.js'] },
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -24,9 +24,10 @@ export default defineConfig(
       'react-refresh/only-export-components': ['error', { allowConstantExport: true }],
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       '@typescript-eslint/consistent-type-imports': 'error',
+      'no-empty': ['error', { allowEmptyCatch: true }],
     },
   },
   { files: ['*.config.{js,ts}'], languageOptions: { globals: globals.node } },
-  { files: ['eslint.config.js'], extends: [tseslint.configs.disableTypeChecked] },
+  { files: ['eslint.config.js', 'public/*.js'], extends: [tseslint.configs.disableTypeChecked] },
   prettier,
 );
