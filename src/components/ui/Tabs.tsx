@@ -16,8 +16,9 @@ export interface TabsProps<T extends string> {
   className?: string;
 }
 
-const tabId = (id: string, value: string) => `${id}-tab-${value}`;
-const panelId = (id: string, value: string) => `${id}-panel-${value}`;
+const safe = (value: string) => encodeURIComponent(value).replace(/%/g, '_');
+const tabId = (id: string, value: string) => `${id}-tab-${safe(value)}`;
+const panelId = (id: string, value: string) => `${id}-panel-${safe(value)}`;
 
 export function Tabs<T extends string>({ id, label, items, value, onValueChange, className }: TabsProps<T>) {
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -41,7 +42,7 @@ export function Tabs<T extends string>({ id, label, items, value, onValueChange,
             type="button"
             role="tab"
             aria-selected={selected}
-            aria-controls={panelId(id, item.value)}
+            aria-controls={selected ? panelId(id, item.value) : undefined}
             tabIndex={selected ? 0 : -1}
             onClick={() => onValueChange(item.value)}
             className={cx(

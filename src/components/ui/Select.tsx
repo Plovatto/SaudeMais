@@ -5,7 +5,7 @@ import { FieldControl, type FieldProps } from './FieldControl';
 import { IconSlot } from './IconSlot';
 import { controlInput } from './styles';
 
-export interface SelectProps extends ComponentProps<'select'>, FieldProps {
+export interface SelectProps extends Omit<ComponentProps<'select'>, 'aria-describedby'>, FieldProps {
   icon?: ReactNode;
   placeholder?: string;
 }
@@ -16,17 +16,31 @@ export function Select({
   labelHidden,
   hint,
   error,
+  'aria-describedby': describedBy,
   icon,
   placeholder,
   className,
   children,
+  value,
+  defaultValue,
   ...props
 }: SelectProps) {
+  const startsOnPlaceholder = placeholder !== undefined && value === undefined && defaultValue === undefined;
   return (
-    <FieldControl {...{ id, label, labelHidden, hint, error, icon, className }} boxClassName="relative">
+    <FieldControl
+      {...{ id, label, labelHidden, hint, error, icon, className }}
+      aria-describedby={describedBy}
+      boxClassName="relative"
+    >
       {(control) => (
         <>
-          <select {...control} className={cx(controlInput, 'cursor-pointer appearance-none pe-8')} {...props}>
+          <select
+            className={cx(controlInput, 'cursor-pointer appearance-none pe-8')}
+            value={value}
+            defaultValue={startsOnPlaceholder ? '' : defaultValue}
+            {...props}
+            {...control}
+          >
             {placeholder !== undefined && (
               <option value="" disabled>
                 {placeholder}

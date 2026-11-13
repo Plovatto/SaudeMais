@@ -3,6 +3,7 @@ import { useId } from 'react';
 export interface FieldMessages {
   hint?: string | undefined;
   error?: string | undefined;
+  describedBy?: string | undefined;
 }
 
 export interface FieldControlAttributes {
@@ -11,7 +12,7 @@ export interface FieldControlAttributes {
   'aria-describedby': string | undefined;
 }
 
-export function useField(id: string | undefined, { hint, error }: FieldMessages) {
+export function useField(id: string | undefined, { hint, error, describedBy }: FieldMessages) {
   const generated = useId();
   const fieldId = id ?? generated;
   const hintId = hint ? `${fieldId}-hint` : undefined;
@@ -19,7 +20,7 @@ export function useField(id: string | undefined, { hint, error }: FieldMessages)
   const control: FieldControlAttributes = {
     id: fieldId,
     'aria-invalid': error ? true : undefined,
-    'aria-describedby': [errorId, hintId].filter(Boolean).join(' ') || undefined,
+    'aria-describedby': [errorId, hintId, describedBy].filter(Boolean).join(' ') || undefined,
   };
   return { control, hintId, errorId, invalid: Boolean(error) };
 }

@@ -5,19 +5,21 @@ import { Input, type InputProps } from './Input';
 
 export function PasswordInput(props: Omit<InputProps, 'type' | 'end'>) {
   const [visible, setVisible] = useState(false);
+  const shown = visible && !props.disabled;
   return (
     <Input
       icon={<LuLock />}
       autoComplete="current-password"
       {...props}
-      type={visible ? 'text' : 'password'}
+      type={shown ? 'text' : 'password'}
       end={
         <IconButton
-          label={visible ? 'Ocultar senha' : 'Mostrar senha'}
-          icon={visible ? <LuEyeOff /> : <LuEye />}
-          aria-pressed={visible}
+          label="Mostrar senha"
+          icon={shown ? <LuEyeOff /> : <LuEye />}
+          aria-pressed={shown}
           disabled={props.disabled}
           onClick={() => setVisible((current) => !current)}
+          className="unavailable:opacity-100"
         />
       }
     />

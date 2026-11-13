@@ -6,10 +6,11 @@ import { controlBox } from './styles';
 import { useField, type FieldControlAttributes } from './useField';
 
 export interface FieldProps {
-  label?: string | undefined;
+  label: string;
   labelHidden?: boolean | undefined;
   hint?: string | undefined;
   error?: string | undefined;
+  'aria-describedby'?: string | undefined;
 }
 
 interface FieldControlProps extends FieldProps {
@@ -36,23 +37,22 @@ export function FieldControl({
   labelHidden,
   hint,
   error,
+  'aria-describedby': describedBy,
   icon,
   end,
   boxClassName,
   className,
   children,
 }: FieldControlProps) {
-  const { control, hintId, errorId, invalid } = useField(id, { hint, error });
+  const { control, hintId, errorId, invalid } = useField(id, { hint, error, describedBy });
   return (
     <div className={cx('flex flex-col gap-1.5', className)}>
-      {label && (
-        <label
-          htmlFor={control.id}
-          className={cx('text-text text-[15px] font-semibold', labelHidden && 'sr-only')}
-        >
-          {label}
-        </label>
-      )}
+      <label
+        htmlFor={control.id}
+        className={cx('text-text text-[0.9375rem] font-semibold', labelHidden && 'sr-only')}
+      >
+        {label}
+      </label>
       <div className={cx(controlBox(invalid), end !== undefined && 'pe-0', boxClassName)}>
         {icon && <IconSlot className="text-text-muted text-xl">{icon}</IconSlot>}
         {children(control)}

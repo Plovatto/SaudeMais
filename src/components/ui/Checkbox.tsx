@@ -18,7 +18,7 @@ export function Checkbox({ id, label, error, className, ...props }: CheckboxProp
           type="checkbox"
           className={cx(
             'accent-role-strong size-5 shrink-0 cursor-pointer rounded-[4px] disabled:cursor-not-allowed',
-            invalid && 'outline-danger outline-2 outline-offset-2',
+            invalid && 'ring-danger ring-offset-surface ring-2 ring-offset-2',
           )}
           {...props}
         />
