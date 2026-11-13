@@ -1,8 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button, FormAlert } from '@components/ui';
-import { applyApiErrors } from '@lib/form-errors';
+import { useFormSubmit } from '@lib/useFormSubmit';
 import { requestPasswordReset } from './auth-api';
 import { forgotPasswordSchema, type ForgotPasswordValues } from './auth-schemas';
 import { AuthFooterLink } from './AuthFooterLink';
@@ -11,7 +11,7 @@ import { EmailInput } from './EmailInput';
 
 export function ForgotPasswordPage() {
   const [sentTo, setSentTo] = useState<string | null>(null);
-  const [alert, setAlert] = useState<string | null>(null);
+  const confirmation = useRef<HTMLParagraphElement>(null);
   const {
     register,
     handleSubmit,
@@ -21,25 +21,30 @@ export function ForgotPasswordPage() {
     resolver: zodResolver(forgotPasswordSchema),
     defaultValues: { email: '' },
   });
+  const { alert, run } = useFormSubmit(setError, ['email']);
 
-  const onSubmit = handleSubmit(async (values) => {
-    setAlert(null);
-    try {
+  useEffect(() => {
+    if (sentTo) confirmation.current?.focus();
+  }, [sentTo]);
+
+  const onSubmit = handleSubmit((values) =>
+    run(async () => {
       await requestPasswordReset(values);
       setSentTo(values.email);
-    } catch (error) {
-      setAlert(applyApiErrors(error, setError, ['email']));
-    }
-  });
+    }),
+  );
 
   return (
     <AuthScreen title="Esqueceu a senha?" subtitle="Enviamos um link para você criar uma nova senha">
-      {sentTo ? (
-        <p role="status" className="text-text text-sm">
-          Se houver uma conta com o e-mail <strong className="break-all">{sentTo}</strong>, enviamos um link
-          para criar uma nova senha. O link vale por 30 minutos. Confira também a caixa de spam.
-        </p>
-      ) : (
+      <div role="status">
+        {sentTo && (
+          <p ref={confirmation} tabIndex={-1} className="text-text text-sm focus-visible:outline-none">
+            Se houver uma conta com o e-mail <strong className="break-all">{sentTo}</strong>, enviamos um link
+            para criar uma nova senha. O link vale por 30 minutos. Confira também a caixa de spam.
+          </p>
+        )}
+      </div>
+      {!sentTo && (
         <form noValidate onSubmit={(event) => void onSubmit(event)} className="flex flex-col gap-5">
           <EmailInput autoComplete="username" error={errors.email?.message} {...register('email')} />
           {alert && <FormAlert>{alert}</FormAlert>}
