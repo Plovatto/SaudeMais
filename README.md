@@ -18,6 +18,7 @@ Interface do Saúde+, aplicação de agendamento de consultas e exames com três
 
 - SPA criada com React e Vite, organizada por domínios da aplicação
 - Estilos com Tailwind CSS, tokens de design e tema claro e escuro
+- Rotas por perfil carregadas sob demanda, com navegação inferior no celular e menu lateral a partir de 1024 px
 - Componentes base acessíveis (teclado, foco visível, alvos de toque de 44 px), fiéis ao Figma
 - Endereço da API validado no build: sem `VITE_API_URL` válida, o build falha em vez de publicar uma página em branco
 - Alias de importação configurados no Vite
@@ -108,17 +109,20 @@ VITE_API_URL=http://localhost:3001
 
 ```text
 src/
-  app/          Componente raiz
+  app/          Componente raiz e rotas
   components/
+    layout/     Layouts, cabeçalho, navegação e menu da conta
     ui/         Componentes base de interface (botões, campos, diálogos, menus...)
   config/       Variáveis de ambiente validadas e CSP do build
+  constants/    Áreas, páginas e navegação de cada perfil
+  features/     Funcionalidades por domínio (erros, autenticação...)
   hooks/        Hooks compartilhados
   lib/          Utilitários (tema, classes CSS, navegação por teclado)
   styles/       CSS global e tokens de design
   test/         Configuração dos testes
 ```
 
-As pastas `features` e `constants` entram conforme as funcionalidades são criadas, com os aliases `@features` e `@constants`.
+Cada pasta tem um alias de importação (`@app`, `@components`, `@constants`, `@features`, `@hooks`, `@lib`, `@config`).
 
 ## Contribuindo
 

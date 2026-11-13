@@ -11,6 +11,27 @@ export const buttonVariants = {
 
 export type ButtonVariant = keyof typeof buttonVariants;
 
+export const buttonSizes = {
+  md: 'min-h-11 px-4 text-[0.9375rem] font-semibold',
+  lg: 'min-h-[50px] px-6 text-lg font-bold',
+};
+
+export interface ButtonStyle {
+  variant?: ButtonVariant | undefined;
+  size?: keyof typeof buttonSizes | undefined;
+  fullWidth?: boolean | undefined;
+}
+
+export function buttonClass({ variant = 'primary', size = 'md', fullWidth = false }: ButtonStyle): string {
+  return cx(
+    'inline-flex items-center justify-center gap-2 rounded-field transition-[background-color,translate] select-none pressable:translate-y-px',
+    disabledState,
+    buttonVariants[variant],
+    buttonSizes[size],
+    fullWidth && 'w-full',
+  );
+}
+
 export const squareButton = cx(
   'inline-flex size-11 shrink-0 items-center justify-center rounded-field transition-colors',
   disabledState,
