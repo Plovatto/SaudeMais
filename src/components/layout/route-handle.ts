@@ -4,6 +4,7 @@ import type { Role } from '@constants/areas';
 export interface RouteHandle {
   title?: string;
   role?: Role;
+  surface?: 'brand';
 }
 
 export const APP_NAME = 'Saúde+';
