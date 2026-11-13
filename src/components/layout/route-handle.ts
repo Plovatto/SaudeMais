@@ -8,6 +8,10 @@ export interface RouteHandle {
 
 export const APP_NAME = 'Saúde+';
 
+export function pageTitle(title: string | undefined): string {
+  return title && title !== APP_NAME ? `${title} · ${APP_NAME}` : APP_NAME;
+}
+
 export function useRouteHandle(): RouteHandle {
   return useMatches().reduce<RouteHandle>(
     (merged, match) => ({ ...merged, ...(match.handle as RouteHandle | undefined) }),

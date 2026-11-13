@@ -1,13 +1,14 @@
 import { LuSunMoon } from 'react-icons/lu';
 import { Outlet } from 'react-router';
 import { Menu } from '@components/ui';
+import { DEFAULT_ROLE } from '@constants/areas';
 import { MainContent, pageSurface, SkipLink } from './MainContent';
 import { useThemeMenuItems } from './useThemeMenuItems';
 
 export function PublicLayout() {
   const themeItems = useThemeMenuItems();
   return (
-    <div data-role="patient" className={pageSurface}>
+    <div data-role={DEFAULT_ROLE} className={pageSurface}>
       <SkipLink />
       <div className="flex justify-end p-2">
         <Menu label="Tema" icon={<LuSunMoon />} items={themeItems} />

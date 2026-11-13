@@ -5,6 +5,8 @@ const MAIN_ID = 'conteudo';
 
 export const pageSurface = 'min-h-dvh bg-canvas text-text';
 
+export const layoutWidth = 'mx-auto max-w-[1280px]';
+
 export function SkipLink() {
   return (
     <a

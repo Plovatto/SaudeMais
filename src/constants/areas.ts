@@ -15,10 +15,12 @@ import {
 
 export type Role = 'patient' | 'doctor' | 'admin';
 
+export const DEFAULT_ROLE: Role = 'patient';
+
 export interface AreaPage {
   path: string;
   title: string;
-  nav?: { label: string; icon: IconType };
+  nav?: { label: string; icon: IconType; sections?: readonly string[] };
 }
 
 export interface Area {
@@ -29,8 +31,13 @@ export interface Area {
   pages: readonly AreaPage[];
 }
 
-const home = (title: string): AreaPage => ({ path: '', title, nav: { label: 'Início', icon: LuHeart } });
-const profile: AreaPage = { path: 'perfil', title: 'Meu perfil', nav: { label: 'Perfil', icon: LuUser } };
+const home = (title: string, sections: readonly string[] = []): AreaPage => ({
+  path: '',
+  title,
+  nav: { label: 'Início', icon: LuHeart, sections },
+});
+const profilePage: AreaPage = { path: 'perfil', title: 'Meu perfil' };
+const profile: AreaPage = { ...profilePage, nav: { label: 'Perfil', icon: LuUser } };
 
 export const areas: Record<Role, Area> = {
   patient: {
@@ -39,9 +46,17 @@ export const areas: Record<Role, Area> = {
     label: 'Paciente',
     icon: LuHeartPulse,
     pages: [
-      home('Início'),
-      { path: 'consultas/nova', title: 'Agendar consulta', nav: { label: 'Consultas', icon: LuPlus } },
-      { path: 'exames/novo', title: 'Agendar exame', nav: { label: 'Exames', icon: LuSyringe } },
+      home('Início', ['agendamentos']),
+      {
+        path: 'consultas/nova',
+        title: 'Agendar consulta',
+        nav: { label: 'Consultas', icon: LuPlus, sections: ['consultas'] },
+      },
+      {
+        path: 'exames/novo',
+        title: 'Agendar exame',
+        nav: { label: 'Exames', icon: LuSyringe, sections: ['exames'] },
+      },
       profile,
       { path: 'agendamentos', title: 'Meus agendamentos' },
       { path: 'consultas/:id/reagendar', title: 'Reagendar consulta' },
@@ -55,7 +70,7 @@ export const areas: Record<Role, Area> = {
     label: 'Médico',
     icon: LuStethoscope,
     pages: [
-      home('Início'),
+      home('Início', ['pacientes']),
       { path: 'agenda', title: 'Agenda', nav: { label: 'Agenda', icon: LuCalendarDays } },
       {
         path: 'disponibilidade',
@@ -73,15 +88,34 @@ export const areas: Record<Role, Area> = {
     icon: LuSettings,
     pages: [
       home('Painel'),
-      { path: 'usuarios', title: 'Usuários', nav: { label: 'Usuários', icon: LuUserCog } },
+      {
+        path: 'usuarios',
+        title: 'Usuários',
+        nav: { label: 'Usuários', icon: LuUserCog, sections: ['usuarios'] },
+      },
       { path: 'relatorios', title: 'Relatórios', nav: { label: 'Relatórios', icon: LuTrendingUp } },
-      { path: 'configuracoes/*', title: 'Configurações', nav: { label: 'Configurações', icon: LuSettings } },
+      {
+        path: 'configuracoes/*',
+        title: 'Configurações',
+        nav: { label: 'Configurações', icon: LuSettings, sections: ['configuracoes'] },
+      },
       { path: 'usuarios/:id', title: 'Editar usuário' },
       { path: 'usuarios/:id/medico', title: 'Cadastro de médico' },
-      { path: 'perfil', title: 'Meu perfil' },
+      profilePage,
     ],
   },
 };
+
+export function navState(area: Area, page: AreaPage, pathname: string): 'page' | 'section' | undefined {
+  const url = pageUrl(area, page);
+  if (pathname === url) return 'page';
+  const relative = pathname.startsWith(`${area.base}/`) ? pathname.slice(area.base.length + 1) : undefined;
+  if (relative === undefined) return undefined;
+  const inSection = (page.nav?.sections ?? []).some(
+    (section) => relative === section || relative.startsWith(`${section}/`),
+  );
+  return inSection ? 'section' : undefined;
+}
 
 export function pageUrl(area: Area, page: AreaPage): string {
   const path = page.path.replace(/\/\*$/, '');

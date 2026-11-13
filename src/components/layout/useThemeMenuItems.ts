@@ -15,6 +15,7 @@ export function useThemeMenuItems(): MenuItem[] {
     label,
     icon: createElement(icon),
     checked: preference === value,
+    group: 'Tema',
     onSelect: () => {
       setThemePreference(value);
       setPreference(value);

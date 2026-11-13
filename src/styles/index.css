@@ -177,6 +177,17 @@
 
 @layer base {
   html {
+    scroll-padding-top: 75px;
+    scroll-padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+
+  @media (width >= 1024px) {
+    html {
+      scroll-padding-bottom: 0;
+    }
+  }
+
+  html {
     background-color: var(--canvas);
     color: var(--text);
     -webkit-font-smoothing: antialiased;

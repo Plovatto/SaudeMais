@@ -1,17 +1,17 @@
 import { Outlet } from 'react-router';
-import { areas } from '@constants/areas';
+import { areas, DEFAULT_ROLE } from '@constants/areas';
 import { AppHeader } from './AppHeader';
-import { MainContent, pageSurface, SkipLink } from './MainContent';
+import { layoutWidth, MainContent, pageSurface, SkipLink } from './MainContent';
 import { MainNav } from './MainNav';
 import { useRouteHandle } from './route-handle';
 
 export function RoleLayout() {
-  const area = areas[useRouteHandle().role ?? 'patient'];
+  const area = areas[useRouteHandle().role ?? DEFAULT_ROLE];
   return (
     <div data-role={area.role} className={pageSurface}>
       <SkipLink />
       <AppHeader area={area} />
-      <div className="mx-auto flex max-w-[1280px] gap-6 lg:px-6">
+      <div className={`${layoutWidth} flex gap-6 lg:px-6`}>
         <aside className="hidden w-60 shrink-0 pt-6 lg:block">
           <MainNav area={area} variant="side" />
         </aside>

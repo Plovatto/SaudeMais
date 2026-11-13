@@ -1,27 +1,44 @@
-import { useEffect, useRef } from 'react';
-import { Outlet, useLocation } from 'react-router';
+import { useEffect, useLayoutEffect, useRef } from 'react';
+import { Outlet, ScrollRestoration, useLocation } from 'react-router';
+import { Spinner } from '@components/ui';
+import { pageSurface } from './MainContent';
 import { PAGE_TITLE_ID } from './PageTitle';
-import { APP_NAME, useRouteHandle } from './route-handle';
+import { pageTitle, useRouteHandle } from './route-handle';
 
 function useRouteAnnouncement(): void {
   const { title } = useRouteHandle();
   const { pathname } = useLocation();
-  const firstRender = useRef(true);
+  const previousPathname = useRef(pathname);
 
   useEffect(() => {
-    document.title = title && title !== APP_NAME ? `${title} · ${APP_NAME}` : APP_NAME;
+    document.title = pageTitle(title);
   }, [title]);
 
-  useEffect(() => {
-    if (firstRender.current) {
-      firstRender.current = false;
-      return;
-    }
+  useLayoutEffect(() => {
+    if (previousPathname.current === pathname) return;
+    previousPathname.current = pathname;
     document.getElementById(PAGE_TITLE_ID)?.focus();
   }, [pathname]);
 }
 
 export function RootRoute() {
   useRouteAnnouncement();
-  return <Outlet />;
+  return (
+    <>
+      <ScrollRestoration />
+      <Outlet />
+    </>
+  );
+}
+
+export function RootFallback() {
+  return (
+    <div
+      role="status"
+      aria-label="Carregando"
+      className={`${pageSurface} text-role-text grid place-items-center`}
+    >
+      <Spinner className="size-8" />
+    </div>
+  );
 }
