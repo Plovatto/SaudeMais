@@ -9,7 +9,13 @@ import {
 export const profileSchema = z.object({ fullName: fullNameField, phone: phoneField });
 
 export const passwordSchema = z
-  .object({ currentPassword: z.string().min(1, 'Informe a senha atual.'), ...newPasswordFields })
+  .object({
+    currentPassword: z
+      .string()
+      .min(1, 'Informe a senha atual.')
+      .max(128, 'A senha pode ter até 128 caracteres.'),
+    ...newPasswordFields,
+  })
   .refine(...confirmationMatches);
 
 export type ProfileValues = z.infer<typeof profileSchema>;
