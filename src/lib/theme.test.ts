@@ -138,6 +138,14 @@ describe('followSystemTheme', () => {
 });
 
 describe('theme-init script', () => {
+  function runThemeInit(win: unknown) {
+    // eslint-disable-next-line @typescript-eslint/no-implied-eval -- runs the real pre-paint script
+    const run = new Function('window', 'document', 'localStorage', 'matchMedia', themeInit) as (
+      ...globals: unknown[]
+    ) => void;
+    run(win, document, localStorage, (query: string) => window.matchMedia(query));
+  }
+
   it.each([
     ['dark', false],
     ['light', true],
@@ -150,13 +158,19 @@ describe('theme-init script', () => {
       if (stored) localStorage.setItem(THEME_STORAGE_KEY, stored);
       mockSystemDark(systemDark);
 
-      // eslint-disable-next-line @typescript-eslint/no-implied-eval -- runs the real pre-paint script
-      const runThemeInit = new Function('document', 'localStorage', 'matchMedia', themeInit) as (
-        ...globals: unknown[]
-      ) => void;
-      runThemeInit(document, localStorage, (query: string) => window.matchMedia(query));
+      runThemeInit(window);
 
       expect(document.documentElement.dataset.theme).toBe(resolveTheme(getThemePreference()));
+      expect(document.documentElement.style.display).toBe('');
     },
   );
+
+  it('hides the page and leaves the frame when another site embeds it', () => {
+    const top = { location: '' };
+    runThemeInit({ top, self: {}, location: { href: 'https://plovatto.github.io/SaudeMais/' } });
+
+    expect(document.documentElement.style.display).toBe('none');
+    expect(top.location).toBe('https://plovatto.github.io/SaudeMais/');
+    document.documentElement.style.display = '';
+  });
 });

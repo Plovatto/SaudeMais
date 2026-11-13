@@ -1,4 +1,10 @@
 (function () {
+  if (window.top !== window.self) {
+    document.documentElement.style.display = 'none';
+    try {
+      window.top.location = window.location.href;
+    } catch {}
+  }
   var preference;
   try {
     preference = localStorage.getItem('saudemais:v1:theme');
