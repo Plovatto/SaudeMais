@@ -1,2 +1,2 @@
-export { ConnectionErrorPage, ForbiddenPage, NotFoundPage } from './ErrorPages';
-export { RouteErrorBoundary } from './RouteErrorBoundary';
+export { ConnectionErrorPage, ForbiddenPage, NotFoundPage, UnexpectedErrorPage } from './ErrorPages';
+export { RouteError, RouteErrorBoundary } from './RouteErrorBoundary';

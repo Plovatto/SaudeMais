@@ -1,8 +1,8 @@
 import type { ComponentType } from 'react';
 import type { RouteObject } from 'react-router';
-import { RootRoute } from '@components/layout/RootRoute';
+import { RootFallback, RootRoute } from '@components/layout/RootRoute';
 import { areas, type Area } from '@constants/areas';
-import { ForbiddenPage, NotFoundPage, RouteErrorBoundary } from '@features/errors';
+import { ForbiddenPage, NotFoundPage, RouteError, RouteErrorBoundary } from '@features/errors';
 
 const lazyComponent = (load: () => Promise<ComponentType>) => async () => ({ Component: await load() });
 
@@ -30,6 +30,7 @@ const publicPages = [
 const page = (path: string, title: string): RouteObject => ({
   ...(path === '' ? { index: true } : { path }),
   handle: { title },
+  ErrorBoundary: RouteError,
   lazy: placeholder,
 });
 
@@ -44,6 +45,7 @@ export const routes: RouteObject[] = [
   {
     Component: RootRoute,
     ErrorBoundary: RouteErrorBoundary,
+    HydrateFallback: RootFallback,
     children: [
       {
         lazy: lazyComponent(async () => (await import('@components/layout/PublicLayout')).PublicLayout),

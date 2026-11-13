@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { PageTitle } from '@components/layout/PageTitle';
+import { pageTitle } from '@components/layout/route-handle';
 import { IconSlot } from '@components/ui';
 
 export interface ErrorScreenProps {
@@ -10,6 +11,13 @@ export interface ErrorScreenProps {
 }
 
 export function ErrorScreen({ icon, title, description, action }: ErrorScreenProps) {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      document.title = pageTitle(title);
+    });
+    return () => clearTimeout(timer);
+  }, [title]);
+
   return (
     <section className="flex flex-col items-center gap-4 py-16 text-center">
       <IconSlot badge="soft">{icon}</IconSlot>

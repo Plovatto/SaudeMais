@@ -1,12 +1,7 @@
-import { useEffect } from 'react';
-import { LuTriangleAlert } from 'react-icons/lu';
 import { isRouteErrorResponse, useRouteError } from 'react-router';
-import { pageSurface } from '@components/layout/MainContent';
-import { APP_NAME } from '@components/layout/route-handle';
-import { Button } from '@components/ui';
-import { cx } from '@lib/cx';
-import { ErrorScreen } from './ErrorScreen';
-import { ConnectionErrorPage, NotFoundPage } from './ErrorPages';
+import { MainContent, pageSurface } from '@components/layout/MainContent';
+import { DEFAULT_ROLE } from '@constants/areas';
+import { ConnectionErrorPage, NotFoundPage, UnexpectedErrorPage } from './ErrorPages';
 
 const reload = () => window.location.reload();
 
@@ -17,30 +12,19 @@ function isChunkLoadError(error: unknown): boolean {
   );
 }
 
-export function RouteErrorBoundary() {
+export function RouteError() {
   const error = useRouteError();
+  if (isRouteErrorResponse(error) && error.status === 404) return <NotFoundPage />;
+  if (isChunkLoadError(error)) return <ConnectionErrorPage onRetry={reload} />;
+  return <UnexpectedErrorPage onRetry={reload} />;
+}
 
-  useEffect(() => {
-    document.title = APP_NAME;
-  }, []);
-
-  const content =
-    isRouteErrorResponse(error) && error.status === 404 ? (
-      <NotFoundPage />
-    ) : isChunkLoadError(error) ? (
-      <ConnectionErrorPage onRetry={reload} />
-    ) : (
-      <ErrorScreen
-        icon={<LuTriangleAlert />}
-        title="Algo deu errado"
-        description="Tente de novo. Se continuar, volte mais tarde."
-        action={<Button onClick={reload}>Tentar de novo</Button>}
-      />
-    );
-
+export function RouteErrorBoundary() {
   return (
-    <main data-role="patient" className={cx(pageSurface, 'px-4')}>
-      {content}
-    </main>
+    <div data-role={DEFAULT_ROLE} className={pageSurface}>
+      <MainContent className="px-4">
+        <RouteError />
+      </MainContent>
+    </div>
   );
 }
