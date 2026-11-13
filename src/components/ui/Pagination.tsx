@@ -2,6 +2,7 @@ import type { ComponentProps } from 'react';
 import { LuChevronLeft, LuChevronRight } from 'react-icons/lu';
 import { cx } from '@lib/cx';
 import { paginationRange } from './pagination-range';
+import { buttonVariants, squareButton, type ButtonVariant } from './styles';
 
 export interface PaginationProps {
   page: number;
@@ -11,21 +12,23 @@ export interface PaginationProps {
   className?: string;
 }
 
-const looks = {
-  arrow: 'text-role-text enabled:hover:bg-role-soft',
-  page: 'border border-role-strong bg-surface text-role-text hover:bg-role-soft',
-  current: 'bg-role-strong text-on-role shadow-button',
-};
+interface PageButtonProps extends ComponentProps<'button'> {
+  variant: ButtonVariant;
+  target: number;
+  unavailable?: boolean;
+  onPageChange: (page: number) => void;
+}
 
-function PageButton({ look, ...props }: ComponentProps<'button'> & { look: keyof typeof looks }) {
+function PageButton({ variant, target, unavailable, onPageChange, ...props }: PageButtonProps) {
   return (
     <li>
       <button
         type="button"
-        className={cx(
-          'rounded-field inline-flex size-11 items-center justify-center text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40',
-          looks[look],
-        )}
+        aria-disabled={unavailable || undefined}
+        onClick={() => {
+          if (!unavailable) onPageChange(target);
+        }}
+        className={cx(squareButton, buttonVariants[variant], 'text-sm font-semibold')}
         {...props}
       />
     </li>
@@ -40,17 +43,27 @@ export function Pagination({
   className,
 }: PaginationProps) {
   if (totalPages <= 1) return null;
+  const current = Math.min(Math.max(1, Math.trunc(page) || 1), totalPages);
   const arrows = [
-    { label: 'Página anterior', icon: <LuChevronLeft aria-hidden className="text-lg" />, target: page - 1 },
-    { label: 'Próxima página', icon: <LuChevronRight aria-hidden className="text-lg" />, target: page + 1 },
+    {
+      label: 'Página anterior',
+      icon: <LuChevronLeft aria-hidden className="text-lg" />,
+      target: current - 1,
+    },
+    {
+      label: 'Próxima página',
+      icon: <LuChevronRight aria-hidden className="text-lg" />,
+      target: current + 1,
+    },
   ] as const;
   const arrow = ({ label: arrowLabel, icon, target }: (typeof arrows)[number]) => (
     <PageButton
       key={arrowLabel}
-      look="arrow"
+      variant="ghost"
+      target={target}
+      unavailable={target < 1 || target > totalPages}
+      onPageChange={onPageChange}
       aria-label={arrowLabel}
-      disabled={target < 1 || target > totalPages}
-      onClick={() => onPageChange(target)}
     >
       {icon}
     </PageButton>
@@ -60,7 +73,7 @@ export function Pagination({
     <nav aria-label={label} className={className}>
       <ul className="flex items-center justify-center gap-1.5">
         {arrow(arrows[0])}
-        {paginationRange(page, totalPages).map((entry, index) =>
+        {paginationRange(current, totalPages).map((entry, index) =>
           entry === 'gap' ? (
             <li key={`gap-${index}`} aria-hidden className="text-text-secondary px-1">
               …
@@ -68,10 +81,11 @@ export function Pagination({
           ) : (
             <PageButton
               key={entry}
-              look={entry === page ? 'current' : 'page'}
+              variant={entry === current ? 'primary' : 'secondary'}
+              target={entry}
+              onPageChange={onPageChange}
               aria-label={`Página ${entry}`}
-              aria-current={entry === page ? 'page' : undefined}
-              onClick={() => onPageChange(entry)}
+              aria-current={entry === current ? 'page' : undefined}
             >
               {entry}
             </PageButton>

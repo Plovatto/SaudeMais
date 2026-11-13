@@ -21,7 +21,7 @@ export function StatusChip({ tone, icon, children, className }: StatusChipProps)
   return (
     <span
       className={cx(
-        'bg-surface inline-flex h-6 items-center gap-1 rounded-full border px-2.5 text-xs font-semibold whitespace-nowrap',
+        'bg-surface inline-flex min-h-6 items-center gap-1 rounded-full border px-2.5 text-xs font-semibold whitespace-nowrap',
         tones[tone],
         className,
       )}

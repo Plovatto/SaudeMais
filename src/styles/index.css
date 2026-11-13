@@ -1,6 +1,15 @@
 @import 'tailwindcss';
 
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+@custom-variant can-hover {
+  @media (hover: hover) {
+    &:hover:not(:disabled, [aria-disabled='true']) {
+      @slot;
+    }
+  }
+}
+@custom-variant pressable (&:active:not(:disabled, [aria-disabled='true']));
+@custom-variant unavailable (&:is(:disabled, [aria-disabled='true']));
 
 @font-face {
   font-family: 'Inter Variable';

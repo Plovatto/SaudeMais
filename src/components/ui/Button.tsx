@@ -2,25 +2,19 @@ import type { ComponentProps, ReactNode } from 'react';
 import { cx } from '@lib/cx';
 import { IconSlot } from './IconSlot';
 import { Spinner } from './Spinner';
-import { disabledState } from './styles';
-
-const variants = {
-  primary: 'bg-role-strong text-on-role shadow-button enabled:hover:bg-role-strong/90',
-  secondary: 'border border-role-strong bg-surface text-role-text enabled:hover:bg-role-soft',
-  ghost: 'text-role-text enabled:hover:bg-role-soft',
-  danger: 'bg-danger-strong text-on-danger shadow-button enabled:hover:bg-danger-strong/90',
-};
+import { buttonVariants, disabledState, type ButtonVariant } from './styles';
 
 const sizes = {
-  md: 'min-h-11 px-4 text-[15px] font-semibold',
+  md: 'min-h-11 px-4 text-[0.9375rem] font-semibold',
   lg: 'min-h-[50px] px-6 text-lg font-bold',
 };
 
 export interface ButtonProps extends ComponentProps<'button'> {
-  variant?: keyof typeof variants;
+  variant?: ButtonVariant;
   size?: keyof typeof sizes;
   icon?: ReactNode;
   loading?: boolean;
+  loadingLabel?: string;
   fullWidth?: boolean;
 }
 
@@ -29,22 +23,26 @@ export function Button({
   size = 'md',
   icon,
   loading = false,
+  loadingLabel = 'Carregando',
   fullWidth = false,
-  disabled,
   className,
   children,
   type = 'button',
+  onClick,
   ...props
 }: ButtonProps) {
   return (
     <button
       type={type}
-      disabled={disabled || loading}
-      aria-busy={loading || undefined}
+      aria-disabled={loading || undefined}
+      onClick={(event) => {
+        if (loading) event.preventDefault();
+        else onClick?.(event);
+      }}
       className={cx(
-        'rounded-field inline-flex items-center justify-center gap-2 transition-[background-color,translate] select-none enabled:active:translate-y-px',
+        'rounded-field pressable:translate-y-px inline-flex items-center justify-center gap-2 transition-[background-color,translate] select-none',
         disabledState,
-        variants[variant],
+        buttonVariants[variant],
         sizes[size],
         fullWidth && 'w-full',
         className,
@@ -53,6 +51,7 @@ export function Button({
     >
       {loading ? <Spinner /> : icon && <IconSlot>{icon}</IconSlot>}
       {children}
+      {loading && <span className="sr-only">, {loadingLabel}</span>}
     </button>
   );
 }
