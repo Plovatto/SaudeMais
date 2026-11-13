@@ -1,5 +1,7 @@
 # Saúde+ Web
 
+[![CI](https://github.com/Plovatto/SaudeMais/actions/workflows/ci.yml/badge.svg)](https://github.com/Plovatto/SaudeMais/actions/workflows/ci.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Plovatto/SaudeMais/badge)](https://scorecard.dev/viewer/?uri=github.com/Plovatto/SaudeMais)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D22.13-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 
@@ -109,6 +111,10 @@ src/
 ```
 
 As pastas `features`, `components`, `hooks`, `lib` e `constants` entram conforme as funcionalidades são criadas, cada uma com o alias correspondente (`@features`, `@components`, `@hooks`, `@lib`, `@constants`).
+
+## Contribuindo
+
+Veja o [guia de contribuição](CONTRIBUTING.md) e a [política de segurança](SECURITY.md).
 
 ## Licença
 
