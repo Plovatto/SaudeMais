@@ -1,0 +1,138 @@
+import { act, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
+import { describe, expect, it, vi } from 'vitest';
+import { Dialog } from './Dialog';
+import { Menu } from './Menu';
+import { Popover } from './Popover';
+
+function Harness({ onClose = () => undefined }: { onClose?: () => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)}>
+        Agendar
+      </button>
+      <Dialog
+        open={open}
+        onClose={() => {
+          setOpen(false);
+          onClose();
+        }}
+        title="Exame agendado!"
+        description="Seu exame foi agendado com sucesso!"
+      >
+        <button type="button">Ver detalhes</button>
+      </Dialog>
+    </>
+  );
+}
+
+async function openDialog() {
+  const user = userEvent.setup();
+  const onClose = vi.fn();
+  render(<Harness onClose={onClose} />);
+  await user.click(screen.getByRole('button', { name: 'Agendar' }));
+  return { user, onClose, dialog: screen.getByRole('dialog', { name: 'Exame agendado!' }) };
+}
+
+describe('Dialog', () => {
+  it('opens as a labelled and described modal', async () => {
+    const { dialog } = await openDialog();
+
+    expect(dialog).toHaveAttribute('open');
+    expect(dialog).toHaveAccessibleDescription('Seu exame foi agendado com sucesso!');
+  });
+
+  it('moves focus inside when it opens', async () => {
+    const { dialog } = await openDialog();
+
+    expect(dialog).toContainElement(document.activeElement as HTMLElement);
+  });
+
+  it('closes from the close button and returns focus to what opened it', async () => {
+    const { user, onClose, dialog } = await openDialog();
+
+    await user.click(screen.getByRole('button', { name: 'Fechar' }));
+
+    expect(onClose).toHaveBeenCalledOnce();
+    expect(dialog).not.toHaveAttribute('open');
+    expect(screen.getByRole('button', { name: 'Agendar' })).toHaveFocus();
+  });
+
+  it('closes when the backdrop is clicked, but not when clicking its content', async () => {
+    const { user, onClose, dialog } = await openDialog();
+
+    await user.click(screen.getByText('Seu exame foi agendado com sucesso!'));
+    expect(onClose).not.toHaveBeenCalled();
+
+    await user.click(dialog);
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('does not report a close the parent asked for', () => {
+    const onClose = vi.fn();
+    const { rerender } = render(<Dialog open onClose={onClose} title="Cancelar consulta" />);
+
+    rerender(<Dialog open={false} onClose={onClose} title="Cancelar consulta" />);
+
+    expect(screen.getByRole('dialog', { hidden: true })).not.toHaveAttribute('open');
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('lets Escape close a menu inside it without closing the dialog too', async () => {
+    const user = userEvent.setup();
+    render(
+      <Dialog open onClose={() => undefined} title="Ações">
+        <Menu label="Mais ações" items={[{ label: 'Editar', onSelect: () => undefined }]} />
+      </Dialog>,
+    );
+    await user.click(screen.getByRole('button', { name: 'Mais ações' }));
+
+    const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    const item = screen.getByRole('menuitem', { name: 'Editar' });
+    act(() => {
+      item.dispatchEvent(escape);
+    });
+
+    expect(escape.defaultPrevented).toBe(true);
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  });
+
+  it('leaves Escape to a dialog opened from a popover that is still open behind it', async () => {
+    const user = userEvent.setup();
+    function OpenFromPopover() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <Popover label="Notificações" title="Notificações" icon={<span />}>
+            <button type="button" onClick={() => setOpen(true)}>
+              Detalhes
+            </button>
+          </Popover>
+          <Dialog open={open} onClose={() => setOpen(false)} title="Detalhes" />
+        </>
+      );
+    }
+    render(<OpenFromPopover />);
+    await user.click(screen.getByRole('button', { name: 'Notificações' }));
+    await user.click(screen.getByRole('button', { name: 'Detalhes' }));
+
+    const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    const closeButton = screen.getByRole('button', { name: 'Fechar' });
+    act(() => {
+      closeButton.dispatchEvent(escape);
+    });
+
+    expect(escape.defaultPrevented).toBe(false);
+    expect(screen.getByRole('dialog', { name: 'Notificações' })).toBeInTheDocument();
+  });
+
+  it('reports a native close, as triggered by the Escape key', async () => {
+    const { onClose, dialog } = await openDialog();
+
+    (dialog as HTMLDialogElement).close();
+
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+});

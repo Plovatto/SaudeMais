@@ -1,5 +1,16 @@
 @import 'tailwindcss';
 
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+@custom-variant can-hover {
+  @media (hover: hover) {
+    &:hover:not(:disabled, [aria-disabled='true']) {
+      @slot;
+    }
+  }
+}
+@custom-variant pressable (&:active:not(:disabled, [aria-disabled='true']));
+@custom-variant unavailable (&:is(:disabled, [aria-disabled='true']));
+
 @font-face {
   font-family: 'Inter Variable';
   font-style: normal;
@@ -181,6 +192,10 @@
     background-color: var(--overlay);
   }
 
+  html:has(dialog[open]) {
+    overflow: hidden;
+  }
+
   :focus-visible {
     outline: 2px solid var(--focus);
     outline-offset: 2px;
@@ -194,6 +209,11 @@
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
+    }
+
+    [data-spinner] {
+      animation-duration: 1.5s !important;
+      animation-iteration-count: infinite !important;
     }
   }
 }

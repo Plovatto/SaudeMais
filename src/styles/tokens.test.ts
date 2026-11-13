@@ -63,6 +63,10 @@ describe.each([
     }
   });
 
+  it('keeps the switch thumb visible on the off track (3:1)', () => {
+    expect(contrast(base['surface'], base['border-field'])).toBeGreaterThanOrEqual(3);
+  });
+
   it('keeps the focus ring visible outside a role (3:1)', () => {
     expect(contrast(base['focus'], base['canvas'])).toBeGreaterThanOrEqual(3);
   });
@@ -85,8 +89,10 @@ describe.each([
       }
     });
 
-    it('keeps the focus ring visible against the page (3:1)', () => {
-      expect(contrast(colors['focus'], colors['canvas'])).toBeGreaterThanOrEqual(3);
+    it('keeps the focus ring visible on the page and on every surface (3:1)', () => {
+      for (const background of ['canvas', 'surface', 'surface-muted', 'role-soft']) {
+        expect(contrast(colors['focus'], colors[background]), background).toBeGreaterThanOrEqual(3);
+      }
     });
   });
 });
