@@ -1,7 +1,7 @@
 const browsers: [RegExp, string][] = [
-  [/Edg\//, 'Edge'],
+  [/Edg\/|EdgiOS\//, 'Edge'],
   [/OPR\/|Opera/, 'Opera'],
-  [/Firefox\//, 'Firefox'],
+  [/Firefox\/|FxiOS\//, 'Firefox'],
   [/Chrome\/|CriOS\//, 'Chrome'],
   [/Safari\//, 'Safari'],
 ];
@@ -11,6 +11,7 @@ const systems: [RegExp, string][] = [
   [/Android/, 'Android'],
   [/Windows/, 'Windows'],
   [/Mac OS X|Macintosh/, 'macOS'],
+  [/CrOS/, 'ChromeOS'],
   [/Linux/, 'Linux'],
 ];
 
