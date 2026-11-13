@@ -33,6 +33,10 @@ describe('buildCsp', () => {
     expect(policy.get('form-action')).toEqual(["'self'"]);
   });
 
+  it('refuses an API without https, which the browser would block as mixed content', () => {
+    expect(() => buildCsp('http://api.example.com')).toThrow(/https/);
+  });
+
   it('keeps only the origin when the API URL has a path', () => {
     expect(directives(buildCsp('https://api.example.com/v1')).get('connect-src')).toEqual([
       'https://api.example.com',

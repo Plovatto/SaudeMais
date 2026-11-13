@@ -1,5 +1,3 @@
-import { copyFile } from 'node:fs/promises';
-import { join } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
@@ -11,13 +9,10 @@ import { parseEnv } from './src/config/parse-env';
 const src = (path = '') => fileURLToPath(new URL(`./src/${path}`, import.meta.url));
 
 function staticHosting(apiUrl: string): Plugin {
-  let outDir = '';
   return {
     name: 'saudemais:static-hosting',
     apply: 'build',
-    configResolved(config) {
-      outDir = join(config.root, config.build.outDir);
-    },
+    enforce: 'post',
     transformIndexHtml: () => [
       {
         tag: 'meta',
@@ -25,17 +20,18 @@ function staticHosting(apiUrl: string): Plugin {
         injectTo: 'head-prepend',
       },
     ],
-    async writeBundle() {
-      await copyFile(join(outDir, 'index.html'), join(outDir, '404.html'));
+    generateBundle(_, bundle) {
+      const html = bundle['index.html'];
+      if (html?.type === 'asset') this.emitFile({ type: 'asset', fileName: '404.html', source: html.source });
     },
   };
 }
 
-export default defineConfig(({ command, mode }) => {
+export default defineConfig(({ command, mode, isPreview }) => {
   const env = command === 'build' ? parseEnv(loadEnv(mode, process.cwd(), 'VITE_')) : null;
 
   return {
-    base: env ? '/SaudeMais/' : '/',
+    base: env || isPreview ? '/SaudeMais/' : '/',
     plugins: [react(), tailwindcss(), env && staticHosting(env.apiUrl)],
     resolve: {
       alias: {
