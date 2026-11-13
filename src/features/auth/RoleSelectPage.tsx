@@ -1,6 +1,7 @@
 import { LuChevronLeft } from 'react-icons/lu';
 import { Link, Navigate } from 'react-router';
-import { Button, IconSlot } from '@components/ui';
+import { Button, EmptyState, IconSlot } from '@components/ui';
+import { LuUserX } from 'react-icons/lu';
 import { areas } from '@constants/areas';
 import { useCurrentUser } from '@lib/auth/useSession';
 import { useSignOut } from '@lib/auth/useSignOut';
@@ -18,16 +19,29 @@ export function RoleSelectPage() {
       title="Escolha seu perfil"
       subtitle="Como você gostaria de acessar o sistema?"
       footer={
-        <Button
-          variant="secondary"
-          icon={<LuChevronLeft />}
-          onClick={() => void signOut()}
-          className="mx-auto rounded-full border-transparent px-8"
-        >
-          Voltar
-        </Button>
+        <>
+          <Button
+            variant="secondary"
+            icon={<LuChevronLeft />}
+            onClick={() => void signOut()}
+            aria-describedby="role-select-back-hint"
+            className="mx-auto rounded-full border-transparent px-8"
+          >
+            Voltar
+          </Button>
+          <p id="role-select-back-hint" className="sr-only">
+            Encerra a sessão e volta para o login.
+          </p>
+        </>
       }
     >
+      {choices.length === 0 && (
+        <EmptyState
+          icon={<LuUserX />}
+          title="Nenhum perfil ativo"
+          description="Sua conta ainda não tem um perfil liberado. Fale com a administração da clínica."
+        />
+      )}
       <ul className="flex flex-col gap-5">
         {choices.map((area) => (
           <li key={area.role} data-role={area.role}>
