@@ -41,6 +41,10 @@ const page = (
 const authScreen = (name: 'LoginPage' | 'RegisterPage' | 'TermsPage' | 'PrivacyPage' | 'RoleSelectPage') =>
   lazyComponent(async () => (await import('@features/auth'))[name]);
 
+const areaScreens: Record<string, typeof placeholder> = {
+  perfil: lazyComponent(async () => (await import('@features/profile')).ProfilePage),
+};
+
 const areaRoute = (area: Area): RouteObject => ({
   path: area.base,
   handle: { role: area.role },
@@ -48,7 +52,10 @@ const areaRoute = (area: Area): RouteObject => ({
   children: [
     {
       lazy: lazyComponent(async () => (await import('@components/layout/RoleLayout')).RoleLayout),
-      children: [...area.pages.map(({ path, title }) => page(path, title)), notFound],
+      children: [
+        ...area.pages.map(({ path, title }) => page(path, title, { lazy: areaScreens[path] ?? placeholder })),
+        notFound,
+      ],
     },
   ],
 });
