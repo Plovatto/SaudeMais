@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { Outlet, ScrollRestoration, useLocation } from 'react-router';
-import { Spinner } from '@components/ui';
+import { DEFAULT_ROLE } from '@constants/areas';
+import { Logo } from './Logo';
 import { pageSurface } from './MainContent';
 import { PAGE_TITLE_ID } from './PageTitle';
 import { pageTitle, useRouteHandle } from './route-handle';
@@ -36,9 +37,10 @@ export function RootFallback() {
     <div
       role="status"
       aria-label="Carregando"
-      className={`${pageSurface} text-role-text grid place-items-center`}
+      data-role={DEFAULT_ROLE}
+      className={`${pageSurface} bg-role-strong text-on-role grid place-items-center`}
     >
-      <Spinner className="size-8" />
+      <Logo className="w-32 motion-safe:animate-pulse" />
     </div>
   );
 }

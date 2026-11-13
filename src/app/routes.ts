@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react';
-import type { RouteObject } from 'react-router';
+import { redirect, type RouteObject } from 'react-router';
 import { RootFallback, RootRoute } from '@components/layout/RootRoute';
 import { areas, type Area } from '@constants/areas';
 import { ForbiddenPage, NotFoundPage, RouteError, RouteErrorBoundary } from '@features/errors';
@@ -16,23 +16,30 @@ const notFound: RouteObject = {
   Component: NotFoundPage,
 };
 
-const publicPages = [
-  ['', 'Saúde+'],
-  ['login', 'Entrar'],
-  ['cadastro', 'Criar conta'],
+const placeholderPages = [
   ['esqueci-senha', 'Esqueci a senha'],
   ['redefinir-senha', 'Redefinir senha'],
-  ['termos', 'Termos de uso'],
-  ['privacidade', 'Política de privacidade'],
   ['perfis', 'Escolha seu perfil'],
 ] as const;
 
-const page = (path: string, title: string): RouteObject => ({
+interface PageOptions {
+  lazy?: typeof placeholder;
+  surface?: 'brand';
+}
+
+const page = (
+  path: string,
+  title: string,
+  { lazy = placeholder, surface }: PageOptions = {},
+): RouteObject => ({
   ...(path === '' ? { index: true } : { path }),
-  handle: { title },
+  handle: { title, ...(surface && { surface }) },
   ErrorBoundary: RouteError,
-  lazy: placeholder,
+  lazy,
 });
+
+const authScreen = (name: 'LoginPage' | 'RegisterPage' | 'TermsPage' | 'PrivacyPage') =>
+  lazyComponent(async () => (await import('@features/auth'))[name]);
 
 const areaRoute = (area: Area): RouteObject => ({
   path: area.base,
@@ -50,7 +57,12 @@ export const routes: RouteObject[] = [
       {
         lazy: lazyComponent(async () => (await import('@components/layout/PublicLayout')).PublicLayout),
         children: [
-          ...publicPages.map(([path, title]) => page(path, title)),
+          { index: true, loader: () => redirect('/login') },
+          page('login', 'Entrar', { lazy: authScreen('LoginPage'), surface: 'brand' }),
+          page('cadastro', 'Criar conta', { lazy: authScreen('RegisterPage'), surface: 'brand' }),
+          page('termos', 'Termos de uso', { lazy: authScreen('TermsPage') }),
+          page('privacidade', 'Política de privacidade', { lazy: authScreen('PrivacyPage') }),
+          ...placeholderPages.map(([path, title]) => page(path, title)),
           { path: '403', handle: { title: 'Acesso negado' }, Component: ForbiddenPage },
           notFound,
         ],
