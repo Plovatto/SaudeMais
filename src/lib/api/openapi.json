@@ -1,0 +1,1111 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Saúde+ API",
+    "version": "0.1.0",
+    "description": "API do **Saúde+**, sistema de agendamento de consultas e exames com três perfis: paciente, médico e administrador.\n\nAs rotas de negócio ficam sob `/api`. Nesta versão existem o cadastro, o login, o logout e o perfil da própria conta, além de `/health` e desta documentação. As seções marcadas como convenção descrevem o padrão que as próximas rotas vão seguir; cada rota lista o que realmente pode devolver.\n\n## Erros\n\nToda resposta de erro tem o mesmo formato:\n\n```json\n{\n  \"message\": \"Dados inválidos.\",\n  \"code\": \"VALIDATION_ERROR\",\n  \"fields\": { \"email\": \"E-mail inválido.\" }\n}\n```\n\n- `message` é um texto em português, pronto para exibir.\n- `code` é estável e serve para o cliente decidir o que fazer ou escolher o próprio texto.\n- `fields` aparece apenas em erros de validação, com uma mensagem por campo.\n\n| Status | Quando acontece |\n|---|---|\n| `400` | Corpo, parâmetros ou JSON inválidos |\n| `401` | Sem sessão, sessão expirada ou credenciais incorretas |\n| `403` | Conta desativada, sem o perfil exigido ou de demonstração |\n| `404` | Rota ou método inexistente |\n| `409` | Conflito com o estado atual, como e-mail já cadastrado |\n| `422` | Regra de negócio não atendida, como senha atual incorreta |\n| `413` | Corpo maior que 100 KB |\n| `415` | Charset ou codificação do corpo não suportados |\n| `429` | Limite de tentativas atingido; o cabeçalho `RateLimit` diz quando tentar de novo |\n| `500` | Erro interno; os detalhes ficam só nos logs |\n| `503` | Servidor ocupado conferindo senhas; tente de novo em instantes |\n\nConvenção para as próximas rotas: `404` também para recurso inexistente ou de outra pessoa e `409` também para horário já ocupado.\n\n## Códigos de erro\n\nCódigos comuns a todas as rotas. Cada rota lista também os códigos específicos dela.\n\n| Código | Status | Significado |\n|---|---|---|\n| `VALIDATION_ERROR` | 400 | Algum campo não passou na validação; veja `fields` |\n| `INVALID_JSON` | 400 | O corpo não é um JSON válido ou não é um objeto ou array |\n| `BAD_REQUEST` | 400 ou 415 | Requisição malformada, como parâmetro de URL inválido, charset ou codificação não suportados |\n| `UNAUTHENTICATED` | 401 | Rota exige login e o token falta, é inválido ou expirou |\n| `FORBIDDEN` | 403 | A conta não tem o perfil exigido pela rota |\n| `INVALID_CURRENT_PASSWORD` | 422 | A senha atual informada na troca de senha está errada |\n| `PROTECTED_ACCOUNT` | 403 | Contas de demonstração não podem ser alteradas |\n| `ROUTE_NOT_FOUND` | 404 | A rota ou o método não existe |\n| `PAYLOAD_TOO_LARGE` | 413 | O corpo passou de 100 KB |\n| `TOO_MANY_REQUESTS` | 429 | Muitas requisições do mesmo IP (300 por minuto) ou limite próprio da rota |\n| `INTERNAL_ERROR` | 500 | Erro inesperado no servidor |\n| `SERVER_BUSY` | 503 | Muitas senhas sendo conferidas ao mesmo tempo |\n\n## Autenticação\n\nCrie uma conta em `POST /api/users/register` e entre em `POST /api/users/login` para receber o token. As rotas que exigem login mostram um cadeado e recebem o token no cabeçalho:\n\n```http\nAuthorization: Bearer <token>\n```\n\nSem \"Lembrar de mim\", a sessão expira após 12 horas sem uso; com ele, dura 7 dias. Nenhuma sessão passa de 7 dias, e `POST /api/users/logout` encerra a sessão na hora. Quando a sessão não vale mais, a rota responde `401` com `UNAUTHENTICATED`.\n\nO botão **Authorize** desta página envia o token em todas as chamadas de teste. Fora de produção, o token fica salvo neste navegador até você clicar em **Logout**.\n\n## Conta de demonstração\n\nPara testar sem criar conta, entre com o paciente de demonstração: `paciente@saudemais.test`, senha `paciente-demo-123`. Os dados dele são de exemplo e ele não pode ser alterado nem desativado.\n\n## Datas\n\nConvenção para as próximas rotas:\n\n- Data e hora, como o início de uma consulta, em ISO 8601 e UTC: `2026-11-20T13:30:00.000Z`.\n- Datas sem horário, como um filtro por dia, em `YYYY-MM-DD`, no fuso de São Paulo (`America/Sao_Paulo`).\n\n## Paginação\n\nConvenção para as próximas rotas: listas recebem `page` (a partir de 1) e `pageSize` (até 50) e respondem:\n\n```json\n{ \"items\": [], \"page\": 1, \"pageSize\": 20, \"total\": 0 }\n```",
+    "contact": {
+      "name": "Plovatto",
+      "url": "https://github.com/Plovatto"
+    },
+    "license": {
+      "name": "MIT",
+      "identifier": "MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Servidor desta página"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Sistema",
+      "description": "Estado do servidor. Não exige login e não consulta o banco."
+    },
+    {
+      "name": "Contas",
+      "description": "Cadastro, login e logout. A sessão é um token opaco enviado em `Authorization: Bearer <token>`."
+    },
+    {
+      "name": "Perfil",
+      "description": "Dados, senha e sessões da própria conta. Exige login."
+    }
+  ],
+  "externalDocs": {
+    "description": "Código-fonte e instruções",
+    "url": "https://github.com/Plovatto/API-SaudeMais"
+  },
+  "components": {
+    "securitySchemes": {
+      "sessionAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Token de sessão obtido no login, enviado como \"Authorization: Bearer <token>\"."
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Texto em português, pronto para exibir.",
+            "example": "Dados inválidos."
+          },
+          "code": {
+            "type": "string",
+            "description": "Código estável do erro.",
+            "example": "VALIDATION_ERROR"
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Uma mensagem por campo inválido.",
+            "example": {
+              "email": "E-mail inválido."
+            }
+          }
+        },
+        "required": [
+          "message",
+          "code"
+        ],
+        "description": "Corpo de toda resposta de erro."
+      },
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "example": {
+          "status": "ok"
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "description": "Nome completo, de 2 a 120 caracteres.",
+            "example": "Ana Maria Silva"
+          },
+          "email": {
+            "type": "string",
+            "example": "ana.silva@email.com"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  ""
+                ]
+              },
+              {
+                "type": "string",
+                "minLength": 1
+              }
+            ],
+            "description": "Telefone com DDD. Números brasileiros sem código do país ganham `+55`; é gravado em E.164.",
+            "example": "(11) 98765-4321"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "example": "senha-segura-123"
+          },
+          "passwordConfirmation": {
+            "type": "string",
+            "example": "senha-segura-123"
+          },
+          "acceptTerms": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "Aceite dos termos de uso e da política de privacidade em vigor."
+          }
+        },
+        "required": [
+          "fullName",
+          "email",
+          "password",
+          "passwordConfirmation",
+          "acceptTerms"
+        ],
+        "additionalProperties": false
+      },
+      "UpdateProfileRequest": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "description": "Nome completo, de 2 a 120 caracteres.",
+            "example": "Ana Maria Silva"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  ""
+                ]
+              },
+              {
+                "type": "string",
+                "minLength": 1
+              }
+            ],
+            "description": "Telefone com DDD. Números brasileiros sem código do país ganham `+55`; é gravado em E.164. Envie `null` para remover.",
+            "example": "(11) 98765-4321"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChangePasswordRequest": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "example": "senha-segura-123"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "example": "senha-segura-123"
+          },
+          "passwordConfirmation": {
+            "type": "string",
+            "example": "nova-senha-segura-456"
+          }
+        },
+        "required": [
+          "currentPassword",
+          "password",
+          "passwordConfirmation"
+        ],
+        "additionalProperties": false
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "current": {
+            "type": "boolean",
+            "description": "Se é a sessão que fez esta requisição."
+          },
+          "userAgent": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X)"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastUsedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "current",
+          "userAgent",
+          "createdAt",
+          "lastUsedAt",
+          "expiresAt"
+        ]
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "ana.silva@email.com"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "example": "senha-segura-123"
+          },
+          "remember": {
+            "type": "boolean",
+            "default": false,
+            "description": "\"Lembrar de mim\": a sessão dura 7 dias em vez de 12 horas sem uso."
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "additionalProperties": false
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fullName": {
+            "type": "string",
+            "example": "Ana Maria Silva"
+          },
+          "email": {
+            "type": "string",
+            "example": "ana.silva@email.com"
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "+5511987654321"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "patient",
+                "doctor",
+                "admin"
+              ]
+            },
+            "description": "Perfis que a conta possui.",
+            "example": [
+              "patient"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "fullName",
+          "email",
+          "phone",
+          "roles"
+        ]
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Token de sessão, enviado depois como `Authorization: Bearer <token>`."
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Quando a sessão expira se não for usada antes."
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        },
+        "required": [
+          "token",
+          "expiresAt",
+          "user"
+        ]
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "tags": [
+          "Sistema"
+        ],
+        "summary": "Verificar se o servidor está no ar",
+        "description": "Responde sem consultar o banco, para que verificações periódicas não acordem o banco de dados quando ele está desligado por inatividade.",
+        "responses": {
+          "200": {
+            "description": "Servidor no ar.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/register": {
+      "post": {
+        "operationId": "registerUser",
+        "tags": [
+          "Contas"
+        ],
+        "summary": "Criar conta",
+        "description": "Cria uma conta de paciente e registra o aceite dos termos de uso e da política de privacidade em vigor. O e-mail é comparado sem distinguir maiúsculas. Para entrar, use depois o login. Limite: 10 cadastros por hora por IP.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Conta criada, só com o perfil de paciente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Dados inválidos.",
+                  "code": "VALIDATION_ERROR",
+                  "fields": {
+                    "email": "Informe um e-mail válido."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "E-mail já cadastrado (`EMAIL_TAKEN`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Este e-mail já está cadastrado.",
+                  "code": "EMAIL_TAKEN",
+                  "fields": {
+                    "email": "Este e-mail já está cadastrado."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Servidor ocupado conferindo outras senhas (`SERVER_BUSY`). Tente de novo em instantes.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "O servidor está ocupado. Tente de novo em instantes.",
+                  "code": "SERVER_BUSY"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/login": {
+      "post": {
+        "operationId": "login",
+        "tags": [
+          "Contas"
+        ],
+        "summary": "Entrar",
+        "description": "Confere e-mail e senha e devolve um token de sessão. Sem \"Lembrar de mim\", a sessão expira após 12 horas sem uso; com ele, dura 7 dias. Nenhuma sessão passa de 7 dias. Senha errada e e-mail inexistente recebem a mesma resposta. Limites: 30 tentativas por IP e 5 senhas erradas por e-mail e IP a cada 15 minutos, e 50 senhas erradas por e-mail por hora.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login feito.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Dados inválidos.",
+                  "code": "VALIDATION_ERROR",
+                  "fields": {
+                    "email": "Informe um e-mail válido."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "E-mail ou senha incorretos (`INVALID_CREDENTIALS`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "E-mail ou senha incorretos.",
+                  "code": "INVALID_CREDENTIALS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Conta desativada (`USER_INACTIVE`). Só aparece com a senha correta.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Esta conta está desativada.",
+                  "code": "USER_INACTIVE"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Servidor ocupado conferindo outras senhas (`SERVER_BUSY`). Tente de novo em instantes.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "O servidor está ocupado. Tente de novo em instantes.",
+                  "code": "SERVER_BUSY"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/logout": {
+      "post": {
+        "operationId": "logout",
+        "tags": [
+          "Contas"
+        ],
+        "summary": "Sair",
+        "description": "Encerra a sessão do token enviado. As outras sessões da conta continuam valendo.",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sessão encerrada."
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada (`UNAUTHENTICATED`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Sua sessão expirou. Entre novamente.",
+                  "code": "UNAUTHENTICATED"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me": {
+      "get": {
+        "operationId": "getProfile",
+        "tags": [
+          "Perfil"
+        ],
+        "summary": "Ver os próprios dados",
+        "description": "Devolve os dados e os perfis da conta dona do token. Limite: 120 leituras de perfil por minuto por IP.",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dados da conta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada (`UNAUTHENTICATED`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Sua sessão expirou. Entre novamente.",
+                  "code": "UNAUTHENTICATED"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateProfile",
+        "tags": [
+          "Perfil"
+        ],
+        "summary": "Alterar nome ou telefone",
+        "description": "Altera só os campos enviados. O e-mail não pode ser alterado nesta versão. Limite: 120 requisições de perfil por minuto por IP.",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Dados atualizados.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Dados inválidos.",
+                  "code": "VALIDATION_ERROR",
+                  "fields": {
+                    "email": "Informe um e-mail válido."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada (`UNAUTHENTICATED`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Sua sessão expirou. Entre novamente.",
+                  "code": "UNAUTHENTICATED"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Conta de demonstração (`PROTECTED_ACCOUNT`); não pode ser alterada.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Esta é uma conta de demonstração e não pode ser alterada.",
+                  "code": "PROTECTED_ACCOUNT"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/password": {
+      "post": {
+        "operationId": "changePassword",
+        "tags": [
+          "Perfil"
+        ],
+        "summary": "Trocar a senha",
+        "description": "Exige a senha atual. Depois da troca, todas as outras sessões da conta são encerradas; a sessão atual continua. Limites: 10 tentativas por IP e 5 senhas atuais erradas por conta a cada 15 minutos.",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Senha trocada."
+          },
+          "400": {
+            "description": "Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Dados inválidos.",
+                  "code": "VALIDATION_ERROR",
+                  "fields": {
+                    "email": "Informe um e-mail válido."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada (`UNAUTHENTICATED`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Sua sessão expirou. Entre novamente.",
+                  "code": "UNAUTHENTICATED"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Conta de demonstração (`PROTECTED_ACCOUNT`); não pode ser alterada.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Esta é uma conta de demonstração e não pode ser alterada.",
+                  "code": "PROTECTED_ACCOUNT"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Senha atual incorreta (`INVALID_CURRENT_PASSWORD`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "A senha atual está incorreta.",
+                  "code": "INVALID_CURRENT_PASSWORD",
+                  "fields": {
+                    "currentPassword": "A senha atual está incorreta."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Servidor ocupado conferindo outras senhas (`SERVER_BUSY`). Tente de novo em instantes.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "O servidor está ocupado. Tente de novo em instantes.",
+                  "code": "SERVER_BUSY"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/sessions": {
+      "get": {
+        "operationId": "listSessions",
+        "tags": [
+          "Perfil"
+        ],
+        "summary": "Listar sessões ativas",
+        "description": "Lista as sessões que ainda valem, da usada mais recentemente para a mais antiga, marcando a atual. Limite: 120 requisições de perfil por minuto por IP.",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sessões ativas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Session"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada (`UNAUTHENTICATED`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Sua sessão expirou. Entre novamente.",
+                  "code": "UNAUTHENTICATED"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "logoutEverywhere",
+        "tags": [
+          "Perfil"
+        ],
+        "summary": "Sair de todas as sessões",
+        "description": "Encerra todas as sessões da conta, inclusive a atual. Na conta de demonstração, encerra só a sessão de quem pediu.",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sessões encerradas."
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada (`UNAUTHENTICATED`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Sua sessão expirou. Entre novamente.",
+                  "code": "UNAUTHENTICATED"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {}
+}

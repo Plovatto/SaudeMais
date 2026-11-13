@@ -92,18 +92,19 @@ VITE_API_URL=http://localhost:3001
 
 ## Scripts
 
-| Script                 | Descrição                             |
-| ---------------------- | ------------------------------------- |
-| `npm run dev`          | Inicia em modo de desenvolvimento     |
-| `npm run build`        | Gera a versão de produção em `dist/`  |
-| `npm run preview`      | Serve localmente a versão de produção |
-| `npm run typecheck`    | Verifica os tipos                     |
-| `npm run lint`         | Analisa o código                      |
-| `npm run lint:fix`     | Corrige o que o lint resolve sozinho  |
-| `npm run format`       | Formata o código com Prettier         |
-| `npm run format:check` | Confere a formatação                  |
-| `npm test`             | Roda os testes                        |
-| `npm run test:watch`   | Roda os testes a cada alteração       |
+| Script                 | Descrição                                 |
+| ---------------------- | ----------------------------------------- |
+| `npm run dev`          | Inicia em modo de desenvolvimento         |
+| `npm run build`        | Gera a versão de produção em `dist/`      |
+| `npm run preview`      | Serve localmente a versão de produção     |
+| `npm run typecheck`    | Verifica os tipos                         |
+| `npm run lint`         | Analisa o código                          |
+| `npm run lint:fix`     | Corrige o que o lint resolve sozinho      |
+| `npm run format`       | Formata o código com Prettier             |
+| `npm run format:check` | Confere a formatação                      |
+| `npm test`             | Roda os testes                            |
+| `npm run test:watch`   | Roda os testes a cada alteração           |
+| `npm run api:types`    | Gera os tipos a partir do contrato da API |
 
 ## Estrutura
 

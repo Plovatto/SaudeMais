@@ -34,6 +34,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run format:check
+      - name: check the API types match the contract
+        run: |
+          npm run api:types
+          git diff --exit-code -- src/lib/api/schema.d.ts
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
