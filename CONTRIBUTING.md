@@ -17,6 +17,10 @@ O trabalho é planejado no [quadro do projeto](https://github.com/users/Plovatto
 5. Abra o pull request para a `main` seguindo o modelo (o que foi feito, detalhes e testes) e ligue a issue com `Closes #n`.
 6. O merge é feito com merge commit, depois que o CI passar.
 
+## Contrato com a API
+
+O front usa uma cópia versionada do contrato da API em `src/lib/api/openapi.json`, e os tipos de `src/lib/api/schema.d.ts` são gerados a partir dela com `npm run api:types`. Quando a API mudar, atualize a cópia (a partir de `/docs/openapi.json` da API publicada) e gere os tipos no mesmo PR que usa a mudança. O CI falha se os tipos não corresponderem à cópia.
+
 ## Atualizações de dependências
 
 Os pull requests do Dependabot (`dependabot/...`) são a exceção às regras de nome de branch e de issue vinculada: entram depois que o CI passar.
