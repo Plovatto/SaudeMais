@@ -20,7 +20,3 @@ O trabalho é planejado no [quadro do projeto](https://github.com/users/Plovatto
 ## Atualizações de dependências
 
 Os pull requests do Dependabot (`dependabot/...`) são a exceção às regras de nome de branch e de issue vinculada: entram depois que o CI passar.
-
-## Contrato da API
-
-Os tipos da API são gerados a partir do documento OpenAPI publicado pela [API](https://github.com/Plovatto/API-SaudeMais). Quando o contrato muda, a cópia do documento e os tipos gerados são atualizados no mesmo pull request que usa a mudança.
