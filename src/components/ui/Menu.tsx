@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
-import { LuEllipsisVertical } from 'react-icons/lu';
+import { LuCheck, LuEllipsisVertical } from 'react-icons/lu';
 import { cx } from '@lib/cx';
 import { rovingIndex } from '@lib/roving-index';
 import { IconButton } from './IconButton';
@@ -12,6 +12,7 @@ export interface MenuItem {
   onSelect: () => void;
   icon?: ReactNode;
   tone?: 'default' | 'danger';
+  checked?: boolean;
 }
 
 export interface MenuProps {
@@ -20,9 +21,17 @@ export interface MenuProps {
   icon?: ReactNode;
   align?: 'start' | 'end';
   className?: string;
+  triggerClassName?: string;
 }
 
-export function Menu({ label, items, icon = <LuEllipsisVertical />, align = 'end', className }: MenuProps) {
+export function Menu({
+  label,
+  items,
+  icon = <LuEllipsisVertical />,
+  align = 'end',
+  className,
+  triggerClassName,
+}: MenuProps) {
   const { open, setOpen, dismiss, rootRef, contentId, triggerProps } = useFloating();
   const [focusOnOpen, setFocusOnOpen] = useState(0);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -57,6 +66,7 @@ export function Menu({ label, items, icon = <LuEllipsisVertical />, align = 'end
         label={label}
         icon={icon}
         aria-haspopup="menu"
+        className={triggerClassName}
         onClick={() => (open ? dismiss() : openAt(0))}
         onKeyDown={onTriggerKeyDown}
       />
@@ -66,7 +76,7 @@ export function Menu({ label, items, icon = <LuEllipsisVertical />, align = 'end
           role="menu"
           aria-label={label}
           onKeyDown={onMenuKeyDown}
-          className={cx(floatingPanel(align), 'mt-1 min-w-48 py-1.5')}
+          className={cx(floatingPanel(align), 'mt-1 min-w-56 py-1.5')}
         >
           {items.map((item, index) => (
             <li key={item.label} role="none">
@@ -75,7 +85,8 @@ export function Menu({ label, items, icon = <LuEllipsisVertical />, align = 'end
                   itemRefs.current[index] = element;
                 }}
                 type="button"
-                role="menuitem"
+                role={item.checked === undefined ? 'menuitem' : 'menuitemradio'}
+                aria-checked={item.checked}
                 tabIndex={-1}
                 onClick={() => {
                   dismiss();
@@ -89,7 +100,12 @@ export function Menu({ label, items, icon = <LuEllipsisVertical />, align = 'end
                 )}
               >
                 {item.icon && <IconSlot className="text-lg">{item.icon}</IconSlot>}
-                {item.label}
+                <span className="flex-1">{item.label}</span>
+                {item.checked && (
+                  <IconSlot className="text-role-text text-lg">
+                    <LuCheck />
+                  </IconSlot>
+                )}
               </button>
             </li>
           ))}
