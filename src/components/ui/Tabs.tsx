@@ -49,7 +49,7 @@ export function Tabs<T extends string>({ id, label, items, value, onValueChange,
               'min-h-11 flex-1 rounded-full border px-4 text-sm font-semibold transition-colors',
               selected
                 ? 'border-role-strong bg-role-strong text-on-role'
-                : 'border-border bg-surface text-role-text hover:bg-role-soft',
+                : 'border-border bg-surface text-role-text can-hover:bg-role-soft',
             )}
           >
             {item.label}

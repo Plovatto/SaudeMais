@@ -84,8 +84,8 @@ export function Menu({ label, items, icon = <LuEllipsisVertical />, align = 'end
                 className={cx(
                   'flex min-h-11 w-full items-center gap-2.5 px-4 text-start text-sm font-medium focus-visible:-outline-offset-2',
                   item.tone === 'danger'
-                    ? 'text-danger-text hover:bg-danger-soft focus-visible:bg-danger-soft'
-                    : 'text-text hover:bg-role-soft focus-visible:bg-role-soft',
+                    ? 'text-danger-text can-hover:bg-danger-soft focus-visible:bg-danger-soft'
+                    : 'text-text can-hover:bg-role-soft focus-visible:bg-role-soft',
                 )}
               >
                 {item.icon && <IconSlot className="text-lg">{item.icon}</IconSlot>}

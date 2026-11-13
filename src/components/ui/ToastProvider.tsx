@@ -5,6 +5,7 @@ import { IconSlot } from './IconSlot';
 import { ToastContext, type ToastInput, type ToastTone } from './toast-context';
 
 export const TOAST_DURATION_MS = 5000;
+const MAX_TRANSIENT_TOASTS = 3;
 
 interface ToastItem {
   id: number;
@@ -70,7 +71,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const show = useCallback(({ message, tone = 'info' }: ToastInput) => {
     nextId.current += 1;
     const toast = { id: nextId.current, message, tone };
-    setToasts((current) => [...current.slice(-2), toast]);
+    setToasts((current) => {
+      const next = [...current, toast];
+      const excess = next.filter((item) => item.tone !== 'danger').length - MAX_TRANSIENT_TOASTS;
+      let dropped = 0;
+      return next.filter((item) => item.tone === 'danger' || dropped++ >= excess);
+    });
   }, []);
 
   const value = useMemo(() => ({ show }), [show]);

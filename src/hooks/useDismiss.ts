@@ -25,6 +25,7 @@ export function useDismiss(
     };
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || event.defaultPrevented) return;
+      if (event.target instanceof Element && isInsideOtherDialog(event.target, root)) return;
       event.preventDefault();
       onDismiss('escape');
     };
