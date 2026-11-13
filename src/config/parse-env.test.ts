@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseEnv } from './env';
+import { parseEnv } from './parse-env';
 
 describe('parseEnv', () => {
   it('reads the API URL without a trailing slash', () => {
@@ -14,7 +14,15 @@ describe('parseEnv', () => {
     );
   });
 
-  it.each([undefined, '', 'not-a-url', 'ftp://example.com', 'javascript:alert(1)'])('rejects %s', (value) => {
+  it.each([
+    undefined,
+    '',
+    'not-a-url',
+    'ftp://example.com',
+    'javascript:alert(1)',
+    'https://api.example.com/?a=1',
+    'https://api.example.com/#x',
+  ])('rejects %s', (value) => {
     expect(() => parseEnv({ VITE_API_URL: value })).toThrow(/VITE_API_URL/);
   });
 });
