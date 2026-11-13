@@ -1,7 +1,7 @@
 export function App() {
   return (
-    <main className="grid min-h-dvh place-items-center bg-slate-50 p-6 text-slate-900">
-      <h1 className="text-4xl font-bold">Saúde+</h1>
+    <main data-role="patient" className="bg-canvas text-text grid min-h-dvh place-items-center p-6">
+      <h1 className="text-role-text text-4xl font-bold">Saúde+</h1>
     </main>
   );
 }
