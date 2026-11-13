@@ -62,12 +62,10 @@ export function signIn(roles: Role[] = ['patient'], handler: Handler = () => und
 type AppRouter = ReturnType<typeof createBrowserRouter>;
 
 export function renderRouter(router: AppRouter, { signedInAs }: { signedInAs?: Role[] } = {}) {
+  if (signedInAs) sessionStorage.setItem(SESSION_STORAGE_KEY, TEST_TOKEN);
   const queryClient = createQueryClient();
   queryClient.setDefaultOptions({ queries: { ...queryClient.getDefaultOptions().queries, retry: false } });
-  if (signedInAs) {
-    sessionStorage.setItem(SESSION_STORAGE_KEY, TEST_TOKEN);
-    queryClient.setQueryData(queryKeys.session, testUser(signedInAs));
-  }
+  if (signedInAs) queryClient.setQueryData(queryKeys.session, testUser(signedInAs));
   render(
     <StrictMode>
       <QueryClientProvider client={queryClient}>

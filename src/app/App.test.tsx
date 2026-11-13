@@ -97,6 +97,14 @@ describe('account menu', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Escolha seu perfil' })).toBeInTheDocument();
   });
 
+  it('hides the profile switch for accounts with a single role', async () => {
+    const { user } = renderApp('/paciente', { signedInAs: ['patient'] });
+
+    await user.click(await screen.findByRole('button', { name: 'Menu da conta, Paciente' }));
+
+    expect(screen.queryByRole('menuitem', { name: 'Trocar perfil' })).not.toBeInTheDocument();
+  });
+
   it('leaves the account from the menu', async () => {
     mockApi({ status: 204 });
     const { user, router } = renderAt('/admin');
