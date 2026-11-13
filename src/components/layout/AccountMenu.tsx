@@ -1,5 +1,6 @@
 import { LuLogOut, LuRepeat, LuUser } from 'react-icons/lu';
 import { useNavigate } from 'react-router';
+import { useSignOut } from '@lib/auth/useSignOut';
 import { Menu } from '@components/ui';
 import type { Area } from '@constants/areas';
 import { useThemeMenuItems } from './useThemeMenuItems';
@@ -7,6 +8,7 @@ import { useThemeMenuItems } from './useThemeMenuItems';
 export function AccountMenu({ area }: { area: Area }) {
   const navigate = useNavigate();
   const themeItems = useThemeMenuItems();
+  const signOut = useSignOut();
   const go = (to: string) => () => void navigate(to);
   return (
     <Menu
@@ -18,7 +20,7 @@ export function AccountMenu({ area }: { area: Area }) {
         { label: 'Meu perfil', icon: <LuUser />, onSelect: go(`${area.base}/perfil`) },
         { label: 'Trocar perfil', icon: <LuRepeat />, onSelect: go('/perfis') },
         ...themeItems,
-        { label: 'Sair', icon: <LuLogOut />, tone: 'danger', onSelect: go('/login') },
+        { label: 'Sair', icon: <LuLogOut />, tone: 'danger', onSelect: () => void signOut() },
       ]}
     />
   );

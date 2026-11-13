@@ -3,6 +3,7 @@ import { redirect, type RouteObject } from 'react-router';
 import { RootFallback, RootRoute } from '@components/layout/RootRoute';
 import { areas, type Area } from '@constants/areas';
 import { ForbiddenPage, NotFoundPage, RouteError, RouteErrorBoundary } from '@features/errors';
+import { PublicOnly, RequireRole, RequireSession } from './guards';
 
 const lazyComponent = (load: () => Promise<ComponentType>) => async () => ({ Component: await load() });
 
@@ -19,7 +20,6 @@ const notFound: RouteObject = {
 const placeholderPages = [
   ['esqueci-senha', 'Esqueci a senha'],
   ['redefinir-senha', 'Redefinir senha'],
-  ['perfis', 'Escolha seu perfil'],
 ] as const;
 
 interface PageOptions {
@@ -38,14 +38,19 @@ const page = (
   lazy,
 });
 
-const authScreen = (name: 'LoginPage' | 'RegisterPage' | 'TermsPage' | 'PrivacyPage') =>
+const authScreen = (name: 'LoginPage' | 'RegisterPage' | 'TermsPage' | 'PrivacyPage' | 'RoleSelectPage') =>
   lazyComponent(async () => (await import('@features/auth'))[name]);
 
 const areaRoute = (area: Area): RouteObject => ({
   path: area.base,
   handle: { role: area.role },
-  lazy: lazyComponent(async () => (await import('@components/layout/RoleLayout')).RoleLayout),
-  children: [...area.pages.map(({ path, title }) => page(path, title)), notFound],
+  Component: RequireRole,
+  children: [
+    {
+      lazy: lazyComponent(async () => (await import('@components/layout/RoleLayout')).RoleLayout),
+      children: [...area.pages.map(({ path, title }) => page(path, title)), notFound],
+    },
+  ],
 });
 
 export const routes: RouteObject[] = [
@@ -58,8 +63,19 @@ export const routes: RouteObject[] = [
         lazy: lazyComponent(async () => (await import('@components/layout/PublicLayout')).PublicLayout),
         children: [
           { index: true, loader: () => redirect('/login') },
-          page('login', 'Entrar', { lazy: authScreen('LoginPage'), surface: 'brand' }),
-          page('cadastro', 'Criar conta', { lazy: authScreen('RegisterPage'), surface: 'brand' }),
+          {
+            Component: PublicOnly,
+            children: [
+              page('login', 'Entrar', { lazy: authScreen('LoginPage'), surface: 'brand' }),
+              page('cadastro', 'Criar conta', { lazy: authScreen('RegisterPage'), surface: 'brand' }),
+            ],
+          },
+          {
+            Component: RequireSession,
+            children: [
+              page('perfis', 'Escolha seu perfil', { lazy: authScreen('RoleSelectPage'), surface: 'brand' }),
+            ],
+          },
           page('termos', 'Termos de uso', { lazy: authScreen('TermsPage') }),
           page('privacidade', 'Política de privacidade', { lazy: authScreen('PrivacyPage') }),
           ...placeholderPages.map(([path, title]) => page(path, title)),
@@ -67,7 +83,7 @@ export const routes: RouteObject[] = [
           notFound,
         ],
       },
-      ...Object.values(areas).map(areaRoute),
+      { Component: RequireSession, children: Object.values(areas).map(areaRoute) },
     ],
   },
 ];
