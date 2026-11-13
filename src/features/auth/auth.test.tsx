@@ -1,55 +1,21 @@
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { createMemoryRouter, RouterProvider } from 'react-router';
+import { screen, waitFor } from '@testing-library/react';
+import type userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { routes } from '@app/routes';
-import { ToastProvider } from '@components/ui';
+import type { Role } from '@constants/areas';
+import { mockApi, renderApp, TEST_TOKEN, testUser } from '@/test/render-app';
 import { DEMO_PATIENT } from './demo-accounts';
-
-interface MockResponse {
-  status: number;
-  body?: unknown;
-}
-
-function mockApi(...responses: MockResponse[]) {
-  const queue = [...responses];
-  const fetchMock = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit) => {
-    const next = queue.shift() ?? { status: 500 };
-    await Promise.resolve();
-    return new Response(next.body === undefined ? null : JSON.stringify(next.body), {
-      status: next.status,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  });
-  vi.stubGlobal('fetch', fetchMock);
-  return fetchMock;
-}
 
 function requestBody(fetchMock: ReturnType<typeof mockApi>, call = 0): unknown {
   const init = fetchMock.mock.calls[call]?.[1];
   return JSON.parse(init?.body as string);
 }
 
-function renderAt(path: string) {
-  const router = createMemoryRouter(routes, { initialEntries: [path] });
-  render(
-    <ToastProvider>
-      <RouterProvider router={router} />
-    </ToastProvider>,
-  );
-  return { router, user: userEvent.setup() };
-}
+const renderAt = (path: string) => renderApp(path);
 
-const session = (roles: string[]) => ({
-  token: 'A'.repeat(43),
+const session = (roles: Role[]) => ({
+  token: TEST_TOKEN,
   expiresAt: '2026-11-20T12:00:00.000Z',
-  user: {
-    id: '0190c2a0-0000-7000-8000-000000000000',
-    fullName: 'Ana',
-    email: 'ana@email.com',
-    phone: null,
-    roles,
-  },
+  user: testUser(roles),
 });
 
 afterEach(() => {

@@ -1,18 +1,13 @@
-import { StrictMode } from 'react';
 import { render, screen, waitFor, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, describe, expect, it } from 'vitest';
-import { routes } from './routes';
+import type { Role } from '@constants/areas';
+import { mockApi, renderApp, renderRouter } from '@/test/render-app';
 
-function renderAt(path: string, basename?: string) {
-  const router = createMemoryRouter(routes, { initialEntries: [path], ...(basename && { basename }) });
-  render(
-    <StrictMode>
-      <RouterProvider router={router} />
-    </StrictMode>,
-  );
-  return { router, user: userEvent.setup() };
+const ALL_ROLES: Role[] = ['patient', 'doctor', 'admin'];
+
+function renderAt(path: string, basename?: string, signedIn = true) {
+  return renderApp(path, { ...(basename && { basename }), ...(signedIn && { signedInAs: ALL_ROLES }) });
 }
 
 async function mainNav() {
@@ -103,6 +98,7 @@ describe('account menu', () => {
   });
 
   it('leaves the account from the menu', async () => {
+    mockApi({ status: 204 });
     const { user, router } = renderAt('/admin');
 
     await user.click(await screen.findByRole('button', { name: 'Menu da conta, Administrador' }));
@@ -117,7 +113,7 @@ describe('account menu', () => {
     expect(screen.getByRole('group', { name: 'Tema' })).toBeInTheDocument();
     await user.click(screen.getByRole('menuitemradio', { name: 'Tema escuro' }));
 
-    await router.navigate('/login');
+    await router.navigate('/termos');
     await user.click(await screen.findByRole('button', { name: 'Tema' }));
 
     expect(screen.getByRole('menuitemradio', { name: 'Tema escuro' })).toHaveAttribute(
@@ -148,7 +144,7 @@ describe('account menu', () => {
 
 describe('public pages and errors', () => {
   it('offers the theme choice on public pages', async () => {
-    const { user } = renderAt('/login');
+    const { user } = renderAt('/login', undefined, false);
 
     await user.click(await screen.findByRole('button', { name: 'Tema' }));
 
@@ -168,7 +164,7 @@ describe('public pages and errors', () => {
   );
 
   it('links back to the start of the site when it is served under a base path', async () => {
-    renderAt('/SaudeMais/pagina-que-nao-existe', '/SaudeMais/');
+    renderAt('/SaudeMais/pagina-que-nao-existe', '/SaudeMais/', false);
 
     expect(await screen.findByRole('link', { name: 'Voltar ao início' })).toHaveAttribute(
       'href',
@@ -223,14 +219,14 @@ describe('public pages and errors', () => {
       ],
       { initialEntries: ['/paciente'] },
     );
-    render(<RouterProvider router={router} />);
+    renderRouter(router, { signedInAs: ['patient'] });
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Algo deu errado' })).toBeInTheDocument();
     expect(screen.getAllByRole('navigation', { name: 'Navegação principal' }).length).toBeGreaterThan(0);
   });
 
   it('shows the 403 page', async () => {
-    renderAt('/403');
+    renderAt('/403', undefined, false);
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Acesso negado' })).toBeInTheDocument();
   });

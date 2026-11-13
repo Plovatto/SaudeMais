@@ -1,6 +1,8 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup, configure } from '@testing-library/react';
-import { afterEach } from 'vitest';
+import { afterEach, vi } from 'vitest';
+import { acknowledgeSessionExpiry } from '@lib/auth/session';
+import { clearToken } from '@lib/auth/token-store';
 
 configure({ asyncUtilTimeout: 3000 });
 
@@ -20,4 +22,7 @@ if (!('showModal' in HTMLDialogElement.prototype)) {
 
 afterEach(() => {
   cleanup();
+  clearToken();
+  acknowledgeSessionExpiry();
+  vi.unstubAllGlobals();
 });
