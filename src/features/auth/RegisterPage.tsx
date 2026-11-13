@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { LuMail, LuPhone, LuUser } from 'react-icons/lu';
+import { LuPhone, LuUser } from 'react-icons/lu';
 import { useNavigate } from 'react-router';
 import { Button, Checkbox, FormAlert, Input, PasswordInput, TextLink, useToast } from '@components/ui';
 import { applyApiErrors } from '@lib/form-errors';
@@ -9,6 +9,7 @@ import { register as createAccount } from './auth-api';
 import { registerSchema, type RegisterValues } from './auth-schemas';
 import { AuthFooterLink } from './AuthFooterLink';
 import { AuthScreen } from './AuthScreen';
+import { EmailInput } from './EmailInput';
 
 const apiFields = ['fullName', 'email', 'phone', 'password', 'passwordConfirmation', 'acceptTerms'] as const;
 
@@ -46,9 +47,9 @@ export function RegisterPage() {
 
   return (
     <AuthScreen title="Criar conta" subtitle="Preencha os dados para se cadastrar">
-      <p role="note" className="rounded-tile bg-warning-soft text-warning-text p-3 text-sm font-medium">
+      <FormAlert tone="warning" role="note">
         Ambiente de demonstração: não use dados reais.
-      </p>
+      </FormAlert>
       <form noValidate onSubmit={(event) => void onSubmit(event)} className="flex flex-col gap-5">
         <Input
           label="Nome completo"
@@ -58,16 +59,7 @@ export function RegisterPage() {
           error={errors.fullName?.message}
           {...register('fullName')}
         />
-        <Input
-          label="E-mail"
-          type="email"
-          autoComplete="email"
-          inputMode="email"
-          placeholder="seu@email.com"
-          icon={<LuMail />}
-          error={errors.email?.message}
-          {...register('email')}
-        />
+        <EmailInput error={errors.email?.message} {...register('email')} />
         <Input
           label="Telefone"
           type="tel"
@@ -95,8 +87,14 @@ export function RegisterPage() {
         <Checkbox
           label={
             <>
-              Aceito os <TextLink to="/termos">termos de uso</TextLink> e a{' '}
-              <TextLink to="/privacidade">política de privacidade</TextLink>
+              Aceito os{' '}
+              <TextLink to="/termos" newTab>
+                termos de uso
+              </TextLink>{' '}
+              e a{' '}
+              <TextLink to="/privacidade" newTab>
+                política de privacidade
+              </TextLink>
             </>
           }
           error={errors.acceptTerms?.message}

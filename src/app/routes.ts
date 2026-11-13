@@ -22,24 +22,24 @@ const placeholderPages = [
   ['perfis', 'Escolha seu perfil'],
 ] as const;
 
-const authPage = (
+interface PageOptions {
+  lazy?: typeof placeholder;
+  surface?: 'brand';
+}
+
+const page = (
   path: string,
   title: string,
-  name: 'LoginPage' | 'RegisterPage' | 'TermsPage' | 'PrivacyPage',
-  surface?: 'brand',
+  { lazy = placeholder, surface }: PageOptions = {},
 ): RouteObject => ({
-  path,
+  ...(path === '' ? { index: true } : { path }),
   handle: { title, ...(surface && { surface }) },
   ErrorBoundary: RouteError,
-  lazy: lazyComponent(async () => (await import('@features/auth'))[name]),
+  lazy,
 });
 
-const page = (path: string, title: string): RouteObject => ({
-  ...(path === '' ? { index: true } : { path }),
-  handle: { title },
-  ErrorBoundary: RouteError,
-  lazy: placeholder,
-});
+const authScreen = (name: 'LoginPage' | 'RegisterPage' | 'TermsPage' | 'PrivacyPage') =>
+  lazyComponent(async () => (await import('@features/auth'))[name]);
 
 const areaRoute = (area: Area): RouteObject => ({
   path: area.base,
@@ -58,10 +58,10 @@ export const routes: RouteObject[] = [
         lazy: lazyComponent(async () => (await import('@components/layout/PublicLayout')).PublicLayout),
         children: [
           { index: true, loader: () => redirect('/login') },
-          authPage('login', 'Entrar', 'LoginPage', 'brand'),
-          authPage('cadastro', 'Criar conta', 'RegisterPage', 'brand'),
-          authPage('termos', 'Termos de uso', 'TermsPage'),
-          authPage('privacidade', 'Política de privacidade', 'PrivacyPage'),
+          page('login', 'Entrar', { lazy: authScreen('LoginPage'), surface: 'brand' }),
+          page('cadastro', 'Criar conta', { lazy: authScreen('RegisterPage'), surface: 'brand' }),
+          page('termos', 'Termos de uso', { lazy: authScreen('TermsPage') }),
+          page('privacidade', 'Política de privacidade', { lazy: authScreen('PrivacyPage') }),
           ...placeholderPages.map(([path, title]) => page(path, title)),
           { path: '403', handle: { title: 'Acesso negado' }, Component: ForbiddenPage },
           notFound,

@@ -8,7 +8,7 @@ const versionDate = (version: string) =>
 function LegalPage({ document }: { document: LegalDocument }) {
   return (
     <>
-      <PageHeader title={document.title} back />
+      <PageHeader title={document.title} back backFallback="/cadastro" />
       <Card className="flex flex-col gap-5">
         <p className="text-text-secondary text-sm">Versão de {versionDate(document.version)}</p>
         {document.sections.map((section) => (

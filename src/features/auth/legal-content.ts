@@ -1,4 +1,4 @@
-import { TERMS_VERSION } from './auth-schemas';
+export const TERMS_VERSION = '2026-11-13';
 
 export interface LegalDocument {
   title: string;

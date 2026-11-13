@@ -1,11 +1,26 @@
 import { z } from 'zod';
 
+const E164 = /^\+[1-9][0-9]{9,14}$/;
+
 const codePoints = (value: string) => [...value].length;
-const BRAZILIAN_PHONE = /^\+?\d{10,13}$/;
 
-export const TERMS_VERSION = '2026-11-13';
+const hasControlCharacter = (value: string) =>
+  [...value].some((character) => {
+    const code = character.codePointAt(0) ?? 0;
+    return code < 32 || code === 127;
+  });
 
-const email = z.string().trim().min(1, 'Informe seu e-mail.').pipe(z.email('Informe um e-mail válido.'));
+function normalizePhone(value: string): string {
+  const digits = value.replace(/\D/g, '');
+  if (value.startsWith('+')) return `+${digits}`;
+  return digits.length === 10 || digits.length === 11 ? `+55${digits}` : `+${digits}`;
+}
+
+const email = z
+  .string()
+  .trim()
+  .min(1, 'Informe seu e-mail.')
+  .pipe(z.email('Informe um e-mail válido.').max(254, 'O e-mail pode ter até 254 caracteres.'));
 
 export const loginSchema = z.object({
   email,
@@ -18,6 +33,7 @@ export const registerSchema = z
     fullName: z
       .string()
       .trim()
+      .refine((value) => !hasControlCharacter(value), 'O nome não pode ter caracteres de controle.')
       .refine(
         (value) => codePoints(value) >= 2 && codePoints(value) <= 120,
         'Informe seu nome completo (2 a 120 caracteres).',
@@ -27,7 +43,7 @@ export const registerSchema = z
       .string()
       .trim()
       .refine(
-        (value) => value === '' || BRAZILIAN_PHONE.test(value.replace(/[\s().-]/g, '')),
+        (value) => value === '' || E164.test(normalizePhone(value)),
         'Informe um telefone válido com DDD.',
       ),
     password: z

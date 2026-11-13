@@ -1,15 +1,15 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { LuMail } from 'react-icons/lu';
 import { useLocation, useNavigate } from 'react-router';
-import { Button, Checkbox, FormAlert, Input, PasswordInput, TextLink } from '@components/ui';
+import { Button, Checkbox, FormAlert, PasswordInput, TextLink } from '@components/ui';
 import { startSession } from '@lib/auth/session';
 import { applyApiErrors } from '@lib/form-errors';
 import { login } from './auth-api';
 import { loginSchema, type LoginValues } from './auth-schemas';
 import { AuthFooterLink } from './AuthFooterLink';
 import { AuthScreen } from './AuthScreen';
+import { EmailInput } from './EmailInput';
 import { TestAccounts } from './TestAccounts';
 
 export function LoginPage() {
@@ -53,17 +53,13 @@ export function LoginPage() {
         />
       }
     >
-      <form noValidate onSubmit={(event) => void onSubmit(event)} className="flex flex-col gap-5">
-        <Input
-          label="E-mail"
-          type="email"
-          autoComplete="email"
-          inputMode="email"
-          placeholder="seu@email.com"
-          icon={<LuMail />}
-          error={errors.email?.message}
-          {...register('email')}
-        />
+      <form
+        noValidate
+        aria-label="Entrar"
+        onSubmit={(event) => void onSubmit(event)}
+        className="flex flex-col gap-5"
+      >
+        <EmailInput autoComplete="username" error={errors.email?.message} {...register('email')} />
         <PasswordInput label="Senha" error={errors.password?.message} {...register('password')} />
         <div className="flex flex-wrap items-center justify-between gap-x-4">
           <Checkbox label="Lembrar de mim" {...register('remember')} />
