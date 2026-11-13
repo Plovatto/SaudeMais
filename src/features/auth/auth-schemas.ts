@@ -25,5 +25,11 @@ export const registerSchema = z
   })
   .refine(...confirmationMatches);
 
+export const forgotPasswordSchema = z.object({ email: emailField });
+
+export const resetPasswordSchema = z.object(newPasswordFields).refine(...confirmationMatches);
+
 export type LoginValues = z.infer<typeof loginSchema>;
 export type RegisterValues = z.infer<typeof registerSchema>;
+export type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordValues = z.infer<typeof resetPasswordSchema>;
