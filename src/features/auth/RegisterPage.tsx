@@ -1,10 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { LuPhone, LuUser } from 'react-icons/lu';
 import { useNavigate } from 'react-router';
-import { Button, Checkbox, FormAlert, Input, PasswordInput, TextLink, useToast } from '@components/ui';
-import { applyApiErrors } from '@lib/form-errors';
+import { NewPasswordFields } from '@components/forms/NewPasswordFields';
+import { Button, Checkbox, FormAlert, Input, TextLink, useToast } from '@components/ui';
+import { useFormSubmit } from '@lib/useFormSubmit';
 import { register as createAccount } from './auth-api';
 import { registerSchema, type RegisterValues } from './auth-schemas';
 import { AuthFooterLink } from './AuthFooterLink';
@@ -16,7 +16,6 @@ const apiFields = ['fullName', 'email', 'phone', 'password', 'passwordConfirmati
 export function RegisterPage() {
   const navigate = useNavigate();
   const { show } = useToast();
-  const [alert, setAlert] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -33,17 +32,15 @@ export function RegisterPage() {
       acceptTerms: false,
     },
   });
+  const { alert, run } = useFormSubmit(setError, apiFields);
 
-  const onSubmit = handleSubmit(async (values) => {
-    setAlert(null);
-    try {
+  const onSubmit = handleSubmit((values) =>
+    run(async () => {
       const user = await createAccount(values);
       show({ message: 'Conta criada. Entre com seu e-mail e senha.', tone: 'success' });
       await navigate('/login', { state: { email: user.email } });
-    } catch (error) {
-      setAlert(applyApiErrors(error, setError, apiFields));
-    }
-  });
+    }),
+  );
 
   return (
     <AuthScreen title="Criar conta" subtitle="Preencha os dados para se cadastrar">
@@ -71,18 +68,11 @@ export function RegisterPage() {
           error={errors.phone?.message}
           {...register('phone')}
         />
-        <PasswordInput
-          label="Senha"
-          autoComplete="new-password"
-          hint="Pelo menos 8 caracteres."
-          error={errors.password?.message}
-          {...register('password')}
-        />
-        <PasswordInput
-          label="Confirmar senha"
-          autoComplete="new-password"
-          error={errors.passwordConfirmation?.message}
-          {...register('passwordConfirmation')}
+        <NewPasswordFields
+          variant="create"
+          password={register('password')}
+          confirmation={register('passwordConfirmation')}
+          errors={{ password: errors.password?.message, confirmation: errors.passwordConfirmation?.message }}
         />
         <Checkbox
           label={
