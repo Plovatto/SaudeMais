@@ -104,6 +104,19 @@ describe('Textarea and Checkbox', () => {
     expect(checkbox).toHaveAccessibleDescription('É preciso aceitar os termos');
   });
 
+  it('adds its own description to the checkbox error', () => {
+    render(
+      <>
+        <p id="terms">Leia os termos de uso</p>
+        <Checkbox label="Aceito" error="Obrigatório" aria-describedby="terms" />
+      </>,
+    );
+
+    expect(screen.getByRole('checkbox', { name: 'Aceito' })).toHaveAccessibleDescription(
+      'Obrigatório Leia os termos de uso',
+    );
+  });
+
   it('toggles the checkbox by its label', async () => {
     const user = userEvent.setup();
     render(<Checkbox label="Lembrar de mim" />);

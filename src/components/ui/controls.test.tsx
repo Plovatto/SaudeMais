@@ -30,6 +30,24 @@ describe('Button', () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 
+  it('does not submit its form while loading, by click or by Enter in a field', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn((event: { preventDefault: () => void }) => event.preventDefault());
+    render(
+      <form onSubmit={onSubmit}>
+        <input aria-label="E-mail" />
+        <Button type="submit" loading>
+          Entrar
+        </Button>
+      </form>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Entrar, Carregando' }));
+    await user.type(screen.getByLabelText('E-mail'), 'a{Enter}');
+
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
   it('does not submit forms unless asked to', () => {
     render(<Button>Cancelar</Button>);
 
@@ -250,6 +268,34 @@ describe('Toast', () => {
     });
     expect(screen.getByRole('alert')).toHaveTextContent('Erro: Não foi possível salvar');
     vi.useRealTimers();
+  });
+
+  it('keeps an error visible when newer messages arrive', () => {
+    function Burst() {
+      const { show } = useToast();
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            show({ message: 'Falha ao salvar', tone: 'danger' });
+            for (const n of [1, 2, 3, 4]) show({ message: `Aviso ${n}` });
+          }}
+        >
+          Disparar
+        </button>
+      );
+    }
+    render(
+      <ToastProvider>
+        <Burst />
+      </ToastProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Disparar' }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Falha ao salvar');
+    expect(screen.getByRole('status')).not.toHaveTextContent('Aviso 1');
+    expect(screen.getByRole('status')).toHaveTextContent('Aviso 4');
   });
 
   it('can be dismissed right away', async () => {

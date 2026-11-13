@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { Dialog } from './Dialog';
 import { Menu } from './Menu';
+import { Popover } from './Popover';
 
 function Harness({ onClose = () => undefined }: { onClose?: () => void }) {
   const [open, setOpen] = useState(false);
@@ -96,6 +97,35 @@ describe('Dialog', () => {
 
     expect(escape.defaultPrevented).toBe(true);
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  });
+
+  it('leaves Escape to a dialog opened from a popover that is still open behind it', async () => {
+    const user = userEvent.setup();
+    function OpenFromPopover() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <Popover label="Notificações" title="Notificações" icon={<span />}>
+            <button type="button" onClick={() => setOpen(true)}>
+              Detalhes
+            </button>
+          </Popover>
+          <Dialog open={open} onClose={() => setOpen(false)} title="Detalhes" />
+        </>
+      );
+    }
+    render(<OpenFromPopover />);
+    await user.click(screen.getByRole('button', { name: 'Notificações' }));
+    await user.click(screen.getByRole('button', { name: 'Detalhes' }));
+
+    const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    const closeButton = screen.getByRole('button', { name: 'Fechar' });
+    act(() => {
+      closeButton.dispatchEvent(escape);
+    });
+
+    expect(escape.defaultPrevented).toBe(false);
+    expect(screen.getByRole('dialog', { name: 'Notificações' })).toBeInTheDocument();
   });
 
   it('reports a native close, as triggered by the Escape key', async () => {
