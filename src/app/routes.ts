@@ -17,11 +17,6 @@ const notFound: RouteObject = {
   Component: NotFoundPage,
 };
 
-const placeholderPages = [
-  ['esqueci-senha', 'Esqueci a senha'],
-  ['redefinir-senha', 'Redefinir senha'],
-] as const;
-
 interface PageOptions {
   lazy?: typeof placeholder;
   surface?: 'brand';
@@ -38,7 +33,16 @@ const page = (
   lazy,
 });
 
-const authScreen = (name: 'LoginPage' | 'RegisterPage' | 'TermsPage' | 'PrivacyPage' | 'RoleSelectPage') =>
+type AuthScreenName =
+  | 'LoginPage'
+  | 'RegisterPage'
+  | 'ForgotPasswordPage'
+  | 'ResetPasswordPage'
+  | 'TermsPage'
+  | 'PrivacyPage'
+  | 'RoleSelectPage';
+
+const authScreen = (name: AuthScreenName) =>
   lazyComponent(async () => (await import('@features/auth'))[name]);
 
 const areaScreens: Record<string, typeof placeholder> = {
@@ -75,6 +79,10 @@ export const routes: RouteObject[] = [
             children: [
               page('login', 'Entrar', { lazy: authScreen('LoginPage'), surface: 'brand' }),
               page('cadastro', 'Criar conta', { lazy: authScreen('RegisterPage'), surface: 'brand' }),
+              page('esqueci-senha', 'Esqueci a senha', {
+                lazy: authScreen('ForgotPasswordPage'),
+                surface: 'brand',
+              }),
             ],
           },
           {
@@ -85,7 +93,10 @@ export const routes: RouteObject[] = [
           },
           page('termos', 'Termos de uso', { lazy: authScreen('TermsPage') }),
           page('privacidade', 'Política de privacidade', { lazy: authScreen('PrivacyPage') }),
-          ...placeholderPages.map(([path, title]) => page(path, title)),
+          page('redefinir-senha', 'Criar nova senha', {
+            lazy: authScreen('ResetPasswordPage'),
+            surface: 'brand',
+          }),
           { path: '403', handle: { title: 'Acesso negado' }, Component: ForbiddenPage },
           notFound,
         ],
