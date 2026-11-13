@@ -1,5 +1,5 @@
 import { Button, Card } from '@components/ui';
-import { DEMO_PATIENT } from './demo-accounts';
+import { DEMO_PATIENT } from '@constants/demo-accounts';
 
 export function TestAccounts({ onFill }: { onFill: (account: typeof DEMO_PATIENT) => void }) {
   return (

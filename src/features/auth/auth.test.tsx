@@ -3,7 +3,7 @@ import type userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Role } from '@constants/areas';
 import { mockApi, renderApp, TEST_TOKEN, testUser } from '@/test/render-app';
-import { DEMO_PATIENT } from './demo-accounts';
+import { DEMO_PATIENT } from '@constants/demo-accounts';
 
 function requestBody(fetchMock: ReturnType<typeof mockApi>, call = 0): unknown {
   const init = fetchMock.mock.calls[call]?.[1];
