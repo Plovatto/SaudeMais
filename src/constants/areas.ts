@@ -27,6 +27,7 @@ export interface Area {
   role: Role;
   base: string;
   label: string;
+  description: string;
   icon: IconType;
   pages: readonly AreaPage[];
 }
@@ -44,6 +45,7 @@ export const areas: Record<Role, Area> = {
     role: 'patient',
     base: '/paciente',
     label: 'Paciente',
+    description: 'Agendar consultas e gerenciar minha saúde',
     icon: LuHeartPulse,
     pages: [
       home('Início', ['agendamentos']),
@@ -68,6 +70,7 @@ export const areas: Record<Role, Area> = {
     role: 'doctor',
     base: '/medico',
     label: 'Médico',
+    description: 'Gerenciar agenda e atender pacientes',
     icon: LuStethoscope,
     pages: [
       home('Início', ['pacientes']),
@@ -85,6 +88,7 @@ export const areas: Record<Role, Area> = {
     role: 'admin',
     base: '/admin',
     label: 'Administrador',
+    description: 'Gerenciar sistema e usuários',
     icon: LuSettings,
     pages: [
       home('Painel'),

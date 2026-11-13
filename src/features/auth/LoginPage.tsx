@@ -1,9 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useLocation, useNavigate } from 'react-router';
+import { useQueryClient } from '@tanstack/react-query';
+import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import { Button, Checkbox, FormAlert, PasswordInput, TextLink } from '@components/ui';
-import { startSession } from '@lib/auth/session';
+import { homeFor } from '@lib/auth/return-to';
+import { acknowledgeSessionExpiry, startSession } from '@lib/auth/session';
+import { sessionQuery } from '@lib/auth/useSession';
 import { applyApiErrors } from '@lib/form-errors';
 import { login } from './auth-api';
 import { loginSchema, type LoginValues } from './auth-schemas';
@@ -14,8 +17,17 @@ import { TestAccounts } from './TestAccounts';
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { state } = useLocation() as { state: { email?: string } | null };
-  const [alert, setAlert] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const [params] = useSearchParams();
+  const { state } = useLocation() as { state: { email?: string; expired?: boolean } | null };
+  const [alert, setAlert] = useState<string | null>(
+    state?.expired ? 'Sua sessão expirou. Entre novamente.' : null,
+  );
+  const { pathname, search } = useLocation();
+  useEffect(() => {
+    acknowledgeSessionExpiry();
+    if (state?.expired) void navigate({ pathname, search }, { replace: true, state: null });
+  }, [state, pathname, search, navigate]);
   const {
     register,
     handleSubmit,
@@ -31,9 +43,9 @@ export function LoginPage() {
     setAlert(null);
     try {
       const session = await login(values);
-      startSession(session.token);
-      const multiRole = session.user.roles.some((role) => role !== 'patient');
-      await navigate(multiRole ? '/perfis' : '/paciente');
+      startSession(session.token, values.remember);
+      queryClient.setQueryData(sessionQuery.queryKey, session.user);
+      await navigate(homeFor(session.user.roles, params.get('returnTo')), { replace: true });
     } catch (error) {
       setAlert(applyApiErrors(error, setError, ['email', 'password']));
     }

@@ -24,6 +24,7 @@ export interface ApiFetchOptions<Body> {
   body?: Body;
   signal?: AbortSignal;
   timeoutMs?: number;
+  token?: string | null;
 }
 
 let tokenProvider: () => string | null = () => null;
@@ -56,11 +57,11 @@ async function readBody(
 export async function apiFetch<P extends keyof paths, M extends MethodOf<P>>(
   method: M,
   path: P,
-  { body, signal, timeoutMs = DEFAULT_TIMEOUT_MS }: ApiFetchOptions<BodyOf<P, M>> = {},
+  { body, signal, timeoutMs = DEFAULT_TIMEOUT_MS, ...options }: ApiFetchOptions<BodyOf<P, M>> = {},
 ): Promise<ResponseOf<P, M>> {
   const headers = new Headers({ Accept: 'application/json' });
   if (body !== undefined) headers.set('Content-Type', 'application/json');
-  const token = tokenProvider();
+  const token = 'token' in options ? (options.token ?? null) : tokenProvider();
   if (token) headers.set('Authorization', `Bearer ${token}`);
 
   const timeout = AbortSignal.timeout(timeoutMs);
@@ -77,6 +78,10 @@ export async function apiFetch<P extends keyof paths, M extends MethodOf<P>>(
   }
 
   const data = await readBody(response, timeout, signal);
-  if (!response.ok) throw toApiError(response.status, data);
+  if (!response.ok) {
+    const error = toApiError(response.status, data);
+    error.token = token;
+    throw error;
+  }
   return data as ResponseOf<P, M>;
 }

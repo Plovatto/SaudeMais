@@ -4,6 +4,7 @@ export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
   readonly fields: FieldErrors;
+  token: string | null = null;
 
   constructor(status: number, code: string, message: string, fields: FieldErrors = {}) {
     super(message);
@@ -12,6 +13,10 @@ export class ApiError extends Error {
     this.code = code;
     this.fields = fields;
   }
+}
+
+export function isUnauthenticated(error: unknown): error is ApiError {
+  return error instanceof ApiError && error.status === 401;
 }
 
 interface ErrorBody {
