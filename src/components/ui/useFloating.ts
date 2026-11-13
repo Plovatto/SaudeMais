@@ -14,5 +14,11 @@ export function useFloating() {
 
   useDismiss(rootRef, open, dismiss);
 
-  return { open, setOpen, dismiss, rootRef, triggerRef, contentId };
+  const triggerProps = {
+    ref: triggerRef,
+    'aria-expanded': open,
+    'aria-controls': open ? contentId : undefined,
+  };
+
+  return { open, setOpen, dismiss, rootRef, contentId, triggerProps };
 }

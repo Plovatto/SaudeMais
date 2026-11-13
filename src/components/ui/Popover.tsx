@@ -25,7 +25,7 @@ export function Popover({
   className,
   panelClassName,
 }: PopoverProps) {
-  const { open, setOpen, dismiss, rootRef, triggerRef, contentId } = useFloating();
+  const { open, setOpen, dismiss, rootRef, contentId, triggerProps } = useFloating();
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,11 +35,9 @@ export function Popover({
   return (
     <div ref={rootRef} className={cx('relative', className)}>
       <IconButton
-        ref={triggerRef}
+        {...triggerProps}
         label={label}
         icon={icon}
-        aria-expanded={open}
-        aria-controls={open ? contentId : undefined}
         aria-haspopup="dialog"
         className="relative"
         onClick={() => setOpen((current) => !current)}
@@ -58,7 +56,7 @@ export function Popover({
           }}
           className={cx(
             floatingPanel(align),
-            'mt-2 w-[min(22rem,calc(100vw-2rem))] p-4 focus-visible:outline-none',
+            'mt-2 w-[min(22rem,calc(100vw-2rem))] p-4 focus-visible:-outline-offset-2',
             panelClassName,
           )}
         >

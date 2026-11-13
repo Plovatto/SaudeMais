@@ -28,6 +28,7 @@ export function Dialog({
   const ref = useRef<HTMLDialogElement>(null);
   const returnFocus = useRef<HTMLElement | null>(null);
   const pressedBackdrop = useRef(false);
+  const closingFromProp = useRef(false);
   const titleId = useId();
   const descriptionId = useId();
 
@@ -38,6 +39,7 @@ export function Dialog({
       returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       dialog.showModal();
     } else if (!open && dialog.open) {
+      closingFromProp.current = true;
       dialog.close();
     }
   }, [open]);
@@ -46,9 +48,10 @@ export function Dialog({
     const dialog = ref.current;
     if (!dialog) return;
     const onDialogClose = () => {
-      returnFocus.current?.focus();
+      if (returnFocus.current?.isConnected) returnFocus.current.focus();
       returnFocus.current = null;
-      onClose();
+      if (closingFromProp.current) closingFromProp.current = false;
+      else onClose();
     };
     dialog.addEventListener('close', onDialogClose);
     return () => dialog.removeEventListener('close', onDialogClose);

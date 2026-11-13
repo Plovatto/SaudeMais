@@ -23,7 +23,7 @@ export interface MenuProps {
 }
 
 export function Menu({ label, items, icon = <LuEllipsisVertical />, align = 'end', className }: MenuProps) {
-  const { open, setOpen, dismiss, rootRef, triggerRef, contentId } = useFloating();
+  const { open, setOpen, dismiss, rootRef, contentId, triggerProps } = useFloating();
   const [focusOnOpen, setFocusOnOpen] = useState(0);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
@@ -43,10 +43,6 @@ export function Menu({ label, items, icon = <LuEllipsisVertical />, align = 'end
   };
 
   const onMenuKeyDown = (event: KeyboardEvent<HTMLUListElement>) => {
-    if (event.key === 'Tab') {
-      setOpen(false);
-      return;
-    }
     const current = itemRefs.current.findIndex((button) => button === document.activeElement);
     const next = rovingIndex(event.key, current, items.length, 'vertical');
     if (next === undefined) return;
@@ -57,12 +53,10 @@ export function Menu({ label, items, icon = <LuEllipsisVertical />, align = 'end
   return (
     <div ref={rootRef} className={cx('relative inline-flex', className)}>
       <IconButton
-        ref={triggerRef}
+        {...triggerProps}
         label={label}
         icon={icon}
         aria-haspopup="menu"
-        aria-expanded={open}
-        aria-controls={open ? contentId : undefined}
         onClick={() => (open ? dismiss() : openAt(0))}
         onKeyDown={onTriggerKeyDown}
       />
@@ -88,8 +82,10 @@ export function Menu({ label, items, icon = <LuEllipsisVertical />, align = 'end
                   item.onSelect();
                 }}
                 className={cx(
-                  'hover:bg-role-soft focus-visible:bg-role-soft flex min-h-11 w-full items-center gap-2.5 px-4 text-start text-sm font-medium focus-visible:-outline-offset-2',
-                  item.tone === 'danger' ? 'text-danger-text' : 'text-text',
+                  'flex min-h-11 w-full items-center gap-2.5 px-4 text-start text-sm font-medium focus-visible:-outline-offset-2',
+                  item.tone === 'danger'
+                    ? 'text-danger-text hover:bg-danger-soft focus-visible:bg-danger-soft'
+                    : 'text-text hover:bg-role-soft focus-visible:bg-role-soft',
                 )}
               >
                 {item.icon && <IconSlot className="text-lg">{item.icon}</IconSlot>}
