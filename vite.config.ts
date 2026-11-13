@@ -29,6 +29,7 @@ export default defineConfig(({ command, mode }) => {
       setupFiles: ['./src/test/setup.ts'],
       env: { VITE_API_URL: 'http://localhost:3001' },
       include: ['src/**/*.test.{ts,tsx}'],
+      css: true,
     },
   };
 });

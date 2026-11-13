@@ -14,7 +14,7 @@ export default defineConfig(
     languageOptions: {
       globals: globals.browser,
       parserOptions: {
-        projectService: { allowDefaultProject: ['eslint.config.js'] },
+        projectService: { allowDefaultProject: ['eslint.config.js', 'public/*.js'] },
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -27,6 +27,6 @@ export default defineConfig(
     },
   },
   { files: ['*.config.{js,ts}'], languageOptions: { globals: globals.node } },
-  { files: ['eslint.config.js'], extends: [tseslint.configs.disableTypeChecked] },
+  { files: ['eslint.config.js', 'public/**/*.js'], extends: [tseslint.configs.disableTypeChecked] },
   prettier,
 );
