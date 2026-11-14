@@ -1,4 +1,5 @@
 import { useQuery, type QueryKey } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useClampedPage, usePageParam, type PageMeta } from './usePageParam';
 import { useSearchParam } from './useSearchParam';
 
@@ -30,6 +31,8 @@ export function useTabbedList<Tabs extends TabList, Result extends ListPage>(
     placeholderData: (previous, previousQuery) =>
       previousQuery?.meta?.tab === tab.value ? previous : undefined,
   });
+  const [lastData, setLastData] = useState(query.data);
+  if (query.data && query.data !== lastData) setLastData(query.data);
   const { lastPage, outOfRange } = useClampedPage(page, setPage, query.data);
   const items: Result['items'] | undefined = outOfRange ? undefined : query.data?.items;
 
@@ -40,6 +43,7 @@ export function useTabbedList<Tabs extends TabList, Result extends ListPage>(
     setPage,
     lastPage,
     query,
+    lastData: query.data ?? lastData,
     items,
   };
 }

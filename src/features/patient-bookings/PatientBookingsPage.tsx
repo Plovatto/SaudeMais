@@ -65,7 +65,7 @@ export function PatientBookingsPage() {
   });
   const [cancelling, setCancelling] = useState<PatientBooking | null>(null);
   const results = useRef<HTMLParagraphElement>(null);
-  const counts = list.query.data?.counts;
+  const counts = list.lastData?.counts;
 
   return (
     <>

@@ -15,11 +15,18 @@ const PatientIcon = areas.patient.icon;
 export interface AppointmentCardProps {
   appointment: DoctorAppointment;
   confirming: boolean;
+  confirmBlocked: boolean;
   onConfirm: (appointment: DoctorAppointment) => void;
   onCancel: (appointment: DoctorAppointment) => void;
 }
 
-export function AppointmentCard({ appointment, confirming, onConfirm, onCancel }: AppointmentCardProps) {
+export function AppointmentCard({
+  appointment,
+  confirming,
+  confirmBlocked,
+  onConfirm,
+  onCancel,
+}: AppointmentCardProps) {
   const { patient, unit, notes, cancellation, actions, startsAt } = appointment;
   const target = (
     <span className="sr-only">
@@ -49,6 +56,7 @@ export function AppointmentCard({ appointment, confirming, onConfirm, onCancel }
                 variant="success-outline"
                 icon={<LuCircleCheck />}
                 loading={confirming}
+                disabled={confirmBlocked && !confirming}
                 loadingLabel="Confirmando"
                 onClick={() => onConfirm(appointment)}
               >
