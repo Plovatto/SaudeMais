@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { addDays, formatDateTime, formatDay, formatTime, todayInSaoPaulo } from './date';
+import { addDays, formatDateTime, formatDay, formatRelative, formatTime, todayInSaoPaulo } from './date';
 
 describe.each([
   { zone: 'Asia/Tokyo', offset: -540 },
@@ -42,5 +42,20 @@ describe.each([
 
   it('labels a civil date without shifting the day', () => {
     expect(formatDay('2026-11-20')).toBe('sex., 20/11');
+  });
+
+  it('tells how long ago something happened', () => {
+    const now = new Date('2026-11-20T15:00:00.000Z');
+    expect(formatRelative('2026-11-20T14:59:30.000Z', now)).toBe('agora');
+    expect(formatRelative('2026-11-20T14:55:00.000Z', now)).toBe('há 5 min.');
+    expect(formatRelative('2026-11-20T13:00:00.000Z', now)).toBe('há 2 h');
+    expect(formatRelative('2026-11-17T15:00:00.000Z', now)).toBe('há 3 dias');
+    expect(formatRelative('not-a-date', now)).toBe('data indisponível');
+  });
+
+  it('counts past days on the São Paulo calendar', () => {
+    const now = new Date('2026-11-21T02:00:00.000Z');
+    expect(formatRelative('2026-11-19T03:30:00.000Z', now)).toBe('ontem');
+    expect(formatRelative('2026-11-19T02:30:00.000Z', now)).toBe('anteontem');
   });
 });
