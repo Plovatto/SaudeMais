@@ -30,7 +30,7 @@ export function FieldControl({
   labelHidden,
   hint,
   error,
-  invalid,
+  invalid: flagged,
   'aria-describedby': describedBy,
   icon,
   end,
@@ -38,8 +38,7 @@ export function FieldControl({
   className,
   children,
 }: FieldControlProps) {
-  const field = useField(id, { hint, error, invalid, describedBy });
-  const { control, hintId, errorId } = field;
+  const { control, hintId, errorId, invalid } = useField(id, { hint, error, invalid: flagged, describedBy });
   return (
     <div className={cx('flex flex-col gap-1.5', className)}>
       <label
@@ -48,7 +47,7 @@ export function FieldControl({
       >
         {label}
       </label>
-      <div className={cx(controlBox(field.invalid), end !== undefined && 'pe-0', boxClassName)}>
+      <div className={cx(controlBox(invalid), end !== undefined && 'pe-0', boxClassName)}>
         {icon && <IconSlot className="text-text-muted text-xl">{icon}</IconSlot>}
         {children(control)}
         {end}
