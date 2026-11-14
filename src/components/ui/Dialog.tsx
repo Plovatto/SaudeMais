@@ -14,6 +14,7 @@ export interface DialogProps {
   placement?: 'center' | 'side';
   closeLabel?: string;
   fallbackFocus?: RefObject<HTMLElement | null> | undefined;
+  initialFocus?: RefObject<HTMLElement | null>;
   children?: ReactNode;
 }
 
@@ -27,6 +28,7 @@ export function Dialog({
   placement = 'center',
   closeLabel = 'Fechar',
   fallbackFocus,
+  initialFocus,
   children,
 }: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -42,11 +44,12 @@ export function Dialog({
     if (open && !dialog.open) {
       returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       dialog.showModal();
+      initialFocus?.current?.focus();
     } else if (!open && dialog.open) {
       closingFromProp.current = true;
       dialog.close();
     }
-  }, [open]);
+  }, [open, initialFocus]);
 
   useEffect(() => {
     const dialog = ref.current;

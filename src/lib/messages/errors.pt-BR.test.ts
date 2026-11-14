@@ -13,7 +13,7 @@ describe('errorMessage', () => {
   });
 
   it('falls back to the API message for codes it does not know', () => {
-    expect(errorMessage(new ApiError(422, 'SLOT_TAKEN', 'Este horário acabou de ser ocupado.'))).toBe(
+    expect(errorMessage(new ApiError(422, 'BRAND_NEW_CODE', 'Este horário acabou de ser ocupado.'))).toBe(
       'Este horário acabou de ser ocupado.',
     );
   });

@@ -49,8 +49,3 @@ export const usersApi = {
     apiFetch('patch', '/api/admin/users/{id}/doctor-profile', { ...user(id), body }),
   removeDoctorProfile: (id: string) => apiFetch('delete', '/api/admin/users/{id}/doctor-profile', user(id)),
 };
-
-export const catalogApi = {
-  specialties: (signal: AbortSignal) => apiFetch('get', '/api/specialties', { signal }),
-  units: (signal: AbortSignal) => apiFetch('get', '/api/units', { signal }),
-};
