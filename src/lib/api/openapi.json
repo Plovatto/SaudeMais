@@ -3,7 +3,7 @@
   "info": {
     "title": "Saúde+ API",
     "version": "0.1.0",
-    "description": "API do **Saúde+**, sistema de agendamento de consultas e exames com três perfis: paciente, médico e administrador.\n\nAs rotas de negócio ficam sob `/api`. Nesta versão existem o cadastro, o login, o logout, a redefinição de senha, o perfil da própria conta, o catálogo com a administração dele, a administração de usuários, a agenda semanal do médico, a lista de médicos com as vagas livres de cada um, o pedido de consulta com o detalhe dela e as notificações, além de `/health` e desta documentação. Cada rota lista o que realmente pode devolver.\n\n## Erros\n\nToda resposta de erro tem o mesmo formato:\n\n```json\n{\n  \"message\": \"Dados inválidos.\",\n  \"code\": \"VALIDATION_ERROR\",\n  \"fields\": { \"email\": \"E-mail inválido.\" }\n}\n```\n\n- `message` é um texto em português, pronto para exibir.\n- `code` é estável e serve para o cliente decidir o que fazer ou escolher o próprio texto.\n- `fields` aparece em erros de validação e nos de regra ligados a um campo, com uma mensagem por campo.\n\n| Status | Quando acontece |\n|---|---|\n| `400` | Corpo, parâmetros ou JSON inválidos |\n| `401` | Sem sessão, sessão expirada ou credenciais incorretas |\n| `403` | Conta desativada, sem o perfil exigido ou de demonstração |\n| `404` | Rota, método ou registro inexistente |\n| `409` | Conflito com o estado atual, como e-mail já cadastrado |\n| `422` | Regra de negócio não atendida, como senha atual incorreta |\n| `413` | Corpo maior que 100 KB |\n| `415` | Charset ou codificação do corpo não suportados |\n| `429` | Limite de tentativas atingido; o cabeçalho `RateLimit` diz quando tentar de novo |\n| `500` | Erro interno; os detalhes ficam só nos logs |\n| `503` | Servidor ocupado conferindo senhas; tente de novo em instantes |\n\nUm agendamento de outra pessoa responde `404`, como se não existisse, e um horário já ocupado responde `409`.\n\n## Códigos de erro\n\nCódigos comuns a todas as rotas. Cada rota lista também os códigos específicos dela.\n\n| Código | Status | Significado |\n|---|---|---|\n| `VALIDATION_ERROR` | 400 | Algum campo não passou na validação; veja `fields` |\n| `INVALID_JSON` | 400 | O corpo não é um JSON válido ou não é um objeto ou array |\n| `BAD_REQUEST` | 400 ou 415 | Requisição malformada, como parâmetro de URL inválido, charset ou codificação não suportados |\n| `UNAUTHENTICATED` | 401 | Rota exige login e o token falta, é inválido ou expirou |\n| `FORBIDDEN` | 403 | A conta não tem o perfil exigido pela rota |\n| `INVALID_RESET_TOKEN` | 400 | Link de redefinição de senha inválido, usado ou vencido |\n| `INVALID_CURRENT_PASSWORD` | 422 | A senha atual informada na troca de senha está errada |\n| `PROTECTED_ACCOUNT` | 403 | Contas de demonstração não podem ser alteradas |\n| `NOT_FOUND` | 404 | O registro pedido não existe |\n| `NAME_TAKEN` | 409 | Já existe um cadastro com esse nome, sem distinguir maiúsculas |\n| `CODE_TAKEN` | 409 | Já existe um tipo de exame com esse código |\n| `EXAM_TYPE_INACTIVE` | 409 | O tipo de exame está inativo e não pode ter oferta ativa |\n| `IN_USE` | 409 | Há agendamento futuro ativo ligado ao cadastro; ele não pode ser desativado |\n| `COUNCIL_IN_USE` | 409 | A especialidade tem médicos; o conselho não pode mudar |\n| `SELF_OR_LAST_ADMIN` | 409 | O administrador não pode desativar nem rebaixar a si mesmo nem deixar o sistema sem administradores |\n| `USER_INACTIVE` | 403 ou 409 | Conta desativada: login recusado (403) ou ação que exige conta ativa (409) |\n| `REGISTRY_TAKEN` | 409 | O registro profissional já pertence a outro médico |\n| `DOCTOR_PROFILE_EXISTS` | 409 | A conta já tem perfil médico |\n| `HAS_FUTURE_APPOINTMENTS` | 409 | O médico tem consultas futuras que impedem a mudança |\n| `RESET_NOT_SENT` | 409 | Um link de redefinição foi enviado há pouco ou o limite do dia foi atingido |\n| `SLOT_TAKEN` | 409 | O horário escolhido acabou de ser ocupado na agenda do médico |\n| `PATIENT_CONFLICT` | 409 | O paciente já tem um agendamento ativo que coincide com o horário |\n| `SPECIALTY_UNAVAILABLE`, `UNIT_UNAVAILABLE` | 422 | A especialidade ou a unidade escolhida está inativa ou não existe |\n| `OVERLAP` | 422 | Faixas de horário do mesmo dia se sobrepõem; veja `fields` |\n| `OUTSIDE_UNIT_HOURS` | 422 | A faixa de horário fica fora do horário da unidade; veja `fields` |\n| `OUTSIDE_AVAILABILITY` | 422 | O horário não é uma vaga gerada pela agenda do médico |\n| `ACTIVE_LIMIT` | 422 | O paciente já tem 5 agendamentos ativos futuros |\n| `SPECIALTY_MISMATCH` | 422 | O médico escolhido não atende a especialidade escolhida |\n| `SELF_BOOKING` | 422 | O médico tentou marcar consulta consigo mesmo |\n| `ROUTE_NOT_FOUND` | 404 | A rota ou o método não existe |\n| `PAYLOAD_TOO_LARGE` | 413 | O corpo passou de 100 KB |\n| `TOO_MANY_REQUESTS` | 429 | Muitas requisições do mesmo IP (300 por minuto) ou limite próprio da rota |\n| `INTERNAL_ERROR` | 500 | Erro inesperado no servidor |\n| `SERVER_BUSY` | 503 | Muitas senhas sendo conferidas ao mesmo tempo |\n\n## Autenticação\n\nCrie uma conta em `POST /api/users/register` e entre em `POST /api/users/login` para receber o token. As rotas que exigem login mostram um cadeado e recebem o token no cabeçalho:\n\n```http\nAuthorization: Bearer <token>\n```\n\nSem \"Lembrar de mim\", a sessão expira após 12 horas sem uso; com ele, dura 7 dias. Nenhuma sessão passa de 7 dias, e `POST /api/users/logout` encerra a sessão na hora. Quando a sessão não vale mais, a rota responde `401` com `UNAUTHENTICATED`.\n\nO botão **Authorize** desta página envia o token em todas as chamadas de teste. Fora de produção, o token fica salvo neste navegador até você clicar em **Logout**.\n\n## Conta de demonstração\n\nPara testar sem criar conta, entre com uma das contas de demonstração. As credenciais são públicas e servem só para demonstração:\n\n- Paciente: `paciente@saudemais.test`, senha `paciente-demo-123`.\n- Médico, que também é paciente e passa pela escolha de perfil: `medico@saudemais.test`, senha `medico-demo-123`.\n\nOs dados delas são de exemplo, e elas não podem ser alteradas nem desativadas. Esses e-mails não podem ser usados em um cadastro novo.\n\n## Datas\n\n- Data e hora, como o início de uma vaga, em ISO 8601 e UTC: `2026-11-20T13:30:00.000Z`.\n- Datas sem horário, como `from` e `to` das vagas, em `YYYY-MM-DD`, no fuso de São Paulo (`America/Sao_Paulo`).\n- Para agendar, envie de volta o `startsAt` recebido na lista de vagas, sem montar o horário no cliente.\n\n## Paginação\n\nAs listas paginadas recebem `page` (a partir de 1) e `pageSize` (até 50) e respondem:\n\n```json\n{ \"items\": [], \"page\": 1, \"pageSize\": 20, \"total\": 0 }\n```",
+    "description": "API do **Saúde+**, sistema de agendamento de consultas e exames com três perfis: paciente, médico e administrador.\n\nAs rotas de negócio ficam sob `/api`. Nesta versão existem o cadastro, o login, o logout, a redefinição de senha, o perfil da própria conta, o catálogo com a administração dele, a administração de usuários, a agenda semanal do médico, a lista de médicos com as vagas livres de cada um, o pedido de consulta com o detalhe e o cancelamento dela, o início e os agendamentos do paciente e as notificações, além de `/health` e desta documentação. Cada rota lista o que realmente pode devolver.\n\n## Erros\n\nToda resposta de erro tem o mesmo formato:\n\n```json\n{\n  \"message\": \"Dados inválidos.\",\n  \"code\": \"VALIDATION_ERROR\",\n  \"fields\": { \"email\": \"E-mail inválido.\" }\n}\n```\n\n- `message` é um texto em português, pronto para exibir.\n- `code` é estável e serve para o cliente decidir o que fazer ou escolher o próprio texto.\n- `fields` aparece em erros de validação e nos de regra ligados a um campo, com uma mensagem por campo.\n\n| Status | Quando acontece |\n|---|---|\n| `400` | Corpo, parâmetros ou JSON inválidos |\n| `401` | Sem sessão, sessão expirada ou credenciais incorretas |\n| `403` | Conta desativada, sem o perfil exigido ou de demonstração |\n| `404` | Rota, método ou registro inexistente |\n| `409` | Conflito com o estado atual, como e-mail já cadastrado |\n| `422` | Regra de negócio não atendida, como senha atual incorreta |\n| `413` | Corpo maior que 100 KB |\n| `415` | Charset ou codificação do corpo não suportados |\n| `429` | Limite de tentativas atingido; o cabeçalho `RateLimit` diz quando tentar de novo |\n| `500` | Erro interno; os detalhes ficam só nos logs |\n| `503` | Servidor ocupado conferindo senhas; tente de novo em instantes |\n\nUm agendamento de outra pessoa responde `404`, como se não existisse, e um horário já ocupado responde `409`.\n\n## Códigos de erro\n\nCódigos comuns a todas as rotas. Cada rota lista também os códigos específicos dela.\n\n| Código | Status | Significado |\n|---|---|---|\n| `VALIDATION_ERROR` | 400 | Algum campo não passou na validação; veja `fields` |\n| `INVALID_JSON` | 400 | O corpo não é um JSON válido ou não é um objeto ou array |\n| `BAD_REQUEST` | 400 ou 415 | Requisição malformada, como parâmetro de URL inválido, charset ou codificação não suportados |\n| `UNAUTHENTICATED` | 401 | Rota exige login e o token falta, é inválido ou expirou |\n| `FORBIDDEN` | 403 | A conta não tem o perfil exigido pela rota |\n| `INVALID_RESET_TOKEN` | 400 | Link de redefinição de senha inválido, usado ou vencido |\n| `INVALID_CURRENT_PASSWORD` | 422 | A senha atual informada na troca de senha está errada |\n| `PROTECTED_ACCOUNT` | 403 | Contas de demonstração não podem ser alteradas |\n| `NOT_FOUND` | 404 | O registro pedido não existe |\n| `NAME_TAKEN` | 409 | Já existe um cadastro com esse nome, sem distinguir maiúsculas |\n| `CODE_TAKEN` | 409 | Já existe um tipo de exame com esse código |\n| `EXAM_TYPE_INACTIVE` | 409 | O tipo de exame está inativo e não pode ter oferta ativa |\n| `IN_USE` | 409 | Há agendamento futuro ativo ligado ao cadastro; ele não pode ser desativado |\n| `COUNCIL_IN_USE` | 409 | A especialidade tem médicos; o conselho não pode mudar |\n| `SELF_OR_LAST_ADMIN` | 409 | O administrador não pode desativar nem rebaixar a si mesmo nem deixar o sistema sem administradores |\n| `USER_INACTIVE` | 403 ou 409 | Conta desativada: login recusado (403) ou ação que exige conta ativa (409) |\n| `REGISTRY_TAKEN` | 409 | O registro profissional já pertence a outro médico |\n| `DOCTOR_PROFILE_EXISTS` | 409 | A conta já tem perfil médico |\n| `HAS_FUTURE_APPOINTMENTS` | 409 | O médico tem consultas futuras que impedem a mudança |\n| `RESET_NOT_SENT` | 409 | Um link de redefinição foi enviado há pouco ou o limite do dia foi atingido |\n| `SLOT_TAKEN` | 409 | O horário escolhido acabou de ser ocupado na agenda do médico |\n| `PATIENT_CONFLICT` | 409 | O paciente já tem um agendamento ativo que coincide com o horário |\n| `INVALID_STATE` | 409 | O agendamento mudou, já começou ou já foi encerrado desde que foi exibido; atualize e tente de novo |\n| `SPECIALTY_UNAVAILABLE`, `UNIT_UNAVAILABLE` | 422 | A especialidade ou a unidade escolhida está inativa ou não existe |\n| `OVERLAP` | 422 | Faixas de horário do mesmo dia se sobrepõem; veja `fields` |\n| `OUTSIDE_UNIT_HOURS` | 422 | A faixa de horário fica fora do horário da unidade; veja `fields` |\n| `OUTSIDE_AVAILABILITY` | 422 | O horário não é uma vaga gerada pela agenda do médico |\n| `ACTIVE_LIMIT` | 422 | O paciente já tem 5 agendamentos ativos futuros |\n| `SPECIALTY_MISMATCH` | 422 | O médico escolhido não atende a especialidade escolhida |\n| `SELF_BOOKING` | 422 | O médico tentou marcar consulta consigo mesmo |\n| `REASON_REQUIRED` | 422 | O médico precisa informar o motivo ao cancelar uma consulta |\n| `ROUTE_NOT_FOUND` | 404 | A rota ou o método não existe |\n| `PAYLOAD_TOO_LARGE` | 413 | O corpo passou de 100 KB |\n| `TOO_MANY_REQUESTS` | 429 | Muitas requisições do mesmo IP (300 por minuto) ou limite próprio da rota |\n| `INTERNAL_ERROR` | 500 | Erro inesperado no servidor |\n| `SERVER_BUSY` | 503 | Muitas senhas sendo conferidas ao mesmo tempo |\n\n## Autenticação\n\nCrie uma conta em `POST /api/users/register` e entre em `POST /api/users/login` para receber o token. As rotas que exigem login mostram um cadeado e recebem o token no cabeçalho:\n\n```http\nAuthorization: Bearer <token>\n```\n\nSem \"Lembrar de mim\", a sessão expira após 12 horas sem uso; com ele, dura 7 dias. Nenhuma sessão passa de 7 dias, e `POST /api/users/logout` encerra a sessão na hora. Quando a sessão não vale mais, a rota responde `401` com `UNAUTHENTICATED`.\n\nO botão **Authorize** desta página envia o token em todas as chamadas de teste. Fora de produção, o token fica salvo neste navegador até você clicar em **Logout**.\n\n## Conta de demonstração\n\nPara testar sem criar conta, entre com uma das contas de demonstração. As credenciais são públicas e servem só para demonstração:\n\n- Paciente: `paciente@saudemais.test`, senha `paciente-demo-123`.\n- Médico, que também é paciente e passa pela escolha de perfil: `medico@saudemais.test`, senha `medico-demo-123`.\n\nOs dados delas são de exemplo, e elas não podem ser alteradas nem desativadas. Esses e-mails não podem ser usados em um cadastro novo.\n\n## Datas\n\n- Data e hora, como o início de uma vaga, em ISO 8601 e UTC: `2026-11-20T13:30:00.000Z`.\n- Datas sem horário, como `from` e `to` das vagas, em `YYYY-MM-DD`, no fuso de São Paulo (`America/Sao_Paulo`).\n- Para agendar, envie de volta o `startsAt` recebido na lista de vagas, sem montar o horário no cliente.\n\n## Paginação\n\nAs listas paginadas recebem `page` (a partir de 1) e `pageSize` (até 50) e respondem:\n\n```json\n{ \"items\": [], \"page\": 1, \"pageSize\": 20, \"total\": 0 }\n```",
     "contact": {
       "name": "Plovatto",
       "url": "https://github.com/Plovatto"
@@ -38,7 +38,11 @@
     },
     {
       "name": "Agendamento",
-      "description": "Médicos, vagas livres e pedidos de consulta. Exige o perfil de paciente; o detalhe de uma consulta também abre para o médico que a atende."
+      "description": "Médicos, vagas livres, pedidos de consulta e cancelamento. Exige o perfil de paciente; o detalhe e o cancelamento de uma consulta também abrem para o médico que a atende."
+    },
+    {
+      "name": "Paciente",
+      "description": "Início e agendamentos do paciente logado. Exige o perfil de paciente."
     },
     {
       "name": "Médico",
@@ -789,6 +793,26 @@
         ],
         "additionalProperties": false
       },
+      "CancelAppointmentRequest": {
+        "type": "object",
+        "properties": {
+          "startsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Início da consulta como o cliente o exibiu. Se a consulta mudou desde então, a resposta é `INVALID_STATE`.",
+            "example": "2026-11-23T11:00:00.000Z"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Motivo do cancelamento; obrigatório para o médico.",
+            "example": "Imprevisto de trabalho."
+          }
+        },
+        "required": [
+          "startsAt"
+        ],
+        "additionalProperties": false
+      },
       "Appointment": {
         "type": "object",
         "properties": {
@@ -924,6 +948,47 @@
               "phone"
             ]
           },
+          "cancellation": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "byRole": {
+                "type": "string",
+                "enum": [
+                  "patient",
+                  "doctor",
+                  "admin",
+                  "system"
+                ],
+                "description": "Quem cancelou: paciente, médico, administrador (desativação) ou sistema.",
+                "example": "patient"
+              },
+              "reason": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Motivo informado; obrigatório quando o médico cancela."
+              },
+              "late": {
+                "type": "boolean",
+                "description": "Se o paciente cancelou uma confirmada dentro da janela da política."
+              },
+              "cancelledAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "byRole",
+              "reason",
+              "late",
+              "cancelledAt"
+            ],
+            "description": "Dados do cancelamento; nulo enquanto não foi cancelado. Só as partes veem o motivo."
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -1030,6 +1095,7 @@
           "doctor",
           "specialty",
           "unit",
+          "cancellation",
           "createdAt",
           "events"
         ]
@@ -1924,6 +1990,360 @@
           "passwordConfirmation"
         ],
         "additionalProperties": false
+      },
+      "PatientBooking": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "appointment",
+              "exam"
+            ],
+            "example": "appointment"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "confirmed",
+              "cancelled",
+              "completed",
+              "no_show",
+              "expired"
+            ],
+            "description": "Situação do agendamento. Pedido pendente cujo horário já chegou aparece como `expired`; consulta `confirmed` que já começou, em realizados, é a que aguarda o registro do médico.",
+            "example": "confirmed"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-23T11:00:00.000Z"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-23T11:30:00.000Z"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Observações do paciente."
+          },
+          "visitType": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "first_visit",
+              "routine",
+              "follow_up",
+              "exam_review",
+              null
+            ],
+            "description": "Tipo de consulta; nulo em exames.",
+            "example": "first_visit"
+          },
+          "doctor": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "fullName": {
+                "type": "string",
+                "example": "Ana Maria Silva"
+              }
+            },
+            "required": [
+              "id",
+              "fullName"
+            ],
+            "description": "Médico da consulta; nulo em exames."
+          },
+          "specialty": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string",
+                "example": "Nutrição"
+              },
+              "council": {
+                "type": "string",
+                "example": "CRN"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "council"
+            ],
+            "description": "Especialidade; nula em exames."
+          },
+          "examType": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string",
+                "example": "Hemograma completo"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "description": "Tipo de exame; nulo em consultas."
+          },
+          "publicCode": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Código do exame para apresentar na unidade; nulo em consultas.",
+            "example": null
+          },
+          "unit": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string",
+                "example": "Unidade Central"
+              },
+              "address": {
+                "type": "string",
+                "example": "Rua das Flores, 123 - Centro, São Paulo - SP"
+              },
+              "phone": {
+                "type": "string",
+                "example": "+551133334444"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "address",
+              "phone"
+            ]
+          },
+          "cancellation": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "byRole": {
+                "type": "string",
+                "enum": [
+                  "patient",
+                  "doctor",
+                  "admin",
+                  "system"
+                ],
+                "description": "Quem cancelou: paciente, médico, administrador (desativação) ou sistema.",
+                "example": "patient"
+              },
+              "reason": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Motivo informado; obrigatório quando o médico cancela."
+              },
+              "late": {
+                "type": "boolean",
+                "description": "Se o paciente cancelou uma confirmada dentro da janela da política."
+              },
+              "cancelledAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "byRole",
+              "reason",
+              "late",
+              "cancelledAt"
+            ],
+            "description": "Dados do cancelamento; nulo enquanto não foi cancelado. Só as partes veem o motivo."
+          },
+          "actions": {
+            "type": "object",
+            "properties": {
+              "canCancel": {
+                "type": "boolean",
+                "description": "Se o paciente ainda pode cancelar. Por enquanto só consultas; o cancelamento de exames chega na Fase 7.",
+                "example": true
+              },
+              "lateCancellation": {
+                "type": "boolean",
+                "description": "Se cancelar agora fica marcado como tardio: agendamento confirmado dentro da janela da política. O cliente avisa antes de confirmar.",
+                "example": false
+              },
+              "cancelBlockedReason": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "started",
+                  "closed",
+                  "unavailable",
+                  null
+                ],
+                "description": "Por que não dá para cancelar: já começou (`started`), já foi encerrado (`closed`) ou o cancelamento de exames ainda não existe (`unavailable`). Nulo quando `canCancel` é verdadeiro.",
+                "example": null
+              }
+            },
+            "required": [
+              "canCancel",
+              "lateCancellation",
+              "cancelBlockedReason"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "startsAt",
+          "endsAt",
+          "notes",
+          "visitType",
+          "doctor",
+          "specialty",
+          "examType",
+          "publicCode",
+          "unit",
+          "cancellation",
+          "actions"
+        ]
+      },
+      "PatientBookingPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PatientBooking"
+            }
+          },
+          "page": {
+            "type": "integer"
+          },
+          "pageSize": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "upcoming": {
+                "type": "integer",
+                "minimum": 0,
+                "example": 2
+              },
+              "past": {
+                "type": "integer",
+                "minimum": 0,
+                "example": 7
+              }
+            },
+            "required": [
+              "upcoming",
+              "past"
+            ],
+            "description": "Totais das abas agendados e realizados, sem os filtros."
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total",
+          "counts"
+        ]
+      },
+      "PatientHome": {
+        "type": "object",
+        "properties": {
+          "upcoming": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PatientBooking"
+            },
+            "description": "Os próximos agendamentos, do mais próximo para o mais distante."
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "upcoming": {
+                "type": "integer",
+                "minimum": 0,
+                "example": 2
+              },
+              "past": {
+                "type": "integer",
+                "minimum": 0,
+                "example": 7
+              }
+            },
+            "required": [
+              "upcoming",
+              "past"
+            ],
+            "description": "Totais das abas agendados e realizados, sem os filtros."
+          },
+          "lastNotification": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Notification"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "O aviso mais recente do perfil de paciente, lido ou não."
+              }
+            ]
+          }
+        },
+        "required": [
+          "upcoming",
+          "counts",
+          "lastNotification"
+        ]
       }
     },
     "parameters": {}
@@ -4000,6 +4420,174 @@
                 "example": {
                   "message": "Consulta não encontrada.",
                   "code": "NOT_FOUND"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/appointments/{id}/cancel": {
+      "post": {
+        "operationId": "cancelAppointment",
+        "summary": "Cancelar uma consulta",
+        "description": "Cancela uma consulta pendente ou confirmada que ainda não começou e avisa a outra parte depois do commit: o médico recebe `appointment_cancelled_by_patient` e o paciente recebe `appointment_cancelled`. Cancelam o paciente dela, com motivo opcional, e o médico que a atende, com motivo obrigatório. Envie em `startsAt` o início que a tela mostrava: se a consulta mudou, já começou ou já foi encerrada, a resposta é `INVALID_STATE` e nada muda. O paciente pode cancelar uma consulta confirmada dentro da janela da política (`appointmentLateWindowHours`), e o cancelamento fica marcado como tardio. A vaga volta a ficar livre. As contas de demonstração também cancelam, porque os agendamentos delas são restaurados todo dia. Responde o detalhe atualizado; para os demais usuários, responde como inexistente. Limite: 60 requisições por minuto por IP.",
+        "tags": [
+          "Agendamento"
+        ],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelAppointmentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Consulta cancelada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Appointment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Dados inválidos.",
+                  "code": "VALIDATION_ERROR",
+                  "fields": {
+                    "email": "Informe um e-mail válido."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada (`UNAUTHENTICATED`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Sua sessão expirou. Entre novamente.",
+                  "code": "UNAUTHENTICATED"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A conta não tem perfil de paciente nem de médico (`FORBIDDEN`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Você não tem acesso a esta área.",
+                  "code": "FORBIDDEN"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Registro inexistente (`NOT_FOUND`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Consulta não encontrada.",
+                  "code": "NOT_FOUND"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito com o estado atual (`INVALID_STATE`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Esta consulta mudou ou não pode mais ser cancelada. Atualize a página.",
+                  "code": "INVALID_STATE",
+                  "fields": {
+                    "_root": "Esta consulta mudou ou não pode mais ser cancelada. Atualize a página."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "O médico não informou o motivo (`REASON_REQUIRED`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Informe o motivo do cancelamento.",
+                  "code": "REASON_REQUIRED",
+                  "fields": {
+                    "reason": "Informe o motivo do cancelamento."
+                  }
                 },
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
@@ -7185,6 +7773,259 @@
                 "example": {
                   "message": "O servidor está ocupado. Tente de novo em instantes.",
                   "code": "SERVER_BUSY"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patient/home": {
+      "get": {
+        "operationId": "getPatientHome",
+        "summary": "Ver o início do paciente",
+        "description": "Os 3 próximos agendamentos, os totais das abas agendados e realizados e o aviso mais recente do perfil de paciente. Cada agendamento traz as ações permitidas, como na lista. Limite: 120 requisições por minuto por IP.",
+        "tags": [
+          "Paciente"
+        ],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Início do paciente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatientHome"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada (`UNAUTHENTICATED`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Sua sessão expirou. Entre novamente.",
+                  "code": "UNAUTHENTICATED"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A conta não tem o perfil exigido (`FORBIDDEN`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Você não tem acesso a esta área.",
+                  "code": "FORBIDDEN"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patient/bookings": {
+      "get": {
+        "operationId": "listPatientBookings",
+        "summary": "Listar os agendamentos do paciente",
+        "description": "Consultas e exames do paciente logado na aba escolhida em `scope`, com filtros por tipo e por situação. Cada item traz o que o paciente pode fazer (`actions`), calculado pela política de agendamento, para o cliente não repetir as regras. `counts` traz os totais das duas abas, sem os filtros. Limite: 120 requisições por minuto por IP.",
+        "tags": [
+          "Paciente"
+        ],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            },
+            "required": false,
+            "name": "pageSize",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "upcoming",
+                "past"
+              ],
+              "default": "upcoming",
+              "description": "Aba da lista: agendados (`upcoming`, pendentes e confirmados que ainda não começaram, do mais próximo para o mais distante) ou realizados (`past`, todo o resto, do mais recente para o mais antigo)."
+            },
+            "required": false,
+            "description": "Aba da lista: agendados (`upcoming`, pendentes e confirmados que ainda não começaram, do mais próximo para o mais distante) ou realizados (`past`, todo o resto, do mais recente para o mais antigo).",
+            "name": "scope",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "appointment",
+                "exam"
+              ],
+              "description": "Só consultas (`appointment`) ou só exames (`exam`)."
+            },
+            "required": false,
+            "description": "Só consultas (`appointment`) ou só exames (`exam`).",
+            "name": "kind",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "confirmed",
+                "cancelled",
+                "completed",
+                "no_show",
+                "expired"
+              ],
+              "description": "Só agendamentos nesta situação, já com `expired` calculado."
+            },
+            "required": false,
+            "description": "Só agendamentos nesta situação, já com `expired` calculado.",
+            "name": "status",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Página de agendamentos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatientBookingPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Dados inválidos.",
+                  "code": "VALIDATION_ERROR",
+                  "fields": {
+                    "email": "Informe um e-mail válido."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada (`UNAUTHENTICATED`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Sua sessão expirou. Entre novamente.",
+                  "code": "UNAUTHENTICATED"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A conta não tem o perfil exigido (`FORBIDDEN`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Você não tem acesso a esta área.",
+                  "code": "FORBIDDEN"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
                 },
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"

@@ -7,6 +7,7 @@ export const buttonVariants = {
   secondary: 'border border-role-strong bg-surface text-role-text can-hover:bg-role-soft',
   ghost: 'text-role-text can-hover:bg-role-soft',
   danger: 'bg-danger-strong text-on-danger shadow-button can-hover:bg-danger-strong/90',
+  'danger-outline': 'border border-danger bg-surface text-danger-text can-hover:bg-danger-soft',
 };
 
 export type ButtonVariant = keyof typeof buttonVariants;

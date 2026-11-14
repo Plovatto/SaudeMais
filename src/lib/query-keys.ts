@@ -14,10 +14,12 @@ export const queryKeys = {
   booking: {
     doctorLists: ['booking', 'doctors'] as const,
     doctors: (specialtyId: string) => ['booking', 'doctors', specialtyId] as const,
+    availabilities: ['booking', 'availability'] as const,
     availability: (doctorId: string) => ['booking', 'availability', doctorId] as const,
   },
   patient: {
     all: ['patient'] as const,
+    bookings: (params: object) => ['patient', 'bookings', params] as const,
   },
   catalog: {
     specialties: ['catalog', 'specialties'] as const,

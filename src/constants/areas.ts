@@ -60,7 +60,7 @@ export const areas: Record<Role, Area> = {
         nav: { label: 'Exames', icon: LuSyringe, sections: ['exames'] },
       },
       profile,
-      { path: 'agendamentos', title: 'Meus agendamentos' },
+      { path: 'agendamentos', title: 'Minhas consultas e exames' },
       { path: 'consultas/:id/reagendar', title: 'Reagendar consulta' },
       { path: 'exames/:id/reagendar', title: 'Reagendar exame' },
       { path: 'exames/:id/resultado', title: 'Resultado do exame' },

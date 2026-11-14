@@ -260,6 +260,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/appointments/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancelar uma consulta
+         * @description Cancela uma consulta pendente ou confirmada que ainda não começou e avisa a outra parte depois do commit: o médico recebe `appointment_cancelled_by_patient` e o paciente recebe `appointment_cancelled`. Cancelam o paciente dela, com motivo opcional, e o médico que a atende, com motivo obrigatório. Envie em `startsAt` o início que a tela mostrava: se a consulta mudou, já começou ou já foi encerrada, a resposta é `INVALID_STATE` e nada muda. O paciente pode cancelar uma consulta confirmada dentro da janela da política (`appointmentLateWindowHours`), e o cancelamento fica marcado como tardio. A vaga volta a ficar livre. As contas de demonstração também cancelam, porque os agendamentos delas são restaurados todo dia. Responde o detalhe atualizado; para os demais usuários, responde como inexistente. Limite: 60 requisições por minuto por IP.
+         */
+        post: operations["cancelAppointment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/specialties": {
         parameters: {
             query?: never;
@@ -700,6 +720,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/patient/home": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ver o início do paciente
+         * @description Os 3 próximos agendamentos, os totais das abas agendados e realizados e o aviso mais recente do perfil de paciente. Cada agendamento traz as ações permitidas, como na lista. Limite: 120 requisições por minuto por IP.
+         */
+        get: operations["getPatientHome"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patient/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar os agendamentos do paciente
+         * @description Consultas e exames do paciente logado na aba escolhida em `scope`, com filtros por tipo e por situação. Cada item traz o que o paciente pode fazer (`actions`), calculado pela política de agendamento, para o cliente não repetir as regras. `counts` traz os totais das duas abas, sem os filtros. Limite: 120 requisições por minuto por IP.
+         */
+        get: operations["listPatientBookings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/register": {
         parameters: {
             query?: never;
@@ -1123,6 +1183,19 @@ export interface components {
              */
             notes?: string;
         };
+        CancelAppointmentRequest: {
+            /**
+             * Format: date-time
+             * @description Início da consulta como o cliente o exibiu. Se a consulta mudou desde então, a resposta é `INVALID_STATE`.
+             * @example 2026-11-23T11:00:00.000Z
+             */
+            startsAt: string;
+            /**
+             * @description Motivo do cancelamento; obrigatório para o médico.
+             * @example Imprevisto de trabalho.
+             */
+            reason?: string;
+        };
         Appointment: {
             /** Format: uuid */
             id: string;
@@ -1186,6 +1259,21 @@ export interface components {
                 /** @example +551133334444 */
                 phone: string;
             };
+            /** @description Dados do cancelamento; nulo enquanto não foi cancelado. Só as partes veem o motivo. */
+            cancellation: {
+                /**
+                 * @description Quem cancelou: paciente, médico, administrador (desativação) ou sistema.
+                 * @example patient
+                 * @enum {string}
+                 */
+                byRole: "patient" | "doctor" | "admin" | "system";
+                /** @description Motivo informado; obrigatório quando o médico cancela. */
+                reason: string | null;
+                /** @description Se o paciente cancelou uma confirmada dentro da janela da política. */
+                late: boolean;
+                /** Format: date-time */
+                cancelledAt: string;
+            } | null;
             /** Format: date-time */
             createdAt: string;
             /** @description Histórico da consulta, do mais antigo para o mais novo. */
@@ -1596,6 +1684,135 @@ export interface components {
             password: string;
             /** @example nova-senha-segura-456 */
             passwordConfirmation: string;
+        };
+        PatientBooking: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * @example appointment
+             * @enum {string}
+             */
+            kind: "appointment" | "exam";
+            /**
+             * @description Situação do agendamento. Pedido pendente cujo horário já chegou aparece como `expired`; consulta `confirmed` que já começou, em realizados, é a que aguarda o registro do médico.
+             * @example confirmed
+             * @enum {string}
+             */
+            status: "pending" | "confirmed" | "cancelled" | "completed" | "no_show" | "expired";
+            /**
+             * Format: date-time
+             * @example 2026-11-23T11:00:00.000Z
+             */
+            startsAt: string;
+            /**
+             * Format: date-time
+             * @example 2026-11-23T11:30:00.000Z
+             */
+            endsAt: string;
+            /** @description Observações do paciente. */
+            notes: string | null;
+            /**
+             * @description Tipo de consulta; nulo em exames.
+             * @example first_visit
+             * @enum {string|null}
+             */
+            visitType: "first_visit" | "routine" | "follow_up" | "exam_review" | null;
+            /** @description Médico da consulta; nulo em exames. */
+            doctor: {
+                /** Format: uuid */
+                id: string;
+                /** @example Ana Maria Silva */
+                fullName: string;
+            } | null;
+            /** @description Especialidade; nula em exames. */
+            specialty: {
+                /** Format: uuid */
+                id: string;
+                /** @example Nutrição */
+                name: string;
+                /** @example CRN */
+                council: string;
+            } | null;
+            /** @description Tipo de exame; nulo em consultas. */
+            examType: {
+                /** Format: uuid */
+                id: string;
+                /** @example Hemograma completo */
+                name: string;
+            } | null;
+            /**
+             * @description Código do exame para apresentar na unidade; nulo em consultas.
+             * @example null
+             */
+            publicCode: string | null;
+            unit: {
+                /** Format: uuid */
+                id: string;
+                /** @example Unidade Central */
+                name: string;
+                /** @example Rua das Flores, 123 - Centro, São Paulo - SP */
+                address: string;
+                /** @example +551133334444 */
+                phone: string;
+            };
+            /** @description Dados do cancelamento; nulo enquanto não foi cancelado. Só as partes veem o motivo. */
+            cancellation: {
+                /**
+                 * @description Quem cancelou: paciente, médico, administrador (desativação) ou sistema.
+                 * @example patient
+                 * @enum {string}
+                 */
+                byRole: "patient" | "doctor" | "admin" | "system";
+                /** @description Motivo informado; obrigatório quando o médico cancela. */
+                reason: string | null;
+                /** @description Se o paciente cancelou uma confirmada dentro da janela da política. */
+                late: boolean;
+                /** Format: date-time */
+                cancelledAt: string;
+            } | null;
+            actions: {
+                /**
+                 * @description Se o paciente ainda pode cancelar. Por enquanto só consultas; o cancelamento de exames chega na Fase 7.
+                 * @example true
+                 */
+                canCancel: boolean;
+                /**
+                 * @description Se cancelar agora fica marcado como tardio: agendamento confirmado dentro da janela da política. O cliente avisa antes de confirmar.
+                 * @example false
+                 */
+                lateCancellation: boolean;
+                /**
+                 * @description Por que não dá para cancelar: já começou (`started`), já foi encerrado (`closed`) ou o cancelamento de exames ainda não existe (`unavailable`). Nulo quando `canCancel` é verdadeiro.
+                 * @example null
+                 * @enum {string|null}
+                 */
+                cancelBlockedReason: "started" | "closed" | "unavailable" | null;
+            };
+        };
+        PatientBookingPage: {
+            items: components["schemas"]["PatientBooking"][];
+            page: number;
+            pageSize: number;
+            total: number;
+            /** @description Totais das abas agendados e realizados, sem os filtros. */
+            counts: {
+                /** @example 2 */
+                upcoming: number;
+                /** @example 7 */
+                past: number;
+            };
+        };
+        PatientHome: {
+            /** @description Os próximos agendamentos, do mais próximo para o mais distante. */
+            upcoming: components["schemas"]["PatientBooking"][];
+            /** @description Totais das abas agendados e realizados, sem os filtros. */
+            counts: {
+                /** @example 2 */
+                upcoming: number;
+                /** @example 7 */
+                past: number;
+            };
+            lastNotification: components["schemas"]["Notification"] & (Record<string, never> | null);
         };
     };
     responses: never;
@@ -3480,6 +3697,161 @@ export interface operations {
                      * @example {
                      *       "message": "Consulta não encontrada.",
                      *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    cancelAppointment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CancelAppointmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Consulta cancelada. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Appointment"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta não tem perfil de paciente nem de médico (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Consulta não encontrada.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflito com o estado atual (`INVALID_STATE`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Esta consulta mudou ou não pode mais ser cancelada. Atualize a página.",
+                     *       "code": "INVALID_STATE",
+                     *       "fields": {
+                     *         "_root": "Esta consulta mudou ou não pode mais ser cancelada. Atualize a página."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description O médico não informou o motivo (`REASON_REQUIRED`). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Informe o motivo do cancelamento.",
+                     *       "code": "REASON_REQUIRED",
+                     *       "fields": {
+                     *         "reason": "Informe o motivo do cancelamento."
+                     *       }
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];
@@ -6276,6 +6648,193 @@ export interface operations {
                      * @example {
                      *       "message": "O servidor está ocupado. Tente de novo em instantes.",
                      *       "code": "SERVER_BUSY"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getPatientHome: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Início do paciente. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientHome"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listPatientBookings: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                /** @description Aba da lista: agendados (`upcoming`, pendentes e confirmados que ainda não começaram, do mais próximo para o mais distante) ou realizados (`past`, todo o resto, do mais recente para o mais antigo). */
+                scope?: "upcoming" | "past";
+                /** @description Só consultas (`appointment`) ou só exames (`exam`). */
+                kind?: "appointment" | "exam";
+                /** @description Só agendamentos nesta situação, já com `expired` calculado. */
+                status?: "pending" | "confirmed" | "cancelled" | "completed" | "no_show" | "expired";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Página de agendamentos. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientBookingPage"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];

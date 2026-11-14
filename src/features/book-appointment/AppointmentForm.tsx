@@ -10,8 +10,9 @@ import { formatDay, formatTime } from '@lib/date';
 import { errorMessage, GENERIC_ERROR_MESSAGE, messageFor } from '@lib/messages/errors.pt-BR';
 import { queryKeys } from '@lib/query-keys';
 import { useFormSubmit } from '@lib/useFormSubmit';
+import { FREE_TEXT_MAX } from '@lib/validation/text';
 import { bookingApi, type Appointment } from './booking-api';
-import { bookingSchema, emptyBooking, NOTES_MAX, toBody, visitType, visitTypeLabels } from './booking-schema';
+import { bookingSchema, emptyBooking, toBody, visitType, visitTypeLabels } from './booking-schema';
 
 const FIELDS = ['doctorId', 'specialtyId', 'visitType', 'startsAt', 'notes'] as const;
 
@@ -235,7 +236,7 @@ export function AppointmentForm({ onBooked }: { onBooked: (appointment: Appointm
         label="Observações (opcional)"
         placeholder="Alguma observação sobre a consulta"
         rows={2}
-        maxLength={NOTES_MAX}
+        maxLength={FREE_TEXT_MAX}
         error={errors.notes?.message}
         {...register('notes')}
       />
