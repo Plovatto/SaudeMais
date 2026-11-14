@@ -12,6 +12,12 @@ export function toMinutes(value: string): number {
   return hours * 60 + minutes;
 }
 
+export function formatTimeInput(value: string): string {
+  if (/^\d{1,2}:\d{0,2}$/.test(value)) return value;
+  const digits = value.replace(/\D/g, '').slice(0, 4);
+  return digits.length > 2 ? `${digits.slice(0, 2)}:${digits.slice(2)}` : digits;
+}
+
 export function fromMinutes(total: number): string {
   const hours = Math.floor(total / 60);
   const minutes = total % 60;

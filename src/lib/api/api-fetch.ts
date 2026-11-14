@@ -20,11 +20,14 @@ export type ResponseOf<P extends keyof paths, M extends MethodOf<P>> = JsonOf<
 export type BodyOf<P extends keyof paths, M extends MethodOf<P>> =
   Operation<P, M> extends { requestBody?: infer R } ? JsonOf<NonNullable<R>> : never;
 
+type PathParamsOf<P extends keyof paths, M extends MethodOf<P>> =
+  Operation<P, M> extends { parameters: { path: infer Params } } ? Params : never;
+
 export type QueryValue = string | number | boolean | undefined;
 
-export interface ApiFetchOptions<Body> {
+export interface ApiFetchOptions<Body, Params = Record<string, string>> {
   body?: Body;
-  params?: Record<string, string>;
+  params?: Params;
   query?: Record<string, QueryValue>;
   signal?: AbortSignal;
   timeoutMs?: number;
@@ -84,8 +87,9 @@ export async function apiFetch<P extends keyof paths, M extends MethodOf<P>>(
     signal,
     timeoutMs = DEFAULT_TIMEOUT_MS,
     ...options
-  }: ApiFetchOptions<BodyOf<P, M>> = {},
+  }: ApiFetchOptions<BodyOf<P, M>, PathParamsOf<P, M>> = {},
 ): Promise<ResponseOf<P, M>> {
+  const url = urlOf(path, params as Record<string, string> | undefined, query);
   const headers = new Headers({ Accept: 'application/json' });
   if (body !== undefined) headers.set('Content-Type', 'application/json');
   const token = 'token' in options ? (options.token ?? null) : tokenProvider();
@@ -94,7 +98,7 @@ export async function apiFetch<P extends keyof paths, M extends MethodOf<P>>(
   const timeout = AbortSignal.timeout(timeoutMs);
   let response: Response;
   try {
-    response = await fetch(urlOf(path, params, query), {
+    response = await fetch(url, {
       method: method.toUpperCase(),
       headers,
       ...(body !== undefined && { body: JSON.stringify(body) }),

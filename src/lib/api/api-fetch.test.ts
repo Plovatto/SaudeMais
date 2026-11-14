@@ -36,6 +36,14 @@ describe('apiFetch', () => {
     expect(urls[2]?.endsWith('/api/units')).toBe(true);
   });
 
+  it('fails before any request when a path parameter is missing', async () => {
+    const request = apiFetch('get', '/api/admin/units/{id}/exam-offers', { params: {} as { id: string } });
+
+    await expect(request).rejects.toThrow('Missing path parameter: id');
+    await expect(request).rejects.not.toBeInstanceOf(ApiError);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('calls the API URL and returns the parsed body', async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, { status: 'ok' }));
 
