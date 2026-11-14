@@ -39,6 +39,12 @@ describe('applyApiErrors', () => {
     expect(setError).not.toHaveBeenCalled();
   });
 
+  it('prefers the text for a known error code over the message of a field the form does not have', () => {
+    const error = new ApiError(422, 'ACTIVE_LIMIT', 'Limite atingido.', { _root: 'Limite atingido.' });
+
+    expect(applyApiErrors<Values>(error, vi.fn(), ['email'])).toMatch(/limite de agendamentos ativos/);
+  });
+
   it('falls back to the text for the error code when there are no field errors', () => {
     const error = new ApiError(401, 'INVALID_CREDENTIALS', 'E-mail ou senha incorretos.');
 
