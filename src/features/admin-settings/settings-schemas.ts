@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { WEEKDAYS } from '@constants/weekdays';
 import { isTimeOfDay, toMinutes } from '@lib/time-of-day';
-import { boundedText, phoneField } from '@lib/validation/account-fields';
+import { phoneField } from '@lib/validation/account-fields';
+import { boundedText } from '@lib/validation/text';
 
 const wholeNumber = (min: number, max: number, message: string) =>
   z.number({ error: message }).int(message).min(min, message).max(max, message);

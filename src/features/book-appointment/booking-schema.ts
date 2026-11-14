@@ -1,6 +1,5 @@
 import { z } from 'zod';
-
-export const NOTES_MAX = 500;
+import { freeText } from '@lib/validation/text';
 
 export const visitType = z.enum(['first_visit', 'routine', 'follow_up', 'exam_review']);
 
@@ -19,7 +18,7 @@ export const bookingSchema = z.object({
   visitType: choice('Escolha o tipo de consulta.').pipe(visitType),
   date: choice('Escolha a data.'),
   startsAt: choice('Escolha o horário.'),
-  notes: z.string().trim().max(NOTES_MAX, `Use até ${NOTES_MAX} caracteres.`),
+  notes: freeText(),
 });
 
 type BookingInput = z.input<typeof bookingSchema>;

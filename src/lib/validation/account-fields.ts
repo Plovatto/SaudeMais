@@ -1,15 +1,8 @@
 import { z } from 'zod';
 import { formatPhone } from '@lib/phone';
+import { boundedText } from './text';
 
 const E164 = /^\+[1-9][0-9]{9,14}$/;
-
-const codePoints = (value: string) => [...value].length;
-
-const hasControlCharacter = (value: string) =>
-  [...value].some((character) => {
-    const code = character.codePointAt(0) ?? 0;
-    return code < 32 || code === 127;
-  });
 
 function normalizePhone(value: string): string {
   const digits = value.replace(/\D/g, '');
@@ -23,25 +16,9 @@ export const emailField = z
   .min(1, 'Informe seu e-mail.')
   .pipe(z.email('Informe um e-mail válido.').max(254, 'O e-mail pode ter até 254 caracteres.'));
 
-export function boundedText(
-  min: number,
-  max: number,
-  message: string,
-  controlMessage = 'O texto não pode ter caracteres de controle.',
-) {
-  return z
-    .string()
-    .trim()
-    .refine((value) => !hasControlCharacter(value), controlMessage)
-    .refine((value) => codePoints(value) >= min && codePoints(value) <= max, message);
-}
-
-export const fullNameField = boundedText(
-  2,
-  120,
-  'Informe seu nome completo (2 a 120 caracteres).',
-  'O nome não pode ter caracteres de controle.',
-);
+export const fullNameField = boundedText(2, 120, 'Informe seu nome completo (2 a 120 caracteres).', {
+  controlMessage: 'O nome não pode ter caracteres de controle.',
+});
 
 export const phoneField = z
   .string()
