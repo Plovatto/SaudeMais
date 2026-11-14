@@ -1,20 +1,13 @@
 import { useId, useState, type ReactNode } from 'react';
-import {
-  LuCalendar,
-  LuChevronDown,
-  LuCircleX,
-  LuMapPin,
-  LuPhone,
-  LuStethoscope,
-  LuSyringe,
-  LuTriangleAlert,
-} from 'react-icons/lu';
+import { LuChevronDown, LuCircleX, LuMapPin, LuPhone, LuTriangleAlert } from 'react-icons/lu';
+import { bookingTitle } from '@components/bookings/booking-display';
+import { BookingHeadline } from '@components/bookings/BookingHeadline';
 import { Button, Card, FormAlert, IconSlot, StatusChip } from '@components/ui';
+import type { PatientBooking } from '@lib/api/models';
 import { cx } from '@lib/cx';
 import { formatDateTime } from '@lib/date';
 import { formatPhone } from '@lib/phone';
-import { blockedNotes, bookingStatus, bookingTitle, cancelledBy } from './booking-text';
-import type { PatientBooking } from './bookings-api';
+import { blockedNotes, cancelledBy } from './booking-text';
 
 export interface BookingCardProps {
   booking: PatientBooking;
@@ -43,8 +36,7 @@ function Note({ label, children }: { label: string; children: ReactNode }) {
 export function BookingCard({ booking, onCancel }: BookingCardProps) {
   const [expanded, setExpanded] = useState(false);
   const detailsId = useId();
-  const status = bookingStatus(booking);
-  const { title, subtitle } = bookingTitle(booking);
+  const { title } = bookingTitle(booking);
   const { unit, notes, publicCode, cancellation, actions } = booking;
   const blocked = actions.cancelBlockedReason && blockedNotes[actions.cancelBlockedReason];
 
@@ -58,26 +50,7 @@ export function BookingCard({ booking, onCancel }: BookingCardProps) {
           onClick={() => setExpanded((open) => !open)}
           className="rounded-field -m-1 flex w-[calc(100%+0.5rem)] items-start gap-3 p-1 text-start"
         >
-          <span data-role="doctor" className="contents">
-            <IconSlot badge="strong" className="rounded-tile size-12 text-2xl">
-              {booking.kind === 'exam' ? <LuSyringe /> : <LuStethoscope />}
-            </IconSlot>
-          </span>
-          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="text-text font-semibold">{title}</span>
-            <span className="text-text-secondary text-sm">{subtitle}</span>
-            <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-              <span className="text-text-secondary flex items-center gap-1.5 text-sm whitespace-nowrap">
-                <IconSlot>
-                  <LuCalendar />
-                </IconSlot>
-                <time dateTime={booking.startsAt}>{formatDateTime(booking.startsAt)}</time>
-              </span>
-              <StatusChip tone={status.tone} icon={status.icon}>
-                {status.label}
-              </StatusChip>
-            </span>
-          </span>
+          <BookingHeadline booking={booking} />
           <IconSlot
             className={cx(
               'text-text-secondary mt-0.5 text-lg transition-transform',

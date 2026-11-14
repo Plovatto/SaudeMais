@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { renderApp, serveApi, type ApiCall, type MockResponse } from '@/test/render-app';
-import type { PatientBooking } from './bookings-api';
+import type { PatientBooking } from '@lib/api/models';
 
 const FUTURE = '2030-01-10T13:00:00.000Z';
 const PAST = '2020-01-10T13:00:00.000Z';

@@ -15,10 +15,11 @@ import {
 import { areas } from '@constants/areas';
 import { useClampedPage, usePageParam } from '@hooks/usePageParam';
 import { useSearchParam } from '@hooks/useSearchParam';
+import type { PatientBooking } from '@lib/api/models';
 import { cx } from '@lib/cx';
 import { queryKeys } from '@lib/query-keys';
 import { BookingCard } from './BookingCard';
-import { bookingsApi, type BookingListParams, type PatientBooking } from './bookings-api';
+import { bookingsApi, type BookingListParams } from './bookings-api';
 import { CancelDialog } from './CancelDialog';
 
 const PATIENT = areas.patient.base;

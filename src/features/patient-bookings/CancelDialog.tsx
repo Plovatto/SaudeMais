@@ -5,11 +5,12 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button, Dialog, FormAlert, Textarea, useToast } from '@components/ui';
 import { ApiError } from '@lib/api/api-error';
+import type { PatientBooking } from '@lib/api/models';
 import { queryKeys } from '@lib/query-keys';
 import { useFormSubmit } from '@lib/useFormSubmit';
 import { FREE_TEXT_MAX, freeText } from '@lib/validation/text';
 import { bookingSummary } from './booking-text';
-import { bookingsApi, type PatientBooking } from './bookings-api';
+import { bookingsApi } from './bookings-api';
 
 const cancelSchema = z.object({ reason: freeText() });
 
