@@ -1,6 +1,6 @@
 import { screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { DEMO_PATIENT } from '@constants/demo-accounts';
+import { DEMO_DOCTOR, DEMO_PATIENT } from '@constants/demo-accounts';
 import { SESSION_STORAGE_KEY } from '@lib/auth/token-store';
 import { mockFetch, renderApp, TEST_TOKEN, testUser, type MockResponse } from '@/test/render-app';
 
@@ -207,15 +207,18 @@ describe('sessions failures', () => {
 });
 
 describe('protected demo account', () => {
-  it('shows the fields locked with an explanation', async () => {
-    serve({ ...testUser(), email: DEMO_PATIENT.email });
-    openProfile();
+  it.each([DEMO_PATIENT, DEMO_DOCTOR])(
+    'shows the $label fields locked with an explanation',
+    async ({ email }) => {
+      serve({ ...testUser(), email });
+      openProfile();
 
-    expect(await screen.findByText(/conta de demonstração, compartilhada/)).toBeInTheDocument();
-    expect(screen.getByLabelText('Nome completo')).toBeDisabled();
-    expect(screen.getByLabelText('Senha atual')).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Trocar senha' })).toBeDisabled();
-  });
+      expect(await screen.findByText(/conta de demonstração, compartilhada/)).toBeInTheDocument();
+      expect(screen.getByLabelText('Nome completo')).toBeDisabled();
+      expect(screen.getByLabelText('Senha atual')).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Trocar senha' })).toBeDisabled();
+    },
+  );
 
   it('locks the forms when the API refuses a change to a protected account', async () => {
     const forbidden = {
