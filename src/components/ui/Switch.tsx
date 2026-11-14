@@ -7,10 +7,19 @@ export interface SwitchProps {
   label: string;
   labelHidden?: boolean;
   disabled?: boolean;
+  busy?: boolean;
   className?: string;
 }
 
-export function Switch({ checked, onCheckedChange, label, labelHidden, disabled, className }: SwitchProps) {
+export function Switch({
+  checked,
+  onCheckedChange,
+  label,
+  labelHidden,
+  disabled,
+  busy,
+  className,
+}: SwitchProps) {
   return (
     <button
       type="button"
@@ -18,7 +27,11 @@ export function Switch({ checked, onCheckedChange, label, labelHidden, disabled,
       aria-checked={checked}
       aria-label={labelHidden ? label : undefined}
       disabled={disabled}
-      onClick={() => onCheckedChange(!checked)}
+      aria-disabled={busy || undefined}
+      aria-busy={busy || undefined}
+      onClick={() => {
+        if (!busy) onCheckedChange(!checked);
+      }}
       className={cx(
         'rounded-field text-text inline-flex min-h-11 items-center gap-3 text-sm font-medium',
         disabledState,

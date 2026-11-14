@@ -4,6 +4,12 @@ export const GENERIC_ERROR_MESSAGE = 'Algo deu errado. Tente de novo em instante
 
 export const errorMessages: Record<string, string> = {
   EMAIL_TAKEN: 'Este e-mail já está cadastrado.',
+  NAME_TAKEN: 'Já existe um cadastro com esse nome.',
+  CODE_TAKEN: 'Já existe um tipo de exame com esse código.',
+  EXAM_TYPE_INACTIVE: 'Este tipo de exame está desativado. Ative-o antes de oferecê-lo.',
+  COUNCIL_IN_USE: 'Há profissionais cadastrados nesta especialidade. O conselho não pode ser trocado.',
+  IN_USE:
+    'Há agendamentos futuros ligados a este item. Cancele ou conclua esses agendamentos antes de desativá-lo.',
   INVALID_CREDENTIALS: 'E-mail ou senha incorretos.',
   USER_INACTIVE: 'Esta conta está desativada.',
   UNAUTHENTICATED: 'Sua sessão expirou. Entre novamente.',
@@ -19,8 +25,11 @@ export const errorMessages: Record<string, string> = {
   INVALID_RESPONSE: GENERIC_ERROR_MESSAGE,
 };
 
-export function errorMessage(error: unknown): string {
+export type MessageOverrides = Readonly<Record<string, string>>;
+
+export function errorMessage(error: unknown, overrides: MessageOverrides = {}): string {
   if (!(error instanceof ApiError)) return GENERIC_ERROR_MESSAGE;
+  if (Object.hasOwn(overrides, error.code)) return overrides[error.code] ?? GENERIC_ERROR_MESSAGE;
   if (Object.hasOwn(errorMessages, error.code)) return errorMessages[error.code] ?? GENERIC_ERROR_MESSAGE;
   return error.message || GENERIC_ERROR_MESSAGE;
 }

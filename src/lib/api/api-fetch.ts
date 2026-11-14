@@ -20,8 +20,15 @@ export type ResponseOf<P extends keyof paths, M extends MethodOf<P>> = JsonOf<
 export type BodyOf<P extends keyof paths, M extends MethodOf<P>> =
   Operation<P, M> extends { requestBody?: infer R } ? JsonOf<NonNullable<R>> : never;
 
-export interface ApiFetchOptions<Body> {
+type PathParamsOf<P extends keyof paths, M extends MethodOf<P>> =
+  Operation<P, M> extends { parameters: { path: infer Params } } ? Params : never;
+
+export type QueryValue = string | number | boolean | undefined;
+
+export interface ApiFetchOptions<Body, Params = Record<string, string>> {
   body?: Body;
+  params?: Params;
+  query?: Record<string, QueryValue>;
   signal?: AbortSignal;
   timeoutMs?: number;
   token?: string | null;
@@ -54,11 +61,35 @@ async function readBody(
   }
 }
 
+function urlOf(
+  path: string,
+  params: Record<string, string> = {},
+  query: Record<string, QueryValue> = {},
+): string {
+  const resolved = path.replace(/\{(\w+)\}/g, (_match, name: string) => {
+    const value = params[name];
+    if (value === undefined) throw new Error(`Missing path parameter: ${name}`);
+    return encodeURIComponent(value);
+  });
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) if (value !== undefined) search.set(key, String(value));
+  const suffix = search.toString();
+  return `${env.apiUrl}${resolved}${suffix ? `?${suffix}` : ''}`;
+}
+
 export async function apiFetch<P extends keyof paths, M extends MethodOf<P>>(
   method: M,
   path: P,
-  { body, signal, timeoutMs = DEFAULT_TIMEOUT_MS, ...options }: ApiFetchOptions<BodyOf<P, M>> = {},
+  {
+    body,
+    params,
+    query,
+    signal,
+    timeoutMs = DEFAULT_TIMEOUT_MS,
+    ...options
+  }: ApiFetchOptions<BodyOf<P, M>, PathParamsOf<P, M>> = {},
 ): Promise<ResponseOf<P, M>> {
+  const url = urlOf(path, params as Record<string, string> | undefined, query);
   const headers = new Headers({ Accept: 'application/json' });
   if (body !== undefined) headers.set('Content-Type', 'application/json');
   const token = 'token' in options ? (options.token ?? null) : tokenProvider();
@@ -67,7 +98,7 @@ export async function apiFetch<P extends keyof paths, M extends MethodOf<P>>(
   const timeout = AbortSignal.timeout(timeoutMs);
   let response: Response;
   try {
-    response = await fetch(`${env.apiUrl}${path}`, {
+    response = await fetch(url, {
       method: method.toUpperCase(),
       headers,
       ...(body !== undefined && { body: JSON.stringify(body) }),

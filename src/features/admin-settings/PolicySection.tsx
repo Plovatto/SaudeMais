@@ -1,0 +1,87 @@
+import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { Card, Input, Skeleton } from '@components/ui';
+import { queryKeys } from '@lib/query-keys';
+import { FormShell } from './FormShell';
+import { QueryError } from './QueryError';
+import { policyApi, type Policy } from './settings-api';
+import { policySchema, type PolicyValues } from './settings-schemas';
+import { SettingsSection } from './SettingsSection';
+import { useCatalogForm } from './useCatalogForm';
+
+const FIELDS: { name: keyof PolicyValues; label: string; hint: string }[] = [
+  {
+    name: 'appointmentLateWindowHours',
+    label: 'Janela de cancelamento de consultas (horas)',
+    hint: 'Abaixo dessa antecedência, cancelar é tardio e reagendar fica bloqueado. De 0 a 168.',
+  },
+  {
+    name: 'examLateWindowHours',
+    label: 'Janela de cancelamento de exames (horas)',
+    hint: 'O mesmo, para exames. De 0 a 168.',
+  },
+  { name: 'maxReschedules', label: 'Reagendamentos por agendamento', hint: 'De 0 a 10.' },
+  { name: 'bookingHorizonDays', label: 'Agendar até (dias à frente)', hint: 'De 1 a 365.' },
+  {
+    name: 'minLeadMinutes',
+    label: 'Antecedência mínima para agendar (minutos)',
+    hint: 'De 0 a 10080 (7 dias).',
+  },
+];
+
+const valuesOf = ({ updatedAt: _updatedAt, ...values }: Policy): PolicyValues => values;
+
+function PolicyForm({ policy }: { policy: Policy }) {
+  const form = useCatalogForm({
+    schema: policySchema,
+    defaultValues: valuesOf(policy),
+    fields: FIELDS.map((field) => field.name),
+    save: (body) => policyApi.update(body),
+    invalidate: queryKeys.catalog.policy,
+    success: 'Política atualizada.',
+  });
+  const { reset } = form;
+  useEffect(() => {
+    reset(valuesOf(policy));
+  }, [policy, reset]);
+  const { errors, isSubmitting } = form.formState;
+  return (
+    <Card>
+      <FormShell
+        label="Política de agendamento"
+        onSubmit={form.onSubmit}
+        alert={form.alert}
+        submitting={isSubmitting}
+      >
+        {FIELDS.map(({ name, label, hint }) => (
+          <Input
+            key={name}
+            label={label}
+            hint={hint}
+            type="number"
+            inputMode="numeric"
+            error={errors[name]?.message}
+            {...form.register(name, { valueAsNumber: true })}
+          />
+        ))}
+      </FormShell>
+    </Card>
+  );
+}
+
+export function PolicySection() {
+  const policy = useQuery({
+    queryKey: queryKeys.catalog.policy,
+    queryFn: ({ signal }) => policyApi.get(signal),
+  });
+  return (
+    <SettingsSection
+      title="Política de agendamento"
+      description="Regras de cancelamento, reagendamento e antecedência. As mudanças valem para os próximos agendamentos."
+    >
+      {policy.isPending && <Skeleton className="h-96" />}
+      {policy.isError && <QueryError error={policy.error} onRetry={() => void policy.refetch()} />}
+      {policy.data && <PolicyForm policy={policy.data} />}
+    </SettingsSection>
+  );
+}

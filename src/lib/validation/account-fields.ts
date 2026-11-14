@@ -22,14 +22,25 @@ export const emailField = z
   .min(1, 'Informe seu e-mail.')
   .pipe(z.email('Informe um e-mail válido.').max(254, 'O e-mail pode ter até 254 caracteres.'));
 
-export const fullNameField = z
-  .string()
-  .trim()
-  .refine((value) => !hasControlCharacter(value), 'O nome não pode ter caracteres de controle.')
-  .refine(
-    (value) => codePoints(value) >= 2 && codePoints(value) <= 120,
-    'Informe seu nome completo (2 a 120 caracteres).',
-  );
+export function boundedText(
+  min: number,
+  max: number,
+  message: string,
+  controlMessage = 'O texto não pode ter caracteres de controle.',
+) {
+  return z
+    .string()
+    .trim()
+    .refine((value) => !hasControlCharacter(value), controlMessage)
+    .refine((value) => codePoints(value) >= min && codePoints(value) <= max, message);
+}
+
+export const fullNameField = boundedText(
+  2,
+  120,
+  'Informe seu nome completo (2 a 120 caracteres).',
+  'O nome não pode ter caracteres de controle.',
+);
 
 export const phoneField = z
   .string()

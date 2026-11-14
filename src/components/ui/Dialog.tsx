@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode, type RefObject } from 'react';
 import { LuX } from 'react-icons/lu';
 import { cx } from '@lib/cx';
 import { IconButton } from './IconButton';
@@ -11,7 +11,9 @@ export interface DialogProps {
   description?: ReactNode;
   icon?: ReactNode;
   centered?: boolean;
+  placement?: 'center' | 'side';
   closeLabel?: string;
+  fallbackFocus?: RefObject<HTMLElement | null>;
   children?: ReactNode;
 }
 
@@ -22,7 +24,9 @@ export function Dialog({
   description,
   icon,
   centered = false,
+  placement = 'center',
   closeLabel = 'Fechar',
+  fallbackFocus,
   children,
 }: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -49,13 +53,14 @@ export function Dialog({
     if (!dialog) return;
     const onDialogClose = () => {
       if (returnFocus.current?.isConnected) returnFocus.current.focus();
+      else fallbackFocus?.current?.focus();
       returnFocus.current = null;
       if (closingFromProp.current) closingFromProp.current = false;
       else onClose();
     };
     dialog.addEventListener('close', onDialogClose);
     return () => dialog.removeEventListener('close', onDialogClose);
-  }, [onClose]);
+  }, [onClose, fallbackFocus]);
 
   return (
     <dialog
@@ -68,7 +73,11 @@ export function Dialog({
       onClick={(event) => {
         if (pressedBackdrop.current && event.target === event.currentTarget) ref.current?.close();
       }}
-      className="rounded-card border-role bg-surface text-text shadow-card m-auto w-[calc(100%-2rem)] max-w-sm border p-0"
+      className={cx(
+        'rounded-card border-role bg-surface text-text shadow-card m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-sm overflow-y-auto border p-0',
+        placement === 'side' &&
+          'max-w-lg lg:me-0 lg:h-dvh lg:max-h-dvh lg:w-full lg:rounded-e-none lg:border-y-0 lg:border-e-0',
+      )}
     >
       <div className={cx('relative flex flex-col gap-4 p-6 pt-8', centered && 'items-center text-center')}>
         <IconButton
