@@ -20,16 +20,16 @@ const at = (params: Params) => {
   return startsAt && !Number.isNaN(Date.parse(startsAt)) ? ` de ${formatDateTime(startsAt)}` : '';
 };
 
-const cancellers: Record<Canceller, string> = {
-  patient: ' pelo paciente',
-  doctor: ' pelo médico',
-  admin: ' pela administração',
-  system: ' pelo sistema',
+export const cancellers: Record<Canceller, string> = {
+  patient: 'pelo paciente',
+  doctor: 'pelo médico',
+  admin: 'pela administração',
+  system: 'pelo sistema',
 };
 
 const cancelledBy = (params: Params) => {
   const role = textParam(params, 'cancelledByRole');
-  return role && Object.hasOwn(cancellers, role) ? cancellers[role as Canceller] : '';
+  return role && Object.hasOwn(cancellers, role) ? ` ${cancellers[role as Canceller]}` : '';
 };
 
 const notificationTexts: Record<UserNotification['type'], (params: Params) => NotificationText> = {
@@ -69,7 +69,10 @@ const notificationTexts: Record<UserNotification['type'], (params: Params) => No
 
 const DEFAULT_TEXT: NotificationText = { title: 'Novo aviso', body: 'Você recebeu um novo aviso.' };
 
-export function notificationText({ type, params }: UserNotification): NotificationText {
+export function notificationText({
+  type,
+  params,
+}: Pick<UserNotification, 'type' | 'params'>): NotificationText {
   return notificationTexts[type]?.(params) ?? DEFAULT_TEXT;
 }
 

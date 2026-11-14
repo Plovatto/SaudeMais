@@ -2,24 +2,12 @@ import type { ReactNode } from 'react';
 import { LuTriangleAlert } from 'react-icons/lu';
 import { IconSlot, StatusChip } from '@components/ui';
 import type { Role } from '@constants/areas';
+import type { PatientBooking } from '@lib/api/models';
 import { formatDateTime } from '@lib/date';
+import { cancellers } from '@lib/messages/notifications.pt-BR';
 import { formatPhone } from '@lib/phone';
 
-type CancelledBy = Role | 'system';
-
-export interface Cancellation {
-  byRole: CancelledBy;
-  reason: string | null;
-  late: boolean;
-  cancelledAt: string;
-}
-
-const cancellers: Record<CancelledBy, string> = {
-  patient: 'pelo paciente',
-  doctor: 'pelo médico',
-  admin: 'pela administração',
-  system: 'pelo sistema',
-};
+type Cancellation = NonNullable<PatientBooking['cancellation']>;
 
 export function Detail({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
   return (

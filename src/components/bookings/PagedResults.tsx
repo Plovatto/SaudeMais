@@ -3,7 +3,7 @@ import type { ReactNode, RefObject } from 'react';
 import { Card, Pagination, QueryError, Skeleton } from '@components/ui';
 import type { PageMeta } from '@hooks/usePageParam';
 
-export interface PagedList<Item> {
+interface PagedList<Item> {
   query: UseQueryResult<PageMeta>;
   items: Item[] | undefined;
   page: number;

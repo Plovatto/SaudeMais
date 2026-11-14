@@ -7,15 +7,8 @@ export interface BookingListParams {
   page: number;
 }
 
-export const bookingsApi = {
-  list: ({ scope, page }: BookingListParams, signal: AbortSignal) =>
-    apiFetch('get', '/api/patient/bookings', {
-      query: { scope, page, pageSize: PAGE_SIZE },
-      signal,
-    }),
-  cancel: (id: string, startsAt: string, reason: string) =>
-    apiFetch('post', '/api/appointments/{id}/cancel', {
-      params: { id },
-      body: { startsAt, ...(reason && { reason }) },
-    }),
-};
+export const listBookings = ({ scope, page }: BookingListParams, signal: AbortSignal) =>
+  apiFetch('get', '/api/patient/bookings', {
+    query: { scope, page, pageSize: PAGE_SIZE },
+    signal,
+  });
