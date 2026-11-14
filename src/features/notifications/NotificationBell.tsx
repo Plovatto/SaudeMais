@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { LuBell } from 'react-icons/lu';
 import { ButtonLink, Popover } from '@components/ui';
 import { notificationsUrl, type Role } from '@constants/areas';
@@ -9,6 +9,7 @@ import { ReadAllButton } from './ReadAllButton';
 
 const PREVIEW_SIZE = 5;
 const BADGE_MAX = 9;
+const POLL_INTERVAL_MS = 120_000;
 
 const unreadText = (count: number) => (count === 1 ? '1 não lida' : `${count} não lidas`);
 
@@ -30,18 +31,32 @@ function NotificationsPreview({ role }: { role: Role }) {
 
 function useIncreaseAnnouncement(count: number | undefined) {
   const [previous, setPrevious] = useState(count);
+  const [pending, setPending] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState('');
   if (count !== previous) {
     setPrevious(count);
     if (count !== undefined && previous !== undefined && count > previous) {
-      setAnnouncement(`Nova notificação. ${unreadText(count)}.`);
+      setAnnouncement('');
+      setPending(`Nova notificação. ${unreadText(count)}.`);
     }
   }
+  useEffect(() => {
+    if (pending === null) return;
+    const timer = setTimeout(() => {
+      setAnnouncement(pending);
+      setPending(null);
+    });
+    return () => clearTimeout(timer);
+  }, [pending]);
   return announcement;
 }
 
 export function NotificationBell({ role }: { role: Role }) {
-  const count = useQuery(unreadCountQuery(role)).data;
+  const count = useQuery({
+    ...unreadCountQuery(role),
+    refetchInterval: POLL_INTERVAL_MS,
+    refetchIntervalInBackground: false,
+  }).data;
   const announcement = useIncreaseAnnouncement(count);
   const unread = count ?? 0;
   return (

@@ -14,7 +14,7 @@ export function AppHeader({ area }: { area: Area }) {
           <span className="text-text-secondary truncate text-base font-bold">{area.label}</span>
           <span className="text-text-muted truncate text-xs font-medium">{user.fullName}</span>
         </div>
-        <NotificationBell role={area.role} />
+        <NotificationBell key={area.role} role={area.role} />
       </div>
     </header>
   );

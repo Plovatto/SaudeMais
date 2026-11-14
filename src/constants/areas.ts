@@ -130,7 +130,7 @@ export const AREA_PARAM = 'perfil';
 
 export const NOTIFICATIONS_PATH = '/notificacoes';
 
-const areaSlug = (role: Role) => areas[role].base.slice(1);
+export const areaSlug = (role: Role) => areas[role].base.slice(1);
 
 export function roleFromSlug(slug: string | null): Role | undefined {
   return Object.values(areas).find(({ role }) => areaSlug(role) === slug)?.role;

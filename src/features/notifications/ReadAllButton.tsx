@@ -2,12 +2,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LuCheckCheck } from 'react-icons/lu';
 import { Button, useToast } from '@components/ui';
 import type { Role } from '@constants/areas';
-import { ApiError } from '@lib/api/api-error';
 import {
   invalidateNotifications,
   markAllNotificationsRead,
   unreadCountQuery,
 } from '@lib/api/notifications-api';
+import { isProtectedAccount } from '@lib/auth/protected-account';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
 
 const DEMO_MESSAGE =
@@ -22,7 +22,7 @@ export function ReadAllButton({ role }: { role: Role }) {
     onSuccess: () => invalidateNotifications(queryClient),
     onError: (error) =>
       show(
-        error instanceof ApiError && error.code === 'PROTECTED_ACCOUNT'
+        isProtectedAccount(error)
           ? { message: DEMO_MESSAGE, tone: 'info' }
           : { message: errorMessage(error), tone: 'danger' },
       ),

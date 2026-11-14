@@ -15,7 +15,7 @@ import type { Role } from '@constants/areas';
 import type { UserNotification } from '@lib/api/models';
 import { useMarkNotificationRead, type NotificationPage } from '@lib/api/notifications-api';
 import { cx } from '@lib/cx';
-import { formatRelative } from '@lib/date';
+import { formatDateTime, formatRelative } from '@lib/date';
 import { notificationTarget, notificationText } from '@lib/messages/notifications.pt-BR';
 
 const tones = {
@@ -73,7 +73,11 @@ function NotificationItem({ notification, role }: { notification: UserNotificati
             {title}
             {unread && <span className="sr-only"> (não lida)</span>}
           </span>
-          <time dateTime={notification.createdAt} className="text-text-secondary shrink-0 text-xs">
+          <time
+            dateTime={notification.createdAt}
+            title={formatDateTime(notification.createdAt)}
+            className="text-text-secondary shrink-0 text-xs"
+          >
             {formatRelative(notification.createdAt)}
           </time>
         </span>

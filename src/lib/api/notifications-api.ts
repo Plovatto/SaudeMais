@@ -1,21 +1,16 @@
-import { queryOptions, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { queryOptions, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import type { Role } from '@constants/areas';
 import { queryKeys } from '@lib/query-keys';
 import { apiFetch, type ResponseOf } from './api-fetch';
 import type { UserNotification } from './models';
 
-const POLL_INTERVAL_MS = 120_000;
-const COUNT_STALE_MS = 60_000;
-
 export const unreadCountQuery = (role: Role) =>
   queryOptions({
     queryKey: queryKeys.notifications.unread(role),
     queryFn: ({ signal }) => apiFetch('get', '/api/notifications/unread-count', { query: { role }, signal }),
     select: ({ count }) => count,
-    staleTime: COUNT_STALE_MS,
-    refetchInterval: POLL_INTERVAL_MS,
-    refetchIntervalInBackground: false,
+    staleTime: 60_000,
     refetchOnWindowFocus: true,
   });
 
@@ -23,11 +18,11 @@ export type NotificationPage = ResponseOf<'/api/notifications', 'get'>;
 
 export const notificationsQuery = (role: Role, page: number, pageSize: number) =>
   queryOptions({
-    queryKey: queryKeys.notifications.list({ role, page, pageSize }),
+    queryKey: queryKeys.notifications.list(role, { page, pageSize }),
     queryFn: ({ signal }) =>
       apiFetch('get', '/api/notifications', { query: { role, page, pageSize }, signal }),
     placeholderData: (previous: NotificationPage | undefined, previousQuery) =>
-      (previousQuery?.queryKey[2] as { role?: Role } | undefined)?.role === role ? previous : undefined,
+      previousQuery?.queryKey[2] === role ? previous : undefined,
   });
 
 export const markAllNotificationsRead = (role: Role) =>
@@ -45,14 +40,14 @@ const markNotificationRead = (id: string) =>
 
 export function useMarkNotificationRead() {
   const queryClient = useQueryClient();
+  const { mutate } = useMutation({
+    mutationFn: markNotificationRead,
+    onSuccess: () => invalidateNotifications(queryClient),
+  });
   return useCallback(
     ({ id, readAt }: UserNotification) => {
-      if (readAt !== null) return;
-      void markNotificationRead(id).then(
-        () => invalidateNotifications(queryClient),
-        () => undefined,
-      );
+      if (readAt === null) mutate(id);
     },
-    [queryClient],
+    [mutate],
   );
 }

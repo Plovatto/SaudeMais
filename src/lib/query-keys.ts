@@ -25,7 +25,7 @@ export const queryKeys = {
   notifications: {
     all: ['notifications'] as const,
     unread: (role: string) => ['notifications', 'unread', role] as const,
-    list: (params: object) => ['notifications', 'list', params] as const,
+    list: (role: string, params: object) => ['notifications', 'list', role, params] as const,
   },
   doctor: {
     all: ['doctor'] as const,
