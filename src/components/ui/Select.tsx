@@ -28,7 +28,11 @@ export function Select({
       {(control) => (
         <>
           <select
-            className={cx(controlInput, 'cursor-pointer appearance-none', compact ? 'pe-5' : 'pe-8')}
+            className={cx(
+              controlInput,
+              '[&:has(option[value=""]:checked)]:text-text-muted cursor-pointer appearance-none',
+              compact ? 'pe-5' : 'pe-8',
+            )}
             value={value}
             defaultValue={startsOnPlaceholder ? '' : defaultValue}
             {...selectProps}
