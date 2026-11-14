@@ -24,6 +24,182 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar usuários
+         * @description Lista paginada em ordem alfabética. `search` procura no nome (sem distinguir acentos) e no e-mail; `role` e `status` filtram por perfil e por conta ativa ou desativada. Nunca mostra senhas, observações nem resultados.
+         */
+        get: operations["adminListUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ver um usuário
+         * @description Dados da conta, perfis e, quando houver, o perfil médico.
+         */
+        get: operations["adminGetUser"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Alterar nome ou telefone
+         * @description Altera só os campos enviados. O e-mail não muda, e o administrador nunca vê nem define senhas.
+         */
+        patch: operations["adminUpdateUser"];
+        trace?: never;
+    };
+    "/api/admin/users/{id}/deactivation-impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ver o impacto de desativar
+         * @description Quantos agendamentos futuros seriam cancelados se a conta fosse desativada.
+         */
+        get: operations["adminDeactivationImpact"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{id}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Desativar conta
+         * @description Bloqueia o login e encerra todas as sessões; os agendamentos futuros da pessoa serão cancelados. Não é possível desativar a própria conta nem o último administrador. Repetir não tem efeito.
+         */
+        post: operations["adminDeactivateUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{id}/reactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reativar conta
+         * @description Libera o login de novo. Repetir não tem efeito.
+         */
+        post: operations["adminReactivateUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{id}/password-reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Enviar link de redefinição de senha
+         * @description Envia ao e-mail da conta um link para a própria pessoa criar a senha, com os mesmos limites do pedido feito por ela.
+         */
+        post: operations["adminSendPasswordReset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{id}/roles/{role}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Tornar administrador
+         * @description Concede o perfil de administrador. Para médicos, use o perfil médico. Repetir não tem efeito.
+         */
+        post: operations["adminGrantRole"];
+        /**
+         * Tirar o perfil de administrador
+         * @description Não é possível tirar o perfil da própria conta nem do último administrador ativo.
+         */
+        delete: operations["adminRevokeRole"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{id}/doctor-profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Tornar médico
+         * @description Cria o perfil médico com especialidade, unidade e registro profissional, e concede o perfil de médico. O conselho vem da especialidade.
+         */
+        post: operations["adminCreateDoctorProfile"];
+        /**
+         * Remover perfil médico
+         * @description Tira o perfil de médico da conta; os dados do registro ficam guardados para o histórico e podem voltar a valer com um novo POST. As consultas futuras que ele atende serão canceladas.
+         */
+        delete: operations["adminDeleteDoctorProfile"];
+        options?: never;
+        head?: never;
+        /**
+         * Alterar perfil médico
+         * @description Altera só os campos enviados. Trocar especialidade ou unidade é recusado enquanto o médico tiver consultas futuras.
+         */
+        patch: operations["adminUpdateDoctorProfile"];
+        trace?: never;
+    };
     "/api/specialties": {
         parameters: {
             query?: never;
@@ -578,6 +754,65 @@ export interface components {
             expiresAt: string;
             user: components["schemas"]["User"];
         };
+        DoctorProfileInput: {
+            /** Format: uuid */
+            specialtyId: string;
+            /** Format: uuid */
+            unitId: string;
+            /** @example 123456 */
+            registryNumber: string;
+            /** @example SP */
+            registryUf: string;
+        };
+        UpdateDoctorProfileInput: {
+            /** Format: uuid */
+            specialtyId?: string;
+            /** Format: uuid */
+            unitId?: string;
+            /** @example 123456 */
+            registryNumber?: string;
+            /** @example SP */
+            registryUf?: string;
+        };
+        DoctorProfile: {
+            /** Format: uuid */
+            specialtyId: string;
+            /** @example Cardiologia */
+            specialtyName: string;
+            /** @example CRM */
+            council: string;
+            /** Format: uuid */
+            unitId: string;
+            /** @example Unidade Central */
+            unitName: string;
+            /** @example 123456 */
+            registryNumber: string;
+            /** @example SP */
+            registryUf: string;
+        };
+        AdminUser: components["schemas"]["User"] & {
+            /** @description Conta de demonstração, que não pode ser alterada. */
+            isProtected: boolean;
+            /** Format: date-time */
+            deactivatedAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        AdminUserDetail: components["schemas"]["AdminUser"] & {
+            doctorProfile: components["schemas"]["DoctorProfile"] & (Record<string, never> | null);
+        };
+        AdminUserPage: {
+            items: components["schemas"]["AdminUser"][];
+            page: number;
+            pageSize: number;
+            total: number;
+        };
+        DeactivationImpact: {
+            /** @description Consultas e exames futuros da pessoa. */
+            futureAppointmentsAsPatient: number;
+            /** @description Consultas futuras que ela atende. */
+            futureAppointmentsAsDoctor: number;
+        };
         CreateSpecialtyRequest: {
             /** @example Cardiologia */
             name: string;
@@ -866,6 +1101,1534 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminListUsers: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                /** @description Parte do nome (sem distinguir acentos nem maiúsculas) ou do e-mail. */
+                search?: string;
+                /** @description Só contas com este perfil. */
+                role?: "patient" | "doctor" | "admin";
+                /** @description Só contas ativas ou só desativadas. */
+                status?: "active" | "inactive";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Página de usuários. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserPage"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminGetUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Usuário. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserDetail"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Usuário não encontrado.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminUpdateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UpdateProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description Usuário atualizado. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserDetail"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem perfil de administrador (`FORBIDDEN`) ou conta de demonstração (`PROTECTED_ACCOUNT`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Esta é uma conta de demonstração e não pode ser alterada.",
+                     *       "code": "PROTECTED_ACCOUNT"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Usuário não encontrado.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminDeactivationImpact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Agendamentos afetados. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeactivationImpact"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Usuário não encontrado.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminDeactivateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Conta desativada. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserDetail"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem perfil de administrador (`FORBIDDEN`) ou conta de demonstração (`PROTECTED_ACCOUNT`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Esta é uma conta de demonstração e não pode ser alterada.",
+                     *       "code": "PROTECTED_ACCOUNT"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Usuário não encontrado.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflito com o estado atual (`SELF_OR_LAST_ADMIN`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não pode desativar nem tirar o perfil de administrador da própria conta, nem deixar o sistema sem administradores.",
+                     *       "code": "SELF_OR_LAST_ADMIN",
+                     *       "fields": {
+                     *         "_root": "Você não pode desativar nem tirar o perfil de administrador da própria conta, nem deixar o sistema sem administradores."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminReactivateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Conta reativada. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserDetail"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem perfil de administrador (`FORBIDDEN`) ou conta de demonstração (`PROTECTED_ACCOUNT`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Esta é uma conta de demonstração e não pode ser alterada.",
+                     *       "code": "PROTECTED_ACCOUNT"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Usuário não encontrado.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminSendPasswordReset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Link enviado. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem perfil de administrador (`FORBIDDEN`) ou conta de demonstração (`PROTECTED_ACCOUNT`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Esta é uma conta de demonstração e não pode ser alterada.",
+                     *       "code": "PROTECTED_ACCOUNT"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Usuário não encontrado.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflito com o estado atual (`RESET_NOT_SENT`, `USER_INACTIVE`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Um link foi enviado há pouco ou o limite do dia foi atingido. Tente mais tarde.",
+                     *       "code": "RESET_NOT_SENT",
+                     *       "fields": {
+                     *         "_root": "Um link foi enviado há pouco ou o limite do dia foi atingido. Tente mais tarde."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminGrantRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                role: "admin";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Perfil concedido. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserDetail"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem perfil de administrador (`FORBIDDEN`) ou conta de demonstração (`PROTECTED_ACCOUNT`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Esta é uma conta de demonstração e não pode ser alterada.",
+                     *       "code": "PROTECTED_ACCOUNT"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Usuário não encontrado.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflito com o estado atual (`USER_INACTIVE`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "A conta está desativada; reative-a antes.",
+                     *       "code": "USER_INACTIVE",
+                     *       "fields": {
+                     *         "_root": "A conta está desativada; reative-a antes."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminRevokeRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                role: "admin";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Perfil removido. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserDetail"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem perfil de administrador (`FORBIDDEN`) ou conta de demonstração (`PROTECTED_ACCOUNT`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Esta é uma conta de demonstração e não pode ser alterada.",
+                     *       "code": "PROTECTED_ACCOUNT"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Usuário não encontrado.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflito com o estado atual (`SELF_OR_LAST_ADMIN`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não pode desativar nem tirar o perfil de administrador da própria conta, nem deixar o sistema sem administradores.",
+                     *       "code": "SELF_OR_LAST_ADMIN",
+                     *       "fields": {
+                     *         "_root": "Você não pode desativar nem tirar o perfil de administrador da própria conta, nem deixar o sistema sem administradores."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminCreateDoctorProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DoctorProfileInput"];
+            };
+        };
+        responses: {
+            /** @description Perfil médico criado. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserDetail"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem perfil de administrador (`FORBIDDEN`) ou conta de demonstração (`PROTECTED_ACCOUNT`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Esta é uma conta de demonstração e não pode ser alterada.",
+                     *       "code": "PROTECTED_ACCOUNT"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Usuário não encontrado.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflito com o estado atual (`REGISTRY_TAKEN`, `DOCTOR_PROFILE_EXISTS`, `USER_INACTIVE`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Este registro profissional já pertence a outro médico.",
+                     *       "code": "REGISTRY_TAKEN",
+                     *       "fields": {
+                     *         "registryNumber": "Este registro profissional já pertence a outro médico."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Especialidade ou unidade inativa ou inexistente (`SPECIALTY_UNAVAILABLE`, `UNIT_UNAVAILABLE`). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Escolha uma especialidade ativa.",
+                     *       "code": "SPECIALTY_UNAVAILABLE",
+                     *       "fields": {
+                     *         "specialtyId": "Escolha uma especialidade ativa."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminDeleteDoctorProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Perfil médico removido. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserDetail"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem perfil de administrador (`FORBIDDEN`) ou conta de demonstração (`PROTECTED_ACCOUNT`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Esta é uma conta de demonstração e não pode ser alterada.",
+                     *       "code": "PROTECTED_ACCOUNT"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Esta conta não tem perfil médico.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminUpdateDoctorProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UpdateDoctorProfileInput"];
+            };
+        };
+        responses: {
+            /** @description Perfil médico atualizado. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserDetail"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem perfil de administrador (`FORBIDDEN`) ou conta de demonstração (`PROTECTED_ACCOUNT`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Esta é uma conta de demonstração e não pode ser alterada.",
+                     *       "code": "PROTECTED_ACCOUNT"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Esta conta não tem perfil médico.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflito com o estado atual (`REGISTRY_TAKEN`, `HAS_FUTURE_APPOINTMENTS`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Este registro profissional já pertence a outro médico.",
+                     *       "code": "REGISTRY_TAKEN",
+                     *       "fields": {
+                     *         "registryNumber": "Este registro profissional já pertence a outro médico."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Especialidade ou unidade inativa ou inexistente (`SPECIALTY_UNAVAILABLE`, `UNIT_UNAVAILABLE`). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Escolha uma especialidade ativa.",
+                     *       "code": "SPECIALTY_UNAVAILABLE",
+                     *       "fields": {
+                     *         "specialtyId": "Escolha uma especialidade ativa."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
@@ -1277,7 +3040,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Conflito com o estado atual (`NAME_TAKEN`). */
+            /** @description Conflito com o estado atual (`NAME_TAKEN`, `COUNCIL_IN_USE`). */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1414,7 +3177,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Conflito com o estado atual (`NAME_TAKEN`). */
+            /** @description Conflito com o estado atual (`NAME_TAKEN`, `COUNCIL_IN_USE`). */
             409: {
                 headers: {
                     [name: string]: unknown;

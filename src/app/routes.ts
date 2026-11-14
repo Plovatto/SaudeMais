@@ -47,6 +47,9 @@ const authScreen = (name: AuthScreenName) =>
 
 const areaScreens: Record<string, typeof placeholder> = {
   perfil: lazyComponent(async () => (await import('@features/profile')).ProfilePage),
+  usuarios: lazyComponent(async () => (await import('@features/admin-users')).UsersPage),
+  'usuarios/:id': lazyComponent(async () => (await import('@features/admin-users')).EditUserPage),
+  'usuarios/:id/medico': lazyComponent(async () => (await import('@features/admin-users')).DoctorProfilePage),
   'configuracoes/*': lazyComponent(async () => (await import('@features/admin-settings')).AdminSettingsPage),
 };
 
