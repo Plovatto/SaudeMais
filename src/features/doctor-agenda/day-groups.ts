@@ -1,6 +1,6 @@
-import { addDays, formatDay, todayInSaoPaulo } from '@lib/date';
+import { addDays, civilDateInSaoPaulo, formatDay } from '@lib/date';
 
-export interface DayGroup<T> {
+interface DayGroup<T> {
   date: string;
   label: string;
   items: T[];
@@ -10,7 +10,7 @@ export function groupByDay<T extends { startsAt: string }>(
   items: readonly T[],
   now = new Date(),
 ): DayGroup<T>[] {
-  const today = todayInSaoPaulo(now);
+  const today = civilDateInSaoPaulo(now);
   const named: Record<string, string> = {
     [today]: 'Hoje',
     [addDays(today, 1)]: 'Amanhã',
@@ -18,7 +18,7 @@ export function groupByDay<T extends { startsAt: string }>(
   };
   const groups = new Map<string, T[]>();
   for (const item of items) {
-    const date = todayInSaoPaulo(new Date(item.startsAt));
+    const date = civilDateInSaoPaulo(new Date(item.startsAt));
     groups.set(date, [...(groups.get(date) ?? []), item]);
   }
   return [...groups].map(([date, dayItems]) => ({
