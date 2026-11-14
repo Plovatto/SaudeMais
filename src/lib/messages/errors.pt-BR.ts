@@ -19,6 +19,13 @@ export const errorMessages: Record<string, string> = {
     'Este médico tem consultas futuras. Cancele-as antes de trocar a especialidade ou a unidade.',
   SPECIALTY_UNAVAILABLE: 'Esta especialidade está desativada. Escolha outra.',
   UNIT_UNAVAILABLE: 'Esta unidade está desativada. Escolha outra.',
+  SLOT_TAKEN: 'Este horário acabou de ser ocupado. Escolha outro.',
+  PATIENT_CONFLICT: 'Você já tem um agendamento neste horário. Escolha outro.',
+  OUTSIDE_AVAILABILITY: 'Este horário não está mais disponível. Escolha outro da lista.',
+  ACTIVE_LIMIT:
+    'Você atingiu o limite de agendamentos ativos. Cancele ou aguarde a conclusão de um deles antes de pedir outro.',
+  SPECIALTY_MISMATCH: 'Este médico não atende a especialidade escolhida.',
+  SELF_BOOKING: 'Não é possível agendar uma consulta com você mesmo.',
   INVALID_CREDENTIALS: 'E-mail ou senha incorretos.',
   USER_INACTIVE: 'Esta conta está desativada.',
   UNAUTHENTICATED: 'Sua sessão expirou. Entre novamente.',
@@ -37,9 +44,13 @@ export const errorMessages: Record<string, string> = {
 
 export type MessageOverrides = Readonly<Record<string, string>>;
 
+export function messageFor(code: string, overrides: MessageOverrides = {}): string | undefined {
+  if (Object.hasOwn(overrides, code)) return overrides[code];
+  if (Object.hasOwn(errorMessages, code)) return errorMessages[code];
+  return undefined;
+}
+
 export function errorMessage(error: unknown, overrides: MessageOverrides = {}): string {
   if (!(error instanceof ApiError)) return GENERIC_ERROR_MESSAGE;
-  if (Object.hasOwn(overrides, error.code)) return overrides[error.code] ?? GENERIC_ERROR_MESSAGE;
-  if (Object.hasOwn(errorMessages, error.code)) return errorMessages[error.code] ?? GENERIC_ERROR_MESSAGE;
-  return error.message || GENERIC_ERROR_MESSAGE;
+  return messageFor(error.code, overrides) ?? (error.message || GENERIC_ERROR_MESSAGE);
 }

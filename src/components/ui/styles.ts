@@ -43,7 +43,7 @@ export const controlInput =
 
 export function controlBox(invalid: boolean): string {
   return cx(
-    'flex min-h-12 items-center gap-2.5 rounded-field border bg-surface-muted px-3.5 text-text transition-colors has-[:is(input,select,textarea):focus-visible]:outline-2 has-[:is(input,select,textarea):focus-visible]:outline-offset-2 has-[:is(input,select,textarea):focus-visible]:outline-focus has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60',
+    'flex min-h-12 items-center gap-2.5 rounded-field border bg-surface-muted px-3.5 text-text transition-colors has-[:is(input,select,textarea):focus-visible]:outline-2 has-[:is(input,select,textarea):focus-visible]:outline-offset-2 has-[:is(input,select,textarea):focus-visible]:outline-focus has-[:is(input,select,textarea):disabled]:cursor-not-allowed has-[:is(input,select,textarea):disabled]:opacity-60',
     invalid ? 'border-danger' : 'border-border-field can-hover:border-text-secondary',
   );
 }

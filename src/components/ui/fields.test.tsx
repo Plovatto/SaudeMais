@@ -76,6 +76,25 @@ describe('Select', () => {
     expect(screen.getByRole('option', { name: 'Escolha' })).toBeDisabled();
   });
 
+  it('fades only a disabled select, not one showing its placeholder', () => {
+    render(
+      <>
+        <Select label="Especialidade" placeholder="Escolha">
+          <option value="1">Cardiologia</option>
+        </Select>
+        <Select label="Unidade" placeholder="Escolha" disabled>
+          <option value="1">Central</option>
+        </Select>
+      </>,
+    );
+    const fadedBox = ':has(:is(input,select,textarea):disabled)';
+    const boxOf = (name: string) => screen.getByRole('combobox', { name }).parentElement as HTMLElement;
+
+    expect(boxOf('Especialidade')).toHaveClass('has-[:is(input,select,textarea):disabled]:opacity-60');
+    expect(boxOf('Especialidade').matches(fadedBox)).toBe(false);
+    expect(boxOf('Unidade').matches(fadedBox)).toBe(true);
+  });
+
   it('marks the field invalid with its error', () => {
     render(
       <Select label="Especialidade" error="Escolha uma especialidade">
