@@ -125,3 +125,15 @@ export function pageUrl(area: Area, page: AreaPage): string {
   const path = page.path.replace(/\/\*$/, '');
   return path ? `${area.base}/${path}` : area.base;
 }
+
+export const AREA_PARAM = 'perfil';
+
+export const NOTIFICATIONS_PATH = '/notificacoes';
+
+const areaSlug = (role: Role) => areas[role].base.slice(1);
+
+export function roleFromSlug(slug: string | null): Role | undefined {
+  return Object.values(areas).find(({ role }) => areaSlug(role) === slug)?.role;
+}
+
+export const notificationsUrl = (role: Role) => `${NOTIFICATIONS_PATH}?${AREA_PARAM}=${areaSlug(role)}`;

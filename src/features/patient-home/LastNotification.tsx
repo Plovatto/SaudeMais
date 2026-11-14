@@ -1,27 +1,17 @@
-import { useQueryClient } from '@tanstack/react-query';
 import { useId } from 'react';
 import { LuBell, LuChevronRight } from 'react-icons/lu';
 import { Link } from 'react-router';
 import { IconSlot } from '@components/ui';
 import type { UserNotification } from '@lib/api/models';
+import { useMarkNotificationRead } from '@lib/api/notifications-api';
 import { formatRelative } from '@lib/date';
 import { notificationTarget, notificationText } from '@lib/messages/notifications.pt-BR';
-import { queryKeys } from '@lib/query-keys';
-import { markNotificationRead } from './patient-home-api';
 
 export function LastNotification({ notification }: { notification: UserNotification }) {
   const titleId = useId();
-  const queryClient = useQueryClient();
+  const markRead = useMarkNotificationRead();
   const { title, body } = notificationText(notification);
   const unread = notification.readAt === null;
-
-  const markRead = () => {
-    if (!unread) return;
-    void markNotificationRead(notification.id).then(
-      () => queryClient.invalidateQueries({ queryKey: queryKeys.patient.home }),
-      () => undefined,
-    );
-  };
 
   return (
     <section aria-labelledby={titleId}>
@@ -30,7 +20,7 @@ export function LastNotification({ notification }: { notification: UserNotificat
       </h2>
       <Link
         to={notificationTarget(notification, 'patient')}
-        onClick={markRead}
+        onClick={() => markRead(notification)}
         className="rounded-card border-role/30 bg-role-soft shadow-card text-text can-hover:border-role flex min-h-11 items-start gap-3 border p-4 transition-colors"
       >
         <IconSlot className="bg-surface text-role-text size-10 justify-center rounded-full text-xl">

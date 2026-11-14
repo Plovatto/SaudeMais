@@ -1,7 +1,7 @@
 import type { ComponentType } from 'react';
 import { redirect, type RouteObject } from 'react-router';
 import { RootFallback, RootRoute } from '@components/layout/RootRoute';
-import { areas, type Area } from '@constants/areas';
+import { areas, NOTIFICATIONS_PATH, type Area } from '@constants/areas';
 import { ForbiddenPage, NotFoundPage, RouteError, RouteErrorBoundary } from '@features/errors';
 import { PublicOnly, RequireRole, RequireSession } from './guards';
 
@@ -66,20 +66,30 @@ const homeScreens: Partial<Record<Area['role'], typeof placeholder>> = {
 const screenFor = (area: Area, path: string) =>
   (path === '' ? homeScreens[area.role] : areaScreens[path]) ?? placeholder;
 
-const areaRoute = (area: Area): RouteObject => ({
-  path: area.base,
-  handle: { role: area.role },
+const roleRoute = (path: string, children: RouteObject[], role?: Area['role']): RouteObject => ({
+  path,
+  ...(role && { handle: { role } }),
   Component: RequireRole,
   children: [
     {
       lazy: lazyComponent(async () => (await import('@components/layout/RoleLayout')).RoleLayout),
-      children: [
-        ...area.pages.map(({ path, title }) => page(path, title, { lazy: screenFor(area, path) })),
-        notFound,
-      ],
+      children,
     },
   ],
 });
+
+const areaRoute = (area: Area): RouteObject =>
+  roleRoute(
+    area.base,
+    [...area.pages.map(({ path, title }) => page(path, title, { lazy: screenFor(area, path) })), notFound],
+    area.role,
+  );
+
+const notificationsRoute = roleRoute(NOTIFICATIONS_PATH, [
+  page('', 'Notificações', {
+    lazy: lazyComponent(async () => (await import('@features/notifications')).NotificationsPage),
+  }),
+]);
 
 export const routes: RouteObject[] = [
   {
@@ -118,7 +128,7 @@ export const routes: RouteObject[] = [
           notFound,
         ],
       },
-      { Component: RequireSession, children: Object.values(areas).map(areaRoute) },
+      { Component: RequireSession, children: [...Object.values(areas).map(areaRoute), notificationsRoute] },
     ],
   },
 ];

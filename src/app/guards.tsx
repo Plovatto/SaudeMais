@@ -1,10 +1,10 @@
 import { Navigate, Outlet, useLocation, useSearchParams } from 'react-router';
 import { RootFallback } from '@components/layout/RootRoute';
 import { StandaloneScreen } from '@components/layout/StandaloneScreen';
-import { useRouteHandle } from '@components/layout/route-handle';
+import { useAreaRole } from '@components/layout/route-handle';
 import { ConnectionErrorPage, ForbiddenPage } from '@features/errors';
 import { homeFor } from '@lib/auth/return-to';
-import { useSession } from '@lib/auth/useSession';
+import { useCurrentUser, useSession } from '@lib/auth/useSession';
 
 export function RequireSession() {
   const session = useSession();
@@ -28,9 +28,9 @@ export function RequireSession() {
 }
 
 export function RequireRole() {
-  const session = useSession();
-  const { role } = useRouteHandle();
-  if (session.status === 'authenticated' && role && !session.user.roles.includes(role)) {
+  const { roles } = useCurrentUser();
+  const role = useAreaRole();
+  if (!roles.includes(role)) {
     return (
       <StandaloneScreen>
         <ForbiddenPage />

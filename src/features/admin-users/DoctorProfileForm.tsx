@@ -42,7 +42,7 @@ export function DoctorProfileForm({ user, locked }: DoctorProfileFormProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { show } = useToast();
-  const profile = user.doctorProfile;
+  const profile = user.doctorProfile ?? undefined;
   const [removing, setRemoving] = useState(false);
   const specialties = useActiveSpecialties();
   const units = useActiveUnits();
