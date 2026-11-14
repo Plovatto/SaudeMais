@@ -63,6 +63,7 @@ const relativeTime = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto', sty
 const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
+const RELATIVE_DAYS = 7;
 
 export function formatRelative(iso: string, now = new Date()): string {
   const date = new Date(iso);
@@ -72,5 +73,5 @@ export function formatRelative(iso: string, now = new Date()): string {
   if (elapsed < HOUR_MS) return relativeTime.format(-Math.floor(elapsed / MINUTE_MS), 'minute');
   if (elapsed < DAY_MS) return relativeTime.format(-Math.floor(elapsed / HOUR_MS), 'hour');
   const days = (utcDay(todayInSaoPaulo(now)).getTime() - utcDay(todayInSaoPaulo(date)).getTime()) / DAY_MS;
-  return relativeTime.format(-days, 'day');
+  return days > RELATIVE_DAYS ? dateTime.format(date) : relativeTime.format(-days, 'day');
 }

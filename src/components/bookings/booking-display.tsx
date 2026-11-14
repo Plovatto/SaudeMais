@@ -37,3 +37,8 @@ export function bookingTitle({ kind, doctor, specialty, examType, unit }: Patien
     ? { title: unit.name, subtitle: `Exame · ${examType?.name ?? ''}` }
     : { title: doctor?.fullName ?? '', subtitle: specialty?.name ?? '' };
 }
+
+export const UPCOMING_EMPTY = {
+  title: 'Nenhum agendamento futuro',
+  description: 'Agende uma consulta ou um exame para acompanhar por aqui.',
+};

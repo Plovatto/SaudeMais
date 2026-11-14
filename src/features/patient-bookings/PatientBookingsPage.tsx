@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { LuCalendarCheck, LuCalendarX, LuClock, LuPlus, LuSyringe } from 'react-icons/lu';
+import { UPCOMING_EMPTY } from '@components/bookings/booking-display';
 import { PageHeader } from '@components/layout/PageHeader';
 import {
   ButtonLink,
@@ -32,10 +33,7 @@ const TABS = [
     label: 'Agendados',
     scope: 'upcoming',
     icon: <LuCalendarCheck />,
-    empty: {
-      title: 'Nenhum agendamento futuro',
-      description: 'Agende uma consulta ou um exame para acompanhar por aqui.',
-    },
+    empty: UPCOMING_EMPTY,
   },
   {
     value: 'realizados',

@@ -1,8 +1,7 @@
+import { useId } from 'react';
 import { LuHeart, LuWeight } from 'react-icons/lu';
 import { IconSlot } from '@components/ui';
 import { cx } from '@lib/cx';
-
-const TITLE_ID = 'health-summary-title';
 
 const MEASURES = [
   { label: 'Pressão arterial', icon: <LuHeart /> },
@@ -10,12 +9,13 @@ const MEASURES = [
 ];
 
 export function HealthSummary({ className }: { className?: string }) {
+  const titleId = useId();
   return (
     <section
-      aria-labelledby={TITLE_ID}
+      aria-labelledby={titleId}
       className={cx('rounded-card bg-role-soft text-text flex flex-col gap-4 p-5', className)}
     >
-      <h2 id={TITLE_ID} className="font-semibold">
+      <h2 id={titleId} className="font-semibold">
         Minha saúde
       </h2>
       <dl className="grid grid-cols-2 gap-4">

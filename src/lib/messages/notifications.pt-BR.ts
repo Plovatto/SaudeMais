@@ -1,7 +1,9 @@
-import type { UserNotification } from '@lib/api/models';
+import { areas, type Role } from '@constants/areas';
+import type { PatientBooking, UserNotification } from '@lib/api/models';
 import { formatDateTime } from '@lib/date';
 
 type Params = UserNotification['params'];
+type Canceller = NonNullable<PatientBooking['cancellation']>['byRole'];
 
 interface NotificationText {
   title: string;
@@ -15,14 +17,19 @@ const textParam = (params: Params, key: string) => {
 
 const at = (params: Params) => {
   const startsAt = textParam(params, 'startsAt');
-  return startsAt ? ` de ${formatDateTime(startsAt)}` : '';
+  return startsAt && !Number.isNaN(Date.parse(startsAt)) ? ` de ${formatDateTime(startsAt)}` : '';
 };
 
-const cancellers: Record<string, string> = {
+const cancellers: Record<Canceller, string> = {
   patient: ' pelo paciente',
   doctor: ' pelo médico',
   admin: ' pela administração',
   system: ' pelo sistema',
+};
+
+const cancelledBy = (params: Params) => {
+  const role = textParam(params, 'cancelledByRole');
+  return role && Object.hasOwn(cancellers, role) ? cancellers[role as Canceller] : '';
 };
 
 const notificationTexts: Record<UserNotification['type'], (params: Params) => NotificationText> = {
@@ -44,7 +51,7 @@ const notificationTexts: Record<UserNotification['type'], (params: Params) => No
   }),
   appointment_cancelled: (params) => ({
     title: 'Consulta cancelada',
-    body: `A consulta${at(params)} foi cancelada${cancellers[textParam(params, 'cancelledByRole') ?? ''] ?? ''}.`,
+    body: `A consulta${at(params)} foi cancelada${cancelledBy(params)}.`,
   }),
   appointment_expired: (params) => ({
     title: 'Pedido não confirmado',
@@ -60,6 +67,34 @@ const notificationTexts: Record<UserNotification['type'], (params: Params) => No
   }),
 };
 
+const DEFAULT_TEXT: NotificationText = { title: 'Novo aviso', body: 'Você recebeu um novo aviso.' };
+
 export function notificationText({ type, params }: UserNotification): NotificationText {
-  return notificationTexts[type]?.(params) ?? { title: 'Novo aviso', body: 'Você recebeu um novo aviso.' };
+  return notificationTexts[type]?.(params) ?? DEFAULT_TEXT;
+}
+
+const patientBookings = `${areas.patient.base}/agendamentos`;
+const patientPast = `${patientBookings}?aba=realizados`;
+const doctorAgenda = `${areas.doctor.base}/agenda`;
+const doctorHistory = `${doctorAgenda}?aba=historico`;
+
+export function notificationTarget({ type }: UserNotification, role: Role): string {
+  switch (type) {
+    case 'appointment_requested':
+    case 'appointment_rescheduled':
+      return `${doctorAgenda}?aba=a-confirmar`;
+    case 'appointment_cancelled_by_patient':
+      return doctorHistory;
+    case 'appointment_confirmed':
+      return patientBookings;
+    case 'appointment_cancelled':
+      return role === 'doctor' ? doctorHistory : patientPast;
+    case 'appointment_expired':
+    case 'exam_result_available':
+      return patientPast;
+    case 'user_registered':
+      return `${areas.admin.base}/usuarios`;
+    default:
+      return areas[role].base;
+  }
 }

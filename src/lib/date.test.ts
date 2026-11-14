@@ -58,4 +58,18 @@ describe.each([
     expect(formatRelative('2026-11-19T03:30:00.000Z', now)).toBe('ontem');
     expect(formatRelative('2026-11-19T02:30:00.000Z', now)).toBe('anteontem');
   });
+
+  it('keeps hours for the last day even across midnight in São Paulo', () => {
+    expect(formatRelative('2026-11-20T05:00:00.000Z', new Date('2026-11-21T04:00:00.000Z'))).toBe('há 23 h');
+  });
+
+  it('treats a timestamp in the future as now', () => {
+    expect(formatRelative('2026-11-20T15:10:00.000Z', new Date('2026-11-20T15:00:00.000Z'))).toBe('agora');
+  });
+
+  it('shows the date after a week', () => {
+    const now = new Date('2026-11-20T15:00:00.000Z');
+    expect(formatRelative('2026-11-13T15:00:00.000Z', now)).toBe('há 7 dias');
+    expect(formatRelative('2026-11-12T15:00:00.000Z', now)).toBe('12/11/2026, 12:00');
+  });
 });

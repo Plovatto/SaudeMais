@@ -7,3 +7,6 @@ type PatientHome = Omit<ResponseOf<'/api/patient/home', 'get'>, 'lastNotificatio
 
 export const fetchPatientHome = (signal: AbortSignal) =>
   apiFetch('get', '/api/patient/home', { signal }) as Promise<PatientHome>;
+
+export const markNotificationRead = (id: string) =>
+  apiFetch('post', '/api/notifications/{id}/read', { params: { id } });

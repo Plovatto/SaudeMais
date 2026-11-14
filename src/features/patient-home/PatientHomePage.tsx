@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { LuPlus, LuSyringe } from 'react-icons/lu';
 import { PageTitle } from '@components/layout/PageTitle';
-import { ButtonLink, IconSlot, Skeleton } from '@components/ui';
+import { ButtonLink, IconSlot } from '@components/ui';
 import { areas } from '@constants/areas';
+import { cx } from '@lib/cx';
 import { queryKeys } from '@lib/query-keys';
 import { HealthSummary } from './HealthSummary';
 import { LastNotification } from './LastNotification';
@@ -38,19 +39,20 @@ export function PatientHomePage() {
   return (
     <div className="flex flex-col gap-6">
       <PageTitle className="sr-only">Início</PageTitle>
-      {query.isPending && <Skeleton className="rounded-card h-24" />}
       {notification && <LastNotification notification={notification} />}
       <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:[grid-template-areas:'actions_health''list_list']">
-        <nav aria-label="Agendar" className="grid grid-cols-2 gap-4 lg:[grid-area:actions]">
+        <nav aria-label="Agendar" className="grid grid-cols-2 gap-4 lg:self-start lg:[grid-area:actions]">
           {SHORTCUTS.map(({ to, label, icon, variant, badge }) => (
             <ButtonLink
               key={to}
               to={to}
               variant={variant}
               size="lg"
-              className="rounded-card h-full flex-col gap-3 px-3 py-5 text-center text-base"
+              className="rounded-card flex-col gap-3 px-3 py-5 text-center text-base"
             >
-              <IconSlot className={`${badge} size-10 justify-center rounded-full text-2xl`}>{icon}</IconSlot>
+              <IconSlot className={cx(badge, 'size-10 justify-center rounded-full text-2xl')}>
+                {icon}
+              </IconSlot>
               {label}
             </ButtonLink>
           ))}

@@ -100,6 +100,53 @@ describe('patient home', { timeout: 15_000 }, () => {
     expect(region.queryByText('(não lida)')).not.toBeInTheDocument();
   });
 
+  it('opens the notification target and marks it as read', async () => {
+    const { calls } = serveApi(['patient'], {
+      '/api/patient/home': () => ({ status: 200, body: homeBody({ lastNotification: notification() }) }),
+      '/api/notifications/n1/read': () => ({ status: 204 }),
+    });
+    const { user, router } = renderApp('/paciente');
+
+    const link = (await banner()).getByRole('link', { name: /Consulta confirmada!/ });
+    expect(link).toHaveAttribute('href', '/paciente/agendamentos');
+    await user.click(link);
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/paciente/agendamentos'));
+    expect(
+      calls.some((call) => call.method === 'POST' && call.url.pathname === '/api/notifications/n1/read'),
+    ).toBe(true);
+  });
+
+  it('still opens the target when a demo account cannot mark it as read', async () => {
+    serveApi(['patient'], {
+      '/api/patient/home': () => ({
+        status: 200,
+        body: homeBody({ lastNotification: notification({ type: 'appointment_expired' }) }),
+      }),
+      '/api/notifications/n1/read': () => ({
+        status: 403,
+        body: { code: 'PROTECTED_ACCOUNT', message: 'Conta de demonstração.' },
+      }),
+    });
+    const { user, router } = renderApp('/paciente');
+
+    await user.click((await banner()).getByRole('link', { name: /Pedido não confirmado/ }));
+
+    await waitFor(() => expect(router.state.location.search).toBe('?aba=realizados'));
+    expect(router.state.location.pathname).toBe('/paciente/agendamentos');
+    expect(screen.queryByText('Conta de demonstração.')).not.toBeInTheDocument();
+  });
+
+  it('does not mark an already read notification again', async () => {
+    const { calls } = serveHome({ lastNotification: notification({ readAt: new Date().toISOString() }) });
+    const { user, router } = renderApp('/paciente');
+
+    await user.click((await banner()).getByRole('link', { name: /Consulta confirmada!/ }));
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/paciente/agendamentos'));
+    expect(calls.some((call) => call.url.pathname.startsWith('/api/notifications'))).toBe(false);
+  });
+
   it('hides the banner when there is no notification', async () => {
     serveHome({ upcoming: [booking('b1')] });
     renderApp('/paciente');
@@ -144,6 +191,7 @@ describe('patient home', { timeout: 15_000 }, () => {
 
     const region = await upcoming();
     expect(await region.findByText('Nenhum agendamento futuro')).toBeVisible();
+    expect(region.getByText('Agende uma consulta ou um exame para acompanhar por aqui.')).toBeVisible();
     expect(region.queryByRole('list')).not.toBeInTheDocument();
     expect(region.getByRole('link', { name: 'Ver todos os agendamentos' })).toBeVisible();
   });
@@ -154,8 +202,9 @@ describe('patient home', { timeout: 15_000 }, () => {
     renderApp('/paciente', { signedInAs: ['patient'] });
 
     const region = await screen.findByRole('region', { name: 'Próximos agendamentos' });
-    expect(region.querySelector('[aria-busy="true"]')).toBeInTheDocument();
+    expect(region).toHaveAttribute('aria-busy', 'true');
     expect(within(region).queryByRole('list')).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Última notificação' })).not.toBeInTheDocument();
   });
 
   it('shows the error and loads again on retry', async () => {
