@@ -476,6 +476,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/doctor/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ver a agenda semanal
+         * @description Os 7 dias da semana do médico logado, com as faixas de atendimento em minutos desde 00:00, e o horário da unidade dele. Sem agenda salva, todos os dias vêm inativos e sem faixas. Limite: 120 requisições por minuto por IP.
+         */
+        get: operations["getDoctorSchedule"];
+        /**
+         * Salvar a agenda semanal
+         * @description Substitui a agenda inteira de uma vez: envie os 7 dias, cada um com `isActive` e as faixas em minutos desde 00:00 (de 0 a 1440, início antes do fim). Dia inativo guarda as faixas e não gera vagas. As faixas de um dia não podem se sobrepor, mas podem se encostar, e precisam caber no horário da unidade do médico. Nenhuma consulta é cancelada: `warnings` lista as consultas futuras que ficaram fora das novas faixas. A conta de demonstração só lê. Limite: 30 requisições por minuto por IP.
+         */
+        put: operations["saveDoctorSchedule"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/password-reset/request": {
         parameters: {
             query?: never;
@@ -910,7 +934,7 @@ export interface components {
              */
             hours: {
                 /**
-                 * @description 0 = domingo.
+                 * @description 0 = domingo, 6 = sábado.
                  * @example 1
                  */
                 weekday: number;
@@ -936,7 +960,7 @@ export interface components {
             /** @description Horário de cada dia em que a unidade abre; dias ausentes ficam fechados. */
             hours?: {
                 /**
-                 * @description 0 = domingo.
+                 * @description 0 = domingo, 6 = sábado.
                  * @example 1
                  */
                 weekday: number;
@@ -1100,6 +1124,81 @@ export interface components {
             minLeadMinutes: number;
             /** Format: date-time */
             updatedAt: string;
+        };
+        SaveDoctorScheduleRequest: {
+            /** @description Os 7 dias da semana, cada um uma vez. */
+            days: {
+                /**
+                 * @description 0 = domingo, 6 = sábado.
+                 * @example 1
+                 */
+                weekday: number;
+                /**
+                 * @description Dia inativo guarda as faixas, mas não gera vagas.
+                 * @example true
+                 */
+                isActive: boolean;
+                ranges: {
+                    /**
+                     * @description Início, em minutos desde 00:00.
+                     * @example 480
+                     */
+                    startMin: number;
+                    /**
+                     * @description Fim, em minutos desde 00:00; 1440 é meia-noite do fim do dia.
+                     * @example 720
+                     */
+                    endMin: number;
+                }[];
+            }[];
+        };
+        DoctorSchedule: {
+            /** @description Os 7 dias, de domingo a sábado, com as faixas em ordem. */
+            days: {
+                /**
+                 * @description 0 = domingo, 6 = sábado.
+                 * @example 1
+                 */
+                weekday: number;
+                /**
+                 * @description Dia inativo guarda as faixas, mas não gera vagas.
+                 * @example true
+                 */
+                isActive: boolean;
+                ranges: {
+                    /**
+                     * @description Início, em minutos desde 00:00.
+                     * @example 480
+                     */
+                    startMin: number;
+                    /**
+                     * @description Fim, em minutos desde 00:00; 1440 é meia-noite do fim do dia.
+                     * @example 720
+                     */
+                    endMin: number;
+                }[];
+            }[];
+            /** @description Horário da unidade do médico; as faixas precisam caber nele. Dias ausentes: fechada. */
+            unitHours: {
+                /**
+                 * @description 0 = domingo, 6 = sábado.
+                 * @example 1
+                 */
+                weekday: number;
+                /** @example 420 */
+                openMin: number;
+                /** @example 1140 */
+                closeMin: number;
+            }[];
+        };
+        SavedDoctorSchedule: components["schemas"]["DoctorSchedule"] & {
+            /** @description Consultas futuras que ficaram fora das novas faixas. Nada é cancelado: o médico decide o que fazer com cada uma. */
+            warnings: {
+                /** Format: uuid */
+                appointmentId: string;
+                /** Format: date-time */
+                startsAt: string;
+            }[];
         };
         PasswordResetRequest: {
             /** @example ana.silva@email.com */
@@ -4468,6 +4567,236 @@ export interface operations {
                      * @example {
                      *       "message": "Você não tem acesso a esta área.",
                      *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getDoctorSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Agenda do médico. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoctorSchedule"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Esta conta ainda não tem perfil médico.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    saveDoctorSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SaveDoctorScheduleRequest"];
+            };
+        };
+        responses: {
+            /** @description Agenda salva. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedDoctorSchedule"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem perfil de médico (`FORBIDDEN`) ou conta de demonstração (`PROTECTED_ACCOUNT`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Esta é uma conta de demonstração e não pode ser alterada.",
+                     *       "code": "PROTECTED_ACCOUNT"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Esta conta ainda não tem perfil médico.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Faixas sobrepostas (`OVERLAP`) ou fora do horário da unidade (`OUTSIDE_UNIT_HOURS`). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Esta faixa se sobrepõe a outra do mesmo dia.",
+                     *       "code": "OVERLAP",
+                     *       "fields": {
+                     *         "days.1.ranges.1": "Esta faixa se sobrepõe a outra do mesmo dia."
+                     *       }
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];
