@@ -45,7 +45,7 @@ export const usersApi = {
     apiFetch('delete', '/api/admin/users/{id}/roles/{role}', { params: { id, role: 'admin' } }),
   createDoctorProfile: (id: string, body: DoctorProfileInput) =>
     apiFetch('post', '/api/admin/users/{id}/doctor-profile', { ...user(id), body }),
-  updateDoctorProfile: (id: string, body: DoctorProfileInput) =>
+  updateDoctorProfile: (id: string, body: BodyOf<'/api/admin/users/{id}/doctor-profile', 'patch'>) =>
     apiFetch('patch', '/api/admin/users/{id}/doctor-profile', { ...user(id), body }),
   removeDoctorProfile: (id: string) => apiFetch('delete', '/api/admin/users/{id}/doctor-profile', user(id)),
 };

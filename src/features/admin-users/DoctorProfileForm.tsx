@@ -11,7 +11,7 @@ import { queryKeys } from '@lib/query-keys';
 import { useFormSubmit } from '@lib/useFormSubmit';
 import { ImpactDialog } from './ImpactDialog';
 import { countOf } from './user-text';
-import { ADMIN_USERS_PATH, syncUser } from './user-cache';
+import { ADMIN_USERS_PATH, refreshUser, syncUser } from './user-cache';
 import { userMessages } from './user-messages';
 import { doctorProfileSchema, type DoctorProfileValues } from './user-schemas';
 import { catalogApi, usersApi, type AdminUserDetail, type DeactivationImpact } from './users-api';
@@ -59,7 +59,7 @@ export function DoctorProfileForm({ user, locked }: DoctorProfileFormProps) {
     control,
     handleSubmit,
     setError,
-    formState: { errors, isSubmitting, isDirty },
+    formState: { errors, isSubmitting, isDirty, dirtyFields },
   } = useForm<DoctorProfileValues>({
     resolver: zodResolver(doctorProfileSchema),
     defaultValues: {
@@ -84,9 +84,12 @@ export function DoctorProfileForm({ user, locked }: DoctorProfileFormProps) {
 
   const onSubmit = handleSubmit((values) =>
     run(async () => {
-      if (profile)
-        finish(await usersApi.updateDoctorProfile(user.id, values), 'Perfil de médico atualizado.');
-      else
+      if (profile) {
+        const changes = Object.fromEntries(
+          FIELDS.filter((field) => dirtyFields[field]).map((field) => [field, values[field]]),
+        );
+        finish(await usersApi.updateDoctorProfile(user.id, changes), 'Perfil de médico atualizado.');
+      } else
         finish(
           await usersApi.createDoctorProfile(user.id, values),
           `${user.fullName} agora tem perfil de médico.`,
@@ -97,7 +100,10 @@ export function DoctorProfileForm({ user, locked }: DoctorProfileFormProps) {
   const remove = useMutation({
     mutationFn: () => usersApi.removeDoctorProfile(user.id),
     onSuccess: (updated) => finish(updated, 'Perfil de médico removido.'),
-    onError: (error) => show({ message: errorMessage(error, userMessages), tone: 'danger' }),
+    onError: (error) => {
+      refreshUser(queryClient, user.id);
+      show({ message: errorMessage(error, userMessages), tone: 'danger' });
+    },
     onSettled: () => setRemoving(false),
   });
 

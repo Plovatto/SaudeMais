@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { LuUsers } from 'react-icons/lu';
 import { PageHeader } from '@components/layout/PageHeader';
 import {
@@ -46,6 +46,11 @@ const found = (total: number) => (total === 1 ? '1 usuário encontrado' : `${tot
 function useDebouncedSearch() {
   const [search, setSearch] = useSearchParam('busca');
   const [draft, setDraft] = useState(search);
+  const [synced, setSynced] = useState(search);
+  if (synced !== search) {
+    setSynced(search);
+    if (draft.trim() !== search) setDraft(search);
+  }
   useEffect(() => {
     const next = draft.trim();
     if (next === search) return;
@@ -70,7 +75,8 @@ export function UsersPage() {
     placeholderData: keepPreviousData,
   });
   const { lastPage, outOfRange } = useClampedPage(page, setPage, query.data);
-  const actions = useUserActions();
+  const results = useRef<HTMLParagraphElement>(null);
+  const actions = useUserActions(results);
   const items = outOfRange ? undefined : query.data?.items;
   const filtered = search !== '' || roleTab.role !== '' || statusOption.status !== '';
 
@@ -109,7 +115,12 @@ export function UsersPage() {
           className="lg:max-w-md"
         />
         <TabPanel tabsId={TABS_ID} value={roleTab.value} className="flex flex-col gap-4">
-          <p aria-live="polite" className="text-text-secondary text-sm">
+          <p
+            ref={results}
+            tabIndex={-1}
+            aria-live="polite"
+            className="text-text-secondary text-sm focus-visible:outline-none"
+          >
             {query.data && !outOfRange ? found(query.data.total) : null}
           </p>
           {query.isPending && (
@@ -155,6 +166,7 @@ export function UsersPage() {
                       user={user}
                       locks={userLocks(user, currentUser.id)}
                       actions={actions.itemsFor(user)}
+                      busy={actions.busyId === user.id}
                     />
                   ))}
                 </tbody>

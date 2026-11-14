@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, type RefObject } from 'react';
 import { LuPencil, LuShieldCheck, LuShieldOff, LuStethoscope, LuUserCheck, LuUserX } from 'react-icons/lu';
 import { useNavigate } from 'react-router';
 import { ConfirmDialog, useToast, type MenuItem } from '@components/ui';
@@ -7,7 +7,7 @@ import { useCurrentUser } from '@lib/auth/useSession';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
 import { ImpactDialog } from './ImpactDialog';
 import { countOf } from './user-text';
-import { ADMIN_USERS_PATH, syncUser, userLocks } from './user-cache';
+import { ADMIN_USERS_PATH, refreshUser, syncUser, userLocks } from './user-cache';
 import { userMessages } from './user-messages';
 import { usersApi, type AdminUser, type DeactivationImpact } from './users-api';
 
@@ -48,7 +48,7 @@ const describeDeactivation = ({
   return `A conta não poderá mais entrar no Saúde+. ${bookings} Você pode reativá-la depois.`;
 };
 
-export function useUserActions() {
+export function useUserActions(fallbackFocus?: RefObject<HTMLElement | null>) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { show } = useToast();
@@ -61,7 +61,10 @@ export function useUserActions() {
       syncUser(queryClient, updated);
       show({ message: done[action](user.fullName), tone: 'success' });
     },
-    onError: (error) => show({ message: errorMessage(error, userMessages), tone: 'danger' }),
+    onError: (error, { user }) => {
+      refreshUser(queryClient, user.id);
+      show({ message: errorMessage(error, userMessages), tone: 'danger' });
+    },
     onSettled: () => setPending(null),
   });
 
@@ -70,10 +73,13 @@ export function useUserActions() {
     else setPending({ action, user });
   };
 
+  const busyId = mutation.isPending ? mutation.variables.user.id : null;
+
   const itemsFor = (user: AdminUser): MenuItem[] => {
     const { isProtected, isInactive, isSelf } = userLocks(user, currentUser.id);
     const isAdmin = user.roles.includes('admin');
-    const frozen = isProtected || isInactive;
+    const busy = busyId === user.id;
+    const frozen = isProtected || isInactive || busy;
     return [
       {
         label: 'Editar',
@@ -96,14 +102,14 @@ export function useUserActions() {
         ? {
             label: 'Reativar',
             icon: <LuUserCheck />,
-            disabled: isProtected,
+            disabled: isProtected || busy,
             onSelect: () => request('reactivate', user),
           }
         : {
             label: 'Desativar',
             icon: <LuUserX />,
             tone: 'danger',
-            disabled: isProtected || isSelf,
+            disabled: isProtected || isSelf || busy,
             onSelect: () => request('deactivate', user),
           },
     ];
@@ -125,6 +131,7 @@ export function useUserActions() {
         loading={mutation.isPending}
         onConfirm={confirm}
         onClose={close}
+        fallbackFocus={fallbackFocus}
       />
       <ConfirmDialog
         open={adminChange !== null}
@@ -143,9 +150,10 @@ export function useUserActions() {
         loading={mutation.isPending}
         onConfirm={confirm}
         onClose={close}
+        fallbackFocus={fallbackFocus}
       />
     </>
   );
 
-  return { itemsFor, request, dialogs, busyId: mutation.isPending ? mutation.variables.user.id : null };
+  return { itemsFor, request, dialogs, busyId };
 }
