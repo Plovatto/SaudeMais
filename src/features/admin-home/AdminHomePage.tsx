@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { LuSettings, LuTrendingUp, LuUserCog } from 'react-icons/lu';
 import { PageTitle } from '@components/layout/PageTitle';
-import { ButtonLink, Card, IconSlot, QueryError, Skeleton } from '@components/ui';
+import { ButtonLink, Card, IconSlot, QueryError, StatGrid } from '@components/ui';
 import { areas } from '@constants/areas';
 import { queryKeys } from '@lib/query-keys';
 import { fetchAdminHome, type AdminHome } from './admin-home-api';
@@ -14,23 +14,6 @@ const COUNTS: readonly { key: keyof AdminHome; label: string }[] = [
   { key: 'appointmentsToday', label: 'Consultas Hoje' },
   { key: 'doctors', label: 'Médicos' },
 ];
-
-const counter = new Intl.NumberFormat('pt-BR');
-
-function SummaryCounts({ data }: { data: AdminHome | undefined }) {
-  return (
-    <dl className="grid grid-cols-3 gap-2 text-center" aria-busy={!data}>
-      {COUNTS.map(({ key, label }) => (
-        <div key={key} className="flex flex-col-reverse items-center gap-1">
-          <dt className="text-text-secondary text-sm">{label}</dt>
-          <dd className="text-text text-2xl font-semibold tabular-nums lg:text-3xl">
-            {data ? counter.format(data[key]) : <Skeleton className="h-8 w-12" />}
-          </dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
 
 export function AdminHomePage() {
   const { data, error, isError, refetch } = useQuery({
@@ -56,7 +39,7 @@ export function AdminHomePage() {
           {isError ? (
             <QueryError error={error} onRetry={() => void refetch()} />
           ) : (
-            <SummaryCounts data={data} />
+            <StatGrid stats={COUNTS.map(({ key, label }) => ({ label, value: data?.[key] }))} />
           )}
         </Card>
       </section>

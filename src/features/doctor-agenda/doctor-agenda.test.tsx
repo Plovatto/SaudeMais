@@ -1,7 +1,8 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { renderApp, serveApi, type ApiCall, type MockResponse } from '@/test/render-app';
-import type { AgendaTab, DoctorAppointment, DoctorHome } from './doctor-api';
+import type { DoctorAppointment } from '@lib/api/models';
+import type { AgendaTab, DoctorHome } from './doctor-api';
 
 const FUTURE = '2030-01-10T13:00:00.000Z';
 const NEXT_DAY = '2030-01-11T02:30:00.000Z';
@@ -31,7 +32,7 @@ const confirmed = (id: string, overrides: Partial<DoctorAppointment> = {}) =>
 
 const counts = { pending: 0, confirmed: 0, awaiting: 0, history: 0 };
 
-const home = (overrides: Partial<Omit<DoctorHome, 'lastNotification'>> = {}) => ({
+const home = (overrides: Partial<DoctorHome> = {}): DoctorHome => ({
   today: {
     date: '2030-01-10',
     total: 6,
@@ -54,7 +55,7 @@ type Lists = Partial<Record<AgendaTab, DoctorAppointment[]>>;
 
 interface Serve {
   lists?: Lists;
-  homeData?: ReturnType<typeof home>;
+  homeData?: DoctorHome;
   action?: (path: string) => MockResponse;
   total?: number;
 }
@@ -117,8 +118,8 @@ describe('doctor home', { timeout: 15_000 }, () => {
     });
     renderApp('/medico');
 
-    const banner = await screen.findByRole('link', { name: /Pedido de Consulta!/ });
-    expect(banner).toHaveAttribute('href', '/medico/agenda');
+    const banner = await screen.findByRole('link', { name: /Novo pedido de consulta/ });
+    expect(banner).toHaveAttribute('href', '/medico/agenda?aba=a-confirmar');
     expect(banner).toHaveTextContent('2 pedidos de consulta esperam por sua confirmação.');
 
     const summary = screen.getByRole('region', { name: 'Resumo de Hoje' });
@@ -149,13 +150,35 @@ describe('doctor home', { timeout: 15_000 }, () => {
     );
   });
 
+  it('shows the last notification in place of the request banner', async () => {
+    serve({
+      homeData: home({
+        counts: { ...counts, pending: 1 },
+        lastNotification: {
+          id: 'n1',
+          type: 'appointment_cancelled_by_patient',
+          params: { startsAt: FUTURE },
+          bookingId: 'a1',
+          readAt: null,
+          createdAt: new Date().toISOString(),
+        },
+      }),
+    });
+    renderApp('/medico');
+
+    const notice = await screen.findByRole('link', { name: /Consulta cancelada pelo paciente/ });
+    expect(notice).toHaveAttribute('href', '/medico/agenda?aba=historico');
+    expect(screen.getByRole('region', { name: 'Última notificação' })).toContainElement(notice);
+    expect(screen.queryByRole('link', { name: /Novo pedido de consulta/ })).not.toBeInTheDocument();
+  });
+
   it('hides the banner and shows empty sections when nothing waits', async () => {
     serve({});
     renderApp('/medico');
 
     expect(await screen.findByText('Nenhum pedido a confirmar')).toBeVisible();
     expect(screen.getByText('Nenhuma consulta aguardando registro')).toBeVisible();
-    expect(screen.queryByRole('link', { name: /Pedido de Consulta!/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Novo pedido de consulta/ })).not.toBeInTheDocument();
   });
 });
 

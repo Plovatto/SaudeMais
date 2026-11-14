@@ -65,7 +65,7 @@ describe('role areas', () => {
     renderAt('/medico/agenda');
 
     expect(
-      (await screen.findByRole('heading', { level: 1, name: 'Agenda' })).closest('[data-role]'),
+      (await screen.findByRole('heading', { level: 1, name: 'Consultas Agendadas' })).closest('[data-role]'),
     ).toHaveAttribute('data-role', 'doctor');
   });
 

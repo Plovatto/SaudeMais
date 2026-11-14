@@ -8,7 +8,7 @@ import { areas } from '@constants/areas';
 import { visitTypeLabels } from '@constants/visit-types';
 import { cx } from '@lib/cx';
 import { formatDateTime } from '@lib/date';
-import type { DoctorAppointment } from './doctor-api';
+import type { DoctorAppointment } from '@lib/api/models';
 
 const PatientIcon = areas.patient.icon;
 

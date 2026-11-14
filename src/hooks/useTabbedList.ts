@@ -10,7 +10,7 @@ interface ListPage extends PageMeta {
 
 type TabList = readonly [{ value: string }, ...{ value: string }[]];
 
-export interface ListSource<Result> {
+interface ListSource<Result> {
   queryKey: QueryKey;
   queryFn: (signal: AbortSignal) => Promise<Result>;
 }

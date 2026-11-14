@@ -7,7 +7,8 @@ import { areas } from '@constants/areas';
 import { useTabbedList } from '@hooks/useTabbedList';
 import { queryKeys } from '@lib/query-keys';
 import { AppointmentList } from './AppointmentList';
-import { doctorApi, type AgendaParams, type DoctorAppointment } from './doctor-api';
+import type { DoctorAppointment } from '@lib/api/models';
+import { doctorApi, type AgendaParams } from './doctor-api';
 
 const DOCTOR = areas.doctor.base;
 const TABS_ID = 'doctor-agenda';

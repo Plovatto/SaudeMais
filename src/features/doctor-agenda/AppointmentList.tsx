@@ -9,7 +9,8 @@ import { errorMessage } from '@lib/messages/errors.pt-BR';
 import { queryKeys } from '@lib/query-keys';
 import { AppointmentCard } from './AppointmentCard';
 import { groupByDay } from './day-groups';
-import { doctorApi, type DoctorAppointment } from './doctor-api';
+import type { DoctorAppointment } from '@lib/api/models';
+import { doctorApi } from './doctor-api';
 
 const GRID = 'grid items-start gap-3 @3xl:grid-cols-2';
 
