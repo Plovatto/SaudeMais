@@ -52,6 +52,9 @@ const areaScreens: Record<string, typeof placeholder> = {
   'usuarios/:id/medico': lazyComponent(async () => (await import('@features/admin-users')).DoctorProfilePage),
   'configuracoes/*': lazyComponent(async () => (await import('@features/admin-settings')).AdminSettingsPage),
   disponibilidade: lazyComponent(async () => (await import('@features/doctor-schedule')).DoctorSchedulePage),
+  'consultas/nova': lazyComponent(
+    async () => (await import('@features/book-appointment')).BookAppointmentPage,
+  ),
 };
 
 const homeScreens: Partial<Record<Area['role'], typeof placeholder>> = {
