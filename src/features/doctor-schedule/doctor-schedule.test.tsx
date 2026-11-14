@@ -25,15 +25,31 @@ const schedule = {
   unitHours,
 };
 
-const serve = (save: (body: unknown) => MockResponse = () => ({ status: 500 })) =>
+type Day = (typeof schedule.days)[number];
+
+const withDays = (days: Record<number, Omit<Day, 'weekday'>>) => ({
+  ...schedule,
+  days: schedule.days.map((entry) => ({ ...entry, ...days[entry.weekday] })),
+});
+
+const hourly = (from: number, count: number) =>
+  Array.from({ length: count }, (_value, index) => ({
+    startMin: (from + index) * 60,
+    endMin: (from + index + 1) * 60,
+  }));
+
+const serve = (save: (body: unknown) => MockResponse = () => ({ status: 500 }), loaded = schedule) =>
   serveApi(['doctor'], {
-    [PATH]: (method, body) => (method === 'PUT' ? save(body) : { status: 200, body: schedule }),
+    [PATH]: (method, body) => (method === 'PUT' ? save(body) : { status: 200, body: loaded }),
   });
 
 const day = async (name: string) =>
   within((await screen.findByText(name, { selector: 'h2' })).closest('section') as HTMLElement);
 
 const saveButton = () => screen.getByText('Salvar agenda', { selector: 'button' });
+
+const makeDirty = async (user: ReturnType<typeof renderApp>['user']) =>
+  user.click((await day('Domingo')).getByRole('switch', { name: 'Ativo: Domingo' }));
 
 const savedBody = (calls: ReturnType<typeof serve>['calls']) =>
   calls.find((call) => call.method === 'PUT')?.body as typeof schedule | undefined;
@@ -68,7 +84,8 @@ describe('doctor schedule', { timeout: 15_000 }, () => {
     const sunday = await day('Domingo');
     expect(sunday.getByRole('switch', { name: 'Ativo: Domingo' })).toHaveAttribute('aria-checked', 'false');
     expect(sunday.getByText('Nenhum horário configurado')).toBeInTheDocument();
-    expect(sunday.getByText('Unidade fechada')).toBeInTheDocument();
+    expect(sunday.getByText('Unidade fechada — sem faixas')).toBeInTheDocument();
+    expect(saveButton()).toBeDisabled();
     const nav = within(screen.getAllByRole('navigation', { name: 'Navegação principal' })[0] as HTMLElement);
     expect(nav.getByRole('link', { name: 'Gerenciar' })).toHaveAttribute('aria-current', 'page');
   });
@@ -169,6 +186,7 @@ describe('doctor schedule', { timeout: 15_000 }, () => {
     }));
     const { user } = renderApp('/medico/disponibilidade');
     const tuesday = await day('Terça-feira');
+    await makeDirty(user);
 
     await user.click(saveButton());
 
@@ -179,6 +197,109 @@ describe('doctor schedule', { timeout: 15_000 }, () => {
     expect(tuesday.getByRole('combobox', { name: 'Início da faixa 1 de terça-feira' })).not.toHaveAttribute(
       'aria-invalid',
     );
+  });
+
+  it('maps an API error to the right row of an unsorted day', async () => {
+    serve(
+      () => ({
+        status: 422,
+        body: {
+          code: 'OVERLAP',
+          message: 'Esta faixa se sobrepõe a outra do mesmo dia.',
+          fields: { 'days.2.ranges.1': 'Esta faixa se sobrepõe a outra do mesmo dia.' },
+        },
+      }),
+      withDays({
+        2: {
+          isActive: true,
+          ranges: [
+            { startMin: 780, endMin: 1020 },
+            { startMin: 480, endMin: 720 },
+          ],
+        },
+      }),
+    );
+    const { user } = renderApp('/medico/disponibilidade');
+    const tuesday = await day('Terça-feira');
+    await makeDirty(user);
+
+    await user.click(saveButton());
+
+    const message = await tuesday.findByText('Esta faixa se sobrepõe a outra do mesmo dia.');
+    const second = tuesday.getByRole('combobox', { name: 'Início da faixa 2 de terça-feira' });
+    expect(second).toHaveValue('480');
+    expect(second).toHaveAttribute('aria-describedby', message.id);
+    expect(second).toHaveFocus();
+    expect(tuesday.getByRole('combobox', { name: 'Início da faixa 1 de terça-feira' })).not.toHaveAttribute(
+      'aria-invalid',
+    );
+  });
+
+  it('clears an overlap error once the other range of the day is fixed', async () => {
+    serve();
+    const { user } = renderApp('/medico/disponibilidade');
+    const tuesday = await day('Terça-feira');
+
+    await user.selectOptions(
+      tuesday.getByRole('combobox', { name: 'Início da faixa 2 de terça-feira' }),
+      '660',
+    );
+    await user.click(saveButton());
+    expect(await tuesday.findByText('Esta faixa se sobrepõe a outra do mesmo dia.')).toBeInTheDocument();
+
+    await user.selectOptions(tuesday.getByRole('combobox', { name: 'Fim da faixa 1 de terça-feira' }), '660');
+
+    await waitFor(() =>
+      expect(tuesday.queryByText('Esta faixa se sobrepõe a outra do mesmo dia.')).not.toBeInTheDocument(),
+    );
+    expect(tuesday.getByRole('combobox', { name: 'Início da faixa 2 de terça-feira' })).not.toHaveAttribute(
+      'aria-invalid',
+    );
+  });
+
+  it('offers no new range once the day reaches the unit closing time', async () => {
+    serve(undefined, withDays({ 1: { isActive: true, ranges: [{ startMin: 480, endMin: 1140 }] } }));
+    renderApp('/medico/disponibilidade');
+    const monday = await day('Segunda-feira');
+
+    expect(monday.getByRole('button', { name: 'Adicionar Horário' })).toBeDisabled();
+  });
+
+  it('keeps stored ranges of a closed unit day removable without offering new ones', async () => {
+    serve(undefined, withDays({ 0: { isActive: true, ranges: [{ startMin: 480, endMin: 720 }] } }));
+    const { user } = renderApp('/medico/disponibilidade');
+    const sunday = await day('Domingo');
+
+    expect(sunday.getByText('Unidade fechada — sem faixas')).toBeInTheDocument();
+    expect(sunday.queryByRole('button', { name: 'Adicionar Horário' })).not.toBeInTheDocument();
+    await user.click(sunday.getByRole('button', { name: 'Remover faixa 08:00–12:00 de domingo' }));
+
+    expect(sunday.getByText('Nenhum horário configurado')).toBeInTheDocument();
+    expect(sunday.getByRole('switch', { name: 'Ativo: Domingo' })).toHaveFocus();
+  });
+
+  it('moves the focus to the switch after removing the last range of an inactive day', async () => {
+    serve();
+    const { user } = renderApp('/medico/disponibilidade');
+    const monday = await day('Segunda-feira');
+    await user.click(monday.getByRole('switch', { name: 'Ativo: Segunda-feira' }));
+
+    await user.click(monday.getByRole('button', { name: 'Remover faixa 08:00–12:00 de segunda-feira' }));
+
+    expect(monday.getByRole('switch', { name: 'Ativo: Segunda-feira' })).toHaveFocus();
+  });
+
+  it('moves the focus to the previous row when a full day still offers no new range', async () => {
+    serve(undefined, withDays({ 5: { isActive: true, ranges: hourly(7, 12) } }));
+    const { user } = renderApp('/medico/disponibilidade');
+    const friday = await day('Sexta-feira');
+    expect(friday.getByRole('button', { name: 'Adicionar Horário' })).toBeDisabled();
+
+    await user.click(friday.getByRole('button', { name: 'Remover faixa 09:00–10:00 de sexta-feira' }));
+
+    expect(friday.getByText('11 horários configurados')).toBeInTheDocument();
+    expect(friday.getByRole('button', { name: 'Adicionar Horário' })).toBeDisabled();
+    expect(friday.getByRole('button', { name: 'Remover faixa 08:00–09:00 de sexta-feira' })).toHaveFocus();
   });
 
   it('shows the demo doctor a read-only schedule', async () => {

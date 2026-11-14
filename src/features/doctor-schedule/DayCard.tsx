@@ -1,4 +1,4 @@
-import { useId, useRef } from 'react';
+import { useEffect, useId, useMemo, useRef } from 'react';
 import { Controller, useFieldArray, useWatch, type UseFormReturn } from 'react-hook-form';
 import { LuCalendar, LuPlus } from 'react-icons/lu';
 import { Button, Card, IconSlot, Switch } from '@components/ui';
@@ -8,9 +8,10 @@ import { formatTimeRange } from '@lib/time-of-day';
 import { rangeError } from './range-errors';
 import { RangeRow } from './RangeRow';
 import type { UnitHours } from './schedule-api';
-import { MAX_RANGES, nextRange, rangePath, type ScheduleValues } from './schedule-schema';
+import { DAY_END, MAX_RANGES, nextRange, rangePath, STEP, type ScheduleValues } from './schedule-schema';
+import { timeOptions } from './time-options';
 
-export interface DayCardProps {
+interface DayCardProps {
   form: UseFormReturn<ScheduleValues>;
   weekday: number;
   unit: UnitHours[number] | undefined;
@@ -24,15 +25,40 @@ function summary(count: number, isActive: boolean): string {
 
 export function DayCard({ form, weekday, unit }: DayCardProps) {
   const titleId = useId();
+  const sectionRef = useRef<HTMLElement>(null);
   const addRef = useRef<HTMLButtonElement>(null);
+  const removedIndex = useRef<number | null>(null);
   const { control, formState } = form;
   const { fields, append, remove } = useFieldArray({ control, name: `days.${weekday}.ranges` });
   const { isActive, ranges } = useWatch({ control, name: `days.${weekday}` });
+  const open = unit?.openMin ?? 0;
+  const close = unit?.closeMin ?? DAY_END;
+  const options = useMemo(
+    () => ({ start: timeOptions(open, close - STEP), end: timeOptions(open + STEP, close) }),
+    [open, close],
+  );
   const name = WEEKDAYS[weekday] ?? '';
   const dayName = name.toLowerCase();
   const next = fields.length < MAX_RANGES ? nextRange(ranges, unit) : null;
+
+  useEffect(() => {
+    const index = removedIndex.current;
+    const section = sectionRef.current;
+    if (index === null || !section) return;
+    removedIndex.current = null;
+    const add = addRef.current;
+    const removeButtons = section.querySelectorAll<HTMLButtonElement>('[data-remove-range]');
+    const target =
+      add && !add.disabled
+        ? add
+        : (removeButtons[index - 1] ??
+          removeButtons[0] ??
+          section.querySelector<HTMLElement>('[role="switch"]'));
+    target?.focus();
+  }, [fields]);
+
   return (
-    <section aria-labelledby={titleId}>
+    <section ref={sectionRef} aria-labelledby={titleId}>
       <Card className="flex flex-col gap-4 p-4 sm:p-6">
         <header className="flex items-start gap-3">
           <IconSlot className="text-role-text mt-0.5 text-xl">
@@ -44,7 +70,9 @@ export function DayCard({ form, weekday, unit }: DayCardProps) {
             </h2>
             <p className="text-text-secondary text-sm">{summary(fields.length, isActive)}</p>
             <p className="text-text-secondary text-sm">
-              {unit ? `Unidade aberta ${formatTimeRange(unit.openMin, unit.closeMin)}` : 'Unidade fechada'}
+              {unit
+                ? `Unidade aberta ${formatTimeRange(unit.openMin, unit.closeMin)}`
+                : 'Unidade fechada — sem faixas'}
             </p>
           </div>
           <Controller
@@ -73,17 +101,17 @@ export function DayCard({ form, weekday, unit }: DayCardProps) {
                 weekday={weekday}
                 index={index}
                 dayName={dayName}
-                unit={unit}
+                options={options}
                 error={rangeError(formState.errors, weekday, index)}
                 onRemove={() => {
+                  removedIndex.current = index;
                   remove(index);
-                  addRef.current?.focus();
                 }}
               />
             ))}
           </ul>
         )}
-        {isActive && (
+        {isActive && unit && (
           <Button
             ref={addRef}
             variant="ghost"

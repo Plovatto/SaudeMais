@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { LuSave } from 'react-icons/lu';
 import { PageHeader } from '@components/layout/PageHeader';
@@ -14,9 +14,9 @@ import { formatDateTime } from '@lib/date';
 import { queryKeys } from '@lib/query-keys';
 import { useFormSubmit } from '@lib/useFormSubmit';
 import { DayCard } from './DayCard';
-import { applyRangeErrors, firstRangeError } from './range-errors';
+import { applyRangeErrors, firstRangeError, type RangePath } from './range-errors';
 import { scheduleApi, type DoctorSchedule, type ScheduleWarning } from './schedule-api';
-import { scheduleSchema, toBody, toValues, type ScheduleValues } from './schedule-schema';
+import { scheduleSchema, toBody, toValues, unitFor, type ScheduleValues } from './schedule-schema';
 
 const scheduleMessages = {
   NOT_FOUND: 'Esta conta ainda não tem perfil médico. Peça a um administrador para concluir o cadastro.',
@@ -38,14 +38,15 @@ function ScheduleForm({ schedule, demo }: { schedule: DoctorSchedule; demo: bool
   const [warnings, setWarnings] = useState<ScheduleWarning[]>([]);
   const schema = useMemo(() => scheduleSchema(schedule.unitHours), [schedule.unitHours]);
   const form = useForm<ScheduleValues>({ resolver: zodResolver(schema), defaultValues: toValues(schedule) });
-  const { setError, setFocus, reset } = form;
-  const { alert, run } = useFormSubmit(
-    setError,
-    [],
-    (error) =>
-      handleProtectedAccount(() => setLocked(true), reset)(error) ||
-      applyRangeErrors(error, setError, setFocus),
-  );
+  const { setError, setFocus, reset, subscribe, trigger } = form;
+  const { isDirty, isSubmitting, submitCount } = form.formState;
+  const [focusTarget, setFocusTarget] = useState<RangePath>();
+  const { alert, run } = useFormSubmit(setError, [], (error) => {
+    if (handleProtectedAccount(() => setLocked(true), reset)(error)) return true;
+    const path = applyRangeErrors(error, setError);
+    setFocusTarget(path);
+    return path !== undefined;
+  });
   const onSubmit = form.handleSubmit(
     (values) =>
       run(async () => {
@@ -56,17 +57,32 @@ function ScheduleForm({ schedule, demo }: { schedule: DoctorSchedule; demo: bool
         setWarnings(outside);
         show({ message: 'Agenda salva.', tone: 'success' });
       }),
-    (errors) => {
-      const path = firstRangeError(errors);
-      if (path) setFocus(`${path}.startMin`);
-    },
+    (errors) => setFocusTarget(firstRangeError(errors)),
   );
+
+  useEffect(() => {
+    if (!isSubmitting && focusTarget) setFocus(`${focusTarget}.startMin`);
+  }, [focusTarget, isSubmitting, setFocus]);
+
+  useEffect(() => {
+    if (submitCount === 0) return;
+    return subscribe({
+      formState: { values: true },
+      callback: ({ name }) => {
+        const weekday = /^days\.(\d+)/.exec(name ?? '')?.[1];
+        if (weekday !== undefined) void trigger(`days.${Number(weekday)}.ranges`);
+      },
+    });
+  }, [submitCount, subscribe, trigger]);
 
   return (
     <form
       aria-label="Agenda semanal"
       noValidate
-      onSubmit={(event) => void onSubmit(event)}
+      onSubmit={(event) => {
+        setFocusTarget(undefined);
+        void onSubmit(event);
+      }}
       className="flex flex-col gap-6"
     >
       {locked && (
@@ -75,16 +91,11 @@ function ScheduleForm({ schedule, demo }: { schedule: DoctorSchedule; demo: bool
           não alterada.
         </FormAlert>
       )}
-      <fieldset disabled={locked} className="min-w-0">
+      <fieldset disabled={locked || isSubmitting} className="min-w-0">
         <legend className="sr-only">Dias da semana</legend>
         <div className={dayGrid}>
           {WEEKDAYS.map((name, weekday) => (
-            <DayCard
-              key={name}
-              form={form}
-              weekday={weekday}
-              unit={schedule.unitHours.find((hours) => hours.weekday === weekday)}
-            />
+            <DayCard key={name} form={form} weekday={weekday} unit={unitFor(schedule.unitHours, weekday)} />
           ))}
         </div>
       </fieldset>
@@ -95,8 +106,8 @@ function ScheduleForm({ schedule, demo }: { schedule: DoctorSchedule; demo: bool
           type="submit"
           size="lg"
           icon={<LuSave />}
-          disabled={locked}
-          loading={form.formState.isSubmitting}
+          disabled={locked || !isDirty}
+          loading={isSubmitting}
           loadingLabel="Salvando"
           className="w-full lg:w-auto"
         >
