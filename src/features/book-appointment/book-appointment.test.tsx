@@ -1,5 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { todayInSaoPaulo } from '@lib/date';
 import { renderApp, serveApi, type MockResponse } from '@/test/render-app';
 
 const specialties = [
@@ -56,8 +57,18 @@ const apiError = (status: number, code: string, fields: Record<string, string> =
   body: { code, message: `API: ${code}`, fields },
 });
 
-function serve(book: () => MockResponse = () => ({ status: 201, body: appointment }), schedule = [days]) {
-  let availabilityCalls = 0;
+type Day = (typeof days)[number];
+
+interface Schedule {
+  first?: Day[][];
+  second?: Day[];
+}
+
+function serve(
+  book: () => MockResponse = () => ({ status: 201, body: appointment }),
+  { first = [days], second = [] }: Schedule = {},
+) {
+  let loads = 0;
   const served = serveApi(['patient'], {
     '/api/specialties': () => ({ status: 200, body: specialties }),
     '/api/doctors': (_method, _body, url) => {
@@ -65,14 +76,15 @@ function serve(book: () => MockResponse = () => ({ status: 201, body: appointmen
       const items = doctors.filter((item) => !specialtyId || item.specialty.id === specialtyId);
       return { status: 200, body: { items, page: 1, pageSize: 50, total: items.length } };
     },
-    '/api/doctors/d1/availability': () => {
-      const response = schedule[Math.min(availabilityCalls, schedule.length - 1)] ?? [];
-      availabilityCalls += 1;
+    '/api/doctors/d1/availability': (_method, _body, url) => {
+      if (url.searchParams.get('from') !== todayInSaoPaulo()) return { status: 200, body: { days: second } };
+      const response = first[Math.min(loads, first.length - 1)] ?? [];
+      loads += 1;
       return { status: 200, body: { days: response } };
     },
     '/api/appointments': book,
   });
-  return { ...served, availabilityCalls: () => availabilityCalls };
+  return { ...served, availabilityLoads: () => loads };
 }
 
 const field = (name: string) => screen.getByRole('combobox', { name });
@@ -99,8 +111,18 @@ async function fill(user: Awaited<ReturnType<typeof start>>['user']) {
   await user.selectOptions(field('Horário'), '14:30');
 }
 
-const submit = (user: Awaited<ReturnType<typeof start>>['user']) =>
-  user.click(screen.getByRole('button', { name: 'Agendar Consulta' }));
+const submitButton = () => screen.getByRole('button', { name: 'Agendar Consulta' });
+
+const submit = (user: Awaited<ReturnType<typeof start>>['user']) => user.click(submitButton());
+
+const windowsOf = (calls: ReturnType<typeof serve>['calls']) =>
+  calls
+    .filter((call) => call.url.pathname.endsWith('/availability'))
+    .map((call) => ({ from: call.url.searchParams.get('from'), to: call.url.searchParams.get('to') }));
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe('book appointment', { timeout: 15_000 }, () => {
   it('fills the specialty from the doctor and narrows the doctors by specialty', async () => {
@@ -127,10 +149,7 @@ describe('book appointment', { timeout: 15_000 }, () => {
 
     await waitFor(() => expect(optionsOf('Data')).toEqual(['seg., 23/11', 'ter., 24/11']));
     expect(field('Horário')).toBeDisabled();
-    const request = calls.find((call) => call.url.pathname.endsWith('/availability'))?.url;
-    const from = request?.searchParams.get('from') ?? '';
-    const to = request?.searchParams.get('to') ?? '';
-    expect((Date.parse(to) - Date.parse(from)) / 86_400_000).toBe(30);
+    expect(windowsOf(calls)).toHaveLength(2);
 
     await user.selectOptions(field('Data'), 'seg., 23/11');
     expect(optionsOf('Horário')).toEqual(['08:00', '14:30']);
@@ -139,15 +158,58 @@ describe('book appointment', { timeout: 15_000 }, () => {
     expect(optionsOf('Horário')).toEqual(['09:00']);
   });
 
-  it('looks at the next weeks when the first window has no free slot', async () => {
-    const { calls } = serve(undefined, [[], days]);
+  it('asks for two 31-day windows from today in São Paulo and merges their days', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-20T02:30:00.000Z'));
+    const { calls } = serve(undefined, { first: [[days[0] as Day]], second: [days[1] as Day] });
     const { user } = await start();
 
     await user.selectOptions(field('Médico'), 'Carlos Mendes');
 
     await waitFor(() => expect(optionsOf('Data')).toEqual(['seg., 23/11', 'ter., 24/11']));
-    const windows = calls.filter((call) => call.url.pathname.endsWith('/availability'));
-    expect(windows.map((call) => call.url.searchParams.get('from'))).toHaveLength(2);
+    expect(windowsOf(calls)).toEqual([
+      { from: '2026-11-19', to: '2026-12-19' },
+      { from: '2026-12-20', to: '2027-01-19' },
+    ]);
+  });
+
+  it('warns when the doctor has no free slot', async () => {
+    serve(undefined, { first: [[]] });
+    const { user } = await start();
+
+    await user.selectOptions(field('Médico'), 'Carlos Mendes');
+
+    expect(await screen.findByRole('note')).toHaveTextContent(/não tem vagas livres/);
+    expect(field('Data')).toBeDisabled();
+  });
+
+  it('clears a picked day that is no longer free and points at it', async () => {
+    serve(undefined, { first: [days, [days[1] as Day]] });
+    const { user, queryClient } = await start();
+    await fill(user);
+
+    await queryClient.invalidateQueries({ queryKey: ['booking', 'availability'] });
+
+    const message = await screen.findByText('Este horário acabou de ser ocupado. Escolha outro.');
+    expect(field('Data')).toHaveValue('');
+    expect(field('Data')).toHaveAttribute('aria-describedby', message.id);
+    expect(field('Data')).toHaveFocus();
+    expect(field('Horário')).toBeDisabled();
+  });
+
+  it('clears a picked time that is no longer free and points at it', async () => {
+    const morning = { date: '2026-11-23', slots: [slot('2026-11-23T11:00:00.000Z')] };
+    serve(undefined, { first: [days, [morning]] });
+    const { user, queryClient } = await start();
+    await fill(user);
+
+    await queryClient.invalidateQueries({ queryKey: ['booking', 'availability'] });
+
+    const message = await screen.findByText('Este horário acabou de ser ocupado. Escolha outro.');
+    expect(field('Data')).toHaveValue('2026-11-23');
+    expect(field('Horário')).toHaveValue('');
+    expect(field('Horário')).toHaveAttribute('aria-describedby', message.id);
+    expect(field('Horário')).toHaveFocus();
   });
 
   it('sends the slot received and shows the request as sent', async () => {
@@ -162,10 +224,9 @@ describe('book appointment', { timeout: 15_000 }, () => {
     expect(dialog).toHaveAccessibleDescription(
       'Consulta de Cardiologia com Carlos Mendes em 23/11/2026, 14:30. Avisaremos quando o médico confirmar.',
     );
-    expect(within(dialog).getByRole('link', { name: 'Ver detalhes' })).toHaveAttribute(
-      'href',
-      '/paciente/agendamentos',
-    );
+    const details = within(dialog).getByRole('link', { name: 'Ver detalhes' });
+    expect(details).toHaveAttribute('href', '/paciente/agendamentos');
+    expect(details).toHaveFocus();
     expect(calls.find((call) => call.method === 'POST')?.body).toEqual({
       doctorId: 'd1',
       specialtyId: 's1',
@@ -177,14 +238,14 @@ describe('book appointment', { timeout: 15_000 }, () => {
 
     await user.click(within(dialog).getByRole('button', { name: 'Fechar' }));
     expect(dialog).not.toHaveAttribute('open');
+    expect(submitButton()).toHaveFocus();
   });
 
   it('reloads the free slots and keeps the form when the slot was just taken', async () => {
     const remaining = [{ date: '2026-11-23', slots: [slot('2026-11-23T11:00:00.000Z')] }];
-    const { availabilityCalls } = serve(
-      () => apiError(409, 'SLOT_TAKEN', { startsAt: 'API' }),
-      [days, remaining],
-    );
+    const { availabilityLoads } = serve(() => apiError(409, 'SLOT_TAKEN', { startsAt: 'API' }), {
+      first: [days, remaining],
+    });
     const { user } = await start();
     await fill(user);
 
@@ -194,7 +255,7 @@ describe('book appointment', { timeout: 15_000 }, () => {
     expect(field('Horário')).toHaveAttribute('aria-describedby', message.id);
     expect(field('Horário')).toHaveValue('');
     await waitFor(() => expect(optionsOf('Horário')).toEqual(['08:00']));
-    expect(availabilityCalls()).toBe(2);
+    expect(availabilityLoads()).toBe(2);
     expect(field('Médico')).toHaveValue('d1');
     expect(field('Especialidade')).toHaveValue('s1');
     expect(field('Tipo de consulta')).toHaveValue('routine');
@@ -223,6 +284,45 @@ describe('book appointment', { timeout: 15_000 }, () => {
 
     const message = await screen.findByText('Este médico não atende a especialidade escolhida.');
     expect(field('Especialidade')).toHaveAttribute('aria-describedby', message.id);
+  });
+
+  it('explains a conflict with another booking of the patient on the time field', async () => {
+    serve(() => apiError(409, 'PATIENT_CONFLICT', { startsAt: 'API' }));
+    const { user } = await start();
+    await fill(user);
+
+    await submit(user);
+
+    const message = await screen.findByText('Você já tem um agendamento neste horário. Escolha outro.');
+    expect(field('Horário')).toHaveAttribute('aria-describedby', message.id);
+    expect(field('Horário')).toHaveFocus();
+  });
+
+  it('explains a booking with the patient as the doctor on the doctor field', async () => {
+    serve(() => apiError(422, 'SELF_BOOKING', { doctorId: 'API' }));
+    const { user } = await start();
+    await fill(user);
+
+    await submit(user);
+
+    const message = await screen.findByText('Não é possível agendar uma consulta com você mesmo.');
+    expect(field('Médico').getAttribute('aria-describedby')).toContain(message.id);
+  });
+
+  it('reloads the doctors when the chosen one is gone', async () => {
+    const { calls } = serve(() => apiError(404, 'NOT_FOUND'));
+    const { user } = await start();
+    await fill(user);
+    const doctorLoads = () => calls.filter((call) => call.url.pathname === '/api/doctors').length;
+    const before = doctorLoads();
+
+    await submit(user);
+
+    expect(await screen.findByText('Este médico não está mais disponível. Escolha outro.')).toHaveAttribute(
+      'role',
+      'alert',
+    );
+    await waitFor(() => expect(doctorLoads()).toBeGreaterThan(before));
   });
 
   it('warns when the patient reached the limit of active bookings', async () => {

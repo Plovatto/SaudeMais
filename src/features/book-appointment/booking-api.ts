@@ -9,18 +9,18 @@ type AvailableDay = ResponseOf<'/api/doctors/{id}/availability', 'get'>['days'][
 export type Appointment = ResponseOf<'/api/appointments', 'post'>;
 
 async function availability(doctorId: string, signal: AbortSignal): Promise<AvailableDay[]> {
-  let from = todayInSaoPaulo();
-  for (let window = 0; window < WINDOWS; window += 1) {
-    const to = addDays(from, WINDOW_DAYS - 1);
-    const { days } = await apiFetch('get', '/api/doctors/{id}/availability', {
-      params: { id: doctorId },
-      query: { from, to },
-      signal,
-    });
-    if (days.length > 0) return days;
-    from = addDays(to, 1);
-  }
-  return [];
+  const today = todayInSaoPaulo();
+  const windows = await Promise.all(
+    Array.from({ length: WINDOWS }, (_value, index) => {
+      const from = addDays(today, index * WINDOW_DAYS);
+      return apiFetch('get', '/api/doctors/{id}/availability', {
+        params: { id: doctorId },
+        query: { from, to: addDays(from, WINDOW_DAYS - 1) },
+        signal,
+      });
+    }),
+  );
+  return windows.flatMap(({ days }) => days);
 }
 
 export const bookingApi = {

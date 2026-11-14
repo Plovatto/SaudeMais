@@ -7,7 +7,7 @@ import { Button, FormAlert, QueryError, Select, Textarea } from '@components/ui'
 import { useActiveSpecialties } from '@hooks/useActiveCatalog';
 import { ApiError } from '@lib/api/api-error';
 import { formatDay, formatTime } from '@lib/date';
-import { errorMessage } from '@lib/messages/errors.pt-BR';
+import { errorMessage, GENERIC_ERROR_MESSAGE, messageFor } from '@lib/messages/errors.pt-BR';
 import { queryKeys } from '@lib/query-keys';
 import { useFormSubmit } from '@lib/useFormSubmit';
 import { bookingApi, type Appointment } from './booking-api';
@@ -29,6 +29,8 @@ const bookingMessages = { NOT_FOUND: 'Este médico não está mais disponível. 
 
 const MISSING_MESSAGE = 'Preencha todas as informações.';
 
+const SLOT_GONE_MESSAGE = messageFor('SLOT_TAKEN') ?? GENERIC_ERROR_MESSAGE;
+
 type SelectChange = ChangeEvent<HTMLSelectElement>;
 
 export function AppointmentForm({ onBooked }: { onBooked: (appointment: Appointment) => void }) {
@@ -41,6 +43,7 @@ export function AppointmentForm({ onBooked }: { onBooked: (appointment: Appointm
     getValues,
     setValue,
     setError,
+    clearErrors,
     reset,
     formState: { errors, isSubmitting, isSubmitted },
   } = useForm({ resolver: zodResolver(bookingSchema), defaultValues: emptyBooking });
@@ -67,11 +70,16 @@ export function AppointmentForm({ onBooked }: { onBooked: (appointment: Appointm
     if (!availability.data) return;
     const current = getValues();
     const day = availability.data.find((item) => item.date === current.date);
-    if (current.date && !day) setValue('date', '');
-    if (current.startsAt && !day?.slots.some((slot) => slot.startsAt === current.startsAt)) {
+    if (current.date && !day) {
+      setValue('date', '');
       setValue('startsAt', '');
+      clearErrors('startsAt');
+      setError('date', { message: SLOT_GONE_MESSAGE }, { shouldFocus: true });
+    } else if (current.startsAt && !day?.slots.some((slot) => slot.startsAt === current.startsAt)) {
+      setValue('startsAt', '');
+      setError('startsAt', { message: SLOT_GONE_MESSAGE }, { shouldFocus: true });
     }
-  }, [availability.data, getValues, setValue]);
+  }, [availability.data, getValues, setValue, setError, clearErrors]);
 
   const clearSlot = () => setValue('startsAt', '');
   const clearDay = () => {
@@ -84,6 +92,8 @@ export function AppointmentForm({ onBooked }: { onBooked: (appointment: Appointm
     FIELDS,
     (error) => {
       if (!(error instanceof ApiError)) return false;
+      if (error.code === 'NOT_FOUND')
+        void queryClient.invalidateQueries({ queryKey: queryKeys.booking.doctorLists });
       const field = fieldByCode[error.code];
       if (!field) return false;
       if (staleSlotCodes.has(error.code)) {
@@ -102,6 +112,7 @@ export function AppointmentForm({ onBooked }: { onBooked: (appointment: Appointm
       return run(async () => {
         const appointment = await bookingApi.book(toBody(values));
         void queryClient.invalidateQueries({ queryKey: queryKeys.booking.availability(values.doctorId) });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.patient.all });
         reset(emptyBooking);
         onBooked(appointment);
       });
@@ -209,7 +220,11 @@ export function AppointmentForm({ onBooked }: { onBooked: (appointment: Appointm
         </Select>
       </div>
       {availability.isError && (
-        <QueryError error={availability.error} onRetry={() => void availability.refetch()} />
+        <QueryError
+          error={availability.error}
+          messages={bookingMessages}
+          onRetry={() => void availability.refetch()}
+        />
       )}
       {availability.data?.length === 0 && (
         <FormAlert tone="warning" role="note">

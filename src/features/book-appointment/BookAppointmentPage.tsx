@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { LuCalendar, LuCheck } from 'react-icons/lu';
 import { PageHeader } from '@components/layout/PageHeader';
 import { ButtonLink, Card, Dialog } from '@components/ui';
@@ -14,6 +14,7 @@ const describe = ({ specialty, doctor, startsAt }: Appointment) =>
 
 export function BookAppointmentPage() {
   const [booked, setBooked] = useState<Appointment | null>(null);
+  const detailsLink = useRef<HTMLAnchorElement>(null);
   return (
     <div className="mx-auto w-full max-w-[520px]">
       <PageHeader
@@ -33,8 +34,9 @@ export function BookAppointmentPage() {
         description={booked && describe(booked)}
         icon={<LuCheck />}
         centered
+        initialFocus={detailsLink}
       >
-        <ButtonLink to={`${PATIENT}/agendamentos`} className="min-w-48">
+        <ButtonLink ref={detailsLink} to={`${PATIENT}/agendamentos`} className="min-w-48">
           Ver detalhes
         </ButtonLink>
       </Dialog>
