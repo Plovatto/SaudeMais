@@ -4,7 +4,7 @@ import { LuLogOut, LuRepeat } from 'react-icons/lu';
 import { PersonalDataCard } from '@components/forms/PersonalDataCard';
 import { PageHeader } from '@components/layout/PageHeader';
 import { Button, ButtonLink, FormAlert, SectionCard } from '@components/ui';
-import { DEMO_PATIENT } from '@constants/demo-accounts';
+import { isDemoEmail } from '@constants/demo-accounts';
 import { useCurrentUser } from '@lib/auth/useSession';
 import { useSignOut } from '@lib/auth/useSignOut';
 import { queryKeys } from '@lib/query-keys';
@@ -17,7 +17,7 @@ export function ProfilePage() {
   const user = useCurrentUser();
   const signOut = useSignOut();
   const queryClient = useQueryClient();
-  const [locked, setLocked] = useState(user.email === DEMO_PATIENT.email);
+  const [locked, setLocked] = useState(isDemoEmail(user.email));
   const lock = () => setLocked(true);
 
   return (

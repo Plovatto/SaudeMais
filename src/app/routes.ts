@@ -53,6 +53,13 @@ const areaScreens: Record<string, typeof placeholder> = {
   'configuracoes/*': lazyComponent(async () => (await import('@features/admin-settings')).AdminSettingsPage),
 };
 
+const homeScreens: Partial<Record<Area['role'], typeof placeholder>> = {
+  admin: lazyComponent(async () => (await import('@features/admin-home')).AdminHomePage),
+};
+
+const screenFor = (area: Area, path: string) =>
+  (path === '' ? homeScreens[area.role] : areaScreens[path]) ?? placeholder;
+
 const areaRoute = (area: Area): RouteObject => ({
   path: area.base,
   handle: { role: area.role },
@@ -61,7 +68,7 @@ const areaRoute = (area: Area): RouteObject => ({
     {
       lazy: lazyComponent(async () => (await import('@components/layout/RoleLayout')).RoleLayout),
       children: [
-        ...area.pages.map(({ path, title }) => page(path, title, { lazy: areaScreens[path] ?? placeholder })),
+        ...area.pages.map(({ path, title }) => page(path, title, { lazy: screenFor(area, path) })),
         notFound,
       ],
     },

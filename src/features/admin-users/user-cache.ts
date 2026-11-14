@@ -5,14 +5,19 @@ import type { AdminUserDetail } from './users-api';
 
 export const ADMIN_USERS_PATH = '/admin/usuarios';
 
+function refreshTotals(queryClient: QueryClient) {
+  void queryClient.invalidateQueries({ queryKey: queryKeys.adminUsers.lists });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.adminHome });
+}
+
 export function refreshUser(queryClient: QueryClient, id: string) {
   void queryClient.invalidateQueries({ queryKey: queryKeys.adminUsers.detail(id) });
-  void queryClient.invalidateQueries({ queryKey: queryKeys.adminUsers.lists });
+  refreshTotals(queryClient);
 }
 
 export function syncUser(queryClient: QueryClient, user: AdminUserDetail) {
   queryClient.setQueryData(queryKeys.adminUsers.detail(user.id), user);
-  void queryClient.invalidateQueries({ queryKey: queryKeys.adminUsers.lists });
+  refreshTotals(queryClient);
   void queryClient.invalidateQueries({ queryKey: queryKeys.adminUsers.impact(user.id) });
   if (queryClient.getQueryData<CurrentUser>(queryKeys.session)?.id === user.id)
     void queryClient.invalidateQueries({ queryKey: queryKeys.session });

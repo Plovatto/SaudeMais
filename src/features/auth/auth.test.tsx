@@ -3,7 +3,7 @@ import type userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Role } from '@constants/areas';
 import { mockApi, renderApp, TEST_TOKEN, testUser } from '@/test/render-app';
-import { DEMO_PATIENT } from '@constants/demo-accounts';
+import { DEMO_DOCTOR, DEMO_PATIENT } from '@constants/demo-accounts';
 
 function requestBody(fetchMock: ReturnType<typeof mockApi>, call = 0): unknown {
   const init = fetchMock.mock.calls[call]?.[1];
@@ -42,13 +42,16 @@ describe('login', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('fills in the demo patient', async () => {
+  it.each([
+    ['paciente', DEMO_PATIENT],
+    ['médico', DEMO_DOCTOR],
+  ])('fills in the demo %s account', async (label, account) => {
     const { user } = renderAt('/login');
 
-    await user.click(await screen.findByRole('button', { name: /Preencher/ }));
+    await user.click(await screen.findByRole('button', { name: `Preencher com a conta de ${label}` }));
 
-    expect(screen.getByLabelText('E-mail')).toHaveValue(DEMO_PATIENT.email);
-    expect(screen.getByLabelText('Senha')).toHaveValue(DEMO_PATIENT.password);
+    expect(screen.getByLabelText('E-mail')).toHaveValue(account.email);
+    expect(screen.getByLabelText('Senha')).toHaveValue(account.password);
   });
 
   it('logs a patient in and opens the patient area', async () => {

@@ -24,6 +24,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/home": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ver os números do painel
+         * @description Contagens do painel do administrador: pacientes e médicos com conta ativa e consultas de hoje no fuso de São Paulo. Contas desativadas e de demonstração não entram. Limite: 120 requisições por minuto por IP.
+         */
+        get: operations["getAdminHome"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/users": {
         parameters: {
             query?: never;
@@ -659,6 +679,23 @@ export interface components {
             /** @enum {string} */
             status: "ok";
         };
+        AdminHome: {
+            /**
+             * @description Contas ativas com o perfil de paciente, sem as contas de demonstração. Toda conta nasce paciente, então médicos e administradores também entram.
+             * @example 127
+             */
+            patients: number;
+            /**
+             * @description Contas ativas com o perfil de médico, sem a conta de demonstração.
+             * @example 61
+             */
+            doctors: number;
+            /**
+             * @description Consultas de hoje no fuso de São Paulo. Fica em 0 até existirem agendamentos.
+             * @example 24
+             */
+            appointmentsToday: number;
+        };
         RegisterRequest: {
             /**
              * @description Nome completo, de 2 a 120 caracteres.
@@ -1101,6 +1138,86 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getAdminHome: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Números do painel. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminHome"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
