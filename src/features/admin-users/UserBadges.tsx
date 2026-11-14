@@ -23,7 +23,7 @@ export function UserAvatar({ roles }: { roles: readonly Role[] }) {
 export interface UserBadgesProps {
   roles: readonly Role[];
   locks: UserLocks;
-  specialty?: string;
+  specialty?: string | undefined;
 }
 
 export function UserBadges({ roles, locks, specialty }: UserBadgesProps) {

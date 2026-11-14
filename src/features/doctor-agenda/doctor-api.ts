@@ -1,10 +1,9 @@
 import { apiFetch, type ResponseOf } from '@lib/api/api-fetch';
+import type { DoctorAppointment } from '@lib/api/models';
 
 const PAGE_SIZE = 10;
 
 export type DoctorHome = ResponseOf<'/api/doctor/home', 'get'>;
-
-export type DoctorAppointment = DoctorHome['pending'][number];
 
 export type AgendaTab = keyof DoctorHome['counts'];
 

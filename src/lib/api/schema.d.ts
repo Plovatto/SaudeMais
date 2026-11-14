@@ -1140,7 +1140,7 @@ export interface components {
             createdAt: string;
         };
         AdminUserDetail: components["schemas"]["AdminUser"] & {
-            doctorProfile: components["schemas"]["DoctorProfile"] & (Record<string, never> | null);
+            doctorProfile: components["schemas"]["DoctorProfile"] | null;
         };
         AdminUserPage: {
             items: components["schemas"]["AdminUser"][];
@@ -1856,7 +1856,8 @@ export interface components {
                  */
                 history: number;
             };
-            lastNotification: components["schemas"]["Notification"] & (Record<string, never> | null);
+            /** @description O aviso mais recente do perfil de médico, lido ou não. */
+            lastNotification: components["schemas"]["Notification"] | null;
         };
         SaveDoctorScheduleRequest: {
             /** @description Os 7 dias da semana, cada um uma vez. */
@@ -2072,7 +2073,8 @@ export interface components {
                 /** @example 7 */
                 past: number;
             };
-            lastNotification: components["schemas"]["Notification"] & (Record<string, never> | null);
+            /** @description O aviso mais recente do perfil de paciente, lido ou não. */
+            lastNotification: components["schemas"]["Notification"] | null;
         };
     };
     responses: never;
