@@ -1,20 +1,20 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { LuTrash2, LuUser } from 'react-icons/lu';
 import { useNavigate } from 'react-router';
 import { Button, FormAlert, Input, SectionCard, Select, Skeleton, useToast } from '@components/ui';
 import { UFS } from '@constants/ufs';
+import { useActiveSpecialties, useActiveUnits } from '@hooks/useActiveCatalog';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
-import { queryKeys } from '@lib/query-keys';
 import { useFormSubmit } from '@lib/useFormSubmit';
 import { ImpactDialog } from './ImpactDialog';
 import { countOf } from './user-text';
 import { ADMIN_USERS_PATH, refreshUser, syncUser } from './user-cache';
 import { userMessages } from './user-messages';
 import { doctorProfileSchema, type DoctorProfileValues } from './user-schemas';
-import { catalogApi, usersApi, type AdminUserDetail, type DeactivationImpact } from './users-api';
+import { usersApi, type AdminUserDetail, type DeactivationImpact } from './users-api';
 
 const FIELDS = ['specialtyId', 'registryNumber', 'registryUf', 'unitId'] as const;
 
@@ -44,16 +44,8 @@ export function DoctorProfileForm({ user, locked }: DoctorProfileFormProps) {
   const { show } = useToast();
   const profile = user.doctorProfile;
   const [removing, setRemoving] = useState(false);
-  const specialties = useQuery({
-    queryKey: queryKeys.catalog.activeSpecialties,
-    queryFn: ({ signal }) => catalogApi.specialties(signal),
-    select: (items) => items.filter((item) => item.isActive),
-  });
-  const units = useQuery({
-    queryKey: queryKeys.catalog.activeUnits,
-    queryFn: ({ signal }) => catalogApi.units(signal),
-    select: (items) => items.filter((item) => item.isActive),
-  });
+  const specialties = useActiveSpecialties();
+  const units = useActiveUnits();
   const {
     register,
     control,

@@ -11,6 +11,10 @@ export const queryKeys = {
     detail: (id: string) => ['admin-users', 'detail', id] as const,
     impact: (id: string) => ['admin-users', 'impact', id] as const,
   },
+  booking: {
+    doctors: (specialtyId: string) => ['booking', 'doctors', specialtyId] as const,
+    availability: (doctorId: string) => ['booking', 'availability', doctorId] as const,
+  },
   catalog: {
     specialties: ['catalog', 'specialties'] as const,
     units: ['catalog', 'units'] as const,
