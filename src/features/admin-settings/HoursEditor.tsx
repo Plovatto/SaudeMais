@@ -1,8 +1,9 @@
 import type { ChangeEvent } from 'react';
 import { Controller, useWatch, type Control, type FieldErrors, type UseFormRegister } from 'react-hook-form';
 import { Input, Switch } from '@components/ui';
+import { WEEKDAYS } from '@constants/weekdays';
 import { formatTimeInput } from '@lib/time-of-day';
-import { WEEKDAYS, type UnitValues } from './settings-schemas';
+import type { UnitValues } from './settings-schemas';
 
 export interface HoursEditorProps {
   control: Control<UnitValues>;

@@ -23,3 +23,7 @@ export function fromMinutes(total: number): string {
   const minutes = total % 60;
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
+
+export function formatTimeRange(startMin: number, endMin: number): string {
+  return `${fromMinutes(startMin)}–${fromMinutes(endMin)}`;
+}

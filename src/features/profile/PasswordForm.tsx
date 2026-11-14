@@ -3,11 +3,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { NewPasswordFields } from '@components/forms/NewPasswordFields';
 import { Button, FormAlert, PasswordInput, useToast, SectionCard } from '@components/ui';
+import { handleProtectedAccount } from '@lib/auth/protected-account';
 import { queryKeys } from '@lib/query-keys';
 import { useFormSubmit } from '@lib/useFormSubmit';
 import { changePassword } from './profile-api';
 import { passwordSchema, type PasswordValues } from './profile-schemas';
-import { handleProtectedAccount } from './protected-account';
 
 const emptyPassword: PasswordValues = { currentPassword: '', password: '', passwordConfirmation: '' };
 

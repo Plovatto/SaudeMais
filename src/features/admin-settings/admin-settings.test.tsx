@@ -275,9 +275,9 @@ describe('admin settings', () => {
     await user.type(within(form).getByLabelText('Nome'), 'Unidade Central');
     await user.type(within(form).getByLabelText('Endereço'), 'Rua das Flores, 123');
     await user.type(within(form).getByLabelText('Telefone'), '(11) 3333-4444');
-    await user.click(within(form).getByRole('switch', { name: 'Segunda' }));
-    const opens = within(form).getByLabelText('Abre (Segunda)');
-    const closes = within(form).getByLabelText('Fecha (Segunda)');
+    await user.click(within(form).getByRole('switch', { name: 'Segunda-feira' }));
+    const opens = within(form).getByLabelText('Abre (Segunda-feira)');
+    const closes = within(form).getByLabelText('Fecha (Segunda-feira)');
     await user.clear(closes);
     await user.type(closes, '0700');
     expect(closes).toHaveValue('07:00');
@@ -317,9 +317,9 @@ describe('admin settings', () => {
     const form = await screen.findByRole('form', { name: 'Unidade' });
 
     expect(within(form).getByLabelText('Telefone')).toHaveValue('(11) 3333-4444');
-    expect(within(form).getByLabelText('Abre (Segunda)')).toHaveValue('08:00');
-    expect(within(form).getByLabelText('Fecha (Segunda)')).toHaveValue('24:00');
-    expect(within(form).getByRole('switch', { name: 'Terça' })).not.toBeChecked();
+    expect(within(form).getByLabelText('Abre (Segunda-feira)')).toHaveValue('08:00');
+    expect(within(form).getByLabelText('Fecha (Segunda-feira)')).toHaveValue('24:00');
+    expect(within(form).getByRole('switch', { name: 'Terça-feira' })).not.toBeChecked();
 
     await user.click(within(form).getByRole('button', { name: 'Salvar' }));
 

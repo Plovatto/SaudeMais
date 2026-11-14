@@ -5,12 +5,12 @@ import { PersonalDataCard } from '@components/forms/PersonalDataCard';
 import { PageHeader } from '@components/layout/PageHeader';
 import { Button, ButtonLink, FormAlert, SectionCard } from '@components/ui';
 import { isDemoEmail } from '@constants/demo-accounts';
+import { handleProtectedAccount } from '@lib/auth/protected-account';
 import { useCurrentUser } from '@lib/auth/useSession';
 import { useSignOut } from '@lib/auth/useSignOut';
 import { queryKeys } from '@lib/query-keys';
 import { PasswordForm } from './PasswordForm';
 import { updateProfile } from './profile-api';
-import { handleProtectedAccount } from './protected-account';
 import { SessionsSection } from './SessionsSection';
 
 export function ProfilePage() {
