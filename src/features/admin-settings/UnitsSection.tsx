@@ -1,5 +1,6 @@
 import { LuMapPin, LuPhone } from 'react-icons/lu';
 import { Input } from '@components/ui';
+import { formatPhone } from '@lib/phone';
 import { queryKeys } from '@lib/query-keys';
 import { fromMinutes, toMinutes } from '@lib/time-of-day';
 import { CatalogList } from './CatalogList';
@@ -13,7 +14,7 @@ function valuesOf(unit: Unit | null): UnitValues {
   return {
     name: unit?.name ?? '',
     address: unit?.address ?? '',
-    phone: unit?.phone ?? '',
+    phone: unit ? formatPhone(unit.phone) : '',
     hours: WEEKDAYS.map((_weekday, weekday) => {
       const day = unit?.hours.find((entry) => entry.weekday === weekday);
       return day

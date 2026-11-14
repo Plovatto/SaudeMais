@@ -1,12 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useRef } from 'react';
 import { Controller } from 'react-hook-form';
-import { LuInbox, LuPlus } from 'react-icons/lu';
-import { Button, Card, Dialog, EmptyState, FormAlert, Input, Select, Skeleton, Switch } from '@components/ui';
-import { errorMessage } from '@lib/messages/errors.pt-BR';
+import { LuPlus } from 'react-icons/lu';
+import { Button, Input, Select, Skeleton, Switch } from '@components/ui';
 import { queryKeys } from '@lib/query-keys';
-import { CatalogRow } from './CatalogRow';
+import { CatalogItems } from './CatalogItems';
 import { FormShell } from './FormShell';
+import { QueryError } from './QueryError';
 import {
   examTypesApi,
   MAX_PAGE_SIZE,
@@ -18,16 +18,18 @@ import {
 import { offerSchema } from './settings-schemas';
 import { SettingsSection } from './SettingsSection';
 import { useActiveToggle } from './useActiveToggle';
+import { useCatalogEditor } from './useCatalogEditor';
 import { useCatalogForm } from './useCatalogForm';
+import { useSearchParam } from './useSearchParam';
 
 interface OfferFormProps {
   unitId: string;
   offer: ExamOffer | null;
-  examTypes: ExamType[];
+  choices: ExamType[];
   onDone: () => void;
 }
 
-function OfferForm({ unitId, offer, examTypes, onDone }: OfferFormProps) {
+function OfferForm({ unitId, offer, choices, onDone }: OfferFormProps) {
   const form = useCatalogForm({
     schema: offerSchema,
     defaultValues: offer
@@ -48,19 +50,26 @@ function OfferForm({ unitId, offer, examTypes, onDone }: OfferFormProps) {
       submitting={isSubmitting}
       onCancel={onDone}
     >
-      <Select
-        label="Exame"
-        placeholder="Escolha o exame"
-        disabled={offer !== null}
-        error={errors.examTypeId?.message}
-        {...form.register('examTypeId')}
-      >
-        {examTypes.map((examType) => (
-          <option key={examType.id} value={examType.id}>
-            {examType.isActive ? examType.name : `${examType.name} (desativado)`}
-          </option>
-        ))}
-      </Select>
+      {offer ? (
+        <Input label="Exame" value={offer.examTypeName} readOnly />
+      ) : choices.length === 0 ? (
+        <p className="text-text-secondary text-sm">
+          Todos os tipos de exame ativos já são oferecidos nesta unidade.
+        </p>
+      ) : (
+        <Select
+          label="Exame"
+          placeholder="Escolha o exame"
+          error={errors.examTypeId?.message}
+          {...form.register('examTypeId')}
+        >
+          {choices.map((examType) => (
+            <option key={examType.id} value={examType.id}>
+              {examType.name}
+            </option>
+          ))}
+        </Select>
+      )}
       <Input
         label="Exames ao mesmo tempo"
         type="number"
@@ -80,11 +89,11 @@ function OfferForm({ unitId, offer, examTypes, onDone }: OfferFormProps) {
   );
 }
 
-type Editing = { offer: ExamOffer | null } | null;
+const offerKey = (offer: ExamOffer) => offer.examTypeId;
 
 export function OffersSection() {
-  const [unitId, setUnitId] = useState('');
-  const [editing, setEditing] = useState<Editing>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const [unitId, setUnitId] = useSearchParam('unidade');
   const units = useQuery({
     queryKey: [...queryKeys.catalog.units, 'all'],
     queryFn: ({ signal }) => unitsApi.list(1, signal, MAX_PAGE_SIZE),
@@ -101,20 +110,26 @@ export function OffersSection() {
   });
   const toggle = useActiveToggle<ExamOffer>({
     nameOf: (offer) => offer.examTypeName,
+    keyOf: offerKey,
     setActive: (offer, isActive) =>
       offersApi.save(unitId, offer.examTypeId, { capacityPerSlot: offer.capacityPerSlot, isActive }),
     invalidate: offersKey,
   });
-  const close = () => setEditing(null);
-  const loadError = units.error ?? examTypes.error ?? offers.error;
+  const editor = useCatalogEditor<ExamOffer>(headingRef);
+  const failed = [units, examTypes, offers].find((query) => query.isError);
+  const offered = new Set((offers.data ?? []).map(offerKey));
+  const choices = (examTypes.data?.items ?? []).filter(
+    (examType) => examType.isActive && !offered.has(examType.id),
+  );
 
   return (
     <SettingsSection
       title="Exames por unidade"
       description="Quais exames cada unidade faz e quantos ao mesmo tempo."
+      headingRef={headingRef}
       action={
         unitId !== '' && (
-          <Button icon={<LuPlus />} onClick={() => setEditing({ offer: null })}>
+          <Button icon={<LuPlus />} onClick={editor.create}>
             Oferecer exame
           </Button>
         )
@@ -135,48 +150,31 @@ export function OffersSection() {
       {units.data && units.data.total > MAX_PAGE_SIZE && (
         <p className="text-text-secondary text-sm">Mostrando as primeiras {MAX_PAGE_SIZE} unidades.</p>
       )}
-      {loadError && <FormAlert>{errorMessage(loadError)}</FormAlert>}
+      {failed && <QueryError error={failed.error} onRetry={() => void failed.refetch()} />}
       {offers.isFetching && !offers.data && <Skeleton className="h-20" />}
-      {offers.data?.length === 0 && (
-        <Card>
-          <EmptyState
-            icon={<LuInbox />}
-            title="Nenhum exame oferecido nesta unidade"
-            description="Escolha um tipo de exame e quantos a unidade faz ao mesmo tempo."
-            action={<Button onClick={() => setEditing({ offer: null })}>Oferecer exame</Button>}
-          />
-        </Card>
+      <CatalogItems
+        items={offers.data}
+        keyOf={offerKey}
+        describe={(offer) => ({
+          name: offer.examTypeName,
+          details: `${offer.capacityPerSlot} ao mesmo tempo`,
+        })}
+        isBusy={toggle.isBusy}
+        onToggle={toggle.request}
+        onEdit={editor.edit}
+        empty={{
+          title: 'Nenhum exame oferecido nesta unidade',
+          description: 'Escolha um tipo de exame e quantos a unidade faz ao mesmo tempo.',
+          actionLabel: 'Oferecer exame',
+          onCreate: editor.create,
+        }}
+      />
+      {editor.panel(
+        (offer) => (offer ? `Editar ${offer.examTypeName}` : 'Oferecer exame'),
+        (offer, close) => (
+          <OfferForm unitId={unitId} offer={offer} choices={choices} onDone={close} />
+        ),
       )}
-      {offers.data && offers.data.length > 0 && (
-        <ul className="grid gap-3 lg:grid-cols-2">
-          {offers.data.map((offer) => (
-            <CatalogRow
-              key={offer.examTypeId}
-              name={offer.examTypeName}
-              details={`${offer.capacityPerSlot} ao mesmo tempo`}
-              isActive={offer.isActive}
-              busy={toggle.busy}
-              onToggle={(isActive) => toggle.request(offer, isActive)}
-              onEdit={() => setEditing({ offer })}
-            />
-          ))}
-        </ul>
-      )}
-      <Dialog
-        open={editing !== null}
-        onClose={close}
-        placement="side"
-        title={editing?.offer ? `Editar ${editing.offer.examTypeName}` : 'Oferecer exame'}
-      >
-        {editing && (
-          <OfferForm
-            unitId={unitId}
-            offer={editing.offer}
-            examTypes={examTypes.data?.items ?? []}
-            onDone={close}
-          />
-        )}
-      </Dialog>
       {toggle.confirmation}
     </SettingsSection>
   );

@@ -1,12 +1,14 @@
 import { keepPreviousData, useQuery, type QueryKey } from '@tanstack/react-query';
-import { useState, type ReactNode } from 'react';
-import { LuInbox, LuPlus } from 'react-icons/lu';
-import { Button, Card, Dialog, EmptyState, FormAlert, Pagination, Skeleton } from '@components/ui';
-import { errorMessage } from '@lib/messages/errors.pt-BR';
-import { CatalogRow } from './CatalogRow';
+import { useEffect, useRef, type ReactNode } from 'react';
+import { LuPlus } from 'react-icons/lu';
+import { Button, Pagination, Skeleton } from '@components/ui';
+import { CatalogItems } from './CatalogItems';
+import { QueryError } from './QueryError';
 import type { Page } from './settings-api';
 import { SettingsSection } from './SettingsSection';
 import { useActiveToggle } from './useActiveToggle';
+import { useCatalogEditor } from './useCatalogEditor';
+import { useSearchParam } from './useSearchParam';
 
 interface CatalogItem {
   id: string;
@@ -26,7 +28,7 @@ export interface CatalogListProps<T extends CatalogItem> {
   renderForm: (item: T | null, close: () => void) => ReactNode;
 }
 
-type Editing<T> = { item: T | null } | null;
+const idOf = (item: CatalogItem) => item.id;
 
 export function CatalogList<T extends CatalogItem>({
   title,
@@ -40,8 +42,9 @@ export function CatalogList<T extends CatalogItem>({
   setActive,
   renderForm,
 }: CatalogListProps<T>) {
-  const [page, setPage] = useState(1);
-  const [editing, setEditing] = useState<Editing<T>>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const [pageParam, setPageParam] = useSearchParam('pagina', '1');
+  const page = Math.max(1, Math.trunc(Number(pageParam)) || 1);
   const query = useQuery({
     queryKey: [...queryKey, page],
     queryFn: ({ signal }) => load(page, signal),
@@ -49,18 +52,25 @@ export function CatalogList<T extends CatalogItem>({
   });
   const toggle = useActiveToggle<T>({
     nameOf: (item) => describe(item).name,
+    keyOf: idOf,
     setActive,
     invalidate: queryKey,
   });
-  const close = () => setEditing(null);
-  const totalPages = query.data ? Math.ceil(query.data.total / query.data.pageSize) : 0;
+  const editor = useCatalogEditor<T>(headingRef);
+  const lastPage = query.data ? Math.max(1, Math.ceil(query.data.total / query.data.pageSize)) : 1;
+  const outOfRange = query.data !== undefined && page > lastPage;
+
+  useEffect(() => {
+    if (outOfRange) setPageParam(String(lastPage), { replace: true });
+  }, [outOfRange, lastPage, setPageParam]);
 
   return (
     <SettingsSection
       title={title}
       description={description}
+      headingRef={headingRef}
       action={
-        <Button icon={<LuPlus />} onClick={() => setEditing({ item: null })}>
+        <Button icon={<LuPlus />} onClick={editor.create}>
           {createLabel}
         </Button>
       }
@@ -72,47 +82,29 @@ export function CatalogList<T extends CatalogItem>({
           ))}
         </div>
       )}
-      {query.isError && (
-        <div className="flex flex-col items-start gap-3">
-          <FormAlert>{errorMessage(query.error)}</FormAlert>
-          <Button variant="secondary" onClick={() => void query.refetch()}>
-            Tentar de novo
-          </Button>
-        </div>
+      {query.isError && <QueryError error={query.error} onRetry={() => void query.refetch()} />}
+      {!outOfRange && (
+        <CatalogItems
+          items={query.data?.items}
+          keyOf={idOf}
+          describe={describe}
+          isBusy={toggle.isBusy}
+          onToggle={toggle.request}
+          onEdit={editor.edit}
+          empty={{
+            title: emptyTitle,
+            description: 'Os itens cadastrados aparecem aqui.',
+            actionLabel: createLabel,
+            onCreate: editor.create,
+          }}
+        />
       )}
-      {query.data?.items.length === 0 && (
-        <Card>
-          <EmptyState
-            icon={<LuInbox />}
-            title={emptyTitle}
-            description="Os itens cadastrados aparecem aqui."
-            action={<Button onClick={() => setEditing({ item: null })}>{createLabel}</Button>}
-          />
-        </Card>
-      )}
-      {query.data && query.data.items.length > 0 && (
-        <ul className="grid gap-3 lg:grid-cols-2">
-          {query.data.items.map((item) => (
-            <CatalogRow
-              key={item.id}
-              {...describe(item)}
-              isActive={item.isActive}
-              busy={toggle.busy}
-              onToggle={(isActive) => toggle.request(item, isActive)}
-              onEdit={() => setEditing({ item })}
-            />
-          ))}
-        </ul>
-      )}
-      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
-      <Dialog
-        open={editing !== null}
-        onClose={close}
-        placement="side"
-        title={editing?.item ? editLabel : createLabel}
-      >
-        {editing && renderForm(editing.item, close)}
-      </Dialog>
+      <Pagination
+        page={page}
+        totalPages={query.data ? lastPage : 0}
+        onPageChange={(next) => setPageParam(String(next))}
+      />
+      {editor.panel((item) => (item ? editLabel : createLabel), renderForm)}
       {toggle.confirmation}
     </SettingsSection>
   );

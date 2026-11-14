@@ -1,5 +1,7 @@
+import type { ChangeEvent } from 'react';
 import { Controller, useWatch, type Control, type FieldErrors, type UseFormRegister } from 'react-hook-form';
 import { Input, Switch } from '@components/ui';
+import { formatTimeInput } from '@lib/time-of-day';
 import { WEEKDAYS, type UnitValues } from './settings-schemas';
 
 export interface HoursEditorProps {
@@ -7,6 +9,11 @@ export interface HoursEditorProps {
   register: UseFormRegister<UnitValues>;
   errors: FieldErrors<UnitValues>;
 }
+
+const TIME_FIELDS = [
+  { key: 'start', label: 'Abre', placeholder: '08:00' },
+  { key: 'end', label: 'Fecha', placeholder: '18:00' },
+] as const;
 
 export function HoursEditor({ control, register, errors }: HoursEditorProps) {
   const hours = useWatch({ control, name: 'hours' });
@@ -22,31 +29,30 @@ export function HoursEditor({ control, register, errors }: HoursEditorProps) {
               control={control}
               name={`hours.${index}.open`}
               render={({ field }) => (
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                  label={`${weekday}: ${field.value ? 'aberta' : 'fechada'}`}
-                />
+                <Switch checked={field.value} onCheckedChange={field.onChange} label={weekday} />
               )}
             />
             {open && (
               <div className="grid grid-cols-2 gap-3">
-                <Input
-                  label={`Abre (${weekday})`}
-                  labelHidden
-                  placeholder="08:00"
-                  inputMode="numeric"
-                  error={dayErrors?.start?.message}
-                  {...register(`hours.${index}.start`)}
-                />
-                <Input
-                  label={`Fecha (${weekday})`}
-                  labelHidden
-                  placeholder="18:00"
-                  inputMode="numeric"
-                  error={dayErrors?.end?.message}
-                  {...register(`hours.${index}.end`)}
-                />
+                {TIME_FIELDS.map(({ key, label, placeholder }) => {
+                  const field = register(`hours.${index}.${key}`);
+                  return (
+                    <Input
+                      key={key}
+                      {...field}
+                      label={label}
+                      aria-label={`${label} (${weekday})`}
+                      placeholder={placeholder}
+                      inputMode="numeric"
+                      maxLength={5}
+                      error={dayErrors?.[key]?.message}
+                      onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                        event.target.value = formatTimeInput(event.target.value);
+                        void field.onChange(event);
+                      }}
+                    />
+                  );
+                })}
               </div>
             )}
           </div>

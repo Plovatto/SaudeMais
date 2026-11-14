@@ -24,7 +24,7 @@ export function CatalogRow({ name, details, isActive, busy, onToggle, onEdit }: 
           onCheckedChange={onToggle}
           label={`${name} ativo`}
           labelHidden
-          disabled={busy}
+          busy={busy}
         />
         <IconButton label={`Editar ${name}`} icon={<LuPencil />} onClick={onEdit} />
       </Card>

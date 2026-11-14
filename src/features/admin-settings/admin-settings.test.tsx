@@ -20,6 +20,26 @@ const page = <T,>(items: T[], total = items.length, current = 1) => ({
   total,
 });
 
+const unit = (overrides: Record<string, unknown> = {}) => ({
+  id: 'u1',
+  name: 'Central',
+  address: 'Rua A, 1',
+  phone: '+551133334444',
+  isActive: true,
+  hours: [],
+  ...overrides,
+});
+
+const examType = (id: string, name: string, isActive = true) => ({
+  id,
+  code: name.toLowerCase().replace(/\W/g, '_'),
+  name,
+  kind: 'imaging',
+  durationMin: 15,
+  preparationNotes: null,
+  isActive,
+});
+
 const policy = {
   appointmentLateWindowHours: 24,
   examLateWindowHours: 2,
@@ -67,6 +87,64 @@ describe('admin settings', () => {
     await user.click(screen.getByRole('button', { name: 'Página 2' }));
 
     await waitFor(() => expect(requestUrls(fetchMock).some((url) => url.includes('page=2'))).toBe(true));
+    expect(router.state.location.search).toBe('?pagina=2');
+  });
+
+  it('reads the page from the URL and moves back to the last page when it is past the end', async () => {
+    const { fetchMock } = serve({
+      '/api/admin/specialties': () => ({ status: 200, body: page([specialty(1)], 45) }),
+    });
+    const { router } = renderApp('/admin/configuracoes/especialidades?pagina=9');
+
+    await waitFor(() => expect(router.state.location.search).toBe('?pagina=3'));
+    expect(requestUrls(fetchMock).some((url) => url.includes('page=9'))).toBe(true);
+    await waitFor(() => expect(requestUrls(fetchMock).some((url) => url.includes('page=3'))).toBe(true));
+  });
+
+  it('marks only the item being changed as busy', async () => {
+    const { fetchMock } = serve({
+      '/api/admin/specialties': () => ({
+        status: 200,
+        body: page([specialty(1, { isActive: false }), specialty(2, { isActive: false })]),
+      }),
+    });
+    const { user } = renderApp('/admin/configuracoes/especialidades');
+    const first = await screen.findByRole('switch', { name: 'Especialidade 1 ativo' });
+    fetchMock.mockImplementationOnce(() => new Promise<Response>(() => undefined));
+
+    await user.click(first);
+
+    await waitFor(() => expect(first).toHaveAttribute('aria-busy', 'true'));
+    expect(screen.getByRole('switch', { name: 'Especialidade 2 ativo' })).not.toHaveAttribute(
+      'aria-busy',
+      'true',
+    );
+  });
+
+  it('explains a removed item and an item still in use when changing it', async () => {
+    serve({
+      '/api/admin/specialties': () => ({
+        status: 200,
+        body: page([specialty(1, { isActive: false }), specialty(2)]),
+      }),
+      '/api/admin/specialties/spec-1': () => ({
+        status: 404,
+        body: { message: 'Specialty not found.', code: 'NOT_FOUND' },
+      }),
+      '/api/admin/specialties/spec-2': () => ({ status: 409, body: { message: 'Em uso.', code: 'IN_USE' } }),
+    });
+    const { user } = renderApp('/admin/configuracoes/especialidades');
+
+    await user.click(await screen.findByRole('switch', { name: 'Especialidade 1 ativo' }));
+    expect(await screen.findByText('Este item não existe mais. Atualize a lista.')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('switch', { name: 'Especialidade 2 ativo' }));
+    await user.click(
+      within(await screen.findByRole('dialog', { name: 'Desativar Especialidade 2?' })).getByRole('button', {
+        name: 'Desativar',
+      }),
+    );
+    expect(await screen.findByText(/Há agendamentos futuros ligados a este item/)).toBeInTheDocument();
   });
 
   it('shows an empty state for a list without items', async () => {
@@ -74,6 +152,47 @@ describe('admin settings', () => {
     renderApp('/admin/configuracoes/exames');
 
     expect(await screen.findByText('Nenhum tipo de exame cadastrado')).toBeInTheDocument();
+  });
+
+  it('validates a new exam type and sends empty preparation notes as null', async () => {
+    let attempts = 0;
+    const { calls } = serve({
+      '/api/admin/exam-types': (method, body) => {
+        if (method !== 'POST') return { status: 200, body: page([]) };
+        attempts += 1;
+        return attempts === 1
+          ? { status: 409, body: { message: 'Código em uso.', code: 'CODE_TAKEN' } }
+          : { status: 201, body: { id: 'e1', isActive: true, ...(body as object) } };
+      },
+    });
+    const { user } = renderApp('/admin/configuracoes/exames');
+    await user.click((await screen.findAllByRole('button', { name: 'Novo tipo de exame' }))[0]!);
+    const form = await screen.findByRole('form', { name: 'Tipo de exame' });
+    const duration = within(form).getByLabelText('Duração (minutos)');
+
+    await user.type(within(form).getByLabelText('Nome'), 'Hemograma');
+    await user.type(within(form).getByLabelText('Código'), 'Hemo-grama');
+    await user.clear(duration);
+    await user.type(duration, '17');
+    await user.click(within(form).getByRole('button', { name: 'Salvar' }));
+
+    expect(await within(form).findByText(/Use letras minúsculas, números e _/)).toBeInTheDocument();
+    expect(within(form).getByText('Use múltiplos de 5 minutos.')).toBeInTheDocument();
+
+    await user.clear(within(form).getByLabelText('Código'));
+    await user.type(within(form).getByLabelText('Código'), 'hemograma');
+    await user.clear(duration);
+    await user.type(duration, '20');
+    await user.click(within(form).getByRole('button', { name: 'Salvar' }));
+
+    expect(await within(form).findByText('Já existe um tipo de exame com esse código.')).toBeInTheDocument();
+    expect(calls.find((call) => call.method === 'POST')?.body).toEqual({
+      code: 'hemograma',
+      name: 'Hemograma',
+      kind: 'lab',
+      durationMin: 20,
+      preparationNotes: null,
+    });
   });
 
   it('validates a new specialty and shows conflicts from the API on the field', async () => {
@@ -168,11 +287,12 @@ describe('admin settings', () => {
     await user.type(within(form).getByLabelText('Nome'), 'Unidade Central');
     await user.type(within(form).getByLabelText('Endereço'), 'Rua das Flores, 123');
     await user.type(within(form).getByLabelText('Telefone'), '(11) 3333-4444');
-    await user.click(within(form).getByRole('switch', { name: 'Segunda: fechada' }));
+    await user.click(within(form).getByRole('switch', { name: 'Segunda' }));
     const opens = within(form).getByLabelText('Abre (Segunda)');
     const closes = within(form).getByLabelText('Fecha (Segunda)');
     await user.clear(closes);
-    await user.type(closes, '07:00');
+    await user.type(closes, '0700');
+    expect(closes).toHaveValue('07:00');
     await user.click(within(form).getByRole('button', { name: 'Salvar' }));
 
     expect(await within(form).findByText('O fechamento precisa ser depois da abertura.')).toBeInTheDocument();
@@ -191,6 +311,34 @@ describe('admin settings', () => {
         hours: [{ weekday: 1, openMin: 480, closeMin: 1080 }],
       }),
     );
+  });
+
+  it('fills the unit form with the formatted phone and closing at midnight', async () => {
+    const { calls } = serve({
+      '/api/admin/units': () => ({
+        status: 200,
+        body: page([unit({ hours: [{ weekday: 1, openMin: 480, closeMin: 1440 }] })]),
+      }),
+      '/api/admin/units/u1': () => ({
+        status: 409,
+        body: { message: 'Nome em uso.', code: 'NAME_TAKEN' },
+      }),
+    });
+    const { user } = renderApp('/admin/configuracoes/unidades');
+    await user.click(await screen.findByRole('button', { name: 'Editar Central' }));
+    const form = await screen.findByRole('form', { name: 'Unidade' });
+
+    expect(within(form).getByLabelText('Telefone')).toHaveValue('(11) 3333-4444');
+    expect(within(form).getByLabelText('Abre (Segunda)')).toHaveValue('08:00');
+    expect(within(form).getByLabelText('Fecha (Segunda)')).toHaveValue('24:00');
+    expect(within(form).getByRole('switch', { name: 'Terça' })).not.toBeChecked();
+
+    await user.click(within(form).getByRole('button', { name: 'Salvar' }));
+
+    expect(await within(form).findByText('Já existe um cadastro com esse nome.')).toBeInTheDocument();
+    expect(calls.find((call) => call.method === 'PATCH')?.body).toMatchObject({
+      hours: [{ weekday: 1, openMin: 480, closeMin: 1440 }],
+    });
   });
 
   it('keeps the policy within its ranges', async () => {
@@ -223,53 +371,51 @@ describe('admin settings', () => {
     );
   });
 
-  it('explains when an exam type cannot be offered because it is inactive', async () => {
-    serve({
-      '/api/admin/units': () => ({
-        status: 200,
-        body: page([
-          {
-            id: 'u1',
-            name: 'Central',
-            address: 'Rua A, 1',
-            phone: '+551133334444',
-            isActive: true,
-            hours: [],
-          },
-        ]),
-      }),
+  it('offers only active exam types not yet offered and edits an existing offer', async () => {
+    const { calls } = serve({
+      '/api/admin/units': () => ({ status: 200, body: page([unit()]) }),
       '/api/admin/exam-types': () => ({
         status: 200,
         body: page([
-          {
-            id: 'e1',
-            code: 'raio_x',
-            name: 'Raio-X',
-            kind: 'imaging',
-            durationMin: 15,
-            preparationNotes: null,
-            isActive: false,
-          },
+          examType('e1', 'Raio-X'),
+          examType('e2', 'Tomografia', false),
+          examType('e3', 'Ultrassom'),
         ]),
       }),
-      '/api/admin/units/u1/exam-offers': () => ({ status: 200, body: [] }),
+      '/api/admin/units/u1/exam-offers': () => ({
+        status: 200,
+        body: [{ examTypeId: 'e1', examTypeName: 'Raio-X', capacityPerSlot: 2, isActive: true }],
+      }),
       '/api/admin/units/u1/exam-offers/e1': () => ({
         status: 409,
         body: { message: 'Inativo.', code: 'EXAM_TYPE_INACTIVE' },
       }),
     });
-    const { user } = renderApp('/admin/configuracoes/ofertas');
+    const { user, router } = renderApp('/admin/configuracoes/ofertas');
 
     await screen.findByRole('option', { name: 'Central' });
     await user.selectOptions(screen.getByLabelText('Unidade'), 'u1');
-    expect(await screen.findByText('Nenhum exame oferecido nesta unidade')).toBeInTheDocument();
-    await user.click(screen.getAllByRole('button', { name: 'Oferecer exame' })[0]!);
-    const form = await screen.findByRole('form', { name: 'Oferta' });
-    await user.selectOptions(within(form).getByLabelText('Exame'), 'e1');
-    await user.click(within(form).getByRole('button', { name: 'Salvar' }));
+    expect(router.state.location.search).toBe('?unidade=u1');
+    expect(await screen.findByText('2 ao mesmo tempo')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Oferecer exame' }));
+    const create = await screen.findByRole('form', { name: 'Oferta' });
+    const options = within(within(create).getByLabelText('Exame')).getAllByRole('option');
+    expect(options.map((option) => option.textContent)).toEqual(['Escolha o exame', 'Ultrassom']);
+    await user.click(within(create).getByRole('button', { name: 'Cancelar' }));
+    await waitFor(() => expect(screen.queryByRole('form', { name: 'Oferta' })).not.toBeInTheDocument());
+
+    await user.click(screen.getByRole('button', { name: 'Editar Raio-X' }));
+    const edit = await screen.findByRole('form', { name: 'Oferta' });
+    expect(within(edit).getByLabelText('Exame')).toHaveValue('Raio-X');
+    const capacity = within(edit).getByLabelText('Exames ao mesmo tempo');
+    await user.clear(capacity);
+    await user.type(capacity, '3');
+    await user.click(within(edit).getByRole('button', { name: 'Salvar' }));
 
     expect(
-      await within(form).findByText('Este tipo de exame está desativado. Ative-o antes de oferecê-lo.'),
+      await within(edit).findByText('Este tipo de exame está desativado. Ative-o antes de oferecê-lo.'),
     ).toBeInTheDocument();
+    expect(calls.find((call) => call.method === 'PUT')?.body).toEqual({ capacityPerSlot: 3, isActive: true });
   });
 });

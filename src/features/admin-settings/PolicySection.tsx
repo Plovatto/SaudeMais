@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { Button, Card, FormAlert, Input, Skeleton } from '@components/ui';
-import { errorMessage } from '@lib/messages/errors.pt-BR';
+import { useEffect } from 'react';
+import { Card, Input, Skeleton } from '@components/ui';
 import { queryKeys } from '@lib/query-keys';
 import { FormShell } from './FormShell';
+import { QueryError } from './QueryError';
 import { policyApi, type Policy } from './settings-api';
 import { policySchema, type PolicyValues } from './settings-schemas';
 import { SettingsSection } from './SettingsSection';
@@ -28,16 +29,21 @@ const FIELDS: { name: keyof PolicyValues; label: string; hint: string }[] = [
   },
 ];
 
+const valuesOf = ({ updatedAt: _updatedAt, ...values }: Policy): PolicyValues => values;
+
 function PolicyForm({ policy }: { policy: Policy }) {
-  const { updatedAt: _updatedAt, ...values } = policy;
   const form = useCatalogForm({
     schema: policySchema,
-    defaultValues: values,
+    defaultValues: valuesOf(policy),
     fields: FIELDS.map((field) => field.name),
     save: (body) => policyApi.update(body),
     invalidate: queryKeys.catalog.policy,
     success: 'Política atualizada.',
   });
+  const { reset } = form;
+  useEffect(() => {
+    reset(valuesOf(policy));
+  }, [policy, reset]);
   const { errors, isSubmitting } = form.formState;
   return (
     <Card>
@@ -74,15 +80,8 @@ export function PolicySection() {
       description="Regras de cancelamento, reagendamento e antecedência. As mudanças valem para os próximos agendamentos."
     >
       {policy.isPending && <Skeleton className="h-96" />}
-      {policy.isError && (
-        <div className="flex flex-col items-start gap-3">
-          <FormAlert>{errorMessage(policy.error)}</FormAlert>
-          <Button variant="secondary" onClick={() => void policy.refetch()}>
-            Tentar de novo
-          </Button>
-        </div>
-      )}
-      {policy.data && <PolicyForm key={policy.data.updatedAt} policy={policy.data} />}
+      {policy.isError && <QueryError error={policy.error} onRetry={() => void policy.refetch()} />}
+      {policy.data && <PolicyForm policy={policy.data} />}
     </SettingsSection>
   );
 }

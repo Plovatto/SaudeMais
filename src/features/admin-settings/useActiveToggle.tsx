@@ -2,14 +2,16 @@ import { useMutation, useQueryClient, type QueryKey } from '@tanstack/react-quer
 import { useState } from 'react';
 import { Button, Dialog, useToast } from '@components/ui';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
+import { catalogMessages } from './catalog-messages';
 
 export interface ActiveToggleOptions<T> {
   nameOf: (item: T) => string;
+  keyOf: (item: T) => string;
   setActive: (item: T, isActive: boolean) => Promise<unknown>;
   invalidate: QueryKey;
 }
 
-export function useActiveToggle<T>({ nameOf, setActive, invalidate }: ActiveToggleOptions<T>) {
+export function useActiveToggle<T>({ nameOf, keyOf, setActive, invalidate }: ActiveToggleOptions<T>) {
   const queryClient = useQueryClient();
   const { show } = useToast();
   const [pending, setPending] = useState<T | null>(null);
@@ -19,7 +21,7 @@ export function useActiveToggle<T>({ nameOf, setActive, invalidate }: ActiveTogg
       await queryClient.invalidateQueries({ queryKey: invalidate });
       show({ message: `${nameOf(item)} ${isActive ? 'ativado' : 'desativado'}.`, tone: 'success' });
     },
-    onError: (error) => show({ message: errorMessage(error), tone: 'danger' }),
+    onError: (error) => show({ message: errorMessage(error, catalogMessages), tone: 'danger' }),
     onSettled: () => setPending(null),
   });
 
@@ -50,5 +52,8 @@ export function useActiveToggle<T>({ nameOf, setActive, invalidate }: ActiveTogg
     </Dialog>
   );
 
-  return { request, busy: mutation.isPending, confirmation };
+  const isBusy = (item: T) =>
+    mutation.isPending && mutation.variables !== undefined && keyOf(mutation.variables.item) === keyOf(item);
+
+  return { request, isBusy, confirmation };
 }

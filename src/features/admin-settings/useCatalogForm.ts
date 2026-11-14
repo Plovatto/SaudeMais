@@ -4,6 +4,7 @@ import { useForm, type DefaultValues, type FieldValues, type Path, type Resolver
 import type { z } from 'zod';
 import { useToast } from '@components/ui';
 import { useFormSubmit } from '@lib/useFormSubmit';
+import { catalogMessages } from './catalog-messages';
 
 export interface CatalogFormOptions<T extends FieldValues> {
   schema: z.ZodType<T, FieldValues>;
@@ -27,7 +28,7 @@ export function useCatalogForm<T extends FieldValues>({
   const queryClient = useQueryClient();
   const { show } = useToast();
   const form = useForm<T>({ resolver: zodResolver(schema) as Resolver<T>, defaultValues });
-  const { alert, run } = useFormSubmit(form.setError, fields);
+  const { alert, run } = useFormSubmit(form.setError, fields, undefined, catalogMessages);
   const onSubmit = form.handleSubmit((values) =>
     run(async () => {
       await save(values);
