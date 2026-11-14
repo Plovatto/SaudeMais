@@ -1,6 +1,7 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { renderApp, serveApi, testUser, type ApiRoute } from '@/test/render-app';
+import { SESSION_STORAGE_KEY } from '@lib/auth/token-store';
+import { mockFetch, renderApp, serveApi, TEST_TOKEN, testUser, type ApiRoute } from '@/test/render-app';
 import type { AdminUser } from './users-api';
 
 const SELF_ID = testUser().id;
@@ -61,8 +62,8 @@ const units = [
 
 const page = (items: unknown[], total = items.length) => ({ items, page: 1, pageSize: 20, total });
 const ok = (body: unknown, status = 200) => ({ status, body });
-const conflict = (code: string, fields?: Record<string, string>) => ({
-  status: 409,
+const conflict = (code: string, fields?: Record<string, string>, status = 409) => ({
+  status,
   body: { code, message: 'Conflito.', ...(fields && { fields }) },
 });
 
@@ -80,8 +81,8 @@ const rowOf = async (name: string) =>
   (await screen.findByRole('link', { name })).closest('tr') as HTMLElement;
 
 async function openActions(user: ReturnType<typeof renderApp>['user'], name: string) {
-  await user.click(await screen.findByRole('button', { name: `Ações para ${name}` }));
-  return screen.getByRole('menu', { name: `Ações para ${name}` });
+  await user.click(await screen.findByRole('button', { name: `Ações de ${name}` }));
+  return screen.getByRole('menu', { name: `Ações de ${name}` });
 }
 
 describe('admin users list', () => {
@@ -124,6 +125,50 @@ describe('admin users list', () => {
       situacao: 'inativos',
       pagina: '3',
     });
+  });
+
+  it('follows the search in the URL when the history changes', async () => {
+    serve({ '/api/admin/users': listOf(joao) });
+    const { user, router } = renderApp('/admin/usuarios');
+    const search = await screen.findByRole('searchbox', { name: 'Buscar usuários' });
+
+    await user.type(search, 'ana');
+    await waitFor(() => expect(router.state.location.search).toBe('?busca=ana'));
+    await act(() => router.navigate('/admin/usuarios'));
+
+    expect(search).toHaveValue('');
+    await act(() => new Promise((resolve) => setTimeout(resolve, 400)));
+    expect(router.state.location.search).toBe('');
+
+    await act(() => router.navigate(-1));
+    expect(search).toHaveValue('ana');
+  });
+
+  it('ignores unknown filters and brings a page past the end back to the last one', async () => {
+    const { calls } = serve({ '/api/admin/users': listOf(joao) });
+    const { router } = renderApp('/admin/usuarios?perfil=x&situacao=y&pagina=999');
+    const lastQuery = () =>
+      calls.filter((call) => call.url.pathname === '/api/admin/users').at(-1)?.url.searchParams;
+
+    await waitFor(() => expect(lastQuery()?.get('page')).toBe('3'));
+    expect(lastQuery()?.has('role')).toBe(false);
+    expect(lastQuery()?.has('status')).toBe(false);
+    expect(screen.getByRole('tab', { name: 'Todos' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('combobox', { name: 'Situação' })).toHaveValue('todos');
+    expect(new URLSearchParams(router.state.location.search).get('pagina')).toBe('3');
+  });
+
+  it('leaves the admin area when the account loses the administrator profile', async () => {
+    let roles = ['admin'];
+    sessionStorage.setItem(SESSION_STORAGE_KEY, TEST_TOKEN);
+    mockFetch((path) => {
+      if (path === '/api/me') return ok({ ...testUser(), roles });
+      roles = ['patient'];
+      return { status: 403, body: { code: 'FORBIDDEN', message: 'Sem acesso.' } };
+    });
+    renderApp('/admin/usuarios');
+
+    expect(await screen.findByText('Acesso negado')).toBeInTheDocument();
   });
 
   it('tells when no account matches the filters', async () => {
@@ -248,6 +293,25 @@ describe('edit user', () => {
 
     expect(await screen.findByText('Dados atualizados.')).toBeInTheDocument();
     expect(patch).toHaveBeenCalledWith({ fullName: 'Ana F. Souza', phone: null });
+  });
+
+  it('refreshes the session after editing the own account', async () => {
+    const { fetchMock } = serve({
+      [`/api/admin/users/${SELF_ID}`]: (method) =>
+        ok(detail(method === 'PATCH' ? { ...me, fullName: 'Ana M. Silva' } : me)),
+    });
+    const { user } = renderApp(`/admin/usuarios/${SELF_ID}`);
+    const sessionLoads = () =>
+      fetchMock.mock.calls.filter(([url]) => (url as string).endsWith('/api/me')).length;
+
+    const name = await screen.findByRole('textbox', { name: 'Nome completo' });
+    const before = sessionLoads();
+    await user.clear(name);
+    await user.type(name, 'Ana M. Silva');
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
+
+    expect(await screen.findByText('Dados atualizados.')).toBeInTheDocument();
+    await waitFor(() => expect(sessionLoads()).toBeGreaterThan(before));
   });
 
   it('sends a password reset link and explains when it cannot be sent now', async () => {
@@ -397,12 +461,7 @@ describe('doctor profile', () => {
     await user.selectOptions(unit, 'norte');
     await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
     expect(await screen.findByText('Perfil de médico atualizado.')).toBeInTheDocument();
-    expect(changes).toHaveBeenCalledWith('PATCH', {
-      specialtyId: 'cardio',
-      registryNumber: '123456',
-      registryUf: 'SP',
-      unitId: 'norte',
-    });
+    expect(changes).toHaveBeenCalledWith('PATCH', { unitId: 'norte' });
 
     await user.click(await screen.findByRole('link', { name: 'Editar perfil de médico' }));
     await user.click(await screen.findByRole('button', { name: 'Remover perfil de médico' }));
@@ -415,5 +474,102 @@ describe('doctor profile', () => {
     expect(await screen.findByText('Perfil de médico removido.')).toBeInTheDocument();
     expect(changes).toHaveBeenLastCalledWith('DELETE', undefined);
     expect(router.state.location.pathname).toBe('/admin/usuarios/joao');
+  });
+
+  it('sends only the registry when the current specialty and unit are inactive', async () => {
+    const changes = vi.fn();
+    const legacy = {
+      ...joaoProfile,
+      specialtyId: 'old',
+      specialtyName: 'Antiga',
+      unitId: 'velha',
+      unitName: 'Unidade Velha',
+    };
+    serve({
+      ...catalog,
+      '/api/admin/users/joao': () => ok(detail(joao, legacy)),
+      '/api/admin/users/joao/doctor-profile': (method, body) => {
+        changes(method, body);
+        return ok(detail(joao, { ...legacy, registryNumber: '654321' }));
+      },
+    });
+    const { user } = renderApp('/admin/usuarios/joao/medico');
+
+    const specialty = await screen.findByRole('combobox', { name: 'Especialidade' });
+    expect(specialty).toHaveValue('old');
+    expect(within(specialty).getByRole('option', { name: 'Antiga (desativada)' })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Unidade' })).toHaveValue('velha');
+
+    const registry = screen.getByRole('textbox', { name: 'Número do CRM' });
+    await user.clear(registry);
+    await user.type(registry, '654321');
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
+
+    expect(await screen.findByText('Perfil de médico atualizado.')).toBeInTheDocument();
+    expect(changes).toHaveBeenCalledWith('PATCH', { registryNumber: '654321' });
+  });
+
+  it.each([
+    ['REGISTRY_TAKEN', 409, 'registryNumber', 'Número do CRM'],
+    ['SPECIALTY_UNAVAILABLE', 422, 'specialtyId', 'Especialidade'],
+    ['UNIT_UNAVAILABLE', 422, 'unitId', 'Unidade'],
+  ])('shows %s next to its field', async (code, status, field, label) => {
+    serve({
+      ...catalog,
+      '/api/admin/users/joao': () => ok(detail(joao, joaoProfile)),
+      '/api/admin/users/joao/doctor-profile': () =>
+        conflict(code, { [field]: `Problema em ${field}.` }, status),
+    });
+    const { user } = renderApp('/admin/usuarios/joao/medico');
+
+    await user.selectOptions(await screen.findByRole('combobox', { name: 'Unidade' }), 'norte');
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
+
+    expect(await screen.findByText(`Problema em ${field}.`)).toBeInTheDocument();
+    expect(screen.getByLabelText(label)).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('explains when future appointments block the change', async () => {
+    serve({
+      ...catalog,
+      '/api/admin/users/joao': () => ok(detail(joao, joaoProfile)),
+      '/api/admin/users/joao/doctor-profile': () => conflict('HAS_FUTURE_APPOINTMENTS'),
+    });
+    const { user } = renderApp('/admin/usuarios/joao/medico');
+
+    await user.selectOptions(await screen.findByRole('combobox', { name: 'Unidade' }), 'norte');
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
+
+    expect(await screen.findByText(/Este médico tem consultas futuras/)).toBeInTheDocument();
+  });
+
+  it('tells when the account already became a doctor', async () => {
+    serve({
+      ...catalog,
+      '/api/admin/users/ana': () => ok(detail(ana)),
+      '/api/admin/users/ana/doctor-profile': () => conflict('DOCTOR_PROFILE_EXISTS'),
+    });
+    const { user } = renderApp('/admin/usuarios/ana/medico');
+
+    await user.selectOptions(await screen.findByRole('combobox', { name: 'Especialidade' }), 'cardio');
+    await user.type(screen.getByRole('textbox', { name: 'Número do CRM' }), '4567');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'UF' }), 'SP');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Unidade' }), 'central');
+    await user.click(screen.getByRole('button', { name: 'Tornar médico' }));
+
+    expect(await screen.findByText('Esta conta já tem perfil de médico.')).toBeInTheDocument();
+  });
+
+  it('keeps the form disabled when the catalog cannot be loaded', async () => {
+    serve({
+      '/api/specialties': () => ({ status: 500 }),
+      '/api/units': () => ok(units),
+      '/api/admin/users/ana': () => ok(detail(ana)),
+    });
+    renderApp('/admin/usuarios/ana/medico');
+
+    expect(await screen.findByRole('combobox', { name: 'Especialidade' })).toBeDisabled();
+    expect(screen.getByRole('textbox', { name: 'Número do registro profissional' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Tornar médico' })).toBeDisabled();
   });
 });
