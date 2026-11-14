@@ -13,7 +13,7 @@ export interface DialogProps {
   centered?: boolean;
   placement?: 'center' | 'side';
   closeLabel?: string;
-  fallbackFocus?: RefObject<HTMLElement | null>;
+  fallbackFocus?: RefObject<HTMLElement | null> | undefined;
   children?: ReactNode;
 }
 

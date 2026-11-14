@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, RefObject } from 'react';
 import { Button } from './Button';
 import { Dialog } from './Dialog';
 
@@ -10,7 +10,9 @@ export interface ConfirmDialogProps {
   onConfirm: () => void;
   onClose: () => void;
   loading?: boolean;
+  disabled?: boolean;
   tone?: 'danger' | 'primary';
+  fallbackFocus?: RefObject<HTMLElement | null> | undefined;
 }
 
 export function ConfirmDialog({
@@ -21,15 +23,23 @@ export function ConfirmDialog({
   onConfirm,
   onClose,
   loading = false,
+  disabled = false,
   tone = 'danger',
+  fallbackFocus,
 }: ConfirmDialogProps) {
   return (
-    <Dialog open={open} onClose={onClose} title={title} description={description}>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title={title}
+      description={description}
+      fallbackFocus={fallbackFocus}
+    >
       <div className="flex flex-wrap justify-end gap-3">
         <Button variant="secondary" onClick={onClose}>
           Cancelar
         </Button>
-        <Button variant={tone} loading={loading} onClick={onConfirm}>
+        <Button variant={tone} loading={loading} disabled={disabled} onClick={onConfirm}>
           {confirmLabel}
         </Button>
       </div>
