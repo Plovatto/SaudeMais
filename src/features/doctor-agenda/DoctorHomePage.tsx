@@ -102,7 +102,7 @@ export function DoctorHomePage() {
               total={data?.counts.awaiting}
               items={data?.awaitingRecord}
               empty="Nenhuma consulta aguardando registro"
-              link={{ to: `${AGENDA}?aba=aguardando`, label: 'Ver todas aguardando registro' }}
+              link={{ to: `${AGENDA}?aba=aguardando-registro`, label: 'Ver todas aguardando registro' }}
             />
           </>
         )}

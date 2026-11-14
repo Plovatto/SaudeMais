@@ -145,7 +145,7 @@ describe('doctor home', { timeout: 15_000 }, () => {
     expect(within(awaiting).queryByRole('button', { name: /^(Confirmar|Cancelar)/ })).not.toBeInTheDocument();
     expect(within(awaiting).getByRole('link', { name: 'Ver todas aguardando registro' })).toHaveAttribute(
       'href',
-      '/medico/agenda?aba=aguardando',
+      '/medico/agenda?aba=aguardando-registro',
     );
   });
 
@@ -185,7 +185,7 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
 
   it('opens the awaiting tab from the URL', async () => {
     const { calls } = serve({ lists: { awaiting: [confirmed('a1', { startsAt: PAST })] } });
-    renderApp('/medico/agenda?aba=aguardando');
+    renderApp('/medico/agenda?aba=aguardando-registro');
 
     expect(await screen.findByRole('tab', { name: /Aguardando registro/ })).toHaveAttribute(
       'aria-selected',

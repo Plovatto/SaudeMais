@@ -29,7 +29,7 @@ const TABS = [
     },
   },
   {
-    value: 'aguardando',
+    value: 'aguardando-registro',
     label: 'Aguardando registro',
     tab: 'awaiting',
     empty: {
