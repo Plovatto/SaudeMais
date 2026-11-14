@@ -1,9 +1,9 @@
+import { catalogMessages } from './catalog-messages';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { Card, Input, Skeleton } from '@components/ui';
+import { Card, Input, Skeleton, QueryError } from '@components/ui';
 import { queryKeys } from '@lib/query-keys';
 import { FormShell } from './FormShell';
-import { QueryError } from './QueryError';
 import { policyApi, type Policy } from './settings-api';
 import { policySchema, type PolicyValues } from './settings-schemas';
 import { SettingsSection } from './SettingsSection';
@@ -80,7 +80,9 @@ export function PolicySection() {
       description="Regras de cancelamento, reagendamento e antecedência. As mudanças valem para os próximos agendamentos."
     >
       {policy.isPending && <Skeleton className="h-96" />}
-      {policy.isError && <QueryError error={policy.error} onRetry={() => void policy.refetch()} />}
+      {policy.isError && (
+        <QueryError error={policy.error} messages={catalogMessages} onRetry={() => void policy.refetch()} />
+      )}
       {policy.data && <PolicyForm policy={policy.data} />}
     </SettingsSection>
   );

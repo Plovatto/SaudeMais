@@ -1,8 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { renderApp, signIn, type MockResponse } from '@/test/render-app';
-
-type Route = (method: string, body: unknown, url: URL) => MockResponse | undefined;
+import { renderApp, serveApi, type ApiRoute } from '@/test/render-app';
 
 const specialty = (index: number, overrides: Record<string, unknown> = {}) => ({
   id: `spec-${index}`,
@@ -49,17 +47,7 @@ const policy = {
   updatedAt: '2026-11-20T12:00:00.000Z',
 };
 
-function serve(routes: Record<string, Route>) {
-  const calls: { method: string; url: URL; body: unknown }[] = [];
-  const fetchMock = signIn(['admin'], (path, init) => {
-    const method = init?.method ?? 'GET';
-    const body: unknown = typeof init?.body === 'string' ? JSON.parse(init.body) : undefined;
-    const url = new URL(path, 'https://api.test');
-    calls.push({ method, url, body });
-    return routes[path]?.(method, body, url);
-  });
-  return { calls, fetchMock };
-}
+const serve = (routes: Record<string, ApiRoute>) => serveApi(['admin'], routes);
 
 const requestUrls = (fetchMock: ReturnType<typeof serve>['fetchMock']) =>
   fetchMock.mock.calls.map(([url]) => String(url instanceof Request ? url.url : url));

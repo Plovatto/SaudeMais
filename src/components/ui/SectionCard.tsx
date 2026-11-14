@@ -1,13 +1,13 @@
 import { useId, type ReactNode } from 'react';
-import { Card } from '@components/ui';
+import { Card } from './Card';
 
-export interface ProfileSectionProps {
+export interface SectionCardProps {
   title: string;
   description?: string;
   children: ReactNode;
 }
 
-export function ProfileSection({ title, description, children }: ProfileSectionProps) {
+export function SectionCard({ title, description, children }: SectionCardProps) {
   const titleId = useId();
   return (
     <section aria-labelledby={titleId}>

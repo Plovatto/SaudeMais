@@ -1,18 +1,22 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { LuLogOut, LuRepeat } from 'react-icons/lu';
+import { PersonalDataCard } from '@components/forms/PersonalDataCard';
 import { PageHeader } from '@components/layout/PageHeader';
-import { Button, ButtonLink, FormAlert } from '@components/ui';
+import { Button, ButtonLink, FormAlert, SectionCard } from '@components/ui';
 import { DEMO_PATIENT } from '@constants/demo-accounts';
 import { useCurrentUser } from '@lib/auth/useSession';
 import { useSignOut } from '@lib/auth/useSignOut';
+import { queryKeys } from '@lib/query-keys';
 import { PasswordForm } from './PasswordForm';
-import { PersonalDataForm } from './PersonalDataForm';
-import { ProfileSection } from './ProfileSection';
+import { updateProfile } from './profile-api';
+import { handleProtectedAccount } from './protected-account';
 import { SessionsSection } from './SessionsSection';
 
 export function ProfilePage() {
   const user = useCurrentUser();
   const signOut = useSignOut();
+  const queryClient = useQueryClient();
   const [locked, setLocked] = useState(user.email === DEMO_PATIENT.email);
   const lock = () => setLocked(true);
 
@@ -26,10 +30,21 @@ export function ProfilePage() {
             podem ser alterados.
           </FormAlert>
         )}
-        <PersonalDataForm user={user} locked={locked} onProtected={lock} />
+        <PersonalDataCard
+          title="Seus dados"
+          person={user}
+          locked={locked}
+          ownAccount
+          onSave={async (values) => {
+            const updated = await updateProfile(values);
+            queryClient.setQueryData(queryKeys.session, updated);
+            return updated;
+          }}
+          onError={(error, resetForm) => handleProtectedAccount(lock, resetForm)(error)}
+        />
         <PasswordForm locked={locked} onProtected={lock} />
         <SessionsSection />
-        <ProfileSection title="Conta">
+        <SectionCard title="Conta">
           <div className="flex flex-wrap gap-3">
             {user.roles.length > 1 && (
               <ButtonLink to="/perfis" variant="secondary">
@@ -41,7 +56,7 @@ export function ProfilePage() {
               Sair
             </Button>
           </div>
-        </ProfileSection>
+        </SectionCard>
       </div>
     </>
   );

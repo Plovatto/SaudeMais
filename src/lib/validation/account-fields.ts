@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { formatPhone } from '@lib/phone';
 
 const E164 = /^\+[1-9][0-9]{9,14}$/;
 
@@ -46,6 +47,20 @@ export const phoneField = z
   .string()
   .trim()
   .refine((value) => value === '' || E164.test(normalizePhone(value)), 'Informe um telefone válido com DDD.');
+
+export const personalDataSchema = z.object({ fullName: fullNameField, phone: phoneField });
+
+export type PersonalDataValues = z.infer<typeof personalDataSchema>;
+
+export const personalDataValues = (user: { fullName: string; phone: string | null }): PersonalDataValues => ({
+  fullName: user.fullName,
+  phone: user.phone ? formatPhone(user.phone) : '',
+});
+
+export const personalDataBody = ({ fullName, phone }: PersonalDataValues) => ({
+  fullName,
+  phone: phone === '' ? null : phone,
+});
 
 export const newPasswordFields = {
   password: z

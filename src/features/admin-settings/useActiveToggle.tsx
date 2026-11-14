@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Button, Dialog, useToast } from '@components/ui';
+import { ConfirmDialog, useToast } from '@components/ui';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
 import { catalogMessages } from './catalog-messages';
 
@@ -31,25 +31,15 @@ export function useActiveToggle<T>({ nameOf, keyOf, setActive, invalidate }: Act
   };
 
   const confirmation = (
-    <Dialog
+    <ConfirmDialog
       open={pending !== null}
       onClose={() => setPending(null)}
       title={pending ? `Desativar ${nameOf(pending)}?` : 'Desativar?'}
       description="Itens desativados deixam de aparecer para quem agenda. Você pode ativá-los de novo quando quiser."
-    >
-      <div className="flex flex-wrap justify-end gap-3">
-        <Button variant="secondary" onClick={() => setPending(null)}>
-          Cancelar
-        </Button>
-        <Button
-          variant="danger"
-          loading={mutation.isPending}
-          onClick={() => pending && mutation.mutate({ item: pending, isActive: false })}
-        >
-          Desativar
-        </Button>
-      </div>
-    </Dialog>
+      confirmLabel="Desativar"
+      loading={mutation.isPending}
+      onConfirm={() => pending && mutation.mutate({ item: pending, isActive: false })}
+    />
   );
 
   const isBusy = (item: T) =>

@@ -1,4 +1,5 @@
 import { apiFetch, type ApiFetchOptions, type BodyOf, type ResponseOf } from '@lib/api/api-fetch';
+import type { Page } from '@lib/api/page';
 
 export const PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 50;
@@ -8,13 +9,6 @@ export type Unit = ResponseOf<'/api/admin/units/{id}', 'patch'>;
 export type ExamType = ResponseOf<'/api/admin/exam-types/{id}', 'patch'>;
 export type ExamOffer = ResponseOf<'/api/admin/units/{id}/exam-offers', 'get'>[number];
 export type Policy = ResponseOf<'/api/admin/policy', 'get'>;
-
-export interface Page<T> {
-  items: T[];
-  page: number;
-  pageSize: number;
-  total: number;
-}
 
 interface CatalogTypes {
   '/api/admin/specialties': {

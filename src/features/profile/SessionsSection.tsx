@@ -1,14 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { LuMonitorSmartphone } from 'react-icons/lu';
-import { Button, Dialog, FormAlert, IconSlot, Skeleton, StatusChip } from '@components/ui';
+import { Button, Dialog, FormAlert, IconSlot, Skeleton, StatusChip, SectionCard } from '@components/ui';
 import { useSignOut } from '@lib/auth/useSignOut';
 import { formatDateTime } from '@lib/date';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
 import { queryKeys } from '@lib/query-keys';
 import { describeUserAgent } from '@lib/user-agent';
 import { endAllSessions, listSessions } from './profile-api';
-import { ProfileSection } from './ProfileSection';
 
 export function SessionsSection() {
   const signOut = useSignOut();
@@ -31,7 +30,7 @@ export function SessionsSection() {
   };
 
   return (
-    <ProfileSection title="Sessões ativas" description="Aparelhos em que sua conta está aberta agora.">
+    <SectionCard title="Sessões ativas" description="Aparelhos em que sua conta está aberta agora.">
       {sessions.isPending && <Skeleton className="h-16 w-full" />}
       {sessions.isError && <FormAlert>{errorMessage(sessions.error)}</FormAlert>}
       {sessions.data && (
@@ -73,6 +72,6 @@ export function SessionsSection() {
           </Button>
         </div>
       </Dialog>
-    </ProfileSection>
+    </SectionCard>
   );
 }

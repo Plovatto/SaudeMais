@@ -1,12 +1,13 @@
+import { catalogMessages } from './catalog-messages';
+import { useSearchParam } from '@hooks/useSearchParam';
 import { useQuery } from '@tanstack/react-query';
 import { useRef } from 'react';
 import { Controller } from 'react-hook-form';
 import { LuPlus } from 'react-icons/lu';
-import { Button, Input, Select, Skeleton, Switch } from '@components/ui';
+import { Button, Input, Select, Skeleton, Switch, QueryError } from '@components/ui';
 import { queryKeys } from '@lib/query-keys';
 import { CatalogItems } from './CatalogItems';
 import { FormShell } from './FormShell';
-import { QueryError } from './QueryError';
 import {
   examTypesApi,
   MAX_PAGE_SIZE,
@@ -20,7 +21,6 @@ import { SettingsSection } from './SettingsSection';
 import { useActiveToggle } from './useActiveToggle';
 import { useCatalogEditor } from './useCatalogEditor';
 import { useCatalogForm } from './useCatalogForm';
-import { useSearchParam } from './useSearchParam';
 
 interface OfferFormProps {
   unitId: string;
@@ -150,7 +150,9 @@ export function OffersSection() {
       {units.data && units.data.total > MAX_PAGE_SIZE && (
         <p className="text-text-secondary text-sm">Mostrando as primeiras {MAX_PAGE_SIZE} unidades.</p>
       )}
-      {failed && <QueryError error={failed.error} onRetry={() => void failed.refetch()} />}
+      {failed && (
+        <QueryError error={failed.error} messages={catalogMessages} onRetry={() => void failed.refetch()} />
+      )}
       {offers.isFetching && !offers.data && <Skeleton className="h-20" />}
       <CatalogItems
         items={offers.data}
