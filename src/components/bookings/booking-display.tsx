@@ -1,16 +1,15 @@
 import type { ReactNode } from 'react';
 import {
+  LuCalendarClock,
   LuCalendarX,
   LuCircleCheck,
   LuCircleCheckBig,
   LuCircleX,
-  LuCalendarClock,
   LuHourglass,
   LuUserX,
 } from 'react-icons/lu';
 import type { StatusChipProps } from '@components/ui';
-import { formatDateTime } from '@lib/date';
-import type { PatientBooking } from './bookings-api';
+import type { PatientBooking } from '@lib/api/models';
 
 interface StatusDisplay {
   label: string;
@@ -33,29 +32,13 @@ export function bookingStatus({ status, startsAt }: PatientBooking, now = Date.n
   return statuses[status === 'confirmed' && started ? 'awaiting' : status];
 }
 
-export const cancelledBy: Record<NonNullable<PatientBooking['cancellation']>['byRole'], string> = {
-  patient: 'Cancelada por você',
-  doctor: 'Cancelada pelo médico',
-  admin: 'Cancelada pela administração',
-  system: 'Cancelada pelo sistema',
-};
-
-export const blockedNotes: Partial<
-  Record<NonNullable<PatientBooking['actions']['cancelBlockedReason']>, string>
-> = {
-  started: 'Este agendamento já começou e não pode mais ser cancelado.',
-  unavailable: 'Para cancelar este exame, ligue para a unidade.',
-};
-
 export function bookingTitle({ kind, doctor, specialty, examType, unit }: PatientBooking) {
   return kind === 'exam'
     ? { title: unit.name, subtitle: `Exame · ${examType?.name ?? ''}` }
     : { title: doctor?.fullName ?? '', subtitle: specialty?.name ?? '' };
 }
 
-export function bookingSummary(booking: PatientBooking): string {
-  const when = formatDateTime(booking.startsAt);
-  return booking.kind === 'exam'
-    ? `Exame ${booking.examType?.name ?? ''} em ${booking.unit.name}, ${when}.`
-    : `Consulta de ${booking.specialty?.name ?? ''} com ${booking.doctor?.fullName ?? ''} em ${when}.`;
-}
+export const UPCOMING_EMPTY = {
+  title: 'Nenhum agendamento futuro',
+  description: 'Agende uma consulta ou um exame para acompanhar por aqui.',
+};

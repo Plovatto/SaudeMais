@@ -150,6 +150,7 @@
         "properties": {
           "fullName": {
             "type": "string",
+            "maxLength": 120,
             "description": "Nome completo, de 2 a 120 caracteres.",
             "example": "Ana Maria Silva"
           },
@@ -205,6 +206,7 @@
         "properties": {
           "fullName": {
             "type": "string",
+            "maxLength": 120,
             "description": "Nome completo, de 2 a 120 caracteres.",
             "example": "Ana Maria Silva"
           },
@@ -781,6 +783,7 @@
           },
           "notes": {
             "type": "string",
+            "maxLength": 500,
             "description": "Observações para o médico.",
             "example": "Tenho alergia a dipirona."
           }
@@ -804,6 +807,7 @@
           },
           "reason": {
             "type": "string",
+            "maxLength": 500,
             "description": "Motivo do cancelamento; obrigatório para o médico.",
             "example": "Imprevisto de trabalho."
           }
@@ -1105,6 +1109,7 @@
         "properties": {
           "name": {
             "type": "string",
+            "maxLength": 80,
             "example": "Cardiologia"
           },
           "council": {
@@ -1133,6 +1138,7 @@
         "properties": {
           "name": {
             "type": "string",
+            "maxLength": 80,
             "example": "Cardiologia"
           },
           "council": {
@@ -1163,6 +1169,7 @@
           },
           "name": {
             "type": "string",
+            "maxLength": 80,
             "example": "Cardiologia"
           },
           "council": {
@@ -1195,10 +1202,12 @@
         "properties": {
           "name": {
             "type": "string",
+            "maxLength": 80,
             "example": "Unidade Central"
           },
           "address": {
             "type": "string",
+            "maxLength": 200,
             "example": "Rua das Flores, 123 - Centro"
           },
           "phone": {
@@ -1257,10 +1266,12 @@
         "properties": {
           "name": {
             "type": "string",
+            "maxLength": 80,
             "example": "Unidade Central"
           },
           "address": {
             "type": "string",
+            "maxLength": 200,
             "example": "Rua das Flores, 123 - Centro"
           },
           "phone": {
@@ -1374,6 +1385,7 @@
           },
           "name": {
             "type": "string",
+            "maxLength": 80,
             "example": "Hemograma"
           },
           "kind": {
@@ -1419,6 +1431,7 @@
           },
           "name": {
             "type": "string",
+            "maxLength": 80,
             "example": "Hemograma"
           },
           "kind": {
@@ -1464,6 +1477,7 @@
           },
           "name": {
             "type": "string",
+            "maxLength": 80,
             "example": "Hemograma"
           },
           "kind": {

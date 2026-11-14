@@ -1,8 +1,6 @@
-import { apiFetch, type ResponseOf } from '@lib/api/api-fetch';
+import { apiFetch } from '@lib/api/api-fetch';
 
 const PAGE_SIZE = 10;
-
-export type PatientBooking = ResponseOf<'/api/patient/bookings', 'get'>['items'][number];
 
 export interface BookingListParams {
   scope: 'upcoming' | 'past';

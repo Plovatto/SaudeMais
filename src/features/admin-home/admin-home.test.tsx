@@ -69,8 +69,8 @@ describe('admin home', () => {
   });
 
   it('keeps the home placeholder for the other areas', async () => {
-    serveApi(['patient'], {});
-    renderApp('/paciente');
+    serveApi(['doctor'], {});
+    renderApp('/medico');
 
     expect(await screen.findByText('Em construção')).toBeInTheDocument();
     expect(screen.queryByText('Painel Admin')).not.toBeInTheDocument();
