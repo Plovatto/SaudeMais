@@ -10,6 +10,7 @@ import {
 } from 'react-icons/lu';
 import type { StatusChipProps } from '@components/ui';
 import type { Role } from '@constants/areas';
+import type { PatientBooking } from '@lib/api/models';
 
 export interface StatusDisplay {
   label: string;
@@ -17,7 +18,7 @@ export interface StatusDisplay {
   icon: ReactNode;
 }
 
-type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show' | 'expired';
+type BookingStatus = PatientBooking['status'];
 
 const statuses: Record<Exclude<BookingStatus, 'pending'> | 'awaiting', StatusDisplay> = {
   confirmed: { label: 'Confirmado', tone: 'success', icon: <LuCircleCheck /> },
@@ -43,3 +44,14 @@ export function bookingStatus(
   const started = new Date(startsAt).getTime() <= now;
   return statuses[status === 'confirmed' && started ? 'awaiting' : status];
 }
+
+export function bookingTitle({ kind, doctor, specialty, examType, unit }: PatientBooking) {
+  return kind === 'exam'
+    ? { title: unit.name, subtitle: `Exame · ${examType?.name ?? ''}` }
+    : { title: doctor?.fullName ?? '', subtitle: specialty?.name ?? '' };
+}
+
+export const UPCOMING_EMPTY = {
+  title: 'Nenhum agendamento futuro',
+  description: 'Agende uma consulta ou um exame para acompanhar por aqui.',
+};

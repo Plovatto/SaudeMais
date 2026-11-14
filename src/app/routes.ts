@@ -60,6 +60,7 @@ const areaScreens: Record<string, typeof placeholder> = {
 };
 
 const homeScreens: Partial<Record<Area['role'], typeof placeholder>> = {
+  patient: lazyComponent(async () => (await import('@features/patient-home')).PatientHomePage),
   doctor: lazyComponent(async () => (await import('@features/doctor-agenda')).DoctorHomePage),
   admin: lazyComponent(async () => (await import('@features/admin-home')).AdminHomePage),
 };
