@@ -3,7 +3,7 @@
   "info": {
     "title": "Saúde+ API",
     "version": "0.1.0",
-    "description": "API do **Saúde+**, sistema de agendamento de consultas e exames com três perfis: paciente, médico e administrador.\n\nAs rotas de negócio ficam sob `/api`. Nesta versão existem o cadastro, o login, o logout, a redefinição de senha, o perfil da própria conta, o catálogo com a administração dele, a administração de usuários, a agenda semanal do médico, a lista de médicos com as vagas livres de cada um, o pedido de consulta com o detalhe e o cancelamento dela, o início e os agendamentos do paciente e as notificações, além de `/health` e desta documentação. Cada rota lista o que realmente pode devolver.\n\n## Erros\n\nToda resposta de erro tem o mesmo formato:\n\n```json\n{\n  \"message\": \"Dados inválidos.\",\n  \"code\": \"VALIDATION_ERROR\",\n  \"fields\": { \"email\": \"E-mail inválido.\" }\n}\n```\n\n- `message` é um texto em português, pronto para exibir.\n- `code` é estável e serve para o cliente decidir o que fazer ou escolher o próprio texto.\n- `fields` aparece em erros de validação e nos de regra ligados a um campo, com uma mensagem por campo.\n\n| Status | Quando acontece |\n|---|---|\n| `400` | Corpo, parâmetros ou JSON inválidos |\n| `401` | Sem sessão, sessão expirada ou credenciais incorretas |\n| `403` | Conta desativada, sem o perfil exigido ou de demonstração |\n| `404` | Rota, método ou registro inexistente |\n| `409` | Conflito com o estado atual, como e-mail já cadastrado |\n| `422` | Regra de negócio não atendida, como senha atual incorreta |\n| `413` | Corpo maior que 100 KB |\n| `415` | Charset ou codificação do corpo não suportados |\n| `429` | Limite de tentativas atingido; o cabeçalho `RateLimit` diz quando tentar de novo |\n| `500` | Erro interno; os detalhes ficam só nos logs |\n| `503` | Servidor ocupado conferindo senhas; tente de novo em instantes |\n\nUm agendamento de outra pessoa responde `404`, como se não existisse, e um horário já ocupado responde `409`.\n\n## Códigos de erro\n\nCódigos comuns a todas as rotas. Cada rota lista também os códigos específicos dela.\n\n| Código | Status | Significado |\n|---|---|---|\n| `VALIDATION_ERROR` | 400 | Algum campo não passou na validação; veja `fields` |\n| `INVALID_JSON` | 400 | O corpo não é um JSON válido ou não é um objeto ou array |\n| `BAD_REQUEST` | 400 ou 415 | Requisição malformada, como parâmetro de URL inválido, charset ou codificação não suportados |\n| `UNAUTHENTICATED` | 401 | Rota exige login e o token falta, é inválido ou expirou |\n| `FORBIDDEN` | 403 | A conta não tem o perfil exigido pela rota |\n| `INVALID_RESET_TOKEN` | 400 | Link de redefinição de senha inválido, usado ou vencido |\n| `INVALID_CURRENT_PASSWORD` | 422 | A senha atual informada na troca de senha está errada |\n| `PROTECTED_ACCOUNT` | 403 | Contas de demonstração não podem ser alteradas |\n| `NOT_FOUND` | 404 | O registro pedido não existe |\n| `NAME_TAKEN` | 409 | Já existe um cadastro com esse nome, sem distinguir maiúsculas |\n| `CODE_TAKEN` | 409 | Já existe um tipo de exame com esse código |\n| `EXAM_TYPE_INACTIVE` | 409 | O tipo de exame está inativo e não pode ter oferta ativa |\n| `IN_USE` | 409 | Há agendamento futuro ativo ligado ao cadastro; ele não pode ser desativado |\n| `COUNCIL_IN_USE` | 409 | A especialidade tem médicos; o conselho não pode mudar |\n| `SELF_OR_LAST_ADMIN` | 409 | O administrador não pode desativar nem rebaixar a si mesmo nem deixar o sistema sem administradores |\n| `USER_INACTIVE` | 403 ou 409 | Conta desativada: login recusado (403) ou ação que exige conta ativa (409) |\n| `REGISTRY_TAKEN` | 409 | O registro profissional já pertence a outro médico |\n| `DOCTOR_PROFILE_EXISTS` | 409 | A conta já tem perfil médico |\n| `HAS_FUTURE_APPOINTMENTS` | 409 | O médico tem consultas futuras que impedem a mudança |\n| `RESET_NOT_SENT` | 409 | Um link de redefinição foi enviado há pouco ou o limite do dia foi atingido |\n| `SLOT_TAKEN` | 409 | O horário escolhido acabou de ser ocupado na agenda do médico |\n| `PATIENT_CONFLICT` | 409 | O paciente já tem um agendamento ativo que coincide com o horário |\n| `INVALID_STATE` | 409 | O agendamento mudou, já começou ou já foi encerrado desde que foi exibido; atualize e tente de novo |\n| `SPECIALTY_UNAVAILABLE`, `UNIT_UNAVAILABLE` | 422 | A especialidade ou a unidade escolhida está inativa ou não existe |\n| `OVERLAP` | 422 | Faixas de horário do mesmo dia se sobrepõem; veja `fields` |\n| `OUTSIDE_UNIT_HOURS` | 422 | A faixa de horário fica fora do horário da unidade; veja `fields` |\n| `OUTSIDE_AVAILABILITY` | 422 | O horário não é uma vaga gerada pela agenda do médico |\n| `ACTIVE_LIMIT` | 422 | O paciente já tem 5 agendamentos ativos futuros |\n| `SPECIALTY_MISMATCH` | 422 | O médico escolhido não atende a especialidade escolhida |\n| `SELF_BOOKING` | 422 | O médico tentou marcar consulta consigo mesmo |\n| `REASON_REQUIRED` | 422 | O médico precisa informar o motivo ao cancelar uma consulta |\n| `ROUTE_NOT_FOUND` | 404 | A rota ou o método não existe |\n| `PAYLOAD_TOO_LARGE` | 413 | O corpo passou de 100 KB |\n| `TOO_MANY_REQUESTS` | 429 | Muitas requisições do mesmo IP (300 por minuto) ou limite próprio da rota |\n| `INTERNAL_ERROR` | 500 | Erro inesperado no servidor |\n| `SERVER_BUSY` | 503 | Muitas senhas sendo conferidas ao mesmo tempo |\n\n## Autenticação\n\nCrie uma conta em `POST /api/users/register` e entre em `POST /api/users/login` para receber o token. As rotas que exigem login mostram um cadeado e recebem o token no cabeçalho:\n\n```http\nAuthorization: Bearer <token>\n```\n\nSem \"Lembrar de mim\", a sessão expira após 12 horas sem uso; com ele, dura 7 dias. Nenhuma sessão passa de 7 dias, e `POST /api/users/logout` encerra a sessão na hora. Quando a sessão não vale mais, a rota responde `401` com `UNAUTHENTICATED`.\n\nO botão **Authorize** desta página envia o token em todas as chamadas de teste. Fora de produção, o token fica salvo neste navegador até você clicar em **Logout**.\n\n## Conta de demonstração\n\nPara testar sem criar conta, entre com uma das contas de demonstração. As credenciais são públicas e servem só para demonstração:\n\n- Paciente: `paciente@saudemais.test`, senha `paciente-demo-123`.\n- Médico, que também é paciente e passa pela escolha de perfil: `medico@saudemais.test`, senha `medico-demo-123`.\n\nOs dados delas são de exemplo, e elas não podem ser alteradas nem desativadas. Esses e-mails não podem ser usados em um cadastro novo.\n\n## Datas\n\n- Data e hora, como o início de uma vaga, em ISO 8601 e UTC: `2026-11-20T13:30:00.000Z`.\n- Datas sem horário, como `from` e `to` das vagas, em `YYYY-MM-DD`, no fuso de São Paulo (`America/Sao_Paulo`).\n- Para agendar, envie de volta o `startsAt` recebido na lista de vagas, sem montar o horário no cliente.\n\n## Paginação\n\nAs listas paginadas recebem `page` (a partir de 1) e `pageSize` (até 50) e respondem:\n\n```json\n{ \"items\": [], \"page\": 1, \"pageSize\": 20, \"total\": 0 }\n```",
+    "description": "API do **Saúde+**, sistema de agendamento de consultas e exames com três perfis: paciente, médico e administrador.\n\nAs rotas de negócio ficam sob `/api`. Nesta versão existem o cadastro, o login, o logout, a redefinição de senha, o perfil da própria conta, o catálogo com a administração dele, a administração de usuários, a agenda semanal do médico, a lista de médicos com as vagas livres de cada um, o pedido de consulta com o detalhe, a confirmação e o cancelamento dela, o início e os agendamentos do paciente, o início e a agenda do médico e as notificações, além de `/health` e desta documentação. Cada rota lista o que realmente pode devolver.\n\n## Erros\n\nToda resposta de erro tem o mesmo formato:\n\n```json\n{\n  \"message\": \"Dados inválidos.\",\n  \"code\": \"VALIDATION_ERROR\",\n  \"fields\": { \"email\": \"E-mail inválido.\" }\n}\n```\n\n- `message` é um texto em português, pronto para exibir.\n- `code` é estável e serve para o cliente decidir o que fazer ou escolher o próprio texto.\n- `fields` aparece em erros de validação e nos de regra ligados a um campo, com uma mensagem por campo.\n\n| Status | Quando acontece |\n|---|---|\n| `400` | Corpo, parâmetros ou JSON inválidos |\n| `401` | Sem sessão, sessão expirada ou credenciais incorretas |\n| `403` | Conta desativada, sem o perfil exigido ou de demonstração |\n| `404` | Rota, método ou registro inexistente |\n| `409` | Conflito com o estado atual, como e-mail já cadastrado |\n| `422` | Regra de negócio não atendida, como senha atual incorreta |\n| `413` | Corpo maior que 100 KB |\n| `415` | Charset ou codificação do corpo não suportados |\n| `429` | Limite de tentativas atingido; o cabeçalho `RateLimit` diz quando tentar de novo |\n| `500` | Erro interno; os detalhes ficam só nos logs |\n| `503` | Servidor ocupado conferindo senhas; tente de novo em instantes |\n\nUm agendamento de outra pessoa responde `404`, como se não existisse, e um horário já ocupado responde `409`.\n\n## Códigos de erro\n\nCódigos comuns a todas as rotas. Cada rota lista também os códigos específicos dela.\n\n| Código | Status | Significado |\n|---|---|---|\n| `VALIDATION_ERROR` | 400 | Algum campo não passou na validação; veja `fields` |\n| `INVALID_JSON` | 400 | O corpo não é um JSON válido ou não é um objeto ou array |\n| `BAD_REQUEST` | 400 ou 415 | Requisição malformada, como parâmetro de URL inválido, charset ou codificação não suportados |\n| `UNAUTHENTICATED` | 401 | Rota exige login e o token falta, é inválido ou expirou |\n| `FORBIDDEN` | 403 | A conta não tem o perfil exigido pela rota |\n| `INVALID_RESET_TOKEN` | 400 | Link de redefinição de senha inválido, usado ou vencido |\n| `INVALID_CURRENT_PASSWORD` | 422 | A senha atual informada na troca de senha está errada |\n| `PROTECTED_ACCOUNT` | 403 | Contas de demonstração não podem ser alteradas |\n| `NOT_FOUND` | 404 | O registro pedido não existe |\n| `NAME_TAKEN` | 409 | Já existe um cadastro com esse nome, sem distinguir maiúsculas |\n| `CODE_TAKEN` | 409 | Já existe um tipo de exame com esse código |\n| `EXAM_TYPE_INACTIVE` | 409 | O tipo de exame está inativo e não pode ter oferta ativa |\n| `IN_USE` | 409 | Há agendamento futuro ativo ligado ao cadastro; ele não pode ser desativado |\n| `COUNCIL_IN_USE` | 409 | A especialidade tem médicos; o conselho não pode mudar |\n| `SELF_OR_LAST_ADMIN` | 409 | O administrador não pode desativar nem rebaixar a si mesmo nem deixar o sistema sem administradores |\n| `USER_INACTIVE` | 403 ou 409 | Conta desativada: login recusado (403) ou ação que exige conta ativa (409) |\n| `REGISTRY_TAKEN` | 409 | O registro profissional já pertence a outro médico |\n| `DOCTOR_PROFILE_EXISTS` | 409 | A conta já tem perfil médico |\n| `HAS_FUTURE_APPOINTMENTS` | 409 | O médico tem consultas futuras que impedem a mudança |\n| `RESET_NOT_SENT` | 409 | Um link de redefinição foi enviado há pouco ou o limite do dia foi atingido |\n| `SLOT_TAKEN` | 409 | O horário escolhido acabou de ser ocupado na agenda do médico |\n| `PATIENT_CONFLICT` | 409 | O paciente já tem um agendamento ativo que coincide com o horário |\n| `INVALID_STATE` | 409 | O agendamento mudou, já foi confirmado, já começou ou já foi encerrado desde que foi exibido; atualize e tente de novo |\n| `SPECIALTY_UNAVAILABLE`, `UNIT_UNAVAILABLE` | 422 | A especialidade ou a unidade escolhida está inativa ou não existe |\n| `OVERLAP` | 422 | Faixas de horário do mesmo dia se sobrepõem; veja `fields` |\n| `OUTSIDE_UNIT_HOURS` | 422 | A faixa de horário fica fora do horário da unidade; veja `fields` |\n| `OUTSIDE_AVAILABILITY` | 422 | O horário não é uma vaga gerada pela agenda do médico |\n| `ACTIVE_LIMIT` | 422 | O paciente já tem 5 agendamentos ativos futuros |\n| `SPECIALTY_MISMATCH` | 422 | O médico escolhido não atende a especialidade escolhida |\n| `SELF_BOOKING` | 422 | O médico tentou marcar consulta consigo mesmo |\n| `REASON_REQUIRED` | 422 | O médico precisa informar o motivo ao cancelar uma consulta |\n| `ROUTE_NOT_FOUND` | 404 | A rota ou o método não existe |\n| `PAYLOAD_TOO_LARGE` | 413 | O corpo passou de 100 KB |\n| `TOO_MANY_REQUESTS` | 429 | Muitas requisições do mesmo IP (300 por minuto) ou limite próprio da rota |\n| `INTERNAL_ERROR` | 500 | Erro inesperado no servidor |\n| `SERVER_BUSY` | 503 | Muitas senhas sendo conferidas ao mesmo tempo |\n\n## Autenticação\n\nCrie uma conta em `POST /api/users/register` e entre em `POST /api/users/login` para receber o token. As rotas que exigem login mostram um cadeado e recebem o token no cabeçalho:\n\n```http\nAuthorization: Bearer <token>\n```\n\nSem \"Lembrar de mim\", a sessão expira após 12 horas sem uso; com ele, dura 7 dias. Nenhuma sessão passa de 7 dias, e `POST /api/users/logout` encerra a sessão na hora. Quando a sessão não vale mais, a rota responde `401` com `UNAUTHENTICATED`.\n\nO botão **Authorize** desta página envia o token em todas as chamadas de teste. Fora de produção, o token fica salvo neste navegador até você clicar em **Logout**.\n\n## Conta de demonstração\n\nPara testar sem criar conta, entre com uma das contas de demonstração. As credenciais são públicas e servem só para demonstração:\n\n- Paciente: `paciente@saudemais.test`, senha `paciente-demo-123`.\n- Médico, que também é paciente e passa pela escolha de perfil: `medico@saudemais.test`, senha `medico-demo-123`.\n\nOs dados delas são de exemplo, e elas não podem ser alteradas nem desativadas. Esses e-mails não podem ser usados em um cadastro novo.\n\n## Datas\n\n- Data e hora, como o início de uma vaga, em ISO 8601 e UTC: `2026-11-20T13:30:00.000Z`.\n- Datas sem horário, como `from` e `to` das vagas, em `YYYY-MM-DD`, no fuso de São Paulo (`America/Sao_Paulo`).\n- Para agendar, envie de volta o `startsAt` recebido na lista de vagas, sem montar o horário no cliente.\n\n## Paginação\n\nAs listas paginadas recebem `page` (a partir de 1) e `pageSize` (até 50) e respondem:\n\n```json\n{ \"items\": [], \"page\": 1, \"pageSize\": 20, \"total\": 0 }\n```",
     "contact": {
       "name": "Plovatto",
       "url": "https://github.com/Plovatto"
@@ -150,6 +150,7 @@
         "properties": {
           "fullName": {
             "type": "string",
+            "maxLength": 120,
             "description": "Nome completo, de 2 a 120 caracteres.",
             "example": "Ana Maria Silva"
           },
@@ -205,6 +206,7 @@
         "properties": {
           "fullName": {
             "type": "string",
+            "maxLength": 120,
             "description": "Nome completo, de 2 a 120 caracteres.",
             "example": "Ana Maria Silva"
           },
@@ -781,6 +783,7 @@
           },
           "notes": {
             "type": "string",
+            "maxLength": 500,
             "description": "Observações para o médico.",
             "example": "Tenho alergia a dipirona."
           }
@@ -789,6 +792,21 @@
           "doctorId",
           "specialtyId",
           "visitType",
+          "startsAt"
+        ],
+        "additionalProperties": false
+      },
+      "ConfirmAppointmentRequest": {
+        "type": "object",
+        "properties": {
+          "startsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Início da consulta como o cliente o exibiu. Se a consulta mudou desde então, a resposta é `INVALID_STATE`.",
+            "example": "2026-11-23T11:00:00.000Z"
+          }
+        },
+        "required": [
           "startsAt"
         ],
         "additionalProperties": false
@@ -804,6 +822,7 @@
           },
           "reason": {
             "type": "string",
+            "maxLength": 500,
             "description": "Motivo do cancelamento; obrigatório para o médico.",
             "example": "Imprevisto de trabalho."
           }
@@ -1105,6 +1124,7 @@
         "properties": {
           "name": {
             "type": "string",
+            "maxLength": 80,
             "example": "Cardiologia"
           },
           "council": {
@@ -1133,6 +1153,7 @@
         "properties": {
           "name": {
             "type": "string",
+            "maxLength": 80,
             "example": "Cardiologia"
           },
           "council": {
@@ -1163,6 +1184,7 @@
           },
           "name": {
             "type": "string",
+            "maxLength": 80,
             "example": "Cardiologia"
           },
           "council": {
@@ -1195,10 +1217,12 @@
         "properties": {
           "name": {
             "type": "string",
+            "maxLength": 80,
             "example": "Unidade Central"
           },
           "address": {
             "type": "string",
+            "maxLength": 200,
             "example": "Rua das Flores, 123 - Centro"
           },
           "phone": {
@@ -1257,10 +1281,12 @@
         "properties": {
           "name": {
             "type": "string",
+            "maxLength": 80,
             "example": "Unidade Central"
           },
           "address": {
             "type": "string",
+            "maxLength": 200,
             "example": "Rua das Flores, 123 - Centro"
           },
           "phone": {
@@ -1374,6 +1400,7 @@
           },
           "name": {
             "type": "string",
+            "maxLength": 80,
             "example": "Hemograma"
           },
           "kind": {
@@ -1419,6 +1446,7 @@
           },
           "name": {
             "type": "string",
+            "maxLength": 80,
             "example": "Hemograma"
           },
           "kind": {
@@ -1464,6 +1492,7 @@
           },
           "name": {
             "type": "string",
+            "maxLength": 80,
             "example": "Hemograma"
           },
           "kind": {
@@ -1645,6 +1674,526 @@
           "bookingHorizonDays",
           "minLeadMinutes",
           "updatedAt"
+        ]
+      },
+      "Notification": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "appointment_requested",
+              "appointment_rescheduled",
+              "appointment_cancelled_by_patient",
+              "appointment_confirmed",
+              "appointment_cancelled",
+              "appointment_expired",
+              "exam_result_available",
+              "user_registered"
+            ],
+            "description": "Tipo do aviso; o cliente monta o texto a partir dele."
+          },
+          "params": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "description": "Dados para montar o texto. Em `user_registered`, `fullName` é o nome atual da conta, lido na hora. Nunca traz observações, motivos nem resultados de exame.",
+            "example": {
+              "userId": "019a8f2e-7c41-7d2a-9b1e-3f5a6c7d8e9f",
+              "fullName": "Ana Maria Silva"
+            }
+          },
+          "bookingId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Agendamento do aviso; nulo só em `user_registered`."
+          },
+          "readAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "params",
+          "bookingId",
+          "readAt",
+          "createdAt"
+        ]
+      },
+      "NotificationPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notification"
+            }
+          },
+          "page": {
+            "type": "integer"
+          },
+          "pageSize": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ]
+      },
+      "UnreadNotificationCount": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "example": 3
+          }
+        },
+        "required": [
+          "count"
+        ]
+      },
+      "DoctorAppointment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "visitType": {
+            "type": "string",
+            "enum": [
+              "first_visit",
+              "routine",
+              "follow_up",
+              "exam_review"
+            ],
+            "description": "Tipo de consulta: primeira consulta (`first_visit`), rotina (`routine`), retorno (`follow_up`) ou avaliação de exames (`exam_review`).",
+            "example": "first_visit"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-23T11:00:00.000Z"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-23T11:30:00.000Z"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Observações do paciente; só ele e o médico veem."
+          },
+          "specialty": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string",
+                "example": "Nutrição"
+              },
+              "council": {
+                "type": "string",
+                "example": "CRN"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "council"
+            ]
+          },
+          "unit": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string",
+                "example": "Unidade Central"
+              },
+              "address": {
+                "type": "string",
+                "example": "Rua das Flores, 123 - Centro, São Paulo - SP"
+              },
+              "phone": {
+                "type": "string",
+                "example": "+551133334444"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "address",
+              "phone"
+            ]
+          },
+          "cancellation": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "byRole": {
+                "type": "string",
+                "enum": [
+                  "patient",
+                  "doctor",
+                  "admin",
+                  "system"
+                ],
+                "description": "Quem cancelou: paciente, médico, administrador (desativação) ou sistema.",
+                "example": "patient"
+              },
+              "reason": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Motivo informado; obrigatório quando o médico cancela."
+              },
+              "late": {
+                "type": "boolean",
+                "description": "Se o paciente cancelou uma confirmada dentro da janela da política."
+              },
+              "cancelledAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "byRole",
+              "reason",
+              "late",
+              "cancelledAt"
+            ],
+            "description": "Dados do cancelamento; nulo enquanto não foi cancelado. Só as partes veem o motivo."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "confirmed",
+              "cancelled",
+              "completed",
+              "no_show",
+              "expired"
+            ],
+            "description": "Situação da consulta. Pedido pendente cujo horário já chegou aparece como `expired`; consulta `confirmed` no histórico já começou e aguarda o registro do médico.",
+            "example": "pending"
+          },
+          "patient": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "fullName": {
+                "type": "string",
+                "example": "Ana Maria Silva"
+              },
+              "phone": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Telefone do paciente; só em consultas pendentes, confirmadas, concluídas ou com falta registrada, e nulo nas canceladas e nas não confirmadas a tempo.",
+                "example": "+5511987654321"
+              }
+            },
+            "required": [
+              "id",
+              "fullName",
+              "phone"
+            ]
+          },
+          "actions": {
+            "type": "object",
+            "properties": {
+              "canConfirm": {
+                "type": "boolean",
+                "description": "Se o médico pode confirmar: pedido pendente que ainda não começou.",
+                "example": true
+              },
+              "canCancel": {
+                "type": "boolean",
+                "description": "Se o médico pode cancelar, com motivo: pendente ou confirmada que ainda não começou.",
+                "example": true
+              }
+            },
+            "required": [
+              "canConfirm",
+              "canCancel"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "visitType",
+          "startsAt",
+          "endsAt",
+          "notes",
+          "specialty",
+          "unit",
+          "cancellation",
+          "status",
+          "patient",
+          "actions"
+        ]
+      },
+      "DoctorAppointmentPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DoctorAppointment"
+            }
+          },
+          "page": {
+            "type": "integer"
+          },
+          "pageSize": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "pending": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Pedidos a confirmar.",
+                "example": 2
+              },
+              "confirmed": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Confirmadas que ainda não começaram.",
+                "example": 5
+              },
+              "awaiting": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Confirmadas que já começaram e aguardam registro; também contam no histórico.",
+                "example": 1
+              },
+              "history": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Consultas no histórico.",
+                "example": 12
+              }
+            },
+            "required": [
+              "pending",
+              "confirmed",
+              "awaiting",
+              "history"
+            ],
+            "description": "Totais das abas da agenda, sem os filtros."
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total",
+          "counts"
+        ]
+      },
+      "DoctorHome": {
+        "type": "object",
+        "properties": {
+          "today": {
+            "type": "object",
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date",
+                "description": "Dia de hoje no fuso de São Paulo.",
+                "example": "2026-11-20"
+              },
+              "total": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Todas as consultas de hoje.",
+                "example": 8
+              },
+              "pending": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Pedidos de hoje ainda a confirmar.",
+                "example": 1
+              },
+              "confirmed": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Confirmadas de hoje que ainda não começaram.",
+                "example": 4
+              },
+              "awaitingRecord": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Confirmadas de hoje que já começaram e aguardam registro.",
+                "example": 1
+              },
+              "completed": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Concluídas hoje.",
+                "example": 1
+              },
+              "noShow": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Faltas de hoje.",
+                "example": 0
+              },
+              "cancelled": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Canceladas de hoje.",
+                "example": 1
+              },
+              "expired": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Pedidos de hoje que não foram confirmados a tempo.",
+                "example": 0
+              }
+            },
+            "required": [
+              "date",
+              "total",
+              "pending",
+              "confirmed",
+              "awaitingRecord",
+              "completed",
+              "noShow",
+              "cancelled",
+              "expired"
+            ],
+            "description": "Resumo das consultas de hoje no fuso de São Paulo, pela situação atual."
+          },
+          "pending": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DoctorAppointment"
+            },
+            "description": "Os próximos pedidos a confirmar, do mais próximo para o mais distante."
+          },
+          "awaitingRecord": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DoctorAppointment"
+            },
+            "description": "As consultas mais antigas que aguardam registro, da mais antiga para a mais recente."
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "pending": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Pedidos a confirmar.",
+                "example": 2
+              },
+              "confirmed": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Confirmadas que ainda não começaram.",
+                "example": 5
+              },
+              "awaiting": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Confirmadas que já começaram e aguardam registro; também contam no histórico.",
+                "example": 1
+              },
+              "history": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Consultas no histórico.",
+                "example": 12
+              }
+            },
+            "required": [
+              "pending",
+              "confirmed",
+              "awaiting",
+              "history"
+            ],
+            "description": "Totais das abas da agenda, sem os filtros."
+          },
+          "lastNotification": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Notification"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "O aviso mais recente do perfil de médico, lido ou não."
+              }
+            ]
+          }
+        },
+        "required": [
+          "today",
+          "pending",
+          "awaitingRecord",
+          "counts",
+          "lastNotification"
         ]
       },
       "SaveDoctorScheduleRequest": {
@@ -1838,118 +2387,6 @@
               "warnings"
             ]
           }
-        ]
-      },
-      "Notification": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "appointment_requested",
-              "appointment_rescheduled",
-              "appointment_cancelled_by_patient",
-              "appointment_confirmed",
-              "appointment_cancelled",
-              "appointment_expired",
-              "exam_result_available",
-              "user_registered"
-            ],
-            "description": "Tipo do aviso; o cliente monta o texto a partir dele."
-          },
-          "params": {
-            "type": "object",
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "description": "Dados para montar o texto. Em `user_registered`, `fullName` é o nome atual da conta, lido na hora. Nunca traz observações, motivos nem resultados de exame.",
-            "example": {
-              "userId": "019a8f2e-7c41-7d2a-9b1e-3f5a6c7d8e9f",
-              "fullName": "Ana Maria Silva"
-            }
-          },
-          "bookingId": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "uuid",
-            "description": "Agendamento do aviso; nulo só em `user_registered`."
-          },
-          "readAt": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "date-time"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        },
-        "required": [
-          "id",
-          "type",
-          "params",
-          "bookingId",
-          "readAt",
-          "createdAt"
-        ]
-      },
-      "NotificationPage": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Notification"
-            }
-          },
-          "page": {
-            "type": "integer"
-          },
-          "pageSize": {
-            "type": "integer"
-          },
-          "total": {
-            "type": "integer"
-          }
-        },
-        "required": [
-          "items",
-          "page",
-          "pageSize",
-          "total"
-        ]
-      },
-      "UnreadNotificationCount": {
-        "type": "object",
-        "properties": {
-          "count": {
-            "type": "integer",
-            "example": 3
-          }
-        },
-        "required": [
-          "count"
         ]
       },
       "PasswordResetRequest": {
@@ -4626,6 +5063,157 @@
         }
       }
     },
+    "/api/appointments/{id}/confirm": {
+      "post": {
+        "operationId": "confirmAppointment",
+        "summary": "Confirmar uma consulta",
+        "description": "Confirma um pedido pendente (`pending`) que ainda não começou, registra o evento `confirmed` com o médico como autor e, depois do commit, avisa o paciente com `appointment_confirmed`. Só o médico que atende a consulta confirma. Envie em `startsAt` o início que a tela mostrava: se o paciente reagendou ou cancelou, se a consulta já foi confirmada ou se o horário já chegou, a resposta é `INVALID_STATE` e nada muda. Horário desatualizado, consulta já iniciada e pedido expirado respondem todos com esse mesmo código; não existem `NOT_STARTED` nem `EXPIRED` nesta rota. A conta de demonstração também confirma, porque os agendamentos dela são restaurados todo dia. Responde o detalhe atualizado; para os demais médicos, responde como inexistente. Limite: 60 requisições por minuto por IP.",
+        "tags": [
+          "Médico"
+        ],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmAppointmentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Consulta confirmada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Appointment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Dados inválidos.",
+                  "code": "VALIDATION_ERROR",
+                  "fields": {
+                    "email": "Informe um e-mail válido."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada (`UNAUTHENTICATED`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Sua sessão expirou. Entre novamente.",
+                  "code": "UNAUTHENTICATED"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A conta não tem o perfil exigido (`FORBIDDEN`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Você não tem acesso a esta área.",
+                  "code": "FORBIDDEN"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Registro inexistente (`NOT_FOUND`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Consulta não encontrada.",
+                  "code": "NOT_FOUND"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "O `startsAt` enviado está desatualizado, a consulta já foi confirmada ou cancelada, já começou ou o pedido expirou (`INVALID_STATE`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Esta consulta mudou ou não pode mais ser confirmada. Atualize a página.",
+                  "code": "INVALID_STATE",
+                  "fields": {
+                    "_root": "Esta consulta mudou ou não pode mais ser confirmada. Atualize a página."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/specialties": {
       "get": {
         "operationId": "listSpecialties",
@@ -6536,6 +7124,241 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Policy"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Dados inválidos.",
+                  "code": "VALIDATION_ERROR",
+                  "fields": {
+                    "email": "Informe um e-mail válido."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada (`UNAUTHENTICATED`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Sua sessão expirou. Entre novamente.",
+                  "code": "UNAUTHENTICATED"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A conta não tem o perfil exigido (`FORBIDDEN`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Você não tem acesso a esta área.",
+                  "code": "FORBIDDEN"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/home": {
+      "get": {
+        "operationId": "getDoctorHome",
+        "summary": "Ver o início do médico",
+        "description": "O resumo das consultas de hoje no fuso de São Paulo, os 3 próximos pedidos a confirmar, as 3 consultas mais antigas que aguardam registro, os totais das abas da agenda e o aviso mais recente do perfil de médico. Cada consulta traz as ações permitidas, como na agenda. Os totais e as listas saem de uma mesma leitura consistente. Limite: 120 requisições por minuto por IP.",
+        "tags": [
+          "Médico"
+        ],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Início do médico.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoctorHome"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada (`UNAUTHENTICATED`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Sua sessão expirou. Entre novamente.",
+                  "code": "UNAUTHENTICATED"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A conta não tem o perfil exigido (`FORBIDDEN`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Você não tem acesso a esta área.",
+                  "code": "FORBIDDEN"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/appointments": {
+      "get": {
+        "operationId": "listDoctorAppointments",
+        "summary": "Listar a agenda do médico",
+        "description": "Consultas do médico logado na aba escolhida em `tab`, a partir do dia `from`, com o paciente (nome e telefone), a especialidade, a unidade e as observações. O médico só vê as próprias consultas. Cada item traz o que o médico pode fazer (`actions`), para o cliente não repetir as regras. `counts` traz os totais das abas, sem os filtros. Limite: 120 requisições por minuto por IP.",
+        "tags": [
+          "Médico"
+        ],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            },
+            "required": false,
+            "name": "pageSize",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "confirmed",
+                "awaiting",
+                "history"
+              ],
+              "default": "pending",
+              "description": "Aba da agenda: a confirmar (`pending`, pedidos pendentes que ainda não começaram) e confirmadas (`confirmed`, confirmadas que ainda não começaram) e aguardando registro (`awaiting`, confirmadas que já começaram), das mais próximas para as mais distantes; histórico (`history`, todo o resto, inclusive as confirmadas que já começaram e aguardam registro), das mais recentes para as mais antigas."
+            },
+            "required": false,
+            "description": "Aba da agenda: a confirmar (`pending`, pedidos pendentes que ainda não começaram) e confirmadas (`confirmed`, confirmadas que ainda não começaram) e aguardando registro (`awaiting`, confirmadas que já começaram), das mais próximas para as mais distantes; histórico (`history`, todo o resto, inclusive as confirmadas que já começaram e aguardam registro), das mais recentes para as mais antigas.",
+            "name": "tab",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Só consultas que começam neste dia ou depois, no fuso de São Paulo.",
+              "example": "2026-11-23"
+            },
+            "required": false,
+            "description": "Só consultas que começam neste dia ou depois, no fuso de São Paulo.",
+            "name": "from",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Página da agenda.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoctorAppointmentPage"
                 }
               }
             }
