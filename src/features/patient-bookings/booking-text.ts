@@ -1,13 +1,6 @@
 import type { PatientBooking } from '@lib/api/models';
 import { formatDateTime } from '@lib/date';
 
-export const cancelledBy: Record<NonNullable<PatientBooking['cancellation']>['byRole'], string> = {
-  patient: 'Cancelada por você',
-  doctor: 'Cancelada pelo médico',
-  admin: 'Cancelada pela administração',
-  system: 'Cancelada pelo sistema',
-};
-
 export const blockedNotes: Partial<
   Record<NonNullable<PatientBooking['actions']['cancelBlockedReason']>, string>
 > = {

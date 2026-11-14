@@ -128,7 +128,7 @@ export function DoctorProfileForm({ user, locked }: DoctorProfileFormProps) {
           >
             {withCurrent(
               specialties.data ?? [],
-              profile && { id: profile.specialtyId, name: profile.specialtyName },
+              profile ? { id: profile.specialtyId, name: profile.specialtyName } : undefined,
             ).map((item) => (
               <option key={item.id} value={item.id}>
                 {item.name}
@@ -166,18 +166,23 @@ export function DoctorProfileForm({ user, locked }: DoctorProfileFormProps) {
             error={errors.unitId?.message}
             {...register('unitId')}
           >
-            {withCurrent(units.data ?? [], profile && { id: profile.unitId, name: profile.unitName }).map(
-              (item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ),
-            )}
+            {withCurrent(
+              units.data ?? [],
+              profile ? { id: profile.unitId, name: profile.unitName } : undefined,
+            ).map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
           </Select>
           {catalogError && <FormAlert>{errorMessage(catalogError)}</FormAlert>}
           {alert && <FormAlert>{alert}</FormAlert>}
           <div className="flex flex-wrap gap-3">
-            <Button type="submit" loading={isSubmitting} disabled={disabled || (profile && !isDirty)}>
+            <Button
+              type="submit"
+              loading={isSubmitting}
+              disabled={disabled || (profile !== null && !isDirty)}
+            >
               {profile ? 'Salvar alterações' : 'Tornar médico'}
             </Button>
             {profile && (

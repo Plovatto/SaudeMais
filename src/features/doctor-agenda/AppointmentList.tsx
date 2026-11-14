@@ -1,0 +1,89 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Fragment, useState, type RefObject } from 'react';
+import { CancelAppointmentDialog } from '@components/bookings/CancelAppointmentDialog';
+import { isStale, staleMessages } from '@components/bookings/stale-appointment';
+import { useToast } from '@components/ui';
+import { visitTypeLabels } from '@constants/visit-types';
+import type { DoctorAppointment } from '@lib/api/models';
+import { formatDateTime } from '@lib/date';
+import { errorMessage } from '@lib/messages/errors.pt-BR';
+import { queryKeys } from '@lib/query-keys';
+import { AppointmentCard } from './AppointmentCard';
+import { groupByDay } from './day-groups';
+import { doctorApi } from './doctor-api';
+
+const nextTask = () => new Promise((resolve) => setTimeout(resolve));
+
+const GRID = 'grid items-start gap-3 @3xl:grid-cols-2';
+
+export interface AppointmentListProps {
+  items: DoctorAppointment[];
+  grouped?: boolean;
+  fallbackFocus: RefObject<HTMLElement | null>;
+}
+
+export function AppointmentList({ items, grouped = false, fallbackFocus }: AppointmentListProps) {
+  const queryClient = useQueryClient();
+  const { show } = useToast();
+  const [cancelling, setCancelling] = useState<DoctorAppointment | null>(null);
+  const refresh = () => queryClient.invalidateQueries({ queryKey: queryKeys.doctor.all });
+  const confirm = useMutation({
+    mutationFn: doctorApi.confirm,
+    onMutate: () => document.activeElement,
+    onSuccess: async (_data, _target, trigger) => {
+      show({ message: 'Consulta confirmada.', tone: 'success' });
+      await refresh();
+      await nextTask();
+      if (trigger && !trigger.isConnected) fallbackFocus.current?.focus();
+    },
+    onError: (error) => {
+      show({ message: errorMessage(error, staleMessages), tone: 'danger' });
+      if (isStale(error)) void refresh();
+    },
+  });
+
+  const cards = (list: DoctorAppointment[]) =>
+    list.map((appointment) => (
+      <li key={appointment.id}>
+        <AppointmentCard
+          appointment={appointment}
+          confirming={confirm.isPending && confirm.variables.id === appointment.id}
+          confirmBlocked={confirm.isPending}
+          onConfirm={(target) => confirm.mutate(target)}
+          onCancel={setCancelling}
+        />
+      </li>
+    ));
+
+  return (
+    <div className="@container">
+      {grouped ? (
+        <div className={GRID}>
+          {groupByDay(items).map(({ date, label, items: day }) => (
+            <Fragment key={date}>
+              <h2 className="text-text-secondary col-span-full text-sm font-medium not-first:mt-2">
+                {label}
+              </h2>
+              <ul className="contents">{cards(day)}</ul>
+            </Fragment>
+          ))}
+        </div>
+      ) : (
+        <ul className={GRID}>{cards(items)}</ul>
+      )}
+      <CancelAppointmentDialog
+        target={cancelling}
+        title="Cancelar consulta?"
+        summary={
+          cancelling
+            ? `${visitTypeLabels[cancelling.visitType]} com ${cancelling.patient.fullName} em ${formatDateTime(cancelling.startsAt)}.`
+            : undefined
+        }
+        reasonRequired
+        refresh={refresh}
+        onClose={() => setCancelling(null)}
+        fallbackFocus={fallbackFocus}
+      />
+    </div>
+  );
+}

@@ -42,10 +42,14 @@ export function formatTime(iso: string): string {
   return timeOfDay.format(new Date(iso));
 }
 
-export function todayInSaoPaulo(now = new Date()): string {
+export function civilDateInSaoPaulo(instant: Date): string {
   const part = (type: Intl.DateTimeFormatPartTypes) =>
-    civilDate.formatToParts(now).find((item) => item.type === type)?.value ?? '';
+    civilDate.formatToParts(instant).find((item) => item.type === type)?.value ?? '';
   return `${part('year')}-${part('month')}-${part('day')}`;
+}
+
+export function todayInSaoPaulo(now = new Date()): string {
+  return civilDateInSaoPaulo(now);
 }
 
 export function addDays(date: string, days: number): string {
@@ -72,6 +76,7 @@ export function formatRelative(iso: string, now = new Date()): string {
   if (elapsed < MINUTE_MS) return relativeTime.format(0, 'second');
   if (elapsed < HOUR_MS) return relativeTime.format(-Math.floor(elapsed / MINUTE_MS), 'minute');
   if (elapsed < DAY_MS) return relativeTime.format(-Math.floor(elapsed / HOUR_MS), 'hour');
-  const days = (utcDay(todayInSaoPaulo(now)).getTime() - utcDay(todayInSaoPaulo(date)).getTime()) / DAY_MS;
+  const days =
+    (utcDay(todayInSaoPaulo(now)).getTime() - utcDay(civilDateInSaoPaulo(date)).getTime()) / DAY_MS;
   return days > RELATIVE_DAYS ? dateTime.format(date) : relativeTime.format(-days, 'day');
 }

@@ -1,14 +1,8 @@
 import { z } from 'zod';
+import { VISIT_TYPES } from '@constants/visit-types';
 import { freeText } from '@lib/validation/text';
 
-export const visitType = z.enum(['first_visit', 'routine', 'follow_up', 'exam_review']);
-
-export const visitTypeLabels: Record<z.infer<typeof visitType>, string> = {
-  first_visit: 'Primeira consulta',
-  routine: 'Rotina',
-  follow_up: 'Retorno',
-  exam_review: 'Avaliação de exames',
-};
+const visitType = z.enum(VISIT_TYPES);
 
 const choice = (message: string) => z.string().min(1, message);
 

@@ -1,4 +1,5 @@
 import { areas, type Role } from '@constants/areas';
+import { AGENDA_TABS, doctorAgendaUrl } from '@constants/doctor-agenda';
 import type { PatientBooking, UserNotification } from '@lib/api/models';
 import { formatDateTime } from '@lib/date';
 
@@ -20,16 +21,16 @@ const at = (params: Params) => {
   return startsAt && !Number.isNaN(Date.parse(startsAt)) ? ` de ${formatDateTime(startsAt)}` : '';
 };
 
-const cancellers: Record<Canceller, string> = {
-  patient: ' pelo paciente',
-  doctor: ' pelo médico',
-  admin: ' pela administração',
-  system: ' pelo sistema',
+export const cancellers: Record<Canceller, string> = {
+  patient: 'pelo paciente',
+  doctor: 'pelo médico',
+  admin: 'pela administração',
+  system: 'pelo sistema',
 };
 
 const cancelledBy = (params: Params) => {
   const role = textParam(params, 'cancelledByRole');
-  return role && Object.hasOwn(cancellers, role) ? cancellers[role as Canceller] : '';
+  return role && Object.hasOwn(cancellers, role) ? ` ${cancellers[role as Canceller]}` : '';
 };
 
 const notificationTexts: Record<UserNotification['type'], (params: Params) => NotificationText> = {
@@ -69,20 +70,22 @@ const notificationTexts: Record<UserNotification['type'], (params: Params) => No
 
 const DEFAULT_TEXT: NotificationText = { title: 'Novo aviso', body: 'Você recebeu um novo aviso.' };
 
-export function notificationText({ type, params }: UserNotification): NotificationText {
+export function notificationText({
+  type,
+  params,
+}: Pick<UserNotification, 'type' | 'params'>): NotificationText {
   return notificationTexts[type]?.(params) ?? DEFAULT_TEXT;
 }
 
 const patientBookings = `${areas.patient.base}/agendamentos`;
 const patientPast = `${patientBookings}?aba=realizados`;
-const doctorAgenda = `${areas.doctor.base}/agenda`;
-const doctorHistory = `${doctorAgenda}?aba=historico`;
+const doctorHistory = doctorAgendaUrl(AGENDA_TABS.history);
 
 export function notificationTarget({ type }: UserNotification, role: Role): string {
   switch (type) {
     case 'appointment_requested':
     case 'appointment_rescheduled':
-      return `${doctorAgenda}?aba=a-confirmar`;
+      return doctorAgendaUrl(AGENDA_TABS.pending);
     case 'appointment_cancelled_by_patient':
       return doctorHistory;
     case 'appointment_confirmed':
