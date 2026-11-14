@@ -54,6 +54,14 @@ describe('apiFetch', () => {
     expect(init?.method).toBe('GET');
   });
 
+  it('accepts an empty accepted response', async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 202 }));
+
+    await expect(
+      apiFetch('post', '/api/admin/users/{id}/password-reset', { params: { id: 'u1' } }),
+    ).resolves.toBeUndefined();
+  });
+
   it('sends JSON bodies and the session token when there is one', async () => {
     setTokenProvider(() => 'token-123');
     fetchMock.mockResolvedValue(jsonResponse(204));
