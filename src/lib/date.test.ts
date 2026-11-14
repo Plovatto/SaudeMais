@@ -1,5 +1,13 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { addDays, formatDateTime, formatDay, formatRelative, formatTime, todayInSaoPaulo } from './date';
+import {
+  addDays,
+  civilDateInSaoPaulo,
+  formatDateTime,
+  formatDay,
+  formatRelative,
+  formatTime,
+  todayInSaoPaulo,
+} from './date';
 
 describe.each([
   { zone: 'Asia/Tokyo', offset: -540 },
@@ -33,6 +41,11 @@ describe.each([
   it('takes today from the São Paulo calendar', () => {
     expect(todayInSaoPaulo(new Date('2026-11-20T02:30:00.000Z'))).toBe('2026-11-19');
     expect(todayInSaoPaulo(new Date('2026-11-20T15:00:00.000Z'))).toBe('2026-11-20');
+  });
+
+  it('takes the civil date of an instant from the São Paulo calendar', () => {
+    expect(civilDateInSaoPaulo(new Date('2026-12-01T02:59:00.000Z'))).toBe('2026-11-30');
+    expect(civilDateInSaoPaulo(new Date('2026-12-01T03:00:00.000Z'))).toBe('2026-12-01');
   });
 
   it('adds days to a civil date across months and years', () => {

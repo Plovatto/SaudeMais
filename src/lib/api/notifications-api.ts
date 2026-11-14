@@ -37,14 +37,18 @@ export const invalidateNotifications = (queryClient: QueryClient) =>
   Promise.all([
     queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all }),
     queryClient.invalidateQueries({ queryKey: queryKeys.patient.home }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.doctor.home }),
   ]);
+
+const markNotificationRead = (id: string) =>
+  apiFetch('post', '/api/notifications/{id}/read', { params: { id } });
 
 export function useMarkNotificationRead() {
   const queryClient = useQueryClient();
   return useCallback(
     ({ id, readAt }: UserNotification) => {
       if (readAt !== null) return;
-      void apiFetch('post', '/api/notifications/{id}/read', { params: { id } }).then(
+      void markNotificationRead(id).then(
         () => invalidateNotifications(queryClient),
         () => undefined,
       );

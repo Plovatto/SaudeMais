@@ -27,6 +27,11 @@ export const queryKeys = {
     unread: (role: string) => ['notifications', 'unread', role] as const,
     list: (params: object) => ['notifications', 'list', params] as const,
   },
+  doctor: {
+    all: ['doctor'] as const,
+    home: ['doctor', 'home'] as const,
+    appointments: (params: object) => ['doctor', 'appointments', params] as const,
+  },
   catalog: {
     specialties: ['catalog', 'specialties'] as const,
     units: ['catalog', 'units'] as const,

@@ -21,6 +21,7 @@ export { SectionCard, type SectionCardProps } from './SectionCard';
 export { Select, type SelectProps } from './Select';
 export { Skeleton } from './Skeleton';
 export { Spinner } from './Spinner';
+export { StatGrid } from './StatGrid';
 export { StatusChip, type StatusChipProps } from './StatusChip';
 export { Switch, type SwitchProps } from './Switch';
 export { TextLink } from './TextLink';

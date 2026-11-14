@@ -4,6 +4,7 @@ import { useEffect, useState, type ChangeEvent } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { LuCalendar, LuClock } from 'react-icons/lu';
 import { Button, FormAlert, QueryError, Select, Textarea } from '@components/ui';
+import { VISIT_TYPES, visitTypeLabels } from '@constants/visit-types';
 import { useActiveSpecialties } from '@hooks/useActiveCatalog';
 import { ApiError } from '@lib/api/api-error';
 import { formatDay, formatTime } from '@lib/date';
@@ -12,7 +13,7 @@ import { queryKeys } from '@lib/query-keys';
 import { useFormSubmit } from '@lib/useFormSubmit';
 import { FREE_TEXT_MAX } from '@lib/validation/text';
 import { bookingApi, type Appointment } from './booking-api';
-import { bookingSchema, emptyBooking, toBody, visitType, visitTypeLabels } from './booking-schema';
+import { bookingSchema, emptyBooking, toBody } from './booking-schema';
 
 const FIELDS = ['doctorId', 'specialtyId', 'visitType', 'startsAt', 'notes'] as const;
 
@@ -182,7 +183,7 @@ export function AppointmentForm({ onBooked }: { onBooked: (appointment: Appointm
         error={errors.visitType?.message}
         {...register('visitType')}
       >
-        {visitType.options.map((value) => (
+        {VISIT_TYPES.map((value) => (
           <option key={value} value={value}>
             {visitTypeLabels[value]}
           </option>

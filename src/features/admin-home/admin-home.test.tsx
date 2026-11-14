@@ -67,12 +67,4 @@ describe('admin home', () => {
 
     await waitFor(() => expect(router.state.location.pathname.startsWith(path)).toBe(true));
   });
-
-  it('keeps the home placeholder for the other areas', async () => {
-    serveApi(['doctor'], {});
-    renderApp('/medico');
-
-    expect(await screen.findByText('Em construção')).toBeInTheDocument();
-    expect(screen.queryByText('Painel Admin')).not.toBeInTheDocument();
-  });
 });

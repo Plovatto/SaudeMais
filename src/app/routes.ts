@@ -52,6 +52,7 @@ const areaScreens: Record<string, typeof placeholder> = {
   'usuarios/:id': lazyComponent(async () => (await import('@features/admin-users')).EditUserPage),
   'usuarios/:id/medico': lazyComponent(async () => (await import('@features/admin-users')).DoctorProfilePage),
   'configuracoes/*': lazyComponent(async () => (await import('@features/admin-settings')).AdminSettingsPage),
+  agenda: lazyComponent(async () => (await import('@features/doctor-agenda')).DoctorAgendaPage),
   disponibilidade: lazyComponent(async () => (await import('@features/doctor-schedule')).DoctorSchedulePage),
   'consultas/nova': lazyComponent(
     async () => (await import('@features/book-appointment')).BookAppointmentPage,
@@ -60,6 +61,7 @@ const areaScreens: Record<string, typeof placeholder> = {
 
 const homeScreens: Partial<Record<Area['role'], typeof placeholder>> = {
   patient: lazyComponent(async () => (await import('@features/patient-home')).PatientHomePage),
+  doctor: lazyComponent(async () => (await import('@features/doctor-agenda')).DoctorHomePage),
   admin: lazyComponent(async () => (await import('@features/admin-home')).AdminHomePage),
 };
 
