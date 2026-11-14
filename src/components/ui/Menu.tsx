@@ -14,6 +14,7 @@ export interface MenuItem {
   tone?: 'default' | 'danger';
   checked?: boolean;
   group?: string;
+  disabled?: boolean;
 }
 
 interface MenuSegment {
@@ -104,16 +105,20 @@ export function Menu({
                   type="button"
                   role={item.checked === undefined ? 'menuitem' : 'menuitemradio'}
                   aria-checked={item.checked}
+                  aria-disabled={item.disabled}
                   tabIndex={-1}
                   onClick={() => {
+                    if (item.disabled) return;
                     dismiss();
                     item.onSelect();
                   }}
                   className={cx(
                     'flex min-h-11 w-full items-center gap-2.5 px-4 text-start text-sm font-medium focus-visible:-outline-offset-2',
-                    item.tone === 'danger'
-                      ? 'text-danger-text can-hover:bg-danger-soft focus-visible:bg-danger-soft'
-                      : 'text-text can-hover:bg-role-soft focus-visible:bg-role-soft',
+                    item.disabled
+                      ? 'text-text-muted cursor-not-allowed'
+                      : item.tone === 'danger'
+                        ? 'text-danger-text can-hover:bg-danger-soft focus-visible:bg-danger-soft'
+                        : 'text-text can-hover:bg-role-soft focus-visible:bg-role-soft',
                   )}
                 >
                   {item.icon && <IconSlot className="text-lg">{item.icon}</IconSlot>}

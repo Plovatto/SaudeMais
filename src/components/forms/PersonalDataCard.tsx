@@ -1,26 +1,40 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { LuMail, LuPhone, LuUser } from 'react-icons/lu';
-import { Button, FormAlert, Input, useToast } from '@components/ui';
-import type { CurrentUser } from '@lib/auth/useSession';
-import { queryKeys } from '@lib/query-keys';
+import { Button, FormAlert, Input, SectionCard, useToast } from '@components/ui';
+import type { MessageOverrides } from '@lib/messages/errors.pt-BR';
 import { useFormSubmit } from '@lib/useFormSubmit';
-import { updateProfile } from './profile-api';
-import { profileSchema, type ProfileValues } from './profile-schemas';
-import { ProfileSection } from './ProfileSection';
-import { handleProtectedAccount } from './protected-account';
+import {
+  personalDataSchema,
+  personalDataValues,
+  type PersonalDataValues,
+} from '@lib/validation/account-fields';
 
-export interface PersonalDataFormProps {
-  user: CurrentUser;
-  locked: boolean;
-  onProtected: () => void;
+interface Person {
+  email: string;
+  fullName: string;
+  phone: string | null;
 }
 
-const valuesOf = (user: CurrentUser): ProfileValues => ({ fullName: user.fullName, phone: user.phone ?? '' });
+export interface PersonalDataCardProps {
+  title: string;
+  person: Person;
+  locked: boolean;
+  ownAccount?: boolean;
+  onSave: (values: PersonalDataValues) => Promise<Person>;
+  onError?: (error: unknown, resetForm: () => void) => boolean;
+  messages?: MessageOverrides;
+}
 
-export function PersonalDataForm({ user, locked, onProtected }: PersonalDataFormProps) {
-  const queryClient = useQueryClient();
+export function PersonalDataCard({
+  title,
+  person,
+  locked,
+  ownAccount = false,
+  onSave,
+  onError,
+  messages,
+}: PersonalDataCardProps) {
   const { show } = useToast();
   const {
     register,
@@ -28,29 +42,31 @@ export function PersonalDataForm({ user, locked, onProtected }: PersonalDataForm
     setError,
     reset,
     formState: { errors, isSubmitting, isDirty },
-  } = useForm<ProfileValues>({ resolver: zodResolver(profileSchema), defaultValues: valuesOf(user) });
+  } = useForm<PersonalDataValues>({
+    resolver: zodResolver(personalDataSchema),
+    defaultValues: personalDataValues(person),
+  });
   const { alert, run } = useFormSubmit(
     setError,
     ['fullName', 'phone'],
-    handleProtectedAccount(onProtected, () => reset(valuesOf(user))),
+    onError && ((error) => onError(error, () => reset(personalDataValues(person)))),
+    messages,
   );
 
   const onSubmit = handleSubmit((values) =>
     run(async () => {
-      const updated = await updateProfile(values);
-      queryClient.setQueryData(queryKeys.session, updated);
-      reset(valuesOf(updated));
+      reset(personalDataValues(await onSave(values)));
       show({ message: 'Dados atualizados.', tone: 'success' });
     }),
   );
 
   return (
-    <ProfileSection title="Seus dados" description="O e-mail é usado para entrar e não pode ser alterado.">
+    <SectionCard title={title} description="O e-mail é usado para entrar e não pode ser alterado.">
       <form noValidate onSubmit={(event) => void onSubmit(event)} className="flex flex-col gap-5">
-        <Input label="E-mail" type="email" value={user.email} readOnly icon={<LuMail />} />
+        <Input label="E-mail" type="email" value={person.email} readOnly icon={<LuMail />} />
         <Input
           label="Nome completo"
-          autoComplete="name"
+          autoComplete={ownAccount ? 'name' : 'off'}
           icon={<LuUser />}
           disabled={locked}
           error={errors.fullName?.message}
@@ -59,7 +75,7 @@ export function PersonalDataForm({ user, locked, onProtected }: PersonalDataForm
         <Input
           label="Telefone"
           type="tel"
-          autoComplete="tel"
+          autoComplete={ownAccount ? 'tel' : 'off'}
           inputMode="tel"
           placeholder="(99) 99999-9999"
           hint="Opcional, com DDD. Deixe em branco para remover."
@@ -73,6 +89,6 @@ export function PersonalDataForm({ user, locked, onProtected }: PersonalDataForm
           Salvar alterações
         </Button>
       </form>
-    </ProfileSection>
+    </SectionCard>
   );
 }

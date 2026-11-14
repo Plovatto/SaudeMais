@@ -76,8 +76,8 @@ describe('role areas', () => {
     await user.click(nav.getByRole('link', { name: 'Consultas' }));
 
     const heading = await screen.findByRole('heading', { level: 1, name: 'Agendar consulta' });
+    await waitFor(() => expect(document.title).toBe('Agendar consulta · Saúde+'));
     expect(heading).toHaveFocus();
-    expect(document.title).toBe('Agendar consulta · Saúde+');
     expect(nav.getByRole('link', { name: 'Consultas' })).toHaveAttribute('aria-current', 'page');
     expect(nav.getByRole('link', { name: 'Início' })).not.toHaveAttribute('aria-current');
   });

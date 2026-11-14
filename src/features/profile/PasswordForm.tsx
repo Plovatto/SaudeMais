@@ -2,12 +2,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { NewPasswordFields } from '@components/forms/NewPasswordFields';
-import { Button, FormAlert, PasswordInput, useToast } from '@components/ui';
+import { Button, FormAlert, PasswordInput, useToast, SectionCard } from '@components/ui';
 import { queryKeys } from '@lib/query-keys';
 import { useFormSubmit } from '@lib/useFormSubmit';
 import { changePassword } from './profile-api';
 import { passwordSchema, type PasswordValues } from './profile-schemas';
-import { ProfileSection } from './ProfileSection';
 import { handleProtectedAccount } from './protected-account';
 
 const emptyPassword: PasswordValues = { currentPassword: '', password: '', passwordConfirmation: '' };
@@ -38,7 +37,7 @@ export function PasswordForm({ locked, onProtected }: { locked: boolean; onProte
   );
 
   return (
-    <ProfileSection title="Senha" description="Ao trocar a senha, as outras sessões da conta são encerradas.">
+    <SectionCard title="Senha" description="Ao trocar a senha, as outras sessões da conta são encerradas.">
       <form noValidate onSubmit={(event) => void onSubmit(event)} className="flex flex-col gap-5">
         <PasswordInput
           label="Senha atual"
@@ -58,6 +57,6 @@ export function PasswordForm({ locked, onProtected }: { locked: boolean; onProte
           Trocar senha
         </Button>
       </form>
-    </ProfileSection>
+    </SectionCard>
   );
 }

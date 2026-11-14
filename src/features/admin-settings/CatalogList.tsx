@@ -1,14 +1,14 @@
 import { keepPreviousData, useQuery, type QueryKey } from '@tanstack/react-query';
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { LuPlus } from 'react-icons/lu';
-import { Button, Pagination, Skeleton } from '@components/ui';
+import { Button, Pagination, QueryError, Skeleton } from '@components/ui';
+import { useClampedPage, usePageParam } from '@hooks/usePageParam';
+import type { Page } from '@lib/api/page';
 import { CatalogItems } from './CatalogItems';
-import { QueryError } from './QueryError';
-import type { Page } from './settings-api';
+import { catalogMessages } from './catalog-messages';
 import { SettingsSection } from './SettingsSection';
 import { useActiveToggle } from './useActiveToggle';
 import { useCatalogEditor } from './useCatalogEditor';
-import { useSearchParam } from './useSearchParam';
 
 interface CatalogItem {
   id: string;
@@ -43,8 +43,7 @@ export function CatalogList<T extends CatalogItem>({
   renderForm,
 }: CatalogListProps<T>) {
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const [pageParam, setPageParam] = useSearchParam('pagina', '1');
-  const page = Math.max(1, Math.trunc(Number(pageParam)) || 1);
+  const [page, setPage] = usePageParam();
   const query = useQuery({
     queryKey: [...queryKey, page],
     queryFn: ({ signal }) => load(page, signal),
@@ -57,12 +56,7 @@ export function CatalogList<T extends CatalogItem>({
     invalidate: queryKey,
   });
   const editor = useCatalogEditor<T>(headingRef);
-  const lastPage = query.data ? Math.max(1, Math.ceil(query.data.total / query.data.pageSize)) : 1;
-  const outOfRange = query.data !== undefined && page > lastPage;
-
-  useEffect(() => {
-    if (outOfRange) setPageParam(String(lastPage), { replace: true });
-  }, [outOfRange, lastPage, setPageParam]);
+  const { lastPage, outOfRange } = useClampedPage(page, setPage, query.data);
 
   return (
     <SettingsSection
@@ -82,7 +76,9 @@ export function CatalogList<T extends CatalogItem>({
           ))}
         </div>
       )}
-      {query.isError && <QueryError error={query.error} onRetry={() => void query.refetch()} />}
+      {query.isError && (
+        <QueryError error={query.error} messages={catalogMessages} onRetry={() => void query.refetch()} />
+      )}
       {!outOfRange && (
         <CatalogItems
           items={query.data?.items}
@@ -99,11 +95,7 @@ export function CatalogList<T extends CatalogItem>({
           }}
         />
       )}
-      <Pagination
-        page={page}
-        totalPages={query.data ? lastPage : 0}
-        onPageChange={(next) => setPageParam(String(next))}
-      />
+      <Pagination page={page} totalPages={query.data ? lastPage : 0} onPageChange={(next) => setPage(next)} />
       {editor.panel((item) => (item ? editLabel : createLabel), renderForm)}
       {toggle.confirmation}
     </SettingsSection>

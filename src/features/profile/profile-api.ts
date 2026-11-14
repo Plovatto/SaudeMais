@@ -1,8 +1,9 @@
 import { apiFetch } from '@lib/api/api-fetch';
-import type { PasswordValues, ProfileValues } from './profile-schemas';
+import { personalDataBody, type PersonalDataValues } from '@lib/validation/account-fields';
+import type { PasswordValues } from './profile-schemas';
 
-export function updateProfile({ fullName, phone }: ProfileValues) {
-  return apiFetch('patch', '/api/me', { body: { fullName, phone: phone === '' ? null : phone } });
+export function updateProfile(values: PersonalDataValues) {
+  return apiFetch('patch', '/api/me', { body: personalDataBody(values) });
 }
 
 export function changePassword(body: PasswordValues) {

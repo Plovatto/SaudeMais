@@ -12,7 +12,9 @@ type Operation<P extends keyof paths, M extends MethodOf<P>> = NonNullable<paths
 type JsonOf<T> = T extends { content: { 'application/json': infer Body } } ? Body : undefined;
 type Responses<P extends keyof paths, M extends MethodOf<P>> =
   Operation<P, M> extends { responses: infer R } ? R : never;
-type SuccessStatus = 200 | 201 | 204;
+type SuccessStatus = 200 | 201 | 202 | 204;
+
+const EMPTY_STATUSES = new Set([202, 204]);
 
 export type ResponseOf<P extends keyof paths, M extends MethodOf<P>> = JsonOf<
   Responses<P, M>[Extract<keyof Responses<P, M>, SuccessStatus>]
@@ -51,7 +53,7 @@ async function readBody(
   timeout: AbortSignal,
   signal: AbortSignal | undefined,
 ): Promise<unknown> {
-  if (response.status === 204) return undefined;
+  if (EMPTY_STATUSES.has(response.status)) return undefined;
   try {
     return (await response.json()) as unknown;
   } catch (error) {

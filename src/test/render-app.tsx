@@ -16,15 +16,14 @@ export interface MockResponse {
   body?: unknown;
 }
 
-type Handler = (path: string, init?: RequestInit) => MockResponse | undefined;
+type Handler = (path: string, init?: RequestInit, url?: URL) => MockResponse | undefined;
 
 export const TEST_TOKEN = 'A'.repeat(43);
 
 export function mockFetch(handler: Handler) {
   const fetchMock = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
-    const response = handler(new URL(url instanceof Request ? url.url : url).pathname, init) ?? {
-      status: 500,
-    };
+    const parsed = new URL(url instanceof Request ? url.url : url);
+    const response = handler(parsed.pathname, init, parsed) ?? { status: 500 };
     await Promise.resolve();
     return new Response(response.body === undefined ? null : JSON.stringify(response.body), {
       status: response.status,
@@ -50,12 +49,31 @@ export function testUser(roles: Role[] = ['patient']) {
   };
 }
 
+export type ApiRoute = (method: string, body: unknown, url: URL) => MockResponse | undefined;
+
+export interface ApiCall {
+  method: string;
+  url: URL;
+  body: unknown;
+}
+
+export function serveApi(roles: Role[], routes: Record<string, ApiRoute>) {
+  const calls: ApiCall[] = [];
+  const fetchMock = signIn(roles, (path, init, url = new URL(path, 'https://api.test')) => {
+    const method = init?.method ?? 'GET';
+    const body: unknown = typeof init?.body === 'string' ? JSON.parse(init.body) : undefined;
+    calls.push({ method, url, body });
+    return routes[path]?.(method, body, url);
+  });
+  return { calls, fetchMock };
+}
+
 export function signIn(roles: Role[] = ['patient'], handler: Handler = () => undefined) {
   sessionStorage.setItem(SESSION_STORAGE_KEY, TEST_TOKEN);
-  return mockFetch((path, init) =>
+  return mockFetch((path, init, url) =>
     path === '/api/me' && (init?.method ?? 'GET') === 'GET'
       ? { status: 200, body: testUser(roles) }
-      : handler(path, init),
+      : handler(path, init, url),
   );
 }
 

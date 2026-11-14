@@ -1,12 +1,5 @@
 import { z } from 'zod';
-import {
-  confirmationMatches,
-  fullNameField,
-  newPasswordFields,
-  phoneField,
-} from '@lib/validation/account-fields';
-
-export const profileSchema = z.object({ fullName: fullNameField, phone: phoneField });
+import { confirmationMatches, newPasswordFields } from '@lib/validation/account-fields';
 
 export const passwordSchema = z
   .object({
@@ -18,5 +11,4 @@ export const passwordSchema = z
   })
   .refine(...confirmationMatches);
 
-export type ProfileValues = z.infer<typeof profileSchema>;
 export type PasswordValues = z.infer<typeof passwordSchema>;
