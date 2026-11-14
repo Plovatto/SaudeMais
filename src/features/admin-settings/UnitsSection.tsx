@@ -1,5 +1,6 @@
 import { LuMapPin, LuPhone } from 'react-icons/lu';
 import { Input } from '@components/ui';
+import { WEEKDAYS } from '@constants/weekdays';
 import { formatPhone } from '@lib/phone';
 import { queryKeys } from '@lib/query-keys';
 import { fromMinutes, toMinutes } from '@lib/time-of-day';
@@ -7,7 +8,7 @@ import { CatalogList } from './CatalogList';
 import { FormShell } from './FormShell';
 import { HoursEditor } from './HoursEditor';
 import { unitsApi, type Unit } from './settings-api';
-import { unitSchema, WEEKDAYS, type UnitValues } from './settings-schemas';
+import { unitSchema, type UnitValues } from './settings-schemas';
 import { useCatalogForm } from './useCatalogForm';
 
 function valuesOf(unit: Unit | null): UnitValues {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatTimeInput, fromMinutes, isTimeOfDay, toMinutes } from './time-of-day';
+import { formatTimeInput, formatTimeRange, fromMinutes, isTimeOfDay, toMinutes } from './time-of-day';
 
 describe('time of day', () => {
   it.each([
@@ -28,5 +28,9 @@ describe('time of day', () => {
     ['123456', '12:34'],
   ])('formats %s while typing as %s', (typed, shown) => {
     expect(formatTimeInput(typed)).toBe(shown);
+  });
+
+  it('formats a range of minutes', () => {
+    expect(formatTimeRange(480, 1440)).toBe('08:00–24:00');
   });
 });

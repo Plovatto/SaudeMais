@@ -6,6 +6,7 @@ export { ConfirmDialog, type ConfirmDialogProps } from './ConfirmDialog';
 export { Dialog, type DialogProps } from './Dialog';
 export { EmptyState, type EmptyStateProps } from './EmptyState';
 export { FormAlert } from './FormAlert';
+export { FieldError } from './FieldControl';
 export { IconButton, type IconButtonProps } from './IconButton';
 export { IconSlot, type IconSlotProps } from './IconSlot';
 export type { FieldProps } from './field-props';

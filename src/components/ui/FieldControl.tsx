@@ -30,6 +30,7 @@ export function FieldControl({
   labelHidden,
   hint,
   error,
+  invalid: flagged,
   'aria-describedby': describedBy,
   icon,
   end,
@@ -37,7 +38,7 @@ export function FieldControl({
   className,
   children,
 }: FieldControlProps) {
-  const { control, hintId, errorId, invalid } = useField(id, { hint, error, describedBy });
+  const { control, hintId, errorId, invalid } = useField(id, { hint, error, invalid: flagged, describedBy });
   return (
     <div className={cx('flex flex-col gap-1.5', className)}>
       <label

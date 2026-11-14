@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { WEEKDAYS } from '@constants/weekdays';
 import { isTimeOfDay, toMinutes } from '@lib/time-of-day';
 import { boundedText, phoneField } from '@lib/validation/account-fields';
 
@@ -22,8 +23,6 @@ export const specialtySchema = z.object({
     .regex(/^[A-Z]{3,10}$/, 'Use a sigla do conselho, com 3 a 10 letras (ex.: CRM).'),
   appointmentDurationMin: fiveMinuteSteps(10, 240),
 });
-
-export const WEEKDAYS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'] as const;
 
 const dayHours = z
   .object({ open: z.boolean(), start: z.string().trim(), end: z.string().trim() })
