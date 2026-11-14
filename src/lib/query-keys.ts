@@ -22,6 +22,11 @@ export const queryKeys = {
     home: ['patient', 'home'] as const,
     bookings: (params: object) => ['patient', 'bookings', params] as const,
   },
+  notifications: {
+    all: ['notifications'] as const,
+    unread: (role: string) => ['notifications', 'unread', role] as const,
+    list: (role: string, params: object) => ['notifications', 'list', role, params] as const,
+  },
   doctor: {
     all: ['doctor'] as const,
     home: ['doctor', 'home'] as const,

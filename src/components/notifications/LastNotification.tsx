@@ -1,7 +1,6 @@
-import { useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type { Role } from '@constants/areas';
 import type { UserNotification } from '@lib/api/models';
-import { markNotificationRead } from '@lib/api/notifications-api';
+import { useMarkNotificationRead } from '@lib/api/notifications-api';
 import { formatRelative } from '@lib/date';
 import { notificationTarget, notificationText } from '@lib/messages/notifications.pt-BR';
 import { NoticeLink } from './NoticeLink';
@@ -9,27 +8,18 @@ import { NoticeLink } from './NoticeLink';
 export interface LastNotificationProps {
   notification: UserNotification;
   role: Role;
-  homeKey: QueryKey;
 }
 
-export function LastNotification({ notification, role, homeKey }: LastNotificationProps) {
-  const queryClient = useQueryClient();
+export function LastNotification({ notification, role }: LastNotificationProps) {
+  const markRead = useMarkNotificationRead();
   const { title, body } = notificationText(notification);
   const unread = notification.readAt === null;
-
-  const markRead = () => {
-    if (!unread) return;
-    void markNotificationRead(notification.id).then(
-      () => queryClient.invalidateQueries({ queryKey: homeKey }),
-      () => undefined,
-    );
-  };
 
   return (
     <NoticeLink
       label="Última notificação"
       to={notificationTarget(notification, role)}
-      onClick={markRead}
+      onClick={() => markRead(notification)}
       title={
         <>
           {title}

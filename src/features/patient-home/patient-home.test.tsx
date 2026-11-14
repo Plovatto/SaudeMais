@@ -144,7 +144,7 @@ describe('patient home', { timeout: 15_000 }, () => {
     await user.click((await banner()).getByRole('link', { name: /Consulta confirmada!/ }));
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/paciente/agendamentos'));
-    expect(calls.some((call) => call.url.pathname.startsWith('/api/notifications'))).toBe(false);
+    expect(calls.some((call) => call.method === 'POST')).toBe(false);
   });
 
   it('hides the banner when there is no notification', async () => {

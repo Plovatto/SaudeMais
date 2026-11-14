@@ -1,12 +1,12 @@
 import { Outlet } from 'react-router';
-import { areas, DEFAULT_ROLE } from '@constants/areas';
+import { areas } from '@constants/areas';
 import { AppHeader } from './AppHeader';
 import { layoutWidth, MainContent, pageSurface, SkipLink } from './MainContent';
 import { MainNav } from './MainNav';
-import { useRouteHandle } from './route-handle';
+import { useAreaRole } from './route-handle';
 
 export function RoleLayout() {
-  const area = areas[useRouteHandle().role ?? DEFAULT_ROLE];
+  const area = areas[useAreaRole()];
   return (
     <div data-role={area.role} className={pageSurface}>
       <SkipLink />

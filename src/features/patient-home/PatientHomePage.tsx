@@ -39,9 +39,7 @@ export function PatientHomePage() {
   return (
     <div className="flex flex-col gap-6">
       <PageTitle className="sr-only">Início</PageTitle>
-      {notification && (
-        <LastNotification notification={notification} role="patient" homeKey={queryKeys.patient.home} />
-      )}
+      {notification && <LastNotification notification={notification} role="patient" />}
       <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:[grid-template-areas:'actions_health''list_list']">
         <nav aria-label="Agendar" className="grid grid-cols-2 gap-4 lg:self-start lg:[grid-area:actions]">
           {SHORTCUTS.map(({ to, label, icon, variant, badge }) => (

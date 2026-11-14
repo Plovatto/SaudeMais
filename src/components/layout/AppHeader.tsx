@@ -1,6 +1,5 @@
-import { LuBell, LuBellOff } from 'react-icons/lu';
-import { EmptyState, Popover } from '@components/ui';
 import type { Area } from '@constants/areas';
+import { NotificationBell } from '@features/notifications';
 import { useCurrentUser } from '@lib/auth/useSession';
 import { AccountMenu } from './AccountMenu';
 import { layoutWidth } from './MainContent';
@@ -15,9 +14,7 @@ export function AppHeader({ area }: { area: Area }) {
           <span className="text-text-secondary truncate text-base font-bold">{area.label}</span>
           <span className="text-text-muted truncate text-xs font-medium">{user.fullName}</span>
         </div>
-        <Popover label="Notificações" title="Notificações" icon={<LuBell />}>
-          <EmptyState icon={<LuBellOff />} title="Nenhuma notificação" className="py-4" />
-        </Popover>
+        <NotificationBell key={area.role} role={area.role} />
       </div>
     </header>
   );

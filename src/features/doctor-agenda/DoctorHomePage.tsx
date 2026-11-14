@@ -47,7 +47,7 @@ function RequestBanner({ count }: { count: number }) {
 
 function HomeNotice({ home: { lastNotification, counts } }: { home: DoctorHome }) {
   if (lastNotification && (lastNotification.readAt === null || counts.pending === 0)) {
-    return <LastNotification notification={lastNotification} role="doctor" homeKey={queryKeys.doctor.home} />;
+    return <LastNotification notification={lastNotification} role="doctor" />;
   }
   return counts.pending > 0 ? <RequestBanner count={counts.pending} /> : null;
 }
