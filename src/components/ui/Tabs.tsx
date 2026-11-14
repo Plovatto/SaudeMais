@@ -29,7 +29,7 @@ function TileContent<T extends string>({ item }: { item: TabItem<T> }) {
       <IconSlot className="bg-role-soft text-role-text mb-1 size-8 justify-center rounded-full text-lg">
         {item.icon}
       </IconSlot>
-      <span className="text-lg font-bold tabular-nums">{item.count}</span>
+      <span className="text-lg font-bold tabular-nums">{item.count}</span>{' '}
       <span className="text-text-secondary text-xs font-medium">{item.label}</span>
     </>
   );

@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { LuCalendarCheck, LuCalendarX, LuClock, LuPlus, LuSyringe } from 'react-icons/lu';
 import { PageHeader } from '@components/layout/PageHeader';
@@ -75,7 +75,10 @@ export function PatientBookingsPage() {
   const query = useQuery({
     queryKey: queryKeys.patient.bookings(params),
     queryFn: ({ signal }) => bookingsApi.list(params, signal),
-    placeholderData: keepPreviousData,
+    placeholderData: (previous, previousQuery) =>
+      (previousQuery?.queryKey[2] as BookingListParams | undefined)?.scope === tab.scope
+        ? previous
+        : undefined,
   });
   const { lastPage, outOfRange } = useClampedPage(page, setPage, query.data);
   const [cancelling, setCancelling] = useState<PatientBooking | null>(null);
@@ -108,7 +111,7 @@ export function PatientBookingsPage() {
             aria-live="polite"
             className="text-text-secondary text-sm focus-visible:outline-none"
           >
-            {query.data && !outOfRange ? found(query.data.total) : null}
+            {query.data && !outOfRange && query.data.total > 0 ? found(query.data.total) : null}
           </p>
           {query.isPending && (
             <div aria-busy="true" className="grid gap-3 lg:grid-cols-2">

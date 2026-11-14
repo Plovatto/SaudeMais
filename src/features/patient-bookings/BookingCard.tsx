@@ -50,7 +50,7 @@ export function BookingCard({ booking, onCancel }: BookingCardProps) {
 
   return (
     <Card variant="outlined" className="flex flex-col gap-4">
-      <h3>
+      <h2>
         <button
           type="button"
           aria-expanded={expanded}
@@ -87,7 +87,7 @@ export function BookingCard({ booking, onCancel }: BookingCardProps) {
             <LuChevronDown />
           </IconSlot>
         </button>
-      </h3>
+      </h2>
       <div id={detailsId} hidden={!expanded} className="flex flex-col gap-4">
         <dl className="text-text-secondary flex flex-col gap-3 text-sm">
           <Detail icon={<LuMapPin />} label="Local">

@@ -1,19 +1,18 @@
 import { apiFetch, type ResponseOf } from '@lib/api/api-fetch';
 
-export const BOOKINGS_PAGE_SIZE = 10;
+const PAGE_SIZE = 10;
 
-export type BookingScope = 'upcoming' | 'past';
 export type PatientBooking = ResponseOf<'/api/patient/bookings', 'get'>['items'][number];
 
 export interface BookingListParams {
-  scope: BookingScope;
+  scope: 'upcoming' | 'past';
   page: number;
 }
 
 export const bookingsApi = {
   list: ({ scope, page }: BookingListParams, signal: AbortSignal) =>
     apiFetch('get', '/api/patient/bookings', {
-      query: { scope, page, pageSize: BOOKINGS_PAGE_SIZE },
+      query: { scope, page, pageSize: PAGE_SIZE },
       signal,
     }),
   cancel: (id: string, startsAt: string, reason: string) =>

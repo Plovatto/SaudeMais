@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ReactNode, type RefObject } from 'react';
+import { useEffect, useEffectEvent, useId, useRef, type ReactNode, type RefObject } from 'react';
 import { LuX } from 'react-icons/lu';
 import { cx } from '@lib/cx';
 import { IconButton } from './IconButton';
@@ -51,19 +51,21 @@ export function Dialog({
     }
   }, [open, initialFocus]);
 
+  const onDialogClose = useEffectEvent(() => {
+    if (returnFocus.current?.isConnected) returnFocus.current.focus();
+    else fallbackFocus?.current?.focus();
+    returnFocus.current = null;
+    if (closingFromProp.current) closingFromProp.current = false;
+    else onClose();
+  });
+
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
-    const onDialogClose = () => {
-      if (returnFocus.current?.isConnected) returnFocus.current.focus();
-      else fallbackFocus?.current?.focus();
-      returnFocus.current = null;
-      if (closingFromProp.current) closingFromProp.current = false;
-      else onClose();
-    };
-    dialog.addEventListener('close', onDialogClose);
-    return () => dialog.removeEventListener('close', onDialogClose);
-  }, [onClose, fallbackFocus]);
+    const listener = () => onDialogClose();
+    dialog.addEventListener('close', listener);
+    return () => dialog.removeEventListener('close', listener);
+  }, []);
 
   return (
     <dialog

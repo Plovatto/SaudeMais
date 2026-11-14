@@ -71,16 +71,17 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     const { user, router } = renderApp('/paciente/agendamentos');
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Minhas consultas e exames' })).toBeVisible();
-    const upcoming = await screen.findByRole('tab', { name: /^1s?Agendados$/ });
+    const upcoming = await screen.findByRole('tab', { name: /^1 Agendados$/ });
     expect(upcoming).toHaveAttribute('aria-selected', 'true');
     expect(await screen.findByText('Confirmado')).toBeVisible();
     expect(listCalls(calls)[0]?.url.searchParams.get('scope')).toBe('upcoming');
 
-    await user.click(screen.getByRole('tab', { name: /^1s?Realizados$/ }));
+    await user.click(screen.getByRole('tab', { name: /^1 Realizados$/ }));
 
     expect(router.state.location.search).toBe('?aba=realizados');
+    expect(screen.queryByText('Confirmado')).not.toBeInTheDocument();
     expect(await screen.findByText('Concluída')).toBeVisible();
-    expect(screen.getByRole('tab', { name: /^1s?Realizados$/ })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /^1 Realizados$/ })).toHaveAttribute('aria-selected', 'true');
     expect(listCalls(calls).at(-1)?.url.searchParams.get('scope')).toBe('past');
   });
 
@@ -118,7 +119,7 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     const { header, scope } = await card(/Dr\. João Silveira/);
     expect(header).toHaveAttribute('aria-expanded', 'false');
     expect(scope.getByText('Rua das Flores, 123')).not.toBeVisible();
-    expect(header.closest('h3')).toBeInTheDocument();
+    expect(header.closest('h2')).toBeInTheDocument();
 
     await user.click(header);
 
@@ -224,6 +225,51 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     expect(await within(dialog).findByRole('alert')).toHaveTextContent(STALE);
     await waitFor(() => expect(listCalls(calls).length).toBeGreaterThan(before));
     expect(dialog).toBeVisible();
+    expect(within(dialog).queryByRole('button', { name: 'Cancelar agendamento' })).not.toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Voltar' })).toBeVisible();
+  });
+
+  it('explains a missing booking on 404 and leaves only the way back', async () => {
+    const { calls } = serve({ upcoming: [booking('b1')] }, () => ({
+      status: 404,
+      body: { code: 'NOT_FOUND', message: 'Consulta não encontrada.' },
+    }));
+    const { user } = renderApp('/paciente/agendamentos');
+
+    const dialog = await openCancel(user);
+    const before = listCalls(calls).length;
+    await user.click(within(dialog).getByRole('button', { name: 'Cancelar agendamento' }));
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(
+      'Este agendamento não existe mais. Confira a lista atualizada.',
+    );
+    await waitFor(() => expect(listCalls(calls).length).toBeGreaterThan(before));
+    expect(within(dialog).queryByRole('button', { name: 'Cancelar agendamento' })).not.toBeInTheDocument();
+  });
+
+  it('moves focus to the results line when the cancelled card leaves the list', async () => {
+    const lists: Lists = { upcoming: [booking('b1')] };
+    serve(lists, () => {
+      lists.upcoming = [];
+      return { status: 200, body: {} };
+    });
+    const { user } = renderApp('/paciente/agendamentos');
+
+    const dialog = await openCancel(user);
+    await user.click(within(dialog).getByRole('button', { name: 'Cancelar agendamento' }));
+
+    expect(await screen.findByText('Nenhum agendamento futuro')).toBeVisible();
+    await waitFor(() => expect(dialog).not.toBeVisible());
+    await waitFor(() => expect(document.activeElement).toHaveAttribute('aria-live', 'polite'));
+    expect(document.activeElement).toBeEmptyDOMElement();
+  });
+
+  it('clamps a page beyond the last one', async () => {
+    serve({ upcoming: [booking('b1')] }, undefined, 25);
+    const { router } = renderApp('/paciente/agendamentos?pagina=9');
+
+    await waitFor(() => expect(router.state.location.search).toBe('?pagina=3'));
+    expect(await screen.findByRole('button', { name: 'Página 3' })).toHaveAttribute('aria-current', 'page');
   });
 
   it('paginates through the URL and resets the page when the tab changes', async () => {
