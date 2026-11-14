@@ -4,10 +4,11 @@ import { PagedResults } from '@components/bookings/PagedResults';
 import { PageHeader } from '@components/layout/PageHeader';
 import { ButtonLink, EmptyState, TabPanel, Tabs } from '@components/ui';
 import { areas } from '@constants/areas';
+import { AGENDA_TABS } from '@constants/doctor-agenda';
 import { useTabbedList } from '@hooks/useTabbedList';
+import type { DoctorAppointment } from '@lib/api/models';
 import { queryKeys } from '@lib/query-keys';
 import { AppointmentList } from './AppointmentList';
-import type { DoctorAppointment } from '@lib/api/models';
 import { doctorApi, type AgendaParams } from './doctor-api';
 
 const DOCTOR = areas.doctor.base;
@@ -15,13 +16,13 @@ const TABS_ID = 'doctor-agenda';
 
 const TABS = [
   {
-    value: 'a-confirmar',
+    value: AGENDA_TABS.pending,
     label: 'A confirmar',
     tab: 'pending',
     empty: { title: 'Nenhum pedido a confirmar', description: 'Novos pedidos de consulta aparecem aqui.' },
   },
   {
-    value: 'confirmadas',
+    value: AGENDA_TABS.confirmed,
     label: 'Confirmadas',
     tab: 'confirmed',
     empty: {
@@ -30,7 +31,7 @@ const TABS = [
     },
   },
   {
-    value: 'aguardando-registro',
+    value: AGENDA_TABS.awaiting,
     label: 'Aguardando registro',
     tab: 'awaiting',
     empty: {
@@ -39,7 +40,7 @@ const TABS = [
     },
   },
   {
-    value: 'historico',
+    value: AGENDA_TABS.history,
     label: 'Histórico',
     tab: 'history',
     empty: {
@@ -62,7 +63,7 @@ export function DoctorAgendaPage() {
     };
   });
   const results = useRef<HTMLParagraphElement>(null);
-  const counts = list.query.data?.counts;
+  const counts = list.lastData?.counts;
 
   return (
     <>
@@ -77,7 +78,7 @@ export function DoctorAgendaPage() {
           label="Agenda"
           items={TABS.map(({ value, label, tab }) => ({
             value,
-            label: counts ? `${label} (${counts[tab]})` : label,
+            label: `${label} (${counts ? counts[tab] : '–'})`,
           }))}
           value={list.tab.value}
           onValueChange={list.selectTab}

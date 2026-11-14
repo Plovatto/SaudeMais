@@ -1,4 +1,5 @@
 import { areas, type Role } from '@constants/areas';
+import { AGENDA_TABS, doctorAgendaUrl } from '@constants/doctor-agenda';
 import type { PatientBooking, UserNotification } from '@lib/api/models';
 import { formatDateTime } from '@lib/date';
 
@@ -78,14 +79,13 @@ export function notificationText({
 
 const patientBookings = `${areas.patient.base}/agendamentos`;
 const patientPast = `${patientBookings}?aba=realizados`;
-const doctorAgenda = `${areas.doctor.base}/agenda`;
-const doctorHistory = `${doctorAgenda}?aba=historico`;
+const doctorHistory = doctorAgendaUrl(AGENDA_TABS.history);
 
 export function notificationTarget({ type }: UserNotification, role: Role): string {
   switch (type) {
     case 'appointment_requested':
     case 'appointment_rescheduled':
-      return `${doctorAgenda}?aba=a-confirmar`;
+      return doctorAgendaUrl(AGENDA_TABS.pending);
     case 'appointment_cancelled_by_patient':
       return doctorHistory;
     case 'appointment_confirmed':

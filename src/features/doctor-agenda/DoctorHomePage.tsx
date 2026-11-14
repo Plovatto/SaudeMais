@@ -5,16 +5,16 @@ import { LastNotification } from '@components/notifications/LastNotification';
 import { NoticeLink } from '@components/notifications/NoticeLink';
 import { ButtonLink, QueryError, SectionCard, StatGrid } from '@components/ui';
 import { areas } from '@constants/areas';
+import { AGENDA_TABS, doctorAgendaUrl } from '@constants/doctor-agenda';
 import { notificationText } from '@lib/messages/notifications.pt-BR';
 import { queryKeys } from '@lib/query-keys';
 import { doctorApi, type DoctorHome } from './doctor-api';
 import { HomeSection } from './HomeSection';
 
 const DOCTOR = areas.doctor.base;
-const AGENDA = `${DOCTOR}/agenda`;
 
 const SUMMARY: readonly { key: Exclude<keyof DoctorHome['today'], 'date'>; label: string; tone: string }[] = [
-  { key: 'pending', label: 'Pendentes', tone: 'text-danger-text' },
+  { key: 'pending', label: 'Pendentes hoje', tone: 'text-danger-text' },
   { key: 'total', label: 'Total', tone: 'text-text' },
   { key: 'completed', label: 'Concluídas', tone: 'text-success-text' },
 ];
@@ -30,7 +30,7 @@ function RequestBanner({ count }: { count: number }) {
   return (
     <NoticeLink
       label="Pedidos de consulta"
-      to={`${AGENDA}?aba=a-confirmar`}
+      to={doctorAgendaUrl(AGENDA_TABS.pending)}
       title={REQUEST_TITLE}
       body={requests(count)}
       marker={
@@ -45,6 +45,13 @@ function RequestBanner({ count }: { count: number }) {
   );
 }
 
+function HomeNotice({ home: { lastNotification, counts } }: { home: DoctorHome }) {
+  if (lastNotification && (lastNotification.readAt === null || counts.pending === 0)) {
+    return <LastNotification notification={lastNotification} role="doctor" homeKey={queryKeys.doctor.home} />;
+  }
+  return counts.pending > 0 ? <RequestBanner count={counts.pending} /> : null;
+}
+
 export function DoctorHomePage() {
   const query = useQuery({
     queryKey: queryKeys.doctor.home,
@@ -56,21 +63,15 @@ export function DoctorHomePage() {
     <div className="flex flex-col gap-6">
       <PageTitle className="sr-only">Início</PageTitle>
       {query.isError && <QueryError error={query.error} onRetry={() => void query.refetch()} />}
-      {data?.lastNotification ? (
-        <LastNotification
-          notification={data.lastNotification}
-          role="doctor"
-          homeKey={queryKeys.doctor.home}
-        />
-      ) : (
-        data && data.counts.pending > 0 && <RequestBanner count={data.counts.pending} />
-      )}
+      {data && <HomeNotice home={data} />}
       <div className="grid items-start gap-6 lg:grid-cols-2 lg:grid-rows-[auto_auto_1fr]">
-        <SectionCard title="Resumo de Hoje">
-          <StatGrid
-            stats={SUMMARY.map(({ key, label, tone }) => ({ label, tone, value: data?.today[key] }))}
-          />
-        </SectionCard>
+        {!query.isError && (
+          <SectionCard title="Resumo de Hoje">
+            <StatGrid
+              stats={SUMMARY.map(({ key, label, tone }) => ({ label, tone, value: data?.today[key] }))}
+            />
+          </SectionCard>
+        )}
         <ButtonLink to={`${DOCTOR}/disponibilidade`} size="lg" className="rounded-card">
           <LuCalendarCog aria-hidden />
           Gerenciar Minha Agenda
@@ -82,7 +83,7 @@ export function DoctorHomePage() {
               total={data?.counts.pending}
               items={data?.pending}
               empty="Nenhum pedido a confirmar"
-              link={{ to: AGENDA, label: 'Ver Agenda Completa' }}
+              link={{ to: doctorAgendaUrl(), label: 'Ver Agenda Completa' }}
               className="lg:col-start-2 lg:row-span-3 lg:row-start-1"
             />
             <HomeSection
@@ -90,7 +91,7 @@ export function DoctorHomePage() {
               total={data?.counts.awaiting}
               items={data?.awaitingRecord}
               empty="Nenhuma consulta aguardando registro"
-              link={{ to: `${AGENDA}?aba=aguardando-registro`, label: 'Ver todas aguardando registro' }}
+              link={{ to: doctorAgendaUrl(AGENDA_TABS.awaiting), label: 'Ver todas aguardando registro' }}
             />
           </>
         )}
