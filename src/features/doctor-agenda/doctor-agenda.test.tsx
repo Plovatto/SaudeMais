@@ -1,7 +1,8 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { renderApp, serveApi, type ApiCall, type MockResponse } from '@/test/render-app';
 import type { DoctorAppointment } from '@lib/api/models';
+import { queryKeys } from '@lib/query-keys';
 import type { AgendaTab, DoctorHome } from './doctor-api';
 
 const FUTURE = '2030-01-10T13:00:00.000Z';
@@ -57,26 +58,27 @@ interface Serve {
   lists?: Lists;
   homeData?: DoctorHome;
   action?: (path: string) => MockResponse;
-  total?: number;
+  totals?: Partial<Record<AgendaTab, number>>;
 }
 
-const serve = ({ lists = {}, homeData = home(), action, total }: Serve) =>
+const serve = ({ lists = {}, homeData = home(), action, totals = {} }: Serve) =>
   serveApi(['doctor'], {
     [HOME]: () => ({ status: 200, body: homeData }),
     [LIST]: (_method, _body, url) => {
-      const items = lists[url.searchParams.get('tab') as AgendaTab] ?? [];
+      const tab = url.searchParams.get('tab') as AgendaTab;
+      const count = (key: AgendaTab) => totals[key] ?? lists[key]?.length ?? 0;
       return {
         status: 200,
         body: {
-          items,
+          items: lists[tab] ?? [],
           page: Number(url.searchParams.get('page')),
           pageSize: 10,
-          total: total ?? items.length,
+          total: count(tab),
           counts: {
-            pending: lists.pending?.length ?? 0,
-            confirmed: lists.confirmed?.length ?? 0,
-            awaiting: lists.awaiting?.length ?? 0,
-            history: lists.history?.length ?? 0,
+            pending: count('pending'),
+            confirmed: count('confirmed'),
+            awaiting: count('awaiting'),
+            history: count('history'),
           },
         },
       };
@@ -123,7 +125,7 @@ describe('doctor home', { timeout: 15_000 }, () => {
     expect(banner).toHaveTextContent('2 pedidos de consulta esperam por sua confirmação.');
 
     const summary = screen.getByRole('region', { name: 'Resumo de Hoje' });
-    expect(within(summary).getByText('Pendentes').nextSibling).toHaveTextContent('2');
+    expect(within(summary).getByText('Pendentes hoje').nextSibling).toHaveTextContent('2');
     expect(within(summary).getByText('Total').nextSibling).toHaveTextContent('6');
     expect(within(summary).getByText('Concluídas').nextSibling).toHaveTextContent('4');
     expect(screen.getByRole('link', { name: 'Gerenciar Minha Agenda' })).toHaveAttribute(
@@ -172,6 +174,75 @@ describe('doctor home', { timeout: 15_000 }, () => {
     expect(screen.queryByRole('link', { name: /Novo pedido de consulta/ })).not.toBeInTheDocument();
   });
 
+  it('prefers the request banner over a read notification while requests wait', async () => {
+    serve({
+      homeData: home({
+        counts: { ...counts, pending: 1 },
+        lastNotification: {
+          id: 'n1',
+          type: 'appointment_cancelled_by_patient',
+          params: { startsAt: FUTURE },
+          bookingId: 'a1',
+          readAt: PAST,
+          createdAt: new Date().toISOString(),
+        },
+      }),
+    });
+    renderApp('/medico');
+
+    expect(await screen.findByRole('link', { name: /Novo pedido de consulta/ })).toHaveTextContent(
+      'Um pedido de consulta espera por sua confirmação.',
+    );
+    expect(screen.queryByRole('link', { name: /Consulta cancelada pelo paciente/ })).not.toBeInTheDocument();
+  });
+
+  it('shows a read notification when no request waits', async () => {
+    serve({
+      homeData: home({
+        lastNotification: {
+          id: 'n1',
+          type: 'appointment_cancelled_by_patient',
+          params: { startsAt: FUTURE },
+          bookingId: 'a1',
+          readAt: PAST,
+          createdAt: new Date().toISOString(),
+        },
+      }),
+    });
+    renderApp('/medico');
+
+    expect(await screen.findByRole('link', { name: /Consulta cancelada pelo paciente/ })).toBeVisible();
+    expect(screen.queryByRole('link', { name: /Novo pedido de consulta/ })).not.toBeInTheDocument();
+  });
+
+  it('shows only the error when the home fails to load', async () => {
+    serveApi(['doctor'], { [HOME]: () => ({ status: 500, body: { code: 'INTERNAL_ERROR', message: 'x' } }) });
+    renderApp('/medico');
+
+    expect(await screen.findByRole('button', { name: 'Tentar de novo' })).toBeVisible();
+    expect(screen.queryByRole('region', { name: 'Resumo de Hoje' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Consultas Pendentes' })).not.toBeInTheDocument();
+  });
+
+  it('moves the focus to the agenda link when the confirmed request leaves the home', async () => {
+    const data = home({ pending: [appointment('a1')], counts: { ...counts, pending: 1 } });
+    serve({
+      homeData: data,
+      action: () => {
+        data.pending = [];
+        data.counts = counts;
+        return { status: 200, body: {} };
+      },
+    });
+    const { user } = renderApp('/medico');
+
+    const { scope } = await card(/^Andreia Soares/);
+    await user.click(scope.getByRole('button', { name: /^Confirmar/ }));
+
+    expect(await screen.findByText('Nenhum pedido a confirmar')).toBeVisible();
+    await waitFor(() => expect(screen.getByRole('link', { name: 'Ver Agenda Completa' })).toHaveFocus());
+  });
+
   it('hides the banner and shows empty sections when nothing waits', async () => {
     serve({});
     renderApp('/medico');
@@ -198,6 +269,8 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     await user.click(screen.getByRole('tab', { name: 'Confirmadas (1)' }));
 
     expect(router.state.location.search).toBe('?aba=confirmadas');
+    expect(screen.getByRole('tab', { name: 'Confirmadas (1)' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'A confirmar (1)' })).toBeVisible();
     expect(await screen.findByText('Confirmado')).toBeVisible();
     expect(listCalls(calls).at(-1)?.url.searchParams.get('tab')).toBe('confirmed');
 
@@ -295,13 +368,15 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
       lists: { pending: [appointment('a1')] },
       action: () => ({ status: 200, body: {} }),
     });
-    const { user } = renderApp('/medico/agenda');
+    const { user, queryClient } = renderApp('/medico/agenda');
 
     const { scope } = await card(/^Andreia Soares/);
+    queryClient.setQueryData(queryKeys.doctor.home, home());
     const before = listCalls(calls).length;
     await user.click(scope.getByRole('button', { name: /^Confirmar/ }));
 
     expect(await screen.findByText('Consulta confirmada.')).toBeVisible();
+    expect(queryClient.getQueryState(queryKeys.doctor.home)?.isInvalidated).toBe(true);
     expect(posts(calls)[0]?.url.pathname).toBe('/api/appointments/a1/confirm');
     expect(posts(calls)[0]?.body).toEqual({ startsAt: FUTURE });
     await waitFor(() => expect(listCalls(calls).length).toBeGreaterThan(before));
@@ -310,7 +385,7 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
   it('explains a stale request when confirming and refreshes the list on 409', async () => {
     const { calls } = serve({
       lists: { pending: [appointment('a1')] },
-      action: () => ({ status: 409, body: { code: 'INVALID_STATE', message: STALE } }),
+      action: () => ({ status: 409, body: { code: 'INVALID_STATE', message: 'Consulta já confirmada.' } }),
     });
     const { user } = renderApp('/medico/agenda');
 
@@ -319,7 +394,46 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     await user.click(scope.getByRole('button', { name: /^Confirmar/ }));
 
     expect(await screen.findByText(STALE)).toBeVisible();
+    expect(screen.queryByText('Consulta já confirmada.')).not.toBeInTheDocument();
     await waitFor(() => expect(listCalls(calls).length).toBeGreaterThan(before));
+  });
+
+  it('moves the focus to the results line when the confirmed request leaves the list', async () => {
+    const lists = { pending: [appointment('a1')] };
+    serve({
+      lists,
+      action: () => {
+        lists.pending = [];
+        return { status: 200, body: {} };
+      },
+    });
+    const { user } = renderApp('/medico/agenda');
+
+    const { scope } = await card(/^Andreia Soares/);
+    await user.click(scope.getByRole('button', { name: /^Confirmar/ }));
+
+    expect(await screen.findByText('Nenhum pedido a confirmar')).toBeVisible();
+    await waitFor(() => expect(document.activeElement).toHaveAttribute('aria-live', 'polite'));
+  });
+
+  it('blocks the other confirmations while one is being sent', async () => {
+    serve({
+      lists: {
+        pending: [
+          appointment('a1'),
+          appointment('a2', { patient: { id: 'p2', fullName: 'Jair Oliveira', phone: null } }),
+        ],
+      },
+      action: () => ({ status: 200, body: {} }),
+    });
+    renderApp('/medico/agenda');
+
+    const first = await card(/^Andreia Soares/);
+    const second = await card(/^Jair Oliveira/);
+    fireEvent.click(first.scope.getByRole('button', { name: /^Confirmar/ }));
+
+    await waitFor(() => expect(second.scope.getByRole('button', { name: /^Confirmar/ })).toBeDisabled());
+    expect(await screen.findByText('Consulta confirmada.')).toBeVisible();
   });
 
   it('requires a reason before cancelling', async () => {
@@ -395,7 +509,7 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
   });
 
   it('paginates through the URL and resets the page when the tab changes', async () => {
-    const { calls } = serve({ lists: { pending: [appointment('a1')] }, total: 25 });
+    const { calls } = serve({ lists: { pending: [appointment('a1')] }, totals: { pending: 25 } });
     const { user, router } = renderApp('/medico/agenda');
 
     expect(await screen.findByText('25 consultas')).toBeVisible();
