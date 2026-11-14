@@ -1,17 +1,20 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { addDays, formatDateTime, formatDay, formatTime, todayInSaoPaulo } from './date';
 
-beforeAll(() => {
-  vi.stubEnv('TZ', 'Asia/Tokyo');
-});
+describe.each([
+  { zone: 'Asia/Tokyo', offset: -540 },
+  { zone: 'America/Los_Angeles', offset: 480 },
+])('São Paulo dates with the process in $zone', ({ zone, offset }) => {
+  beforeAll(() => {
+    vi.stubEnv('TZ', zone);
+  });
 
-afterAll(() => {
-  vi.unstubAllEnvs();
-});
+  afterAll(() => {
+    vi.unstubAllEnvs();
+  });
 
-describe('São Paulo dates with the process in Tokyo', () => {
-  it('runs in the Tokyo time zone', () => {
-    expect(new Date('2026-11-20T02:30:00.000Z').getTimezoneOffset()).toBe(-540);
+  it('runs in the process time zone', () => {
+    expect(new Date('2026-11-20T02:30:00.000Z').getTimezoneOffset()).toBe(offset);
   });
 
   it('shows the date and time in São Paulo', () => {

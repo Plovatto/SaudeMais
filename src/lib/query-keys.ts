@@ -12,8 +12,12 @@ export const queryKeys = {
     impact: (id: string) => ['admin-users', 'impact', id] as const,
   },
   booking: {
+    doctorLists: ['booking', 'doctors'] as const,
     doctors: (specialtyId: string) => ['booking', 'doctors', specialtyId] as const,
     availability: (doctorId: string) => ['booking', 'availability', doctorId] as const,
+  },
+  patient: {
+    all: ['patient'] as const,
   },
   catalog: {
     specialties: ['catalog', 'specialties'] as const,

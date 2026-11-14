@@ -17,11 +17,15 @@ export function PageHeader({ title, back = false, backFallback = '/', icon, subt
   const { key } = useLocation();
   const goBack = () => void (key === 'default' ? navigate(backFallback) : navigate(-1));
   const backButton = back && <IconButton label="Voltar" icon={<LuArrowLeft />} onClick={goBack} />;
+  const subtitleText = subtitle && <p className="text-text-secondary text-sm">{subtitle}</p>;
   if (!icon) {
     return (
       <header className="mb-6 flex items-center gap-2">
         {backButton}
-        <PageTitle>{title}</PageTitle>
+        <div className="flex min-w-0 flex-col gap-1">
+          <PageTitle>{title}</PageTitle>
+          {subtitleText}
+        </div>
       </header>
     );
   }
@@ -32,7 +36,7 @@ export function PageHeader({ title, back = false, backFallback = '/', icon, subt
         {icon}
       </IconSlot>
       <PageTitle>{title}</PageTitle>
-      {subtitle && <p className="text-text-secondary text-sm">{subtitle}</p>}
+      {subtitleText}
     </header>
   );
 }

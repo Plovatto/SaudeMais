@@ -1,6 +1,6 @@
 import type { FieldValues, Path, UseFormSetError } from 'react-hook-form';
 import { ApiError } from '@lib/api/api-error';
-import { errorMessage, hasMessage, type MessageOverrides } from '@lib/messages/errors.pt-BR';
+import { errorMessage, messageFor, type MessageOverrides } from '@lib/messages/errors.pt-BR';
 
 export function applyApiErrors<T extends FieldValues>(
   error: unknown,
@@ -15,6 +15,6 @@ export function applyApiErrors<T extends FieldValues>(
   });
   if (known.length > 0) return null;
   const fieldMessage = Object.values(error.fields).find(Boolean);
-  const generic = error.code === 'VALIDATION_ERROR' || !hasMessage(error.code, messages);
+  const generic = error.code === 'VALIDATION_ERROR' || messageFor(error.code, messages) === undefined;
   return fieldMessage && generic ? fieldMessage : errorMessage(error, messages);
 }

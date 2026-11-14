@@ -43,13 +43,13 @@ export const errorMessages: Record<string, string> = {
 
 export type MessageOverrides = Readonly<Record<string, string>>;
 
-export function hasMessage(code: string, overrides: MessageOverrides = {}): boolean {
-  return Object.hasOwn(overrides, code) || Object.hasOwn(errorMessages, code);
+export function messageFor(code: string, overrides: MessageOverrides = {}): string | undefined {
+  if (Object.hasOwn(overrides, code)) return overrides[code];
+  if (Object.hasOwn(errorMessages, code)) return errorMessages[code];
+  return undefined;
 }
 
 export function errorMessage(error: unknown, overrides: MessageOverrides = {}): string {
   if (!(error instanceof ApiError)) return GENERIC_ERROR_MESSAGE;
-  if (Object.hasOwn(overrides, error.code)) return overrides[error.code] ?? GENERIC_ERROR_MESSAGE;
-  if (Object.hasOwn(errorMessages, error.code)) return errorMessages[error.code] ?? GENERIC_ERROR_MESSAGE;
-  return error.message || GENERIC_ERROR_MESSAGE;
+  return messageFor(error.code, overrides) ?? (error.message || GENERIC_ERROR_MESSAGE);
 }
