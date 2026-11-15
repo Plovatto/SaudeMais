@@ -19,7 +19,14 @@ const booking = (id: string, overrides: Partial<PatientBooking> = {}): PatientBo
   examType: null,
   publicCode: null,
   unit: { id: 'u1', name: 'Hospital Central', address: 'Rua das Flores, 123', phone: '+551133334444' },
-  actions: { canCancel: true, lateCancellation: false, cancelBlockedReason: null },
+  actions: {
+    canCancel: true,
+    lateCancellation: false,
+    cancelBlockedReason: null,
+    canReschedule: true,
+    rescheduleBlockedReason: null,
+    reschedulesLeft: 2,
+  },
   cancellation: null,
   ...overrides,
 });

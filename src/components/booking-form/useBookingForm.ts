@@ -2,6 +2,7 @@ import { useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import { useEffect, useEffectEvent, useState } from 'react';
 import { useWatch, type FieldValues, type Path, type UseFormReturn } from 'react-hook-form';
 import { ApiError } from '@lib/api/api-error';
+import type { FieldAliases } from '@lib/form-errors';
 import {
   errorMessage,
   GENERIC_ERROR_MESSAGE,
@@ -30,6 +31,7 @@ interface BookingFormOptions<TIn extends FieldValues, TOut, R> {
     enabled: boolean;
   };
   fieldByCode?: Partial<Record<string, Path<TIn>>>;
+  fieldAliases?: FieldAliases<TIn>;
   messages: MessageOverrides;
   onNotFound: () => void;
   book: (values: TOut) => Promise<R>;
@@ -42,6 +44,7 @@ export function useBookingForm<TIn extends SlotValues, TOut, R>(
     fields,
     availability: source,
     fieldByCode = {},
+    fieldAliases,
     messages,
     onNotFound,
     book,
@@ -110,6 +113,7 @@ export function useBookingForm<TIn extends SlotValues, TOut, R>(
       return true;
     },
     messages,
+    fieldAliases,
   );
 
   const onSubmit = form.handleSubmit(
@@ -117,7 +121,7 @@ export function useBookingForm<TIn extends SlotValues, TOut, R>(
       setMissing(false);
       return run(async () => {
         const result = await book(values);
-        void queryClient.invalidateQueries({ queryKey: source.queryKey });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.booking.availabilities });
         void queryClient.invalidateQueries({ queryKey: queryKeys.patient.all });
         form.reset();
         onBooked(result);

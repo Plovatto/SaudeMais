@@ -23,6 +23,10 @@ export const errorMessages: Record<string, string> = {
   NO_CAPACITY: 'Não há mais vagas neste horário. Escolha outro.',
   PATIENT_CONFLICT: 'Você já tem um agendamento neste horário. Escolha outro.',
   OUTSIDE_AVAILABILITY: 'Este horário não está mais disponível. Escolha outro da lista.',
+  SAME_SLOT: 'Escolha um horário diferente do atual.',
+  RESCHEDULE_WINDOW_CLOSED:
+    'Falta pouco para o horário e este agendamento não pode mais ser reagendado. Você ainda pode cancelá-lo.',
+  RESCHEDULE_LIMIT: 'Este agendamento já foi reagendado o máximo de vezes permitido.',
   ACTIVE_LIMIT:
     'Você atingiu o limite de agendamentos ativos. Cancele ou aguarde a conclusão de um deles antes de pedir outro.',
   SPECIALTY_MISMATCH: 'Este médico não atende a especialidade escolhida.',

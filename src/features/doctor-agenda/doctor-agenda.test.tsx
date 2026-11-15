@@ -24,12 +24,16 @@ const appointment = (id: string, overrides: Partial<DoctorAppointment> = {}): Do
   specialty: { id: 's1', name: 'Cardiologia', council: 'CRM' },
   unit: { id: 'u1', name: 'Hospital Central', address: 'Rua das Flores, 123', phone: '+551133334444' },
   cancellation: null,
-  actions: { canConfirm: true, canCancel: true },
+  actions: { canConfirm: true, canCancel: true, canComplete: false, canNoShow: false },
   ...overrides,
 });
 
 const confirmed = (id: string, overrides: Partial<DoctorAppointment> = {}) =>
-  appointment(id, { status: 'confirmed', actions: { canConfirm: false, canCancel: true }, ...overrides });
+  appointment(id, {
+    status: 'confirmed',
+    actions: { canConfirm: false, canCancel: true, canComplete: false, canNoShow: false },
+    ...overrides,
+  });
 
 const counts = { pending: 0, confirmed: 0, awaiting: 0, history: 0 };
 
@@ -112,7 +116,7 @@ describe('doctor home', { timeout: 15_000 }, () => {
           confirmed('a2', {
             startsAt: PAST,
             patient: { id: 'p2', fullName: 'Beatriz Neves', phone: null },
-            actions: { canConfirm: false, canCancel: false },
+            actions: { canConfirm: false, canCancel: false, canComplete: false, canNoShow: false },
           }),
         ],
         counts: { ...counts, pending: 2, awaiting: 1 },
@@ -345,7 +349,7 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
           appointment('a1', {
             status: 'cancelled',
             patient: { id: 'p1', fullName: 'Andreia Soares', phone: null },
-            actions: { canConfirm: false, canCancel: false },
+            actions: { canConfirm: false, canCancel: false, canComplete: false, canNoShow: false },
             cancellation: { byRole: 'patient', reason: 'Viagem.', late: false, cancelledAt: PAST },
           }),
         ],
