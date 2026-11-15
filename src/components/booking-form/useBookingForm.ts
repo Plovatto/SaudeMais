@@ -117,7 +117,7 @@ export function useBookingForm<TIn extends SlotValues, TOut, R>(
       setMissing(false);
       return run(async () => {
         const result = await book(values);
-        void queryClient.invalidateQueries({ queryKey: source.queryKey });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.booking.availabilities });
         void queryClient.invalidateQueries({ queryKey: queryKeys.patient.all });
         form.reset();
         onBooked(result);

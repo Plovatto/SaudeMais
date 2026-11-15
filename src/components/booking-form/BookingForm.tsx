@@ -9,8 +9,9 @@ import type { BookingFormState } from './useBookingForm';
 
 const FEW_PLACES = 3;
 
-const slotLabel = (slot: Slot) => {
+const slotLabel = (slot: Slot, current: string | undefined) => {
   const time = formatTime(slot.startsAt);
+  if (slot.startsAt === current) return `${time} · Horário atual`;
   if (!('remaining' in slot) || slot.remaining > FEW_PLACES) return time;
   return `${time} · ${slot.remaining === 1 ? '1 vaga' : `${slot.remaining} vagas`}`;
 };
@@ -18,10 +19,11 @@ const slotLabel = (slot: Slot) => {
 interface SlotFieldsProps {
   booking: BookingFormState;
   emptyNote: string;
-  stacked?: boolean;
+  stacked?: boolean | undefined;
+  current?: string;
 }
 
-export function SlotFields({ booking, emptyNote, stacked = false }: SlotFieldsProps) {
+export function SlotFields({ booking, emptyNote, stacked = false, current }: SlotFieldsProps) {
   const { days, slots, loading, failure, retry, empty, messages } = booking.slots;
   return (
     <>
@@ -56,8 +58,8 @@ export function SlotFields({ booking, emptyNote, stacked = false }: SlotFieldsPr
           {...booking.field('startsAt')}
         >
           {slots.map((slot) => (
-            <option key={slot.startsAt} value={slot.startsAt}>
-              {slotLabel(slot)}
+            <option key={slot.startsAt} value={slot.startsAt} disabled={slot.startsAt === current}>
+              {slotLabel(slot, current)}
             </option>
           ))}
         </Select>
@@ -88,10 +90,11 @@ interface BookingFormProps {
   label: string;
   booking: BookingFormState;
   submitLabel: string;
+  alertAction?: ReactNode;
   children: ReactNode;
 }
 
-export function BookingForm({ label, booking, submitLabel, children }: BookingFormProps) {
+export function BookingForm({ label, booking, submitLabel, alertAction, children }: BookingFormProps) {
   return (
     <form
       aria-label={label}
@@ -100,7 +103,17 @@ export function BookingForm({ label, booking, submitLabel, children }: BookingFo
       className="flex flex-col gap-5"
     >
       {children}
-      {booking.banner && <FormAlert>{booking.banner}</FormAlert>}
+      {booking.banner && (
+        <FormAlert>
+          {alertAction ? (
+            <span>
+              {booking.banner} {alertAction}
+            </span>
+          ) : (
+            booking.banner
+          )}
+        </FormAlert>
+      )}
       <Button type="submit" size="lg" fullWidth loading={booking.submitting} loadingLabel="Enviando pedido">
         {submitLabel}
       </Button>

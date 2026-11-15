@@ -15,14 +15,16 @@ export const queryKeys = {
     doctorLists: ['booking', 'doctors'] as const,
     doctors: (specialtyId: string) => ['booking', 'doctors', specialtyId] as const,
     availabilities: ['booking', 'availability'] as const,
-    availability: (doctorId: string) => ['booking', 'availability', doctorId] as const,
-    examAvailability: (unitId: string, examTypeId: string) =>
-      ['booking', 'availability', 'exam', unitId, examTypeId] as const,
+    availability: (doctorId: string, rescheduling = '') =>
+      ['booking', 'availability', doctorId, rescheduling] as const,
+    examAvailability: (unitId: string, examTypeId: string, rescheduling = '') =>
+      ['booking', 'availability', 'exam', unitId, examTypeId, rescheduling] as const,
   },
   patient: {
     all: ['patient'] as const,
     home: ['patient', 'home'] as const,
     bookings: (params: object) => ['patient', 'bookings', params] as const,
+    booking: (kind: string, id: string) => ['patient', 'booking', kind, id] as const,
   },
   notifications: {
     all: ['notifications'] as const,

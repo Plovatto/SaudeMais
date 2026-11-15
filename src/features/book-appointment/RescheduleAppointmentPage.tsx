@@ -1,0 +1,32 @@
+import { LuCalendarSync } from 'react-icons/lu';
+import { ReschedulePage } from '@components/booking-form/ReschedulePage';
+import { visitTypeLabels } from '@constants/visit-types';
+import { queryKeys } from '@lib/query-keys';
+import { bookingApi, describeAppointment, type Appointment } from './booking-api';
+
+export function RescheduleAppointmentPage() {
+  return (
+    <ReschedulePage<Appointment>
+      kind="appointment"
+      title="Reagendar consulta"
+      subtitle="Escolha a nova data e o novo horário"
+      icon={<LuCalendarSync />}
+      bookedTitle="Consulta reagendada"
+      describe={describeAppointment}
+      load={bookingApi.detail}
+      formLabel="Novo horário da consulta"
+      notice="A consulta volta a aguardar confirmação do médico."
+      emptyNote="Este médico não tem outras vagas livres nas próximas semanas."
+      locked={({ doctor, specialty, visitType, unit }) => [
+        { label: 'Médico', value: doctor.fullName, hint: `${unit.name} · ${unit.address}` },
+        { label: 'Especialidade', value: specialty.name },
+        { label: 'Tipo de consulta', value: visitTypeLabels[visitType] },
+      ]}
+      availability={({ id, doctor }) => ({
+        queryKey: queryKeys.booking.availability(doctor.id, id),
+        load: (signal) => bookingApi.availability(doctor.id, signal, id),
+      })}
+      reschedule={bookingApi.reschedule}
+    />
+  );
+}
