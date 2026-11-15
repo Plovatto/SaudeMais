@@ -20,7 +20,9 @@ export interface StatusDisplay {
 
 type BookingStatus = PatientBooking['status'];
 
-const statuses: Record<Exclude<BookingStatus, 'pending'> | 'awaiting', StatusDisplay> = {
+export type StatusKey = BookingStatus | 'awaiting';
+
+const statuses: Record<Exclude<StatusKey, 'pending'>, StatusDisplay> = {
   confirmed: { label: 'Confirmado', tone: 'success', icon: <LuCircleCheck /> },
   awaiting: { label: 'Aguardando registro', tone: 'info', icon: <LuCalendarClock /> },
   completed: { label: 'Concluída', tone: 'info', icon: <LuCircleCheckBig /> },
@@ -29,20 +31,18 @@ const statuses: Record<Exclude<BookingStatus, 'pending'> | 'awaiting', StatusDis
   expired: { label: 'Não confirmada', tone: 'neutral', icon: <LuCalendarX /> },
 };
 
+export function statusDisplay(key: StatusKey, viewer: Role): StatusDisplay {
+  if (key !== 'pending') return statuses[key];
+  return { label: viewer === 'doctor' ? 'A confirmar' : 'Pendente', tone: 'warning', icon: <LuHourglass /> };
+}
+
 export function bookingStatus(
   { status, startsAt }: { status: BookingStatus; startsAt: string },
   viewer: Role,
   now = Date.now(),
 ): StatusDisplay {
-  if (status === 'pending') {
-    return {
-      label: viewer === 'doctor' ? 'A confirmar' : 'Pendente',
-      tone: 'warning',
-      icon: <LuHourglass />,
-    };
-  }
   const started = new Date(startsAt).getTime() <= now;
-  return statuses[status === 'confirmed' && started ? 'awaiting' : status];
+  return statusDisplay(status === 'confirmed' && started ? 'awaiting' : status, viewer);
 }
 
 export function bookingTitle({ kind, doctor, specialty, examType, unit }: PatientBooking) {

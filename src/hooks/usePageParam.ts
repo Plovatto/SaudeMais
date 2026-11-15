@@ -1,6 +1,8 @@
 import { useCallback, useEffect } from 'react';
 import { useSearchParam } from './useSearchParam';
 
+export const RESET_PAGE = { replace: true, reset: ['pagina'] } as const;
+
 export interface PageMeta {
   total: number;
   pageSize: number;

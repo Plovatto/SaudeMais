@@ -1,9 +1,7 @@
 import { useQuery, type QueryKey } from '@tanstack/react-query';
 import { useState } from 'react';
-import { useClampedPage, usePageParam, type PageMeta } from './usePageParam';
+import { RESET_PAGE, useClampedPage, usePageParam, type PageMeta } from './usePageParam';
 import { useSearchParam } from './useSearchParam';
-
-const RESET_PAGE = { replace: true, reset: ['pagina'] } as const;
 
 interface ListPage extends PageMeta {
   items: unknown[];

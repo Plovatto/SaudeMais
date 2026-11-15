@@ -13,7 +13,7 @@ import {
   TabPanel,
   Tabs,
 } from '@components/ui';
-import { useClampedPage, usePageParam } from '@hooks/usePageParam';
+import { RESET_PAGE, useClampedPage, usePageParam } from '@hooks/usePageParam';
 import { useSearchParam } from '@hooks/useSearchParam';
 import { useCurrentUser } from '@lib/auth/useSession';
 import { queryKeys } from '@lib/query-keys';
@@ -39,7 +39,6 @@ type RoleTab = (typeof ROLE_TABS)[number]['value'];
 
 const TABS_ID = 'admin-users';
 const SEARCH_DELAY_MS = 300;
-const RESET_PAGE = { replace: true, reset: ['pagina'] } as const;
 
 const found = (total: number) => (total === 1 ? '1 usuário encontrado' : `${total} usuários encontrados`);
 

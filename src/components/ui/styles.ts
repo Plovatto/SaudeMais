@@ -55,3 +55,9 @@ export function floatingPanel(align: 'start' | 'end'): string {
     align === 'end' ? 'end-0' : 'start-0',
   );
 }
+
+export const pill = {
+  base: 'min-h-11 rounded-full border px-4 text-sm font-semibold transition-colors',
+  selected: 'border-role-strong bg-role-strong text-on-role',
+  idle: 'border-border bg-surface text-role-text can-hover:bg-role-soft',
+};
