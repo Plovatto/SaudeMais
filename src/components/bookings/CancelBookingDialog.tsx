@@ -3,7 +3,6 @@ import { useState, type ReactNode, type RefObject } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button, Dialog, FormAlert, Textarea, useToast } from '@components/ui';
-import { cancelAppointment } from '@lib/api/appointments-api';
 import { useFormSubmit } from '@lib/useFormSubmit';
 import { FREE_TEXT_MAX, freeText } from '@lib/validation/text';
 import { isStale, staleMessages } from './stale-appointment';
@@ -20,15 +19,20 @@ interface CancelTarget {
   startsAt: string;
 }
 
+type ReasonMode = 'optional' | 'required' | 'none';
+
+type Cancel = (id: string, startsAt: string, reason: string) => Promise<unknown>;
+
 interface CancelFormProps {
   target: CancelTarget;
-  reasonRequired: boolean;
+  reason: ReasonMode;
+  cancel: Cancel;
   warning: ReactNode;
   refresh: () => Promise<unknown>;
   onClose: () => void;
 }
 
-function CancelForm({ target, reasonRequired, warning, refresh, onClose }: CancelFormProps) {
+function CancelForm({ target, reason: mode, cancel, warning, refresh, onClose }: CancelFormProps) {
   const { show } = useToast();
   const [stale, setStale] = useState(false);
   const {
@@ -37,7 +41,7 @@ function CancelForm({ target, reasonRequired, warning, refresh, onClose }: Cance
     setError,
     formState: { errors, isSubmitting },
   } = useForm<CancelValues>({
-    resolver: zodResolver(reasonRequired ? schemas.required : schemas.optional),
+    resolver: zodResolver(mode === 'required' ? schemas.required : schemas.optional),
     defaultValues: { reason: '' },
   });
   const { alert, run } = useFormSubmit(
@@ -55,7 +59,7 @@ function CancelForm({ target, reasonRequired, warning, refresh, onClose }: Cance
 
   const onSubmit = handleSubmit(({ reason }) =>
     run(async () => {
-      await cancelAppointment(target.id, target.startsAt, reason);
+      await cancel(target.id, target.startsAt, reason);
       show({ message: 'Agendamento cancelado.', tone: 'success' });
       await refresh();
       onClose();
@@ -65,14 +69,16 @@ function CancelForm({ target, reasonRequired, warning, refresh, onClose }: Cance
   return (
     <form noValidate onSubmit={(event) => void onSubmit(event)} className="flex flex-col gap-4">
       {warning}
-      <Textarea
-        label={reasonRequired ? 'Motivo' : 'Motivo (opcional)'}
-        required={reasonRequired}
-        maxLength={FREE_TEXT_MAX}
-        disabled={stale}
-        error={errors.reason?.message}
-        {...register('reason')}
-      />
+      {mode !== 'none' && (
+        <Textarea
+          label={mode === 'required' ? 'Motivo' : 'Motivo (opcional)'}
+          required={mode === 'required'}
+          maxLength={FREE_TEXT_MAX}
+          disabled={stale}
+          error={errors.reason?.message}
+          {...register('reason')}
+        />
+      )}
       {alert && <FormAlert>{alert}</FormAlert>}
       <div className="flex flex-wrap justify-end gap-3">
         <Button variant="secondary" onClick={onClose}>
@@ -88,27 +94,29 @@ function CancelForm({ target, reasonRequired, warning, refresh, onClose }: Cance
   );
 }
 
-export interface CancelAppointmentDialogProps {
+interface CancelBookingDialogProps {
   target: CancelTarget | null;
   title: string;
   summary: string | undefined;
-  reasonRequired?: boolean;
+  reason?: ReasonMode;
+  cancel: Cancel;
   warning?: ReactNode;
   refresh: () => Promise<unknown>;
   onClose: () => void;
   fallbackFocus: RefObject<HTMLElement | null>;
 }
 
-export function CancelAppointmentDialog({
+export function CancelBookingDialog({
   target,
   title,
   summary,
-  reasonRequired = false,
+  reason = 'optional',
+  cancel,
   warning,
   refresh,
   onClose,
   fallbackFocus,
-}: CancelAppointmentDialogProps) {
+}: CancelBookingDialogProps) {
   return (
     <Dialog
       open={target !== null}
@@ -121,7 +129,8 @@ export function CancelAppointmentDialog({
         <CancelForm
           key={target.id}
           target={target}
-          reasonRequired={reasonRequired}
+          reason={reason}
+          cancel={cancel}
           warning={warning}
           refresh={refresh}
           onClose={onClose}

@@ -20,6 +20,7 @@ export const errorMessages: Record<string, string> = {
   SPECIALTY_UNAVAILABLE: 'Esta especialidade está desativada. Escolha outra.',
   UNIT_UNAVAILABLE: 'Esta unidade está desativada. Escolha outra.',
   SLOT_TAKEN: 'Este horário acabou de ser ocupado. Escolha outro.',
+  NO_CAPACITY: 'Não há mais vagas neste horário. Escolha outro.',
   PATIENT_CONFLICT: 'Você já tem um agendamento neste horário. Escolha outro.',
   OUTSIDE_AVAILABILITY: 'Este horário não está mais disponível. Escolha outro da lista.',
   ACTIVE_LIMIT:

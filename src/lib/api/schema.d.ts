@@ -522,7 +522,7 @@ export interface paths {
         get?: never;
         /**
          * Oferecer um exame na unidade
-         * @description Cria ou altera a oferta do exame na unidade. Um tipo de exame inativo só pode ter oferta inativa. Desativar a oferta é recusado (`IN_USE`) enquanto houver exame futuro ativo nela. Devolve todas as ofertas da unidade.
+         * @description Cria ou altera a oferta do exame na unidade. Um tipo de exame inativo só pode ter oferta inativa. Desativar a oferta é recusado (`IN_USE`) enquanto houver exame futuro ativo nela, e reduzir `capacityPerSlot` também é recusado (`IN_USE`) quando algum exame confirmado que ainda não terminou ocupa um lugar acima da nova capacidade. Devolve todas as ofertas da unidade.
          */
         put: operations["adminSaveExamOffer"];
         post?: never;
@@ -654,6 +654,86 @@ export interface paths {
         get: operations["getDoctorAvailability"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/exam-availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ver as vagas de um exame na unidade
+         * @description Vagas do exame na unidade entre `from` e `to` (datas de São Paulo, até 31 dias por vez), agrupadas por dia. Cada vaga dura o tempo do tipo de exame e começa na abertura da unidade, em passos dessa duração, cabendo inteira no horário do dia. `remaining` é quantos lugares ainda cabem na vaga: a capacidade da oferta menos os exames confirmados que a ocupam, contados por sobreposição de horário. Vagas sem lugar, antes da antecedência mínima ou depois do horizonte da política de agendamento não aparecem, e dias sem vaga ficam de fora. Unidade, tipo de exame ou oferta inativos ou inexistentes respondem `NOT_FOUND`. Para agendar, envie o `startsAt` recebido, sem montar o horário no cliente. Limite: 120 requisições por minuto por IP.
+         */
+        get: operations["getExamAvailability"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/exam-bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Agendar um exame
+         * @description Agenda o exame do paciente logado, que já nasce confirmado (`confirmed`) e recebe um código público (`EX-` e seis letras ou números) para apresentar na unidade. `startsAt` precisa ser o início de uma vaga devolvida por `GET /api/exam-availability`; o fim vem da duração atual do tipo de exame. O exame ocupa o menor lugar livre da vaga, até a capacidade da oferta. Contas comuns têm no máximo 5 agendamentos ativos futuros, somando consultas e exames. Se o último lugar é disputado ao mesmo tempo, só um paciente consegue; os outros recebem `NO_CAPACITY`. Limite: 60 requisições por minuto por IP.
+         */
+        post: operations["bookExam"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/exam-bookings/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ver um exame
+         * @description Detalhe do exame com unidade, tipo de exame e orientações de preparo, código público, observações, cancelamento e histórico. Abre só para o paciente dele; para os demais, responde como inexistente. Limite: 120 requisições por minuto por IP.
+         */
+        get: operations["getExamBooking"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/exam-bookings/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancelar um exame
+         * @description Cancela um exame confirmado que ainda não começou e libera o lugar na vaga. Só o paciente dele cancela. Envie em `startsAt` o início que a tela mostrava: se o exame mudou, já começou ou já foi encerrado, a resposta é `INVALID_STATE` e nada muda. Dentro da janela da política (`examLateWindowHours`), o cancelamento fica marcado como tardio. As contas de demonstração também cancelam, porque os agendamentos delas são restaurados todo dia. Responde o detalhe atualizado; para os demais usuários, responde como inexistente. Limite: 60 requisições por minuto por IP.
+         */
+        post: operations["cancelExamBooking"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1246,7 +1326,7 @@ export interface components {
         ConfirmAppointmentRequest: {
             /**
              * Format: date-time
-             * @description Início da consulta como o cliente o exibiu. Se a consulta mudou desde então, a resposta é `INVALID_STATE`.
+             * @description Início do agendamento como o cliente o exibiu. Se ele mudou desde então, a resposta é `INVALID_STATE`.
              * @example 2026-11-23T11:00:00.000Z
              */
             startsAt: string;
@@ -1254,7 +1334,7 @@ export interface components {
         CancelAppointmentRequest: {
             /**
              * Format: date-time
-             * @description Início da consulta como o cliente o exibiu. Se a consulta mudou desde então, a resposta é `INVALID_STATE`.
+             * @description Início do agendamento como o cliente o exibiu. Se ele mudou desde então, a resposta é `INVALID_STATE`.
              * @example 2026-11-23T11:00:00.000Z
              */
             startsAt: string;
@@ -1934,6 +2014,165 @@ export interface components {
                 startsAt: string;
             }[];
         };
+        ExamAvailability: {
+            /** @description Só os dias do período com ao menos uma vaga livre, em ordem. */
+            days: {
+                /**
+                 * Format: date
+                 * @description Dia no fuso de São Paulo.
+                 * @example 2026-11-23
+                 */
+                date: string;
+                /** @description Vagas do dia com ao menos um lugar livre, em ordem. */
+                slots: {
+                    /**
+                     * Format: date-time
+                     * @example 2026-11-23T11:00:00.000Z
+                     */
+                    startsAt: string;
+                    /**
+                     * Format: date-time
+                     * @example 2026-11-23T11:30:00.000Z
+                     */
+                    endsAt: string;
+                    /**
+                     * @description Lugares livres na vaga: a capacidade menos os lugares (raias) ocupados no intervalo.
+                     * @example 3
+                     */
+                    remaining: number;
+                }[];
+            }[];
+        };
+        BookExamRequest: {
+            /**
+             * Format: uuid
+             * @description Unidade escolhida.
+             */
+            unitId: string;
+            /**
+             * Format: uuid
+             * @description Tipo de exame escolhido.
+             */
+            examTypeId: string;
+            /**
+             * Format: date-time
+             * @description Início da vaga, como veio da lista de vagas.
+             * @example 2026-11-23T11:00:00.000Z
+             */
+            startsAt: string;
+            /**
+             * @description Observações para a unidade.
+             * @example Tenho dificuldade de locomoção.
+             */
+            notes?: string;
+        };
+        CancelExamRequest: {
+            /**
+             * Format: date-time
+             * @description Início do agendamento como o cliente o exibiu. Se ele mudou desde então, a resposta é `INVALID_STATE`.
+             * @example 2026-11-23T11:00:00.000Z
+             */
+            startsAt: string;
+        };
+        ExamBooking: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description Situação do exame: nasce `confirmed` e pode ser `cancelled` ou `completed`.
+             * @example confirmed
+             * @enum {string}
+             */
+            status: "confirmed" | "cancelled" | "completed";
+            /**
+             * @description Código para apresentar na unidade.
+             * @example EX-7F3K2Q
+             */
+            publicCode: string;
+            /**
+             * Format: date-time
+             * @example 2026-11-23T11:00:00.000Z
+             */
+            startsAt: string;
+            /**
+             * Format: date-time
+             * @example 2026-11-23T11:10:00.000Z
+             */
+            endsAt: string;
+            /** @description Observações do paciente. */
+            notes: string | null;
+            examType: {
+                /** Format: uuid */
+                id: string;
+                /** @example Hemograma */
+                name: string;
+                /**
+                 * @description `lab` para exames laboratoriais, `imaging` para imagem.
+                 * @enum {string}
+                 */
+                kind: "lab" | "imaging";
+                /** @example Jejum de 8 horas. */
+                preparationNotes: string | null;
+            };
+            unit: {
+                /** Format: uuid */
+                id: string;
+                /** @example Unidade Central */
+                name: string;
+                /** @example Rua das Flores, 123 - Centro, São Paulo - SP */
+                address: string;
+                /** @example +551133334444 */
+                phone: string;
+            };
+            /** @description Dados do cancelamento; nulo enquanto não foi cancelado. Só as partes veem o motivo. */
+            cancellation: {
+                /**
+                 * @description Quem cancelou: paciente, médico, administrador (desativação) ou sistema.
+                 * @example patient
+                 * @enum {string}
+                 */
+                byRole: "patient" | "doctor" | "admin" | "system";
+                /** @description Motivo informado; obrigatório quando o médico cancela. */
+                reason: string | null;
+                /** @description Se o paciente cancelou uma confirmada dentro da janela da política. */
+                late: boolean;
+                /** Format: date-time */
+                cancelledAt: string;
+            } | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** @description Histórico do exame, do mais antigo para o mais novo. */
+            events: {
+                /**
+                 * @example created
+                 * @enum {string}
+                 */
+                type: "created" | "rescheduled" | "confirmed" | "cancelled" | "completed" | "no_show" | "expired" | "result_received";
+                /**
+                 * @example patient
+                 * @enum {string}
+                 */
+                actorType: "patient" | "doctor" | "admin" | "system" | "integration";
+                /** @enum {string|null} */
+                fromStatus: "pending" | "confirmed" | "cancelled" | "completed" | "no_show" | "expired" | null;
+                /**
+                 * @example pending
+                 * @enum {string}
+                 */
+                toStatus: "pending" | "confirmed" | "cancelled" | "completed" | "no_show" | "expired";
+                /**
+                 * Format: date-time
+                 * @description Horário anterior; só em `rescheduled`.
+                 */
+                fromStartsAt: string | null;
+                /**
+                 * Format: date-time
+                 * @description Horário novo; só em `rescheduled`.
+                 */
+                toStartsAt: string | null;
+                /** Format: date-time */
+                createdAt: string;
+            }[];
+        };
         PasswordResetRequest: {
             /** @example ana.silva@email.com */
             email: string;
@@ -2033,7 +2272,7 @@ export interface components {
             } | null;
             actions: {
                 /**
-                 * @description Se o paciente ainda pode cancelar. Por enquanto só consultas; o cancelamento de exames chega na Fase 7.
+                 * @description Se o paciente ainda pode cancelar: consulta ou exame ativo que ainda não começou.
                  * @example true
                  */
                 canCancel: boolean;
@@ -2043,11 +2282,11 @@ export interface components {
                  */
                 lateCancellation: boolean;
                 /**
-                 * @description Por que não dá para cancelar: já começou (`started`), já foi encerrado (`closed`) ou o cancelamento de exames ainda não existe (`unavailable`). Nulo quando `canCancel` é verdadeiro.
+                 * @description Por que não dá para cancelar: já começou (`started`) ou já foi encerrado (`closed`). Nulo quando `canCancel` é verdadeiro.
                  * @example null
                  * @enum {string|null}
                  */
-                cancelBlockedReason: "started" | "closed" | "unavailable" | null;
+                cancelBlockedReason: "started" | "closed" | null;
             };
         };
         PatientBookingPage: {
@@ -6631,6 +6870,533 @@ export interface operations {
                      * @example {
                      *       "message": "Médico não encontrado.",
                      *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getExamAvailability: {
+        parameters: {
+            query: {
+                /** @description Unidade escolhida. */
+                unitId: string;
+                /** @description Tipo de exame escolhido. */
+                examTypeId: string;
+                /** @description Primeiro dia, no fuso de São Paulo. */
+                from: string;
+                /** @description Último dia, incluído. */
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dias com vagas livres. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamAvailability"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Este exame não está disponível nesta unidade.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    bookExam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["BookExamRequest"];
+            };
+        };
+        responses: {
+            /** @description Exame agendado. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamBooking"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Este exame não está disponível nesta unidade.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflito com o estado atual (`NO_CAPACITY`, `PATIENT_CONFLICT`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Não há mais lugares neste horário. Escolha outra vaga.",
+                     *       "code": "NO_CAPACITY",
+                     *       "fields": {
+                     *         "startsAt": "Não há mais lugares neste horário. Escolha outra vaga."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Vaga inexistente (`OUTSIDE_AVAILABILITY`) ou limite de agendamentos ativos (`ACTIVE_LIMIT`). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Este horário não é uma vaga do exame. Escolha uma vaga da lista.",
+                     *       "code": "OUTSIDE_AVAILABILITY",
+                     *       "fields": {
+                     *         "startsAt": "Este horário não é uma vaga do exame. Escolha uma vaga da lista."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getExamBooking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Exame. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamBooking"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Exame não encontrado.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    cancelExamBooking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CancelExamRequest"];
+            };
+        };
+        responses: {
+            /** @description Exame cancelado. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamBooking"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Exame não encontrado.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflito com o estado atual (`INVALID_STATE`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Este exame mudou ou não pode mais ser cancelado. Atualize a página.",
+                     *       "code": "INVALID_STATE",
+                     *       "fields": {
+                     *         "_root": "Este exame mudou ou não pode mais ser cancelado. Atualize a página."
+                     *       }
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];

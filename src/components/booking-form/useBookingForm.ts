@@ -1,0 +1,153 @@
+import { useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
+import { useEffect, useEffectEvent, useState } from 'react';
+import { useWatch, type FieldValues, type Path, type UseFormReturn } from 'react-hook-form';
+import { ApiError } from '@lib/api/api-error';
+import {
+  errorMessage,
+  GENERIC_ERROR_MESSAGE,
+  messageFor,
+  type MessageOverrides,
+} from '@lib/messages/errors.pt-BR';
+import { queryKeys } from '@lib/query-keys';
+import { useFormSubmit } from '@lib/useFormSubmit';
+import type { AvailableDay } from './availability';
+
+type SlotValues = { date: string; startsAt: string; notes: string };
+
+const STALE_SLOT_CODES = new Set(['SLOT_TAKEN', 'NO_CAPACITY', 'OUTSIDE_AVAILABILITY']);
+
+const SLOT_CODES = new Set([...STALE_SLOT_CODES, 'PATIENT_CONFLICT']);
+
+const MISSING_MESSAGE = 'Preencha todas as informações.';
+
+const SLOT_GONE_MESSAGE = messageFor('SLOT_TAKEN') ?? GENERIC_ERROR_MESSAGE;
+
+interface BookingFormOptions<TIn extends FieldValues, TOut, R> {
+  fields: readonly Path<TIn>[];
+  availability: {
+    queryKey: QueryKey;
+    load: (signal: AbortSignal) => Promise<AvailableDay[]>;
+    enabled: boolean;
+  };
+  fieldByCode?: Partial<Record<string, Path<TIn>>>;
+  messages: MessageOverrides;
+  onNotFound: () => void;
+  book: (values: TOut) => Promise<R>;
+  onBooked: (result: R) => void;
+}
+
+export function useBookingForm<TIn extends SlotValues, TOut, R>(
+  form: UseFormReturn<TIn, unknown, TOut>,
+  {
+    fields,
+    availability: source,
+    fieldByCode = {},
+    messages,
+    onNotFound,
+    book,
+    onBooked,
+  }: BookingFormOptions<TIn, TOut, R>,
+) {
+  const queryClient = useQueryClient();
+  const [missing, setMissing] = useState(false);
+  const { control, register, getValues, setValue, setError, clearErrors, formState } =
+    form as unknown as UseFormReturn<SlotValues>;
+  const date = useWatch({ control, name: 'date' });
+  const availability = useQuery({
+    queryKey: source.queryKey,
+    queryFn: ({ signal }) => source.load(signal),
+    enabled: source.enabled,
+    staleTime: 0,
+  });
+  const days = source.enabled ? (availability.data ?? []) : [];
+  const slots = days.find((day) => day.date === date)?.slots ?? [];
+  const { errors, isSubmitting } = formState;
+
+  useEffect(() => {
+    if (!availability.data) return;
+    const current = getValues();
+    const day = availability.data.find((item) => item.date === current.date);
+    if (current.date && !day) {
+      setValue('date', '');
+      setValue('startsAt', '');
+      clearErrors('startsAt');
+      setError('date', { message: SLOT_GONE_MESSAGE }, { shouldFocus: true });
+    } else if (current.startsAt && !day?.slots.some((slot) => slot.startsAt === current.startsAt)) {
+      setValue('startsAt', '');
+      setError('startsAt', { message: SLOT_GONE_MESSAGE }, { shouldFocus: true });
+    }
+  }, [availability.data, getValues, setValue, setError, clearErrors]);
+
+  const notFound = useEffectEvent(onNotFound);
+
+  useEffect(() => {
+    if (availability.error instanceof ApiError && availability.error.code === 'NOT_FOUND') notFound();
+  }, [availability.error]);
+
+  const clearSlot = () => setValue('startsAt', '');
+  const clearDay = () => {
+    setValue('date', '');
+    clearSlot();
+  };
+
+  const { alert, run } = useFormSubmit(
+    form.setError,
+    fields,
+    (error) => {
+      if (!(error instanceof ApiError)) return false;
+      if (error.code === 'NOT_FOUND') onNotFound();
+      if (SLOT_CODES.has(error.code)) {
+        if (STALE_SLOT_CODES.has(error.code)) {
+          clearSlot();
+          void availability.refetch();
+        }
+        setError('startsAt', { message: errorMessage(error) }, { shouldFocus: true });
+        return true;
+      }
+      const field = fieldByCode[error.code];
+      if (!field) return false;
+      form.setError(field, { message: errorMessage(error) }, { shouldFocus: true });
+      return true;
+    },
+    messages,
+  );
+
+  const onSubmit = form.handleSubmit(
+    (values) => {
+      setMissing(false);
+      return run(async () => {
+        const result = await book(values);
+        void queryClient.invalidateQueries({ queryKey: source.queryKey });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.patient.all });
+        form.reset();
+        onBooked(result);
+      });
+    },
+    () => setMissing(true),
+  );
+
+  const showMissing = missing && Object.keys(errors).some((key) => key !== 'notes');
+  const field = (name: keyof SlotValues) => ({
+    error: errors[name]?.message,
+    ...register(name, name === 'date' ? { onChange: clearSlot } : {}),
+  });
+
+  return {
+    clearDay,
+    onSubmit,
+    field,
+    submitting: isSubmitting,
+    banner: alert ?? (showMissing ? MISSING_MESSAGE : null),
+    slots: {
+      days,
+      slots,
+      loading: availability.isFetching && days.length === 0,
+      failure: availability.error,
+      retry: () => void availability.refetch(),
+      empty: availability.data?.length === 0,
+      messages,
+    },
+  };
+}
+
+export type BookingFormState = ReturnType<typeof useBookingForm>;

@@ -28,6 +28,17 @@ const booking = (id: string, overrides: Partial<PatientBooking> = {}): PatientBo
 
 const closed = { canCancel: false, lateCancellation: false, cancelBlockedReason: 'closed' } as const;
 
+const exam = (id: string, overrides: Partial<PatientBooking> = {}) =>
+  booking(id, {
+    kind: 'exam',
+    doctor: null,
+    specialty: null,
+    examType: { id: 'e1', name: 'Ultrassom' },
+    publicCode: 'EX-123',
+    unit: { id: 'u2', name: 'Lab. Central', address: 'Rua B, 2', phone: '+551133335555' },
+    ...overrides,
+  });
+
 type Lists = Partial<Record<'upcoming' | 'past', PatientBooking[]>>;
 
 const serve = (lists: Lists, cancel?: () => MockResponse, total?: number) =>
@@ -49,7 +60,7 @@ const serve = (lists: Lists, cancel?: () => MockResponse, total?: number) =>
         },
       };
     },
-    ...(cancel && { '/api/appointments/b1/cancel': cancel }),
+    ...(cancel && { '/api/appointments/b1/cancel': cancel, '/api/exam-bookings/b1/cancel': cancel }),
   });
 
 const listCalls = (calls: ApiCall[]) => calls.filter((call) => call.url.pathname === LIST);
@@ -147,15 +158,7 @@ describe('patient bookings', { timeout: 15_000 }, () => {
           actions: closed,
           cancellation: { byRole: 'doctor', reason: 'Imprevisto.', late: true, cancelledAt: PAST },
         }),
-        booking('b2', {
-          kind: 'exam',
-          doctor: null,
-          specialty: null,
-          examType: { id: 'e1', name: 'Ultrassom' },
-          publicCode: 'EX-123',
-          unit: { id: 'u2', name: 'Lab. Central', address: 'Rua B, 2', phone: '+551133335555' },
-          actions: { canCancel: false, lateCancellation: false, cancelBlockedReason: 'unavailable' },
-        }),
+        exam('b2', { actions: closed }),
       ],
     });
     const { user } = renderApp('/paciente/agendamentos?aba=realizados');
@@ -167,11 +170,12 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     expect(doctor.scope.getByText('Cancelamento tardio')).toBeVisible();
     expect(doctor.scope.queryByRole('button', { name: /^Cancelar/ })).not.toBeInTheDocument();
 
-    const exam = await card(/Lab\. Central/);
-    expect(within(exam.header).getByText('Exame · Ultrassom')).toBeVisible();
-    await user.click(exam.header);
-    expect(exam.scope.getByText('EX-123')).toBeVisible();
-    expect(exam.scope.getByText('Para cancelar este exame, ligue para a unidade.')).toBeVisible();
+    const examCard = await card(/Lab\. Central/);
+    expect(within(examCard.header).getByText('Exame · Ultrassom')).toBeVisible();
+    await user.click(examCard.header);
+    expect(examCard.scope.getByText('EX-123')).toBeVisible();
+    expect(examCard.scope.queryByRole('note')).not.toBeInTheDocument();
+    expect(examCard.scope.queryByRole('button', { name: /^Cancelar/ })).not.toBeInTheDocument();
   });
 
   it('cancels a booking with an optional reason and refreshes the list', async () => {
@@ -192,6 +196,41 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     });
     await waitFor(() => expect(listCalls(calls).length).toBeGreaterThan(before));
     await waitFor(() => expect(dialog).not.toBeVisible());
+  });
+
+  it('cancels an exam through the exam endpoint without a reason', async () => {
+    const { calls } = serve({ upcoming: [exam('b1')] }, () => ({ status: 200, body: {} }));
+    const { user } = renderApp('/paciente/agendamentos');
+
+    const { header, scope } = await card(/Lab\. Central/);
+    await user.click(header);
+    await user.click(scope.getByRole('button', { name: /^Cancelar/ }));
+    const dialog = screen.getByRole('dialog', { name: 'Cancelar exame?' });
+    expect(within(dialog).queryByRole('textbox')).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: 'Cancelar agendamento' }));
+
+    expect(await screen.findByText('Agendamento cancelado.')).toBeVisible();
+    const post = calls.find((call) => call.method === 'POST');
+    expect(post?.url.pathname).toBe('/api/exam-bookings/b1/cancel');
+    expect(post?.body).toEqual({ startsAt: FUTURE });
+  });
+
+  it('warns before a late exam cancellation', async () => {
+    serve({
+      upcoming: [
+        exam('b1', { actions: { canCancel: true, lateCancellation: true, cancelBlockedReason: null } }),
+      ],
+    });
+    const { user } = renderApp('/paciente/agendamentos');
+
+    const { header, scope } = await card(/Lab\. Central/);
+    await user.click(header);
+    await user.click(scope.getByRole('button', { name: /^Cancelar/ }));
+
+    const dialog = screen.getByRole('dialog', { name: 'Cancelar exame?' });
+    expect(within(dialog).getByRole('note')).toHaveTextContent(
+      'Este cancelamento ficará registrado como tardio.',
+    );
   });
 
   it('warns before a late cancellation and sends no empty reason', async () => {
@@ -308,16 +347,6 @@ describe('patient bookings', { timeout: 15_000 }, () => {
   });
 
   describe('filter', () => {
-    const exam = (id: string, overrides: Partial<PatientBooking> = {}) =>
-      booking(id, {
-        kind: 'exam',
-        doctor: null,
-        specialty: null,
-        examType: { id: 'e1', name: 'Ultrassom' },
-        unit: { id: 'u2', name: 'Lab. Central', address: 'Rua B, 2', phone: '+551133335555' },
-        ...overrides,
-      });
-
     const openFilter = async (
       user: ReturnType<typeof renderApp>['user'],
       name: string | RegExp = /^Filtrar/,

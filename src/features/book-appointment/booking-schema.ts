@@ -1,33 +1,17 @@
 import { z } from 'zod';
+import { choice, emptySlot, slotShape } from '@components/booking-form/slot-schema';
 import { VISIT_TYPES } from '@constants/visit-types';
-import { freeText } from '@lib/validation/text';
-
-const visitType = z.enum(VISIT_TYPES);
-
-const choice = (message: string) => z.string().min(1, message);
 
 export const bookingSchema = z.object({
   doctorId: choice('Escolha o médico.'),
   specialtyId: choice('Escolha a especialidade.'),
-  visitType: choice('Escolha o tipo de consulta.').pipe(visitType),
-  date: choice('Escolha a data.'),
-  startsAt: choice('Escolha o horário.'),
-  notes: freeText(),
+  visitType: choice('Escolha o tipo de consulta.').pipe(z.enum(VISIT_TYPES)),
+  ...slotShape,
 });
 
-type BookingInput = z.input<typeof bookingSchema>;
-type BookingValues = z.output<typeof bookingSchema>;
-
-export const emptyBooking: BookingInput = {
+export const emptyBooking: z.input<typeof bookingSchema> = {
   doctorId: '',
   specialtyId: '',
   visitType: '',
-  date: '',
-  startsAt: '',
-  notes: '',
+  ...emptySlot,
 };
-
-export const toBody = ({ date: _date, notes, ...values }: BookingValues) => ({
-  ...values,
-  ...(notes && { notes }),
-});
