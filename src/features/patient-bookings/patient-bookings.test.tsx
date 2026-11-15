@@ -179,7 +179,7 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     const link = appointment.scope.getByRole('link', { name: /^Reagendar: Dr\. João Silveira/ });
     expect(link).toHaveAttribute('href', '/paciente/consultas/b1/reagendar');
     expect(appointment.header).not.toContainElement(link);
-    expect(appointment.scope.getByText('2 reagendamentos restantes')).toBeVisible();
+    expect(link).toHaveAccessibleDescription('2 reagendamentos restantes');
     const examCard = await card(/Lab\. Central/);
     await user.click(examCard.header);
     expect(examCard.scope.getByRole('link', { name: /^Reagendar/ })).toHaveAttribute(

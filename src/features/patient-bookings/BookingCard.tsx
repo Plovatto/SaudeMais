@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { LuCalendarSync, LuCircleX, LuMapPin, LuPhone } from 'react-icons/lu';
 import { CancellationNote, Detail, Note, PhoneLink } from '@components/bookings/BookingDetails';
 import { bookingTitle } from '@components/bookings/booking-display';
@@ -19,6 +20,7 @@ const rescheduleUrl = ({ kind, id }: PatientBooking) =>
   `${areas.patient.base}/${kind === 'exam' ? 'exames' : 'consultas'}/${id}/reagendar`;
 
 export function BookingCard({ booking, onCancel }: BookingCardProps) {
+  const leftId = useId();
   const { title } = bookingTitle(booking);
   const { unit, notes, publicCode, cancellation, actions } = booking;
   const target = `: ${title}, ${formatDateTime(booking.startsAt)}`;
@@ -48,7 +50,7 @@ export function BookingCard({ booking, onCancel }: BookingCardProps) {
       {(actions.canReschedule || actions.canCancel) && (
         <div className="flex flex-wrap items-center gap-3">
           {actions.canReschedule && (
-            <ButtonLink to={rescheduleUrl(booking)} variant="secondary">
+            <ButtonLink to={rescheduleUrl(booking)} variant="secondary" aria-describedby={leftId}>
               <LuCalendarSync aria-hidden />
               Reagendar
               <span className="sr-only">{target}</span>
@@ -63,7 +65,9 @@ export function BookingCard({ booking, onCancel }: BookingCardProps) {
         </div>
       )}
       {actions.canReschedule && (
-        <p className="text-text-secondary text-sm">{reschedulesLeftText(actions.reschedulesLeft)}</p>
+        <p id={leftId} className="text-text-secondary text-sm">
+          {reschedulesLeftText(actions.reschedulesLeft)}
+        </p>
       )}
     </ExpandableCard>
   );
