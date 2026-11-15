@@ -45,7 +45,7 @@ const TABS = [
     tab: 'history',
     empty: {
       title: 'Nenhuma consulta no histórico',
-      description: 'Consultas passadas, canceladas e não confirmadas aparecem aqui.',
+      description: 'Consultas concluídas, faltas, cancelamentos e pedidos não confirmados aparecem aqui.',
     },
   },
 ] as const;

@@ -1,4 +1,4 @@
-import { LuCircleCheck, LuCircleX, LuMapPin, LuPhone } from 'react-icons/lu';
+import { LuCircleX, LuMapPin, LuPhone } from 'react-icons/lu';
 import { AppointmentHeadline } from '@components/bookings/AppointmentHeadline';
 import { CancellationNote, Detail, Note, PhoneLink } from '@components/bookings/BookingDetails';
 import { bookingStatus } from '@components/bookings/booking-display';
@@ -6,34 +6,28 @@ import { ExpandableCard } from '@components/bookings/ExpandableCard';
 import { Button } from '@components/ui';
 import { areas } from '@constants/areas';
 import { visitTypeLabels } from '@constants/visit-types';
-import { cx } from '@lib/cx';
 import { formatDateTime } from '@lib/date';
 import type { DoctorAppointment } from '@lib/api/models';
+import { DECISIONS, type Decision } from './decisions';
 
 const PatientIcon = areas.patient.icon;
 
 export interface AppointmentCardProps {
   appointment: DoctorAppointment;
-  confirming: boolean;
-  confirmBlocked: boolean;
-  onConfirm: (appointment: DoctorAppointment) => void;
+  pending: Decision | null;
+  busy: boolean;
+  onDecide: (decision: Decision, appointment: DoctorAppointment) => void;
   onCancel: (appointment: DoctorAppointment) => void;
 }
 
-export function AppointmentCard({
-  appointment,
-  confirming,
-  confirmBlocked,
-  onConfirm,
-  onCancel,
-}: AppointmentCardProps) {
+export function AppointmentCard({ appointment, pending, busy, onDecide, onCancel }: AppointmentCardProps) {
   const { patient, unit, notes, cancellation, actions, startsAt } = appointment;
   const target = (
     <span className="sr-only">
       : {patient.fullName}, {formatDateTime(startsAt)}
     </span>
   );
-  const hasActions = actions.canConfirm || actions.canCancel;
+  const decisions = DECISIONS.filter(({ flag }) => actions[flag]);
 
   return (
     <ExpandableCard
@@ -49,21 +43,22 @@ export function AppointmentCard({
         />
       }
       actions={
-        hasActions && (
-          <div className={cx('grid gap-3', actions.canConfirm && actions.canCancel && 'grid-cols-2')}>
-            {actions.canConfirm && (
+        (decisions.length > 0 || actions.canCancel) && (
+          <div className="flex flex-wrap gap-3 *:min-w-fit *:flex-1">
+            {decisions.map((decision) => (
               <Button
-                variant="success-outline"
-                icon={<LuCircleCheck />}
-                loading={confirming}
-                disabled={confirmBlocked && !confirming}
-                loadingLabel="Confirmando"
-                onClick={() => onConfirm(appointment)}
+                key={decision.flag}
+                variant={decision.variant}
+                icon={decision.icon}
+                loading={pending === decision}
+                disabled={busy && pending !== decision}
+                loadingLabel={decision.loadingLabel}
+                onClick={() => onDecide(decision, appointment)}
               >
-                Confirmar
+                {decision.label}
                 {target}
               </Button>
-            )}
+            ))}
             {actions.canCancel && (
               <Button variant="danger-outline" icon={<LuCircleX />} onClick={() => onCancel(appointment)}>
                 Cancelar
