@@ -90,11 +90,10 @@ interface BookingFormProps {
   label: string;
   booking: BookingFormState;
   submitLabel: string;
-  alertAction?: ReactNode;
   children: ReactNode;
 }
 
-export function BookingForm({ label, booking, submitLabel, alertAction, children }: BookingFormProps) {
+export function BookingForm({ label, booking, submitLabel, children }: BookingFormProps) {
   return (
     <form
       aria-label={label}
@@ -103,17 +102,7 @@ export function BookingForm({ label, booking, submitLabel, alertAction, children
       className="flex flex-col gap-5"
     >
       {children}
-      {booking.banner && (
-        <FormAlert>
-          {alertAction ? (
-            <span>
-              {booking.banner} {alertAction}
-            </span>
-          ) : (
-            booking.banner
-          )}
-        </FormAlert>
-      )}
+      {booking.banner && <FormAlert>{booking.banner}</FormAlert>}
       <Button type="submit" size="lg" fullWidth loading={booking.submitting} loadingLabel="Enviando pedido">
         {submitLabel}
       </Button>

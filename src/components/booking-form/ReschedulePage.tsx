@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import { LuLock } from 'react-icons/lu';
 import { useParams } from 'react-router';
@@ -10,7 +10,8 @@ import { FormAlert, Input, QueryError, Skeleton, TextLink } from '@components/ui
 import { areas } from '@constants/areas';
 import { ApiError } from '@lib/api/api-error';
 import type { PatientBooking } from '@lib/api/models';
-import { formatDateTime } from '@lib/date';
+import { civilDateInSaoPaulo, formatDateTime } from '@lib/date';
+import { errorMessage } from '@lib/messages/errors.pt-BR';
 import { queryKeys } from '@lib/query-keys';
 import type { AvailableDay } from './availability';
 import { BookingForm, SlotFields } from './BookingForm';
@@ -24,17 +25,26 @@ const rescheduleSchema = z.object(slotShape);
 
 const fieldByCode = { SAME_SLOT: 'startsAt' } as const;
 
-const POLICY_CODES = new Set(['RESCHEDULE_WINDOW_CLOSED', 'RESCHEDULE_LIMIT', 'INVALID_STATE']);
+const fieldAliases = { newStartsAt: 'startsAt' } as const;
 
-const rescheduleMessages = {
-  NOT_FOUND: 'Este agendamento não pode mais ser reagendado. Confira a lista atualizada.',
-} as const;
+const POLICY_CODES = new Set(['RESCHEDULE_WINDOW_CLOSED', 'RESCHEDULE_LIMIT', 'INVALID_STATE', 'NOT_FOUND']);
 
-const backToList = (
-  <TextLink to={`${areas.patient.base}/agendamentos`} className="text-current">
-    Voltar para meus agendamentos
-  </TextLink>
-);
+const GONE_MESSAGE = 'Este agendamento não pode mais ser reagendado. Confira a lista atualizada.';
+
+const rescheduleMessages = { NOT_FOUND: GONE_MESSAGE } as const;
+
+function ClosedNote({ message, alert = false }: { message: string; alert?: boolean }) {
+  return (
+    <FormAlert {...(!alert && ({ tone: 'warning', role: 'note' } as const))}>
+      <span>
+        {message}{' '}
+        <TextLink to={`${areas.patient.base}/agendamentos`} className="text-current">
+          Voltar para meus agendamentos
+        </TextLink>
+      </span>
+    </FormAlert>
+  );
+}
 
 interface Reschedulable {
   id: string;
@@ -42,7 +52,7 @@ interface Reschedulable {
   actions: Pick<PatientBooking['actions'], 'canReschedule' | 'rescheduleBlockedReason'> | null;
 }
 
-export interface LockedField {
+interface LockedField {
   label: string;
   value: string;
   hint?: string | undefined;
@@ -50,7 +60,7 @@ export interface LockedField {
 
 interface RescheduleFormProps<B extends Reschedulable> {
   formLabel: string;
-  notice?: string;
+  notice?: (booking: B) => string;
   emptyNote: string;
   stacked?: boolean;
   locked: (booking: B) => LockedField[];
@@ -83,33 +93,50 @@ function RescheduleForm<B extends Reschedulable>({
   onBooked,
 }: RescheduleFormProps<B> & { current: B; onBooked: (booking: B) => void }) {
   const queryClient = useQueryClient();
-  const [closed, setClosed] = useState(false);
-  const close = () => {
-    setClosed(true);
+  const [closed, setClosed] = useState<string | null>(null);
+  const preselected = useRef(false);
+  const close = (message: string) => {
+    setClosed(message);
     void queryClient.invalidateQueries({ queryKey: queryKeys.patient.all, refetchType: 'none' });
   };
+  const source = availability(current);
   const form = useForm({ resolver: zodResolver(rescheduleSchema), defaultValues: emptySlot });
   const booking = useBookingForm(form, {
     fields: FIELDS,
-    availability: { ...availability(current), enabled: true },
+    availability: {
+      queryKey: source.queryKey,
+      load: async (signal) =>
+        (await source.load(signal)).filter((day) =>
+          day.slots.some((slot) => slot.startsAt !== current.startsAt),
+        ),
+      enabled: true,
+    },
     fieldByCode,
+    fieldAliases,
     messages: rescheduleMessages,
-    onNotFound: close,
+    onNotFound: () => close(GONE_MESSAGE),
     book: ({ startsAt }) =>
       reschedule(current, startsAt).catch((error: unknown) => {
-        if (error instanceof ApiError && POLICY_CODES.has(error.code)) close();
+        if (error instanceof ApiError && POLICY_CODES.has(error.code)) {
+          close(errorMessage(error, rescheduleMessages));
+        }
         throw error;
       }),
     onBooked,
   });
+  const { days } = booking.slots;
+  const currentDay = civilDateInSaoPaulo(new Date(current.startsAt));
+
+  useEffect(() => {
+    if (preselected.current || days.length === 0) return;
+    preselected.current = true;
+    if (days.some((day) => day.date === currentDay)) form.setValue('date', currentDay);
+  }, [days, currentDay, form]);
+
+  if (closed) return <ClosedNote message={closed} alert />;
 
   return (
-    <BookingForm
-      label={formLabel}
-      booking={booking}
-      submitLabel="Reagendar"
-      alertAction={closed && backToList}
-    >
+    <BookingForm label={formLabel} booking={booking} submitLabel="Reagendar">
       {locked(current).map(({ label, value, hint }) => (
         <Input key={label} label={label} value={value} hint={hint} icon={<LuLock />} readOnly />
       ))}
@@ -117,7 +144,7 @@ function RescheduleForm<B extends Reschedulable>({
       <SlotFields booking={booking} current={current.startsAt} stacked={stacked} emptyNote={emptyNote} />
       {notice && (
         <FormAlert tone="warning" role="note">
-          {notice}
+          {notice(current)}
         </FormAlert>
       )}
     </BookingForm>
@@ -141,6 +168,7 @@ export function ReschedulePage<B extends Reschedulable>({
   });
   const actions = detail.data?.actions;
   const blocked = actions?.rescheduleBlockedReason;
+  const gone = detail.error instanceof ApiError && detail.error.code === 'NOT_FOUND';
 
   return (
     <BookingPage<B>
@@ -159,22 +187,15 @@ export function ReschedulePage<B extends Reschedulable>({
               <Skeleton className="h-12" />
             </div>
           )}
-          {detail.isError && (
-            <QueryError
-              error={detail.error}
-              messages={rescheduleMessages}
-              onRetry={() => void detail.refetch()}
-            />
+          {gone && <ClosedNote message={GONE_MESSAGE} />}
+          {detail.isError && !gone && (
+            <QueryError error={detail.error} onRetry={() => void detail.refetch()} />
           )}
           {detail.data &&
             (actions?.canReschedule ? (
               <RescheduleForm {...form} current={detail.data} onBooked={onBooked} />
             ) : (
-              <FormAlert tone="warning" role="note">
-                <span>
-                  {(blocked && rescheduleBlockedNotes[blocked]) ?? RESCHEDULE_CLOSED_NOTE} {backToList}
-                </span>
-              </FormAlert>
+              <ClosedNote message={(blocked && rescheduleBlockedNotes[blocked]) ?? RESCHEDULE_CLOSED_NOTE} />
             ))}
         </>
       )}

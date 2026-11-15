@@ -82,17 +82,24 @@ interface Options {
   kind?: Kind;
   detail?: () => MockResponse;
   reschedule?: () => MockResponse;
+  available?: typeof days;
   afterSubmit?: typeof days;
 }
 
-function serve({ kind = 'appointment', detail, reschedule, afterSubmit = days }: Options = {}) {
+function serve({
+  kind = 'appointment',
+  detail,
+  reschedule,
+  available = days,
+  afterSubmit = available,
+}: Options = {}) {
   const target = kinds[kind];
   let submitted = false;
   return serveApi(['patient'], {
     [target.detail]: detail ?? (() => ({ status: 200, body: target.booking })),
     [target.availability]: (_method, _body, url) => {
       if (url.searchParams.get('from') !== todayInSaoPaulo()) return { status: 200, body: { days: [] } };
-      return { status: 200, body: { days: submitted ? afterSubmit : days } };
+      return { status: 200, body: { days: submitted ? afterSubmit : available } };
     },
     [`${target.detail}/reschedule`]: () => {
       submitted = true;
@@ -146,9 +153,33 @@ describe('reschedule', { timeout: 15_000 }, () => {
     expect(screen.getByRole('textbox', { name: 'Tipo de consulta' })).toHaveValue('Rotina');
     expect(screen.getByRole('textbox', { name: 'Horário atual' })).toHaveValue('23/11/2026, 14:30');
     expect(screen.getByRole('note')).toHaveTextContent('A consulta volta a aguardar confirmação do médico.');
+    expect(field('Data')).toHaveValue('2026-11-23');
     const windows = calls.filter((call) => call.url.pathname === kinds.appointment.availability);
     expect(new Set(windows.map((call) => call.url.searchParams.get('from'))).size).toBe(2);
     windows.forEach((call) => expect(call.url.searchParams.get('rescheduling')).toBe('a1'));
+  });
+
+  it('tells that a pending appointment keeps waiting for the doctor', async () => {
+    serve({ detail: () => ({ status: 200, body: { ...appointment, status: 'pending' } }) });
+    await start();
+
+    expect(screen.getByRole('note')).toHaveTextContent('A consulta fica aguardando confirmação do médico.');
+  });
+
+  it('leaves out a day whose only free slot is the current one', async () => {
+    serve({ available: [{ date: '2026-11-23', slots: [slot(CURRENT)] }, days[1] as (typeof days)[number]] });
+    await start();
+
+    expect(enabledOptions('Data')).toEqual(['ter., 24/11']);
+    expect(field('Data')).toHaveValue('');
+  });
+
+  it('warns when no slot other than the current one is free', async () => {
+    serve({ available: [{ date: '2026-11-23', slots: [slot(CURRENT)] }] });
+    renderApp(kinds.appointment.path);
+
+    expect(await screen.findByText(/não tem outras vagas livres/)).toBeVisible();
+    expect(field('Data')).toBeDisabled();
   });
 
   it('marks the current time and keeps it out of reach', async () => {
@@ -228,8 +259,9 @@ describe('reschedule', { timeout: 15_000 }, () => {
     ['RESCHEDULE_WINDOW_CLOSED', /Você ainda pode cancelá-lo\./],
     ['RESCHEDULE_LIMIT', /reagendado o máximo de vezes permitido/],
     ['INVALID_STATE', /Este agendamento mudou/],
-  ])('explains %s and links back to the list', async (code, text) => {
-    serve({ reschedule: () => apiError(409, code, { _root: 'API' }) });
+    ['NOT_FOUND', /não pode mais ser reagendado\. Confira a lista/],
+  ])('explains %s and leaves only the way back to the list', async (code, text) => {
+    serve({ reschedule: () => apiError(code === 'NOT_FOUND' ? 404 : 409, code, { _root: 'API' }) });
     const { user } = await start();
     await pickNext(user);
 
@@ -241,6 +273,20 @@ describe('reschedule', { timeout: 15_000 }, () => {
       '/paciente/agendamentos',
     );
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reagendar' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'Horário' })).not.toBeInTheDocument();
+  });
+
+  it('puts a validation error on the new start on the time field', async () => {
+    serve({ reschedule: () => apiError(400, 'VALIDATION_ERROR', { newStartsAt: 'Horário inválido.' }) });
+    const { user } = await start();
+    await pickNext(user);
+
+    await submit(user);
+
+    const message = await screen.findByText('Horário inválido.');
+    expect(field('Horário')).toHaveAttribute('aria-describedby', message.id);
+    expect(field('Horário')).toHaveFocus();
   });
 
   it('reloads the free slots and keeps the day when the new slot was just taken', async () => {
@@ -286,9 +332,11 @@ describe('reschedule', { timeout: 15_000 }, () => {
     serve({ detail: () => apiError(404, 'NOT_FOUND') });
     renderApp(kinds.appointment.path);
 
-    expect(
-      await alertWith('Este agendamento não pode mais ser reagendado. Confira a lista atualizada.'),
-    ).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Tentar de novo' })).toBeVisible();
+    const note = await screen.findByRole('note');
+    expect(note).toHaveTextContent(
+      'Este agendamento não pode mais ser reagendado. Confira a lista atualizada.',
+    );
+    expect(within(note).getByRole('link', { name: LIST_LINK })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Tentar de novo' })).not.toBeInTheDocument();
   });
 });
