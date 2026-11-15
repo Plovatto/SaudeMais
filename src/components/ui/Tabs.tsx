@@ -1,8 +1,8 @@
 import type { KeyboardEvent, ReactNode } from 'react';
 import { cx } from '@lib/cx';
 import { rovingIndex } from '@lib/roving-index';
-import { IconSlot } from './IconSlot';
-import { pill, tile } from './styles';
+import { pill } from './styles';
+import { TileButton } from './TileButton';
 
 export interface TabItem<T extends string> {
   value: T;
@@ -11,35 +11,13 @@ export interface TabItem<T extends string> {
   count?: ReactNode;
 }
 
-const variants = {
-  pill: { ...pill, base: cx(pill.base, 'flex-1') },
-  tile: { ...tile, base: cx(tile.base, 'flex-1') },
-};
-
-interface TileContentProps {
-  icon: ReactNode;
-  label: string;
-  children: ReactNode;
-}
-
-export function TileContent({ icon, label, children }: TileContentProps) {
-  return (
-    <>
-      <IconSlot className="bg-role-soft text-role-text mb-1 size-8 justify-center rounded-full text-lg">
-        {icon}
-      </IconSlot>
-      {children} <span className="text-text-secondary text-xs font-medium">{label}</span>
-    </>
-  );
-}
-
 export interface TabsProps<T extends string> {
   id: string;
   label: string;
   items: readonly TabItem<T>[];
   value: T;
   onValueChange: (value: T) => void;
-  variant?: keyof typeof variants;
+  variant?: 'pill' | 'tile';
   className?: string;
 }
 
@@ -56,7 +34,6 @@ export function Tabs<T extends string>({
   variant = 'pill',
   className,
 }: TabsProps<T>) {
-  const styles = variants[variant];
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const current = items.findIndex((item) => item.value === value);
     const next = rovingIndex(event.key, current, items.length, 'horizontal');
@@ -71,25 +48,33 @@ export function Tabs<T extends string>({
     <div role="tablist" aria-label={label} onKeyDown={onKeyDown} className={cx('flex gap-3', className)}>
       {items.map((item) => {
         const selected = item.value === value;
-        return (
+        const tab = {
+          id: tabId(id, item.value),
+          role: 'tab',
+          'aria-selected': selected,
+          'aria-controls': selected ? panelId(id, item.value) : undefined,
+          tabIndex: selected ? 0 : -1,
+          onClick: () => onValueChange(item.value),
+        } as const;
+        return variant === 'tile' ? (
+          <TileButton
+            key={item.value}
+            {...tab}
+            icon={item.icon}
+            label={item.label}
+            selected={selected}
+            className="flex-1"
+          >
+            <span className="text-lg font-bold tabular-nums">{item.count}</span>
+          </TileButton>
+        ) : (
           <button
             key={item.value}
-            id={tabId(id, item.value)}
             type="button"
-            role="tab"
-            aria-selected={selected}
-            aria-controls={selected ? panelId(id, item.value) : undefined}
-            tabIndex={selected ? 0 : -1}
-            onClick={() => onValueChange(item.value)}
-            className={cx(styles.base, selected ? styles.selected : styles.idle)}
+            {...tab}
+            className={cx(pill.base, 'flex-1', selected ? pill.selected : pill.idle)}
           >
-            {variant === 'tile' ? (
-              <TileContent icon={item.icon} label={item.label}>
-                <span className="text-lg font-bold tabular-nums">{item.count}</span>
-              </TileContent>
-            ) : (
-              item.label
-            )}
+            {item.label}
           </button>
         );
       })}

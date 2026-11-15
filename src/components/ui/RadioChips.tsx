@@ -13,12 +13,9 @@ export interface RadioChipsProps<T extends string> {
 
 export function RadioChips<T extends string>({ legend, options, value, onValueChange }: RadioChipsProps<T>) {
   const name = useId();
-  const legendId = useId();
   return (
-    <fieldset role="radiogroup" aria-labelledby={legendId} className="flex flex-col gap-2">
-      <legend id={legendId} className="text-text mb-2 text-sm font-semibold">
-        {legend}
-      </legend>
+    <fieldset className="flex flex-col gap-2">
+      <legend className="text-text mb-2 text-sm font-semibold">{legend}</legend>
       <div className="flex flex-wrap gap-2">
         {options.map((option) => {
           const checked = option.value === value;
