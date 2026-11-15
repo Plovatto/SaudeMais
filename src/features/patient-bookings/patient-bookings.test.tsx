@@ -33,7 +33,11 @@ type Lists = Partial<Record<'upcoming' | 'past', PatientBooking[]>>;
 const serve = (lists: Lists, cancel?: () => MockResponse, total?: number) =>
   serveApi(['patient'], {
     [LIST]: (_method, _body, url) => {
-      const items = lists[url.searchParams.get('scope') as 'upcoming' | 'past'] ?? [];
+      const kind = url.searchParams.get('kind');
+      const status = url.searchParams.get('status');
+      const items = (lists[url.searchParams.get('scope') as 'upcoming' | 'past'] ?? []).filter(
+        (item) => (!kind || item.kind === kind) && (!status || item.status === status),
+      );
       return {
         status: 200,
         body: {
@@ -301,5 +305,156 @@ describe('patient bookings', { timeout: 15_000 }, () => {
 
     expect(await screen.findByText('Nenhum agendamento realizado')).toBeVisible();
     expect(screen.getByRole('link', { name: 'Nova Consulta' })).toBeVisible();
+  });
+
+  describe('filter', () => {
+    const exam = (id: string, overrides: Partial<PatientBooking> = {}) =>
+      booking(id, {
+        kind: 'exam',
+        doctor: null,
+        specialty: null,
+        examType: { id: 'e1', name: 'Ultrassom' },
+        unit: { id: 'u2', name: 'Lab. Central', address: 'Rua B, 2', phone: '+551133335555' },
+        ...overrides,
+      });
+
+    const openFilter = async (
+      user: ReturnType<typeof renderApp>['user'],
+      name: string | RegExp = /^Filtrar/,
+    ) => {
+      await user.click(await screen.findByRole('button', { name }));
+      return screen.getByRole('dialog', { name: 'Filtrar agendamentos' });
+    };
+
+    const labels = (radios: HTMLElement[]) => radios.map((radio) => radio.closest('label')?.textContent);
+
+    const radioLabels = (dialog: HTMLElement, group: string) =>
+      labels(within(within(dialog).getByRole('radiogroup', { name: group })).getAllByRole('radio'));
+
+    const expectAllSelected = (dialog: HTMLElement) =>
+      expect(labels(within(dialog).getAllByRole('radio', { checked: true }))).toEqual(['Todos', 'Todos']);
+
+    it('applies type and status through the URL, sends them and shows the count', async () => {
+      const { calls } = serve({ upcoming: [booking('b1'), exam('b2', { status: 'pending' })] });
+      const { user, router } = renderApp('/paciente/agendamentos');
+
+      const filter = await screen.findByRole('button', { name: 'Filtrar' });
+      expect(filter).toHaveAttribute('aria-haspopup', 'dialog');
+      const dialog = await openFilter(user);
+      expectAllSelected(dialog);
+      await user.click(within(dialog).getByRole('radio', { name: 'Exames' }));
+      await user.click(within(dialog).getByRole('radio', { name: 'Pendente' }));
+      await user.click(within(dialog).getByRole('button', { name: 'Aplicar' }));
+
+      expect(router.state.location.search).toBe('?tipo=exame&status=pendente');
+      await waitFor(() => expect(dialog).not.toBeVisible());
+      expect(document.activeElement).toBe(filter);
+      expect(filter).toHaveAccessibleName('Filtrar, 2 filtros ativos');
+      expect(within(filter).getByText('2')).toBeVisible();
+      await waitFor(() => {
+        const params = listCalls(calls).at(-1)?.url.searchParams;
+        expect(params?.get('kind')).toBe('exam');
+        expect(params?.get('status')).toBe('pending');
+      });
+      expect(await screen.findByText('1 agendamento com esses filtros')).toBeVisible();
+      expect(screen.queryByRole('button', { name: /Dr\. João Silveira/ })).not.toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /^2 Agendados$/ })).toBeVisible();
+    });
+
+    it('clears the filters from the sheet and resets the page', async () => {
+      const { calls } = serve({ upcoming: [booking('b1')] }, undefined, 25);
+      const { user, router } = renderApp('/paciente/agendamentos?pagina=2&tipo=consulta');
+
+      const dialog = await openFilter(user, 'Filtrar, 1 filtro ativo');
+      expect(within(dialog).getByRole('radio', { name: 'Consultas' })).toBeChecked();
+      await user.click(within(dialog).getByRole('button', { name: 'Limpar' }));
+
+      expect(router.state.location.search).toBe('');
+      expect(screen.getByRole('button', { name: 'Filtrar' })).toBeVisible();
+      await waitFor(() => expect(listCalls(calls).at(-1)?.url.searchParams.has('kind')).toBe(false));
+    });
+
+    it('discards an unapplied choice when the sheet is closed', async () => {
+      serve({ upcoming: [booking('b1')] });
+      const { user, router } = renderApp('/paciente/agendamentos');
+
+      let dialog = await openFilter(user);
+      await user.click(within(dialog).getByRole('radio', { name: 'Consultas' }));
+      await user.click(within(dialog).getByRole('button', { name: 'Fechar' }));
+      expect(router.state.location.search).toBe('');
+
+      dialog = await openFilter(user);
+      expectAllSelected(dialog);
+    });
+
+    it('offers only the statuses of the open tab', async () => {
+      serve({});
+      const { user } = renderApp('/paciente/agendamentos');
+
+      let dialog = await openFilter(user);
+      expect(radioLabels(dialog, 'Tipo')).toEqual(['Todos', 'Consultas', 'Exames']);
+      expect(radioLabels(dialog, 'Status')).toEqual(['Todos', 'Pendente', 'Confirmado']);
+      await user.click(within(dialog).getByRole('button', { name: 'Fechar' }));
+
+      await user.click(screen.getByRole('tab', { name: /Realizados/ }));
+      dialog = await openFilter(user);
+      expect(radioLabels(dialog, 'Status')).toEqual([
+        'Todos',
+        'Aguardando registro',
+        'Concluída',
+        'Cancelada',
+        'Não compareceu',
+        'Não confirmada',
+      ]);
+    });
+
+    it('maps awaiting record to confirmed bookings in the past', async () => {
+      const { calls } = serve({ past: [booking('b1', { startsAt: PAST, actions: closed })] });
+      renderApp('/paciente/agendamentos?aba=realizados&status=aguardando-registro');
+
+      expect(await screen.findByText('1 agendamento com esses filtros')).toBeVisible();
+      expect(listCalls(calls).at(-1)?.url.searchParams.get('status')).toBe('confirmed');
+    });
+
+    it('ignores and removes invalid values from the URL', async () => {
+      const { calls } = serve({ upcoming: [booking('b1')] });
+      const { router } = renderApp('/paciente/agendamentos?tipo=cirurgia&status=concluida&aba=agendados');
+
+      await waitFor(() => expect(router.state.location.search).toBe('?aba=agendados'));
+      const params = listCalls(calls)[0]?.url.searchParams;
+      expect(params?.has('kind')).toBe(false);
+      expect(params?.has('status')).toBe(false);
+      expect(screen.getByRole('button', { name: 'Filtrar' })).toBeVisible();
+    });
+
+    it('drops a status that the new tab does not offer', async () => {
+      const { calls } = serve({ upcoming: [exam('b1', { status: 'pending' })], past: [] });
+      const { user, router } = renderApp('/paciente/agendamentos?tipo=exame&status=pendente');
+
+      await screen.findByRole('button', { name: 'Filtrar, 2 filtros ativos' });
+      await user.click(screen.getByRole('tab', { name: /Realizados/ }));
+
+      await waitFor(() => expect(router.state.location.search).toBe('?tipo=exame&aba=realizados'));
+      const params = listCalls(calls).at(-1)?.url.searchParams;
+      expect(params?.get('scope')).toBe('past');
+      expect(params?.get('kind')).toBe('exam');
+      expect(params?.has('status')).toBe(false);
+      expect(screen.getByRole('button', { name: 'Filtrar, 1 filtro ativo' })).toBeVisible();
+    });
+
+    it('explains a filtered empty list and clears the filters from it', async () => {
+      serve({ upcoming: [booking('b1')] });
+      const { user, router } = renderApp('/paciente/agendamentos?tipo=exame');
+
+      expect(await screen.findByText('Nenhum agendamento com esses filtros')).toBeVisible();
+      expect(screen.getByRole('tab', { name: /^1 Agendados$/ })).toBeVisible();
+      expect(screen.queryByRole('link', { name: 'Nova Consulta' })).not.toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Limpar filtros' }));
+
+      expect(router.state.location.search).toBe('');
+      expect(document.activeElement).toHaveAttribute('aria-live', 'polite');
+      expect(await screen.findByRole('button', { name: /Dr\. João Silveira/ })).toBeVisible();
+      expect(screen.getByText('1 agendamento')).toBeVisible();
+    });
   });
 });
