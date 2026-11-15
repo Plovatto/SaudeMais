@@ -17,7 +17,7 @@ export function useActiveSpecialties() {
 
 export function useActiveUnits(examTypeId?: string) {
   return useQuery({
-    queryKey: [...queryKeys.catalog.activeUnits, examTypeId ?? ''],
+    queryKey: queryKeys.catalog.activeUnitsFor(examTypeId ?? ''),
     queryFn: ({ signal }) =>
       apiFetch('get', '/api/units', { query: examTypeId ? { examTypeId } : {}, signal }),
     select: onlyActive,

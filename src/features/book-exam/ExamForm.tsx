@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
+import { useEffect, useEffectEvent } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { BookingForm, NotesField, SlotFields } from '@components/booking-form/BookingForm';
 import { toBody } from '@components/booking-form/slot-schema';
@@ -12,6 +13,8 @@ import { emptyExam, examSchema } from './exam-schema';
 import { UnitCards } from './UnitCards';
 
 const FIELDS = ['examTypeId', 'unitId', 'startsAt', 'notes'] as const;
+
+const UNIT_GONE_MESSAGE = 'Este local não faz mais este exame. Escolha outro.';
 
 const examMessages = {
   NOT_FOUND: 'Este exame não está mais disponível neste local. Escolha outro.',
@@ -29,7 +32,9 @@ export function ExamForm({ onBooked }: { onBooked: (exam: ExamBooking) => void }
   const {
     register,
     control,
+    getValues,
     setValue,
+    setError,
     formState: { errors },
   } = form;
   const [examTypeId, unitId] = useWatch({ control, name: ['examTypeId', 'unitId'] });
@@ -43,10 +48,23 @@ export function ExamForm({ onBooked }: { onBooked: (exam: ExamBooking) => void }
       enabled: unitId !== '' && examTypeId !== '',
     },
     messages: examMessages,
-    onNotFound: () => void queryClient.invalidateQueries({ queryKey: queryKeys.catalog.activeUnits }),
+    onNotFound: () =>
+      void queryClient.invalidateQueries({ queryKey: queryKeys.catalog.activeUnitsFor(examTypeId) }),
     book: (values) => examApi.book(toBody(values)),
     onBooked,
   });
+  const dropGoneUnit = useEffectEvent((available: { id: string }[]) => {
+    const chosen = getValues('unitId');
+    if (!chosen || available.some((item) => item.id === chosen)) return;
+    setValue('unitId', '');
+    booking.clearDay();
+    setError('unitId', { message: UNIT_GONE_MESSAGE });
+  });
+
+  useEffect(() => {
+    if (units.data) dropGoneUnit(units.data);
+  }, [units.data]);
+
   const examType = examTypes.data?.find((item) => item.id === examTypeId);
   const catalogError = examTypes.error ?? units.error;
 
@@ -57,7 +75,7 @@ export function ExamForm({ onBooked }: { onBooked: (exam: ExamBooking) => void }
           error={catalogError}
           onRetry={() => {
             void examTypes.refetch();
-            void units.refetch();
+            if (examTypeId) void units.refetch();
           }}
         />
       )}
@@ -80,18 +98,18 @@ export function ExamForm({ onBooked }: { onBooked: (exam: ExamBooking) => void }
           </option>
         ))}
       </Select>
-      <SlotFields
-        booking={booking}
-        places
-        emptyNote="Este local não tem vagas livres para o exame nas próximas semanas. Escolha outro local."
-      />
-      <NotesField booking={booking} placeholder="Alguma observação sobre o exame" />
       <UnitCards
         units={examTypeId ? units.data : undefined}
         note={unitsNote(examTypeId, units)}
         error={errors.unitId?.message}
         field={register('unitId', { onChange: booking.clearDay })}
       />
+      <SlotFields
+        booking={booking}
+        stacked
+        emptyNote="Este local não tem vagas livres para o exame nas próximas semanas. Escolha outro local."
+      />
+      <NotesField booking={booking} placeholder="Alguma observação sobre o exame" />
     </BookingForm>
   );
 }

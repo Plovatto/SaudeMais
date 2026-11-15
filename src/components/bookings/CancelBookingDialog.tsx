@@ -94,7 +94,7 @@ function CancelForm({ target, reason: mode, cancel, warning, refresh, onClose }:
   );
 }
 
-export interface CancelBookingDialogProps {
+interface CancelBookingDialogProps {
   target: CancelTarget | null;
   title: string;
   summary: string | undefined;

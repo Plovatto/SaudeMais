@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { todayInSaoPaulo } from '@lib/date';
-import { renderApp, serveApi, type MockResponse } from '@/test/render-app';
+import { renderApp, serveApi, type ApiRoute, type MockResponse } from '@/test/render-app';
 
 const examTypes = [
   {
@@ -73,6 +73,7 @@ const apiError = (status: number, code: string, fields: Record<string, string> =
 function serve(
   book: () => MockResponse = () => ({ status: 201, body: examBooking }),
   loadsServed = [days, days],
+  overrides: Record<string, ApiRoute> = {},
 ) {
   let loads = 0;
   const served = serveApi(['patient'], {
@@ -88,6 +89,7 @@ function serve(
       return { status: 200, body: { days: response } };
     },
     '/api/exam-bookings': book,
+    ...overrides,
   });
   return { ...served, availabilityLoads: () => loads };
 }
@@ -117,6 +119,9 @@ async function fill(user: User) {
 }
 
 const submit = (user: User) => user.click(screen.getByRole('button', { name: 'Agendar Exame' }));
+
+const unitCalls = (calls: ReturnType<typeof serve>['calls']) =>
+  calls.filter((call) => call.url.pathname === '/api/units').length;
 
 describe('book exam', { timeout: 15_000 }, () => {
   it('lists the units of the chosen type and enables the date and time after both', async () => {
@@ -153,6 +158,66 @@ describe('book exam', { timeout: 15_000 }, () => {
     await user.keyboard('{ArrowRight}');
 
     expect(screen.getByRole('radio', { name: /Unidade Sul/ })).toBeChecked();
+  });
+
+  it('clears the unit, date and time when the type changes', async () => {
+    serve();
+    const { user } = await start();
+    await fill(user);
+
+    await user.selectOptions(field('Tipo de exame'), 'Raio-X');
+
+    await waitFor(() => expect(screen.getAllByRole('radio')).toHaveLength(1));
+    expect(screen.getByRole('radio', { name: /Unidade Central/ })).not.toBeChecked();
+    expect(field('Data')).toHaveValue('');
+    expect(field('Data')).toBeDisabled();
+    expect(field('Horário')).toHaveValue('');
+  });
+
+  it('shows the availability error and reloads the units when the offer is gone', async () => {
+    const { calls } = serve(undefined, undefined, {
+      '/api/exam-availability': () => apiError(404, 'NOT_FOUND'),
+    });
+    const { user } = await start();
+    await user.selectOptions(field('Tipo de exame'), 'Hemograma');
+    const south = await screen.findByRole('radio', { name: /Unidade Sul/ });
+    const before = unitCalls(calls);
+    await user.click(south);
+
+    expect(
+      await screen.findByText('Este exame não está mais disponível neste local. Escolha outro.'),
+    ).toHaveAttribute('role', 'alert');
+    expect(screen.getByRole('button', { name: 'Tentar de novo' })).toBeVisible();
+    await waitFor(() => expect(unitCalls(calls)).toBeGreaterThan(before));
+    expect(field('Data')).toBeDisabled();
+  });
+
+  it('reloads the units and clears the chosen one when it no longer offers the exam', async () => {
+    let offered = units;
+    const { calls } = serve(
+      () => {
+        offered = units.slice(0, 1);
+        return apiError(404, 'NOT_FOUND');
+      },
+      undefined,
+      { '/api/units': () => ({ status: 200, body: offered }) },
+    );
+    const { user } = await start();
+    await fill(user);
+    const before = unitCalls(calls);
+
+    await submit(user);
+
+    expect(
+      await screen.findByText('Este exame não está mais disponível neste local. Escolha outro.'),
+    ).toHaveAttribute('role', 'alert');
+    await waitFor(() => expect(unitCalls(calls)).toBeGreaterThan(before));
+    await waitFor(() => expect(screen.getAllByRole('radio')).toHaveLength(1));
+    expect(screen.getByRole('group', { name: 'Local do exame' })).toHaveAccessibleDescription(
+      'Este local não faz mais este exame. Escolha outro.',
+    );
+    expect(field('Data')).toHaveValue('');
+    expect(field('Horário')).toHaveValue('');
   });
 
   it('shows the preparation notes of the chosen type', async () => {

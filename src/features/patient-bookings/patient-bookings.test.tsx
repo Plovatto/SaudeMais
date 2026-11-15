@@ -215,6 +215,24 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     expect(post?.body).toEqual({ startsAt: FUTURE });
   });
 
+  it('warns before a late exam cancellation', async () => {
+    serve({
+      upcoming: [
+        exam('b1', { actions: { canCancel: true, lateCancellation: true, cancelBlockedReason: null } }),
+      ],
+    });
+    const { user } = renderApp('/paciente/agendamentos');
+
+    const { header, scope } = await card(/Lab\. Central/);
+    await user.click(header);
+    await user.click(scope.getByRole('button', { name: /^Cancelar/ }));
+
+    const dialog = screen.getByRole('dialog', { name: 'Cancelar exame?' });
+    expect(within(dialog).getByRole('note')).toHaveTextContent(
+      'Este cancelamento ficará registrado como tardio.',
+    );
+  });
+
   it('warns before a late cancellation and sends no empty reason', async () => {
     const { calls } = serve(
       {
