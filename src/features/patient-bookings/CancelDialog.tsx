@@ -1,7 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query';
 import type { RefObject } from 'react';
-import { CancelAppointmentDialog } from '@components/bookings/CancelAppointmentDialog';
+import { CancelBookingDialog } from '@components/bookings/CancelBookingDialog';
 import { FormAlert } from '@components/ui';
+import { cancelAppointment, cancelExam } from '@lib/api/cancel-api';
 import type { PatientBooking } from '@lib/api/models';
 import { queryKeys } from '@lib/query-keys';
 import { bookingSummary } from './booking-text';
@@ -14,6 +15,7 @@ export interface CancelDialogProps {
 
 export function CancelDialog({ booking, onClose, fallbackFocus }: CancelDialogProps) {
   const queryClient = useQueryClient();
+  const exam = booking?.kind === 'exam';
   const refresh = () =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: queryKeys.patient.all }),
@@ -21,10 +23,12 @@ export function CancelDialog({ booking, onClose, fallbackFocus }: CancelDialogPr
     ]);
 
   return (
-    <CancelAppointmentDialog
+    <CancelBookingDialog
       target={booking}
-      title={booking?.kind === 'exam' ? 'Cancelar exame?' : 'Cancelar consulta?'}
+      title={exam ? 'Cancelar exame?' : 'Cancelar consulta?'}
       summary={booking ? bookingSummary(booking) : undefined}
+      reason={exam ? 'none' : 'optional'}
+      cancel={exam ? cancelExam : cancelAppointment}
       warning={
         booking?.actions.lateCancellation && (
           <FormAlert tone="warning" role="note">

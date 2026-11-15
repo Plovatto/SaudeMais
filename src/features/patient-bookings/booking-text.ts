@@ -5,7 +5,6 @@ export const blockedNotes: Partial<
   Record<NonNullable<PatientBooking['actions']['cancelBlockedReason']>, string>
 > = {
   started: 'Este agendamento já começou e não pode mais ser cancelado.',
-  unavailable: 'Para cancelar este exame, ligue para a unidade.',
 };
 
 export function bookingSummary(booking: PatientBooking): string {

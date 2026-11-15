@@ -1,9 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Fragment, useState, type RefObject } from 'react';
-import { CancelAppointmentDialog } from '@components/bookings/CancelAppointmentDialog';
+import { CancelBookingDialog } from '@components/bookings/CancelBookingDialog';
 import { isStale, staleMessages } from '@components/bookings/stale-appointment';
 import { useToast } from '@components/ui';
 import { visitTypeLabels } from '@constants/visit-types';
+import { cancelAppointment } from '@lib/api/cancel-api';
 import type { DoctorAppointment } from '@lib/api/models';
 import { formatDateTime } from '@lib/date';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
@@ -71,7 +72,7 @@ export function AppointmentList({ items, grouped = false, fallbackFocus }: Appoi
       ) : (
         <ul className={GRID}>{cards(items)}</ul>
       )}
-      <CancelAppointmentDialog
+      <CancelBookingDialog
         target={cancelling}
         title="Cancelar consulta?"
         summary={
@@ -79,7 +80,8 @@ export function AppointmentList({ items, grouped = false, fallbackFocus }: Appoi
             ? `${visitTypeLabels[cancelling.visitType]} com ${cancelling.patient.fullName} em ${formatDateTime(cancelling.startsAt)}.`
             : undefined
         }
-        reasonRequired
+        reason="required"
+        cancel={cancelAppointment}
         refresh={refresh}
         onClose={() => setCancelling(null)}
         fallbackFocus={fallbackFocus}
