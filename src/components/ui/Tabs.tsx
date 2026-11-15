@@ -2,6 +2,7 @@ import type { KeyboardEvent, ReactNode } from 'react';
 import { cx } from '@lib/cx';
 import { rovingIndex } from '@lib/roving-index';
 import { IconSlot } from './IconSlot';
+import { pill, tile } from './styles';
 
 export interface TabItem<T extends string> {
   value: T;
@@ -11,26 +12,23 @@ export interface TabItem<T extends string> {
 }
 
 const variants = {
-  pill: {
-    base: 'min-h-11 flex-1 rounded-full border px-4 text-sm font-semibold',
-    selected: 'border-role-strong bg-role-strong text-on-role',
-    idle: 'border-border bg-surface text-role-text can-hover:bg-role-soft',
-  },
-  tile: {
-    base: 'flex min-h-24 flex-1 flex-col items-center justify-center gap-0.5 rounded-tile border-2 bg-surface px-3 py-3 text-text shadow-card',
-    selected: 'border-role-strong',
-    idle: 'border-transparent can-hover:border-border dark:border-border',
-  },
+  pill: { ...pill, base: cx(pill.base, 'flex-1') },
+  tile: { ...tile, base: cx(tile.base, 'flex-1') },
 };
 
-function TileContent<T extends string>({ item }: { item: TabItem<T> }) {
+interface TileContentProps {
+  icon: ReactNode;
+  label: string;
+  children: ReactNode;
+}
+
+export function TileContent({ icon, label, children }: TileContentProps) {
   return (
     <>
       <IconSlot className="bg-role-soft text-role-text mb-1 size-8 justify-center rounded-full text-lg">
-        {item.icon}
+        {icon}
       </IconSlot>
-      <span className="text-lg font-bold tabular-nums">{item.count}</span>{' '}
-      <span className="text-text-secondary text-xs font-medium">{item.label}</span>
+      {children} <span className="text-text-secondary text-xs font-medium">{label}</span>
     </>
   );
 }
@@ -83,9 +81,15 @@ export function Tabs<T extends string>({
             aria-controls={selected ? panelId(id, item.value) : undefined}
             tabIndex={selected ? 0 : -1}
             onClick={() => onValueChange(item.value)}
-            className={cx('transition-colors', styles.base, selected ? styles.selected : styles.idle)}
+            className={cx(styles.base, selected ? styles.selected : styles.idle)}
           >
-            {variant === 'tile' ? <TileContent item={item} /> : item.label}
+            {variant === 'tile' ? (
+              <TileContent icon={item.icon} label={item.label}>
+                <span className="text-lg font-bold tabular-nums">{item.count}</span>
+              </TileContent>
+            ) : (
+              item.label
+            )}
           </button>
         );
       })}

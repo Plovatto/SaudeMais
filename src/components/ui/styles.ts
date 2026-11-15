@@ -55,3 +55,15 @@ export function floatingPanel(align: 'start' | 'end'): string {
     align === 'end' ? 'end-0' : 'start-0',
   );
 }
+
+export const pill = {
+  base: 'min-h-11 rounded-full border px-4 text-sm font-semibold transition-colors',
+  selected: 'border-role-strong bg-role-strong text-on-role',
+  idle: 'border-border bg-surface text-role-text can-hover:bg-role-soft',
+};
+
+export const tile = {
+  base: 'flex min-h-24 flex-col items-center justify-center gap-0.5 rounded-tile border-2 bg-surface px-3 py-3 text-text shadow-card transition-colors',
+  selected: 'border-role-strong',
+  idle: 'border-transparent can-hover:border-border dark:border-border',
+};

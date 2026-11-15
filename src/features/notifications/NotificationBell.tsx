@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { LuBell } from 'react-icons/lu';
-import { ButtonLink, Popover } from '@components/ui';
+import { ButtonLink, CountBadge, Popover } from '@components/ui';
 import { notificationsUrl, type Role } from '@constants/areas';
 import { notificationsQuery, unreadCountQuery } from '@lib/api/notifications-api';
 import { NotificationList } from './NotificationList';
@@ -67,12 +67,9 @@ export function NotificationBell({ role }: { role: Role }) {
         icon={<LuBell />}
         badge={
           unread > 0 && (
-            <span
-              aria-hidden
-              className="bg-danger-strong text-on-danger absolute -end-0.5 -top-0.5 h-5 min-w-5 rounded-full px-1 text-[0.6875rem] leading-5 font-bold"
-            >
+            <CountBadge className="bg-danger-strong text-on-danger -end-0.5 -top-0.5">
               {unread > BADGE_MAX ? `${BADGE_MAX}+` : unread}
-            </span>
+            </CountBadge>
           )
         }
         panelClassName="flex flex-col gap-3"
