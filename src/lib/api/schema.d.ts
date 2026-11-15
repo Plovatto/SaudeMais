@@ -300,6 +300,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/appointments/{id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Concluir uma consulta
+         * @description Muda uma consulta confirmada (`confirmed`) que já começou para `completed` e registra o evento `completed` com o médico como autor; ninguém é avisado. Só o médico que atende a consulta registra, e só a partir do horário de início. Envie em `startsAt` o início que a tela mostrava: se a consulta está confirmada com esse horário, mas ainda não começou, a resposta é `NOT_STARTED`; se o horário mudou, se ela não está confirmada ou se já foi concluída ou marcada como falta, a resposta é `INVALID_STATE`. Nos dois casos nada muda. Conclusão e falta disputam a mesma consulta, e só a primeira vale. Responde o detalhe atualizado; para os demais médicos, responde como inexistente. Limite: 60 requisições por minuto por IP.
+         */
+        post: operations["completeAppointment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/appointments/{id}/no-show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Registrar falta em uma consulta
+         * @description Muda uma consulta confirmada (`confirmed`) que já começou para `no_show` e registra o evento `no_show` com o médico como autor; ninguém é avisado. Só o médico que atende a consulta registra, e só a partir do horário de início. Envie em `startsAt` o início que a tela mostrava: se a consulta está confirmada com esse horário, mas ainda não começou, a resposta é `NOT_STARTED`; se o horário mudou, se ela não está confirmada ou se já foi concluída ou marcada como falta, a resposta é `INVALID_STATE`. Nos dois casos nada muda. Conclusão e falta disputam a mesma consulta, e só a primeira vale. Responde o detalhe atualizado; para os demais médicos, responde como inexistente. Limite: 60 requisições por minuto por IP.
+         */
+        post: operations["recordAppointmentNoShow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/appointments/{id}/reschedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reagendar uma consulta
+         * @description Troca o horário de uma consulta pendente ou confirmada que ainda não começou, na mesma linha e em uma única transação: a consulta volta a pendente (`pending`) até o médico confirmar de novo, `reschedule_count` aumenta, o evento `rescheduled` guarda o horário anterior e o novo, e o médico recebe `appointment_rescheduled` depois do commit. A vaga antiga só fica livre se a nova for garantida. Só o paciente dela reagenda. Envie em `startsAt` o início que a tela mostrava (se mudou, a resposta é `INVALID_STATE`) e em `newStartsAt` o início de uma vaga devolvida por `GET /api/doctors/{id}/availability?rescheduling={id}`, em que a própria consulta não ocupa a agenda. Consulta confirmada dentro da janela da política (`appointmentLateWindowHours`) não pode ser reagendada (`RESCHEDULE_WINDOW_CLOSED`), só cancelada, e cada consulta aceita até `maxReschedules` reagendamentos (`RESCHEDULE_LIMIT`). Erros sobre a nova vaga vêm em `fields.newStartsAt`. Responde o detalhe atualizado; para os demais usuários, responde como inexistente. Limite: 60 requisições por minuto por IP.
+         */
+        post: operations["rescheduleAppointment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/specialties": {
         parameters: {
             query?: never;
@@ -649,7 +709,7 @@ export interface paths {
         };
         /**
          * Ver as vagas livres de um médico
-         * @description Vagas livres do médico entre `from` e `to` (datas de São Paulo, até 31 dias por vez), agrupadas por dia. Cada vaga dura o tempo de consulta da especialidade, começa no início de uma faixa do médico em passos dessa duração e cabe inteira na faixa e no horário da unidade. Vagas antes da antecedência mínima, depois do horizonte da política de agendamento ou já ocupadas não aparecem, e dias sem vaga ficam de fora. Para agendar, envie o `startsAt` recebido, sem montar o horário no cliente. Limite: 120 requisições por minuto por IP.
+         * @description Vagas livres do médico entre `from` e `to` (datas de São Paulo, até 31 dias por vez), agrupadas por dia. Cada vaga dura o tempo de consulta da especialidade, começa no início de uma faixa do médico em passos dessa duração e cabe inteira na faixa e no horário da unidade. Vagas antes da antecedência mínima, depois do horizonte da política de agendamento ou já ocupadas não aparecem, e dias sem vaga ficam de fora. Para agendar, envie o `startsAt` recebido, sem montar o horário no cliente. Na tela de reagendar, envie `rescheduling` com o id da consulta: ela deixa de ocupar a agenda na lista, e o horário atual dela aparece como vaga. Limite: 120 requisições por minuto por IP.
          */
         get: operations["getDoctorAvailability"];
         put?: never;
@@ -669,7 +729,7 @@ export interface paths {
         };
         /**
          * Ver as vagas de um exame na unidade
-         * @description Vagas do exame na unidade entre `from` e `to` (datas de São Paulo, até 31 dias por vez), agrupadas por dia. Cada vaga dura o tempo do tipo de exame e começa na abertura da unidade, em passos dessa duração, cabendo inteira no horário do dia. `remaining` é quantos lugares ainda cabem na vaga: a capacidade da oferta menos os exames confirmados que a ocupam, contados por sobreposição de horário. Vagas sem lugar, antes da antecedência mínima ou depois do horizonte da política de agendamento não aparecem, e dias sem vaga ficam de fora. Unidade, tipo de exame ou oferta inativos ou inexistentes respondem `NOT_FOUND`. Para agendar, envie o `startsAt` recebido, sem montar o horário no cliente. Limite: 120 requisições por minuto por IP.
+         * @description Vagas do exame na unidade entre `from` e `to` (datas de São Paulo, até 31 dias por vez), agrupadas por dia. Cada vaga dura o tempo do tipo de exame e começa na abertura da unidade, em passos dessa duração, cabendo inteira no horário do dia. `remaining` é quantos lugares ainda cabem na vaga: a capacidade da oferta menos os exames confirmados que a ocupam, contados por sobreposição de horário. Vagas sem lugar, antes da antecedência mínima ou depois do horizonte da política de agendamento não aparecem, e dias sem vaga ficam de fora. Unidade, tipo de exame ou oferta inativos ou inexistentes respondem `NOT_FOUND`. Para agendar, envie o `startsAt` recebido, sem montar o horário no cliente. Na tela de reagendar, envie `rescheduling` com o id do exame: ele deixa de ocupar lugar na lista, e o horário atual dele conta o lugar como livre. Limite: 120 requisições por minuto por IP.
          */
         get: operations["getExamAvailability"];
         put?: never;
@@ -734,6 +794,26 @@ export interface paths {
          * @description Cancela um exame confirmado que ainda não começou e libera o lugar na vaga. Só o paciente dele cancela. Envie em `startsAt` o início que a tela mostrava: se o exame mudou, já começou ou já foi encerrado, a resposta é `INVALID_STATE` e nada muda. Dentro da janela da política (`examLateWindowHours`), o cancelamento fica marcado como tardio. As contas de demonstração também cancelam, porque os agendamentos delas são restaurados todo dia. Responde o detalhe atualizado; para os demais usuários, responde como inexistente. Limite: 60 requisições por minuto por IP.
          */
         post: operations["cancelExamBooking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/exam-bookings/{id}/reschedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reagendar um exame
+         * @description Troca o horário de um exame confirmado que ainda não começou, na mesma linha e em uma única transação: o exame continua confirmado e com o mesmo código, `reschedule_count` aumenta e o evento `rescheduled` guarda o horário anterior e o novo. O exame mantém o lugar (raia) atual se ele estiver livre no novo horário; senão, ocupa o menor lugar livre, até a capacidade da oferta. O lugar antigo só fica livre se o novo for garantido. Só o paciente dele reagenda. Envie em `startsAt` o início que a tela mostrava (se mudou, a resposta é `INVALID_STATE`) e em `newStartsAt` o início de uma vaga devolvida por `GET /api/exam-availability?rescheduling={id}`, em que o próprio exame não ocupa lugar. Dentro da janela da política (`examLateWindowHours`) o exame não pode ser reagendado (`RESCHEDULE_WINDOW_CLOSED`), só cancelado, e cada exame aceita até `maxReschedules` reagendamentos (`RESCHEDULE_LIMIT`). Erros sobre a nova vaga vêm em `fields.newStartsAt`. Responde o detalhe atualizado; para os demais usuários, responde como inexistente. Limite: 60 requisições por minuto por IP.
+         */
+        post: operations["rescheduleExamBooking"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1075,7 +1155,7 @@ export interface components {
              */
             doctors: number;
             /**
-             * @description Consultas de hoje no fuso de São Paulo. Fica em 0 até existirem agendamentos.
+             * @description Consultas que começam hoje no fuso de São Paulo pendentes, confirmadas, concluídas ou com falta registrada, sem as canceladas, as não confirmadas a tempo e as de pacientes de demonstração.
              * @example 24
              */
             appointmentsToday: number;
@@ -1331,6 +1411,14 @@ export interface components {
              */
             startsAt: string;
         };
+        RecordAppointmentRequest: {
+            /**
+             * Format: date-time
+             * @description Início do agendamento como o cliente o exibiu. Se ele mudou desde então, a resposta é `INVALID_STATE`.
+             * @example 2026-11-23T11:00:00.000Z
+             */
+            startsAt: string;
+        };
         CancelAppointmentRequest: {
             /**
              * Format: date-time
@@ -1343,6 +1431,78 @@ export interface components {
              * @example Imprevisto de trabalho.
              */
             reason?: string;
+        };
+        RescheduleRequest: {
+            /**
+             * Format: date-time
+             * @description Início do agendamento como o cliente o exibiu. Se ele mudou desde então, a resposta é `INVALID_STATE`.
+             * @example 2026-11-23T11:00:00.000Z
+             */
+            startsAt: string;
+            /**
+             * Format: date-time
+             * @description Início da nova vaga, como veio da lista de vagas aberta com `rescheduling`.
+             * @example 2026-11-23T11:00:00.000Z
+             */
+            newStartsAt: string;
+        };
+        /** @description O que o paciente pode fazer, calculado pela política de agendamento. */
+        BookingActions: {
+            /**
+             * @description Se o paciente ainda pode cancelar: consulta ou exame ativo que ainda não começou.
+             * @example true
+             */
+            canCancel: boolean;
+            /**
+             * @description Se cancelar agora fica marcado como tardio: agendamento confirmado dentro da janela da política. O cliente avisa antes de confirmar.
+             * @example false
+             */
+            lateCancellation: boolean;
+            /**
+             * @description Por que não dá para cancelar: já começou (`started`) ou já foi encerrado (`closed`). Nulo quando `canCancel` é verdadeiro.
+             * @example null
+             * @enum {string|null}
+             */
+            cancelBlockedReason: "started" | "closed" | null;
+            /**
+             * @description Se o paciente ainda pode reagendar: agendamento ativo que ainda não começou, fora da janela da política quando confirmado e com reagendamentos restantes.
+             * @example true
+             */
+            canReschedule: boolean;
+            /**
+             * @description Por que não dá para reagendar: confirmado dentro da janela da política (`window_closed`), sem reagendamentos restantes (`limit`), já começou (`started`) ou já foi encerrado (`closed`). Nulo quando `canReschedule` é verdadeiro.
+             * @example null
+             * @enum {string|null}
+             */
+            rescheduleBlockedReason: "window_closed" | "limit" | "started" | "closed" | null;
+            /**
+             * @description Quantos reagendamentos ainda cabem pelo limite da política (`maxReschedules`).
+             * @example 2
+             */
+            reschedulesLeft: number;
+        };
+        /** @description O que o médico que atende a consulta pode fazer com ela. */
+        DoctorActions: {
+            /**
+             * @description Se o médico pode confirmar: pedido pendente que ainda não começou.
+             * @example true
+             */
+            canConfirm: boolean;
+            /**
+             * @description Se o médico pode cancelar, com motivo: pendente ou confirmada que ainda não começou.
+             * @example true
+             */
+            canCancel: boolean;
+            /**
+             * @description Se o médico pode concluir: confirmada que já começou e aguarda registro.
+             * @example false
+             */
+            canComplete: boolean;
+            /**
+             * @description Se o médico pode registrar falta: confirmada que já começou e aguarda registro.
+             * @example false
+             */
+            canNoShow: boolean;
         };
         Appointment: {
             /** Format: uuid */
@@ -1424,6 +1584,10 @@ export interface components {
             } | null;
             /** Format: date-time */
             createdAt: string;
+            /** @description O que o paciente pode fazer, pela política de agendamento; nulo quando quem vê é o médico. */
+            patientActions: components["schemas"]["BookingActions"] | null;
+            /** @description O que o médico que atende a consulta pode fazer; nulo quando quem vê é o paciente. */
+            doctorActions: components["schemas"]["DoctorActions"] | null;
             /** @description Histórico da consulta, do mais antigo para o mais novo. */
             events: {
                 /**
@@ -1817,18 +1981,7 @@ export interface components {
                  */
                 phone: string | null;
             };
-            actions: {
-                /**
-                 * @description Se o médico pode confirmar: pedido pendente que ainda não começou.
-                 * @example true
-                 */
-                canConfirm: boolean;
-                /**
-                 * @description Se o médico pode cancelar, com motivo: pendente ou confirmada que ainda não começou.
-                 * @example true
-                 */
-                canCancel: boolean;
-            };
+            actions: components["schemas"]["DoctorActions"];
         };
         DoctorAppointmentPage: {
             items: components["schemas"]["DoctorAppointment"][];
@@ -2140,6 +2293,7 @@ export interface components {
             } | null;
             /** Format: date-time */
             createdAt: string;
+            actions: components["schemas"]["BookingActions"];
             /** @description Histórico do exame, do mais antigo para o mais novo. */
             events: {
                 /**
@@ -2270,24 +2424,7 @@ export interface components {
                 /** Format: date-time */
                 cancelledAt: string;
             } | null;
-            actions: {
-                /**
-                 * @description Se o paciente ainda pode cancelar: consulta ou exame ativo que ainda não começou.
-                 * @example true
-                 */
-                canCancel: boolean;
-                /**
-                 * @description Se cancelar agora fica marcado como tardio: agendamento confirmado dentro da janela da política. O cliente avisa antes de confirmar.
-                 * @example false
-                 */
-                lateCancellation: boolean;
-                /**
-                 * @description Por que não dá para cancelar: já começou (`started`) ou já foi encerrado (`closed`). Nulo quando `canCancel` é verdadeiro.
-                 * @example null
-                 * @enum {string|null}
-                 */
-                cancelBlockedReason: "started" | "closed" | null;
-            };
+            actions: components["schemas"]["BookingActions"];
         };
         PatientBookingPage: {
             items: components["schemas"]["PatientBooking"][];
@@ -4489,6 +4626,435 @@ export interface operations {
                      *       "code": "INVALID_STATE",
                      *       "fields": {
                      *         "_root": "Esta consulta mudou ou não pode mais ser confirmada. Atualize a página."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    completeAppointment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RecordAppointmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Consulta concluída. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Appointment"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Consulta não encontrada.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description O `startsAt` enviado está desatualizado, a consulta não está confirmada ou já foi registrada (`INVALID_STATE`), ou ela ainda não começou (`NOT_STARTED`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Esta consulta mudou ou já foi registrada. Atualize a página.",
+                     *       "code": "INVALID_STATE",
+                     *       "fields": {
+                     *         "_root": "Esta consulta mudou ou já foi registrada. Atualize a página."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    recordAppointmentNoShow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RecordAppointmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Falta registrada. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Appointment"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Consulta não encontrada.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description O `startsAt` enviado está desatualizado, a consulta não está confirmada ou já foi registrada (`INVALID_STATE`), ou ela ainda não começou (`NOT_STARTED`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Esta consulta mudou ou já foi registrada. Atualize a página.",
+                     *       "code": "INVALID_STATE",
+                     *       "fields": {
+                     *         "_root": "Esta consulta mudou ou já foi registrada. Atualize a página."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    rescheduleAppointment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RescheduleRequest"];
+            };
+        };
+        responses: {
+            /** @description Consulta reagendada. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Appointment"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Consulta não encontrada.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflito com o estado atual (`RESCHEDULE_WINDOW_CLOSED`, `RESCHEDULE_LIMIT`, `SLOT_TAKEN`, `PATIENT_CONFLICT`, `INVALID_STATE`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Falta pouco para o horário e este agendamento não pode mais ser reagendado. Você ainda pode cancelá-lo.",
+                     *       "code": "RESCHEDULE_WINDOW_CLOSED",
+                     *       "fields": {
+                     *         "_root": "Falta pouco para o horário e este agendamento não pode mais ser reagendado. Você ainda pode cancelá-lo."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A nova vaga não existe (`OUTSIDE_AVAILABILITY`) ou é o horário atual (`SAME_SLOT`). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Escolha um horário diferente do atual.",
+                     *       "code": "SAME_SLOT",
+                     *       "fields": {
+                     *         "newStartsAt": "Escolha um horário diferente do atual."
                      *       }
                      *     }
                      */
@@ -6794,6 +7360,8 @@ export interface operations {
                 from: string;
                 /** @description Último dia, incluído. */
                 to: string;
+                /** @description Agendamento do paciente logado que está sendo reagendado: ele não ocupa a vaga dele na lista, para a tela de reagendar oferecer também os horários que ele libera. Ignorado se o agendamento não for do paciente logado. */
+                rescheduling?: string;
             };
             header?: never;
             path: {
@@ -6918,6 +7486,8 @@ export interface operations {
                 from: string;
                 /** @description Último dia, incluído. */
                 to: string;
+                /** @description Agendamento do paciente logado que está sendo reagendado: ele não ocupa a vaga dele na lista, para a tela de reagendar oferecer também os horários que ele libera. Ignorado se o agendamento não for do paciente logado. */
+                rescheduling?: string;
             };
             header?: never;
             path?: never;
@@ -7396,6 +7966,161 @@ export interface operations {
                      *       "code": "INVALID_STATE",
                      *       "fields": {
                      *         "_root": "Este exame mudou ou não pode mais ser cancelado. Atualize a página."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    rescheduleExamBooking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RescheduleRequest"];
+            };
+        };
+        responses: {
+            /** @description Exame reagendado. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamBooking"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Exame não encontrado.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflito com o estado atual (`NO_CAPACITY`, `PATIENT_CONFLICT`, `RESCHEDULE_WINDOW_CLOSED`, `RESCHEDULE_LIMIT`, `INVALID_STATE`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Não há mais lugares neste horário. Escolha outra vaga.",
+                     *       "code": "NO_CAPACITY",
+                     *       "fields": {
+                     *         "startsAt": "Não há mais lugares neste horário. Escolha outra vaga."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A nova vaga não existe (`OUTSIDE_AVAILABILITY`) ou é o horário atual (`SAME_SLOT`). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Escolha um horário diferente do atual.",
+                     *       "code": "SAME_SLOT",
+                     *       "fields": {
+                     *         "newStartsAt": "Escolha um horário diferente do atual."
                      *       }
                      *     }
                      */
