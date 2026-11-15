@@ -8,6 +8,16 @@ const PAST = '2020-01-10T13:00:00.000Z';
 const LIST = '/api/patient/bookings';
 const STALE = 'Este agendamento mudou ou não pode mais ser alterado. Confira a lista atualizada.';
 
+const actions = (overrides: Partial<PatientBooking['actions']> = {}): PatientBooking['actions'] => ({
+  canCancel: true,
+  lateCancellation: false,
+  cancelBlockedReason: null,
+  canReschedule: true,
+  rescheduleBlockedReason: null,
+  reschedulesLeft: 2,
+  ...overrides,
+});
+
 const booking = (id: string, overrides: Partial<PatientBooking> = {}): PatientBooking => ({
   id,
   kind: 'appointment',
@@ -21,12 +31,23 @@ const booking = (id: string, overrides: Partial<PatientBooking> = {}): PatientBo
   examType: null,
   publicCode: null,
   unit: { id: 'u1', name: 'Hospital Central', address: 'Rua das Flores, 123', phone: '+551133334444' },
-  actions: { canCancel: true, lateCancellation: false, cancelBlockedReason: null },
+  actions: actions(),
   cancellation: null,
   ...overrides,
 });
 
-const closed = { canCancel: false, lateCancellation: false, cancelBlockedReason: 'closed' } as const;
+const closed = actions({
+  canCancel: false,
+  cancelBlockedReason: 'closed',
+  canReschedule: false,
+  rescheduleBlockedReason: 'closed',
+});
+
+const late = actions({
+  lateCancellation: true,
+  canReschedule: false,
+  rescheduleBlockedReason: 'window_closed',
+});
 
 const exam = (id: string, overrides: Partial<PatientBooking> = {}) =>
   booking(id, {
@@ -150,6 +171,48 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     expect(scope.getByText('Rua das Flores, 123')).not.toBeVisible();
   });
 
+  it('links to the reschedule page and tells how many reschedules are left', async () => {
+    serve({ upcoming: [booking('b1'), exam('b2', { actions: actions({ reschedulesLeft: 1 }) })] });
+    const { user } = renderApp('/paciente/agendamentos');
+    const appointment = await card(/Dr\. João Silveira/);
+    await user.click(appointment.header);
+    const link = appointment.scope.getByRole('link', { name: /^Reagendar: Dr\. João Silveira/ });
+    expect(link).toHaveAttribute('href', '/paciente/consultas/b1/reagendar');
+    expect(appointment.header).not.toContainElement(link);
+    expect(appointment.scope.getByText('2 reagendamentos restantes')).toBeVisible();
+    const examCard = await card(/Lab\. Central/);
+    await user.click(examCard.header);
+    expect(examCard.scope.getByRole('link', { name: /^Reagendar/ })).toHaveAttribute(
+      'href',
+      '/paciente/exames/b2/reagendar',
+    );
+    expect(examCard.scope.getByText('1 reagendamento restante')).toBeVisible();
+  });
+
+  it('explains why a booking can no longer be rescheduled', async () => {
+    serve({
+      upcoming: [
+        booking('b1', { actions: late }),
+        exam('b2', {
+          actions: actions({ canReschedule: false, rescheduleBlockedReason: 'limit', reschedulesLeft: 0 }),
+        }),
+      ],
+    });
+    const { user } = renderApp('/paciente/agendamentos');
+    const appointment = await card(/Dr\. João Silveira/);
+    await user.click(appointment.header);
+    expect(appointment.scope.queryByRole('link', { name: /^Reagendar/ })).not.toBeInTheDocument();
+    expect(appointment.scope.getByRole('note')).toHaveTextContent(
+      /não pode mais ser reagendado, só cancelado/,
+    );
+    expect(appointment.scope.getByRole('button', { name: /^Cancelar/ })).toBeVisible();
+    const examCard = await card(/Lab\. Central/);
+    await user.click(examCard.header);
+    expect(examCard.scope.queryByRole('link', { name: /^Reagendar/ })).not.toBeInTheDocument();
+    expect(examCard.scope.getByRole('note')).toHaveTextContent(/já usou todos os reagendamentos/);
+    expect(examCard.scope.queryByText(/reagendamentos? restantes?/)).not.toBeInTheDocument();
+  });
+
   it('shows who cancelled, the reason and the late flag', async () => {
     serve({
       past: [
@@ -217,9 +280,7 @@ describe('patient bookings', { timeout: 15_000 }, () => {
 
   it('warns before a late exam cancellation', async () => {
     serve({
-      upcoming: [
-        exam('b1', { actions: { canCancel: true, lateCancellation: true, cancelBlockedReason: null } }),
-      ],
+      upcoming: [exam('b1', { actions: late })],
     });
     const { user } = renderApp('/paciente/agendamentos');
 
@@ -236,9 +297,7 @@ describe('patient bookings', { timeout: 15_000 }, () => {
   it('warns before a late cancellation and sends no empty reason', async () => {
     const { calls } = serve(
       {
-        upcoming: [
-          booking('b1', { actions: { canCancel: true, lateCancellation: true, cancelBlockedReason: null } }),
-        ],
+        upcoming: [booking('b1', { actions: late })],
       },
       () => ({ status: 200, body: {} }),
     );
