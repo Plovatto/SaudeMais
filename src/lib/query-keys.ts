@@ -16,6 +16,8 @@ export const queryKeys = {
     doctors: (specialtyId: string) => ['booking', 'doctors', specialtyId] as const,
     availabilities: ['booking', 'availability'] as const,
     availability: (doctorId: string) => ['booking', 'availability', doctorId] as const,
+    examAvailability: (unitId: string, examTypeId: string) =>
+      ['booking', 'availability', 'exam', unitId, examTypeId] as const,
   },
   patient: {
     all: ['patient'] as const,
@@ -40,5 +42,6 @@ export const queryKeys = {
     policy: ['catalog', 'policy'] as const,
     activeSpecialties: ['catalog', 'active-specialties'] as const,
     activeUnits: ['catalog', 'active-units'] as const,
+    activeExamTypes: ['catalog', 'active-exam-types'] as const,
   },
 };

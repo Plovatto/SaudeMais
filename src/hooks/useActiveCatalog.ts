@@ -15,10 +15,21 @@ export function useActiveSpecialties() {
   });
 }
 
-export function useActiveUnits() {
+export function useActiveUnits(examTypeId?: string) {
   return useQuery({
-    queryKey: queryKeys.catalog.activeUnits,
-    queryFn: ({ signal }) => apiFetch('get', '/api/units', { signal }),
+    queryKey: [...queryKeys.catalog.activeUnits, examTypeId ?? ''],
+    queryFn: ({ signal }) =>
+      apiFetch('get', '/api/units', { query: examTypeId ? { examTypeId } : {}, signal }),
+    select: onlyActive,
+    enabled: examTypeId !== '',
+    staleTime: CATALOG_STALE_TIME,
+  });
+}
+
+export function useActiveExamTypes() {
+  return useQuery({
+    queryKey: queryKeys.catalog.activeExamTypes,
+    queryFn: ({ signal }) => apiFetch('get', '/api/exam-types', { signal }),
     select: onlyActive,
     staleTime: CATALOG_STALE_TIME,
   });

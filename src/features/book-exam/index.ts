@@ -1,0 +1,1 @@
+export { BookExamPage } from './BookExamPage';

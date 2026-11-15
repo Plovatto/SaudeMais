@@ -84,7 +84,7 @@ describe('notifications', { timeout: 15_000 }, () => {
     [12, 'Notificações, 12 não lidas', '9+'],
   ])('labels the bell for %i unread', async (count, label, badge) => {
     const { calls } = serve({ count });
-    renderApp('/paciente/exames/novo');
+    renderApp('/paciente/exames/e1/resultado');
 
     expect((await bell(label)).textContent).toBe(badge ?? '');
     expect(countCalls(calls).every((call) => call.url.searchParams.get('role') === 'patient')).toBe(true);
@@ -106,7 +106,7 @@ describe('notifications', { timeout: 15_000 }, () => {
   it('polls the counter every two minutes only while the tab is visible', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const { calls } = serve({ count: 1 });
-    renderApp('/paciente/exames/novo');
+    renderApp('/paciente/exames/e1/resultado');
     await bell('Notificações, 1 não lida');
     const initial = countCalls(calls).length;
 
@@ -123,7 +123,7 @@ describe('notifications', { timeout: 15_000 }, () => {
 
   it('announces the counter only when it grows, again after a drop', async () => {
     const { state } = serve({ count: 1 });
-    const { queryClient } = renderApp('/paciente/exames/novo');
+    const { queryClient } = renderApp('/paciente/exames/e1/resultado');
     await bell('Notificações, 1 não lida');
     expect(screen.queryByText(/Nova notificação/)).not.toBeInTheDocument();
     const status = screen.getAllByRole('status').find((element) => element.closest('header'));
@@ -197,7 +197,7 @@ describe('notifications', { timeout: 15_000 }, () => {
         notification('n2', { type: 'appointment_cancelled', readAt: new Date().toISOString() }),
       ],
     });
-    const { user } = renderApp('/paciente/exames/novo');
+    const { user } = renderApp('/paciente/exames/e1/resultado');
 
     const popover = await openPopover(user);
     const [unread, read] = (await popover.findAllByRole('link')).slice(0, 2);
@@ -220,7 +220,7 @@ describe('notifications', { timeout: 15_000 }, () => {
 
   it('shows an empty state and disables mark all without unread notices', async () => {
     serve();
-    const { user } = renderApp('/paciente/exames/novo');
+    const { user } = renderApp('/paciente/exames/e1/resultado');
 
     const popover = await openPopover(user);
     expect(await popover.findByText('Nenhuma notificação')).toBeVisible();
@@ -229,7 +229,7 @@ describe('notifications', { timeout: 15_000 }, () => {
 
   it('marks a notice as read, opens its target and closes the popover', async () => {
     const { calls } = serve({ count: 1, items: [notification('n1')] });
-    const { user, router } = renderApp('/paciente/exames/novo');
+    const { user, router } = renderApp('/paciente/exames/e1/resultado');
 
     const popover = await openPopover(user);
     await user.click(await popover.findByRole('link', { name: /Consulta confirmada!/ }));
@@ -242,7 +242,7 @@ describe('notifications', { timeout: 15_000 }, () => {
 
   it('still opens the target when a demo account cannot mark it as read', async () => {
     serve({ count: 1, items: [notification('n1', { type: 'appointment_expired' })], read: DEMO });
-    const { user, router } = renderApp('/paciente/exames/novo');
+    const { user, router } = renderApp('/paciente/exames/e1/resultado');
 
     const popover = await openPopover(user);
     await user.click(await popover.findByRole('link', { name: /Pedido não confirmado/ }));
@@ -257,7 +257,7 @@ describe('notifications', { timeout: 15_000 }, () => {
       items: [notification('n1')],
       read: { status: 401, body: { code: 'UNAUTHENTICATED', message: 'Sessão expirada.' } },
     });
-    const { user, router } = renderApp('/paciente/exames/novo');
+    const { user, router } = renderApp('/paciente/exames/e1/resultado');
 
     const popover = await openPopover(user);
     await user.click(await popover.findByRole('link', { name: /Consulta confirmada!/ }));
@@ -284,7 +284,7 @@ describe('notifications', { timeout: 15_000 }, () => {
 
   it('tells a demo account that notices cannot be marked as read', async () => {
     serve({ count: 2, items: [notification('n1')], readAll: DEMO });
-    const { user } = renderApp('/paciente/exames/novo');
+    const { user } = renderApp('/paciente/exames/e1/resultado');
 
     const popover = await openPopover(user);
     await user.click(popover.getByRole('button', { name: 'Marcar todas como lidas' }));
