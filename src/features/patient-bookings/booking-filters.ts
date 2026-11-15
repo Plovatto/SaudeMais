@@ -4,10 +4,7 @@ import type { BookingListParams } from './bookings-api';
 
 type Scope = BookingListParams['scope'];
 
-export interface BookingFilters {
-  tipo: string;
-  status: string;
-}
+export type BookingFilters = { tipo: string; status: string };
 
 export const NO_FILTERS: BookingFilters = { tipo: '', status: '' };
 
@@ -21,30 +18,33 @@ export const TYPE_OPTIONS = [
   { value: 'exame', label: 'Exames' },
 ];
 
-const SCOPE_STATUSES: Record<Scope, StatusKey[]> = {
-  upcoming: ['pending', 'confirmed'],
-  past: ['awaiting', 'completed', 'cancelled', 'no_show', 'expired'],
+const STATUS_SLUGS: Record<StatusKey, string> = {
+  pending: 'pendente',
+  confirmed: 'confirmado',
+  awaiting: 'aguardando-registro',
+  completed: 'concluida',
+  cancelled: 'cancelada',
+  no_show: 'nao-compareceu',
+  expired: 'nao-confirmada',
 };
 
-const slug = (label: string) =>
-  label
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase()
-    .replaceAll(' ', '-');
+const statusOption = (key: StatusKey) => ({
+  value: STATUS_SLUGS[key],
+  label: statusDisplay(key, 'patient').label,
+  status: key === 'awaiting' ? 'confirmed' : key,
+});
 
-const statusesOf = (scope: Scope) =>
-  SCOPE_STATUSES[scope].map((key) => {
-    const { label } = statusDisplay(key, 'patient');
-    return { value: slug(label), label, status: key === 'awaiting' ? 'confirmed' : key };
-  });
+const STATUSES: Record<Scope, ReturnType<typeof statusOption>[]> = {
+  upcoming: (['pending', 'confirmed'] as const).map(statusOption),
+  past: (['awaiting', 'completed', 'cancelled', 'no_show', 'expired'] as const).map(statusOption),
+};
 
-export const statusOptions = (scope: Scope) => [ALL, ...statusesOf(scope)];
+export const statusOptions = (scope: Scope) => [ALL, ...STATUSES[scope]];
 
 export function normalizeFilters(scope: Scope, { tipo, status }: BookingFilters): BookingFilters {
   return {
     tipo: Object.hasOwn(KINDS, tipo) ? tipo : '',
-    status: statusesOf(scope).some((option) => option.value === status) ? status : '',
+    status: STATUSES[scope].some((option) => option.value === status) ? status : '',
   };
 }
 
@@ -52,7 +52,7 @@ export function filterQuery(scope: Scope, filters: BookingFilters) {
   const { tipo, status } = normalizeFilters(scope, filters);
   return {
     kind: KINDS[tipo],
-    status: statusesOf(scope).find((option) => option.value === status)?.status,
+    status: STATUSES[scope].find((option) => option.value === status)?.status,
   };
 }
 

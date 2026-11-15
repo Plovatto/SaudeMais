@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { LuSlidersHorizontal } from 'react-icons/lu';
-import { Button, CountBadge, Dialog, RadioChips, TileContent } from '@components/ui';
-import { tile } from '@components/ui/styles';
-import { cx } from '@lib/cx';
+import { Button, CountBadge, Dialog, RadioChips, TileButton } from '@components/ui';
 import { activeCount, NO_FILTERS, statusOptions, TYPE_OPTIONS, type BookingFilters } from './booking-filters';
 import type { BookingListParams } from './bookings-api';
 
@@ -24,23 +22,21 @@ export function BookingsFilter({ scope, filters, onApply }: BookingsFilterProps)
 
   return (
     <>
-      <button
-        type="button"
+      <TileButton
         aria-haspopup="dialog"
         aria-label={count > 0 ? `Filtrar, ${activeText(count)}` : 'Filtrar'}
         onClick={() => setDraft(filters)}
-        className={cx(tile.base, tile.idle, 'relative w-20 shrink-0 px-1')}
+        icon={<LuSlidersHorizontal />}
+        label={count > 0 ? 'Filtros' : 'Todos'}
+        badge={
+          count > 0 && (
+            <CountBadge className="bg-role-strong text-on-role end-1.5 top-1.5">{count}</CountBadge>
+          )
+        }
+        className="w-20 shrink-0 px-1"
       >
-        <TileContent
-          icon={<LuSlidersHorizontal />}
-          label={count > 0 ? `${count} ${count === 1 ? 'ativo' : 'ativos'}` : 'Todos'}
-        >
-          <span className="text-sm font-semibold">Filtrar</span>
-        </TileContent>
-        {count > 0 && (
-          <CountBadge className="bg-role-strong text-on-role end-1.5 top-1.5">{count}</CountBadge>
-        )}
-      </button>
+        <span className="text-sm font-semibold">Filtrar</span>
+      </TileButton>
       <Dialog
         open={draft !== null}
         onClose={() => setDraft(null)}

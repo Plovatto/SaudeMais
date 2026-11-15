@@ -81,9 +81,9 @@ export function PatientBookingsPage() {
   const results = useRef<HTMLParagraphElement>(null);
   const counts = list.lastData?.counts;
   const valid = normalizeFilters(list.tab.scope, raw);
-  const filtered = activeCount(valid) > 0;
+  const filtered = activeCount(valid) > 0 && !list.query.isPlaceholderData;
   const found = (total: number) => (filtered ? `${count(total)} com esses filtros` : count(total));
-  const applyFilters = (next: BookingFilters) => setParams({ ...next }, RESET_PAGE);
+  const applyFilters = (next: BookingFilters) => setParams(next, RESET_PAGE);
   const clearFilters = () => {
     applyFilters(NO_FILTERS);
     results.current?.focus();

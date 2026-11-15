@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { renderApp, serveApi, type ApiCall, type MockResponse } from '@/test/render-app';
 import type { PatientBooking } from '@lib/api/models';
@@ -329,7 +329,7 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     const labels = (radios: HTMLElement[]) => radios.map((radio) => radio.closest('label')?.textContent);
 
     const radioLabels = (dialog: HTMLElement, group: string) =>
-      labels(within(within(dialog).getByRole('radiogroup', { name: group })).getAllByRole('radio'));
+      labels(within(within(dialog).getByRole('group', { name: group })).getAllByRole('radio'));
 
     const expectAllSelected = (dialog: HTMLElement) =>
       expect(labels(within(dialog).getAllByRole('radio', { checked: true }))).toEqual(['Todos', 'Todos']);
@@ -387,6 +387,22 @@ describe('patient bookings', { timeout: 15_000 }, () => {
       expectAllSelected(dialog);
     });
 
+    it('closes with Escape without applying and returns the focus', async () => {
+      serve({ upcoming: [booking('b1')] });
+      const { user, router } = renderApp('/paciente/agendamentos');
+
+      const filter = await screen.findByRole('button', { name: 'Filtrar' });
+      const dialog = await openFilter(user);
+      await user.click(within(dialog).getByRole('radio', { name: 'Exames' }));
+      await user.keyboard('{Escape}');
+      act(() => (dialog as HTMLDialogElement).close());
+
+      expect(dialog).not.toBeVisible();
+      expect(document.activeElement).toBe(filter);
+      expect(router.state.location.search).toBe('');
+      expect(filter).toHaveAccessibleName('Filtrar');
+    });
+
     it('offers only the statuses of the open tab', async () => {
       serve({});
       const { user } = renderApp('/paciente/agendamentos');
@@ -421,6 +437,7 @@ describe('patient bookings', { timeout: 15_000 }, () => {
       const { router } = renderApp('/paciente/agendamentos?tipo=cirurgia&status=concluida&aba=agendados');
 
       await waitFor(() => expect(router.state.location.search).toBe('?aba=agendados'));
+      expect(router.state.historyAction).toBe('REPLACE');
       const params = listCalls(calls)[0]?.url.searchParams;
       expect(params?.has('kind')).toBe(false);
       expect(params?.has('status')).toBe(false);
@@ -435,6 +452,7 @@ describe('patient bookings', { timeout: 15_000 }, () => {
       await user.click(screen.getByRole('tab', { name: /Realizados/ }));
 
       await waitFor(() => expect(router.state.location.search).toBe('?tipo=exame&aba=realizados'));
+      expect(router.state.historyAction).toBe('REPLACE');
       const params = listCalls(calls).at(-1)?.url.searchParams;
       expect(params?.get('scope')).toBe('past');
       expect(params?.get('kind')).toBe('exam');
