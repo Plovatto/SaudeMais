@@ -30,7 +30,8 @@ const appointment = {
   unit,
   cancellation: null,
   createdAt: '2026-11-14T12:00:00.000Z',
-  actions,
+  patientActions: actions,
+  doctorActions: null,
   events: [],
 };
 
@@ -316,7 +317,7 @@ describe('reschedule', { timeout: 15_000 }, () => {
         status: 200,
         body: {
           ...appointment,
-          actions: { ...actions, canReschedule: false, rescheduleBlockedReason: 'window_closed' },
+          patientActions: { ...actions, canReschedule: false, rescheduleBlockedReason: 'window_closed' },
         },
       }),
     });

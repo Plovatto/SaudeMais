@@ -49,7 +49,6 @@ function ClosedNote({ message, alert = false }: { message: string; alert?: boole
 interface Reschedulable {
   id: string;
   startsAt: string;
-  actions: Pick<PatientBooking['actions'], 'canReschedule' | 'rescheduleBlockedReason'> | null;
 }
 
 interface LockedField {
@@ -79,6 +78,7 @@ interface ReschedulePageProps<B extends Reschedulable> extends RescheduleFormPro
   bookedTitle: string;
   describe: (booking: B) => string;
   load: (id: string, signal: AbortSignal) => Promise<B>;
+  actionsOf: (booking: B) => PatientBooking['actions'] | null;
 }
 
 function RescheduleForm<B extends Reschedulable>({
@@ -159,6 +159,7 @@ export function ReschedulePage<B extends Reschedulable>({
   bookedTitle,
   describe,
   load,
+  actionsOf,
   ...form
 }: ReschedulePageProps<B>) {
   const id = useParams().id ?? '';
@@ -166,7 +167,7 @@ export function ReschedulePage<B extends Reschedulable>({
     queryKey: queryKeys.patient.booking(kind, id),
     queryFn: ({ signal }) => load(id, signal),
   });
-  const actions = detail.data?.actions;
+  const actions = detail.data && actionsOf(detail.data);
   const blocked = actions?.rescheduleBlockedReason;
   const gone = detail.error instanceof ApiError && detail.error.code === 'NOT_FOUND';
 

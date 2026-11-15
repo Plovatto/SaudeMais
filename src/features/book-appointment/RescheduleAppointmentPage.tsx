@@ -15,6 +15,7 @@ export function RescheduleAppointmentPage() {
       bookedTitle="Consulta reagendada"
       describe={describeAppointment}
       load={bookingApi.detail}
+      actionsOf={({ patientActions }) => patientActions}
       formLabel="Novo horário da consulta"
       notice={({ status }) =>
         status === 'pending'

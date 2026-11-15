@@ -14,6 +14,7 @@ export function RescheduleExamPage() {
       bookedTitle="Exame reagendado"
       describe={describeExam}
       load={examApi.detail}
+      actionsOf={({ actions }) => actions}
       formLabel="Novo horário do exame"
       emptyNote="Este local não tem outras vagas livres para o exame nas próximas semanas."
       stacked
