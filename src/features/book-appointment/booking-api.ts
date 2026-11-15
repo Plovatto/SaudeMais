@@ -1,13 +1,9 @@
 import { inWindows } from '@components/booking-form/availability';
 import { apiFetch, type BodyOf, type ResponseOf } from '@lib/api/api-fetch';
-import { formatDateTime } from '@lib/date';
 
 const DOCTORS_PAGE_SIZE = 50;
 
 export type Appointment = ResponseOf<'/api/appointments', 'post'>;
-
-export const describeAppointment = ({ specialty, doctor, startsAt }: Appointment) =>
-  `Consulta de ${specialty.name} com ${doctor.fullName} em ${formatDateTime(startsAt)}. Avisaremos quando o médico confirmar.`;
 
 export const bookingApi = {
   doctors: async (specialtyId: string, signal: AbortSignal) =>

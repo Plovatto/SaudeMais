@@ -1,7 +1,8 @@
 import { LuCalendarSync } from 'react-icons/lu';
 import { ReschedulePage } from '@components/booking-form/ReschedulePage';
 import { queryKeys } from '@lib/query-keys';
-import { describeExam, examApi, type ExamBooking } from './exam-api';
+import { describeExam } from './booking-text';
+import { examApi, type ExamBooking } from './exam-api';
 
 export function RescheduleExamPage() {
   return (

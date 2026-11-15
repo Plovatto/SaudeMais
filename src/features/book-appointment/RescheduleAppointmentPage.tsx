@@ -2,7 +2,8 @@ import { LuCalendarSync } from 'react-icons/lu';
 import { ReschedulePage } from '@components/booking-form/ReschedulePage';
 import { visitTypeLabels } from '@constants/visit-types';
 import { queryKeys } from '@lib/query-keys';
-import { bookingApi, describeAppointment, type Appointment } from './booking-api';
+import { bookingApi, type Appointment } from './booking-api';
+import { describeAppointment } from './booking-text';
 
 export function RescheduleAppointmentPage() {
   return (
@@ -15,7 +16,11 @@ export function RescheduleAppointmentPage() {
       describe={describeAppointment}
       load={bookingApi.detail}
       formLabel="Novo horário da consulta"
-      notice="A consulta volta a aguardar confirmação do médico."
+      notice={({ status }) =>
+        status === 'pending'
+          ? 'A consulta fica aguardando confirmação do médico.'
+          : 'A consulta volta a aguardar confirmação do médico.'
+      }
       emptyNote="Este médico não tem outras vagas livres nas próximas semanas."
       locked={({ doctor, specialty, visitType, unit }) => [
         { label: 'Médico', value: doctor.fullName, hint: `${unit.name} · ${unit.address}` },

@@ -1,7 +1,8 @@
 import { LuCalendar } from 'react-icons/lu';
 import { BookingPage } from '@components/booking-form/BookingPage';
 import { AppointmentForm } from './AppointmentForm';
-import { describeAppointment, type Appointment } from './booking-api';
+import type { Appointment } from './booking-api';
+import { describeAppointment } from './booking-text';
 
 export function BookAppointmentPage() {
   return (

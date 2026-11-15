@@ -1,11 +1,7 @@
 import { inWindows } from '@components/booking-form/availability';
 import { apiFetch, type BodyOf, type ResponseOf } from '@lib/api/api-fetch';
-import { formatDateTime } from '@lib/date';
 
 export type ExamBooking = ResponseOf<'/api/exam-bookings', 'post'>;
-
-export const describeExam = ({ examType, unit, startsAt, publicCode }: ExamBooking) =>
-  `${examType.name} em ${unit.name}, ${formatDateTime(startsAt)}. Apresente o código ${publicCode} na unidade.`;
 
 export const examApi = {
   availability: (unitId: string, examTypeId: string, signal: AbortSignal, rescheduling?: string) =>
