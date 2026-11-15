@@ -9,26 +9,26 @@ import type { BookingFormState } from './useBookingForm';
 
 const FEW_PLACES = 3;
 
-const slotLabel = ({ startsAt, remaining }: Slot) => {
-  const time = formatTime(startsAt);
-  if (remaining === undefined || remaining > FEW_PLACES) return time;
-  return `${time} · ${remaining === 1 ? '1 vaga' : `${remaining} vagas`}`;
+const slotLabel = (slot: Slot) => {
+  const time = formatTime(slot.startsAt);
+  if (!('remaining' in slot) || slot.remaining > FEW_PLACES) return time;
+  return `${time} · ${slot.remaining === 1 ? '1 vaga' : `${slot.remaining} vagas`}`;
 };
 
 interface SlotFieldsProps {
   booking: BookingFormState;
   emptyNote: string;
-  places?: boolean;
+  stacked?: boolean;
 }
 
-export function SlotFields({ booking, emptyNote, places = false }: SlotFieldsProps) {
+export function SlotFields({ booking, emptyNote, stacked = false }: SlotFieldsProps) {
   const { days, slots, loading, failure, retry, empty, messages } = booking.slots;
   return (
     <>
       <div
         className={cx(
           'grid items-start gap-5',
-          places
+          stacked
             ? 'min-[30rem]:grid-cols-2 min-[30rem]:gap-4'
             : 'min-[22rem]:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] min-[22rem]:gap-4',
         )}

@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useEffectEvent, useState } from 'react';
 import { useWatch, type FieldValues, type Path, type UseFormReturn } from 'react-hook-form';
 import { ApiError } from '@lib/api/api-error';
 import {
@@ -77,6 +77,12 @@ export function useBookingForm<TIn extends SlotValues, TOut, R>(
       setError('startsAt', { message: SLOT_GONE_MESSAGE }, { shouldFocus: true });
     }
   }, [availability.data, getValues, setValue, setError, clearErrors]);
+
+  const notFound = useEffectEvent(onNotFound);
+
+  useEffect(() => {
+    if (availability.error instanceof ApiError && availability.error.code === 'NOT_FOUND') notFound();
+  }, [availability.error]);
 
   const clearSlot = () => setValue('startsAt', '');
   const clearDay = () => {
