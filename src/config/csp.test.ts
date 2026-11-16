@@ -37,6 +37,13 @@ describe('buildCsp', () => {
     expect(() => buildCsp('http://api.example.com')).toThrow(/https/);
   });
 
+  it('accepts http only for an API on this machine, as in the end-to-end runs', () => {
+    for (const url of ['http://localhost:3001', 'http://127.0.0.1:3001', 'http://[::1]:3001']) {
+      expect(directives(buildCsp(url)).get('connect-src'), url).toEqual([new URL(url).origin]);
+    }
+    expect(() => buildCsp('http://localhost.example.com')).toThrow(/https/);
+  });
+
   it('keeps only the origin when the API URL has a path', () => {
     expect(directives(buildCsp('https://api.example.com/v1')).get('connect-src')).toEqual([
       'https://api.example.com',

@@ -1,6 +1,10 @@
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
+
 export function buildCsp(apiUrl: string): string {
   const api = new URL(apiUrl);
-  if (api.protocol !== 'https:') throw new Error('VITE_API_URL must use https in production builds');
+  if (api.protocol !== 'https:' && !LOOPBACK_HOSTS.has(api.hostname)) {
+    throw new Error('VITE_API_URL must use https in production builds, except on this machine');
+  }
   return [
     "default-src 'none'",
     "script-src 'self'",
