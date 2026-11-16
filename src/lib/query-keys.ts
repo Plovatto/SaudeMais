@@ -42,6 +42,7 @@ export const queryKeys = {
     examTypes: ['catalog', 'exam-types'] as const,
     offers: ['catalog', 'offers'] as const,
     policy: ['catalog', 'policy'] as const,
+    integrations: ['catalog', 'integrations'] as const,
     activeSpecialties: ['catalog', 'active-specialties'] as const,
     activeUnits: ['catalog', 'active-units'] as const,
     activeUnitsFor: (examTypeId: string) => ['catalog', 'active-units', examTypeId] as const,

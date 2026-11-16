@@ -3,6 +3,7 @@ import { Navigate, useNavigate, useParams } from 'react-router';
 import { PageHeader } from '@components/layout/PageHeader';
 import { TabPanel, Tabs } from '@components/ui';
 import { ExamTypesSection } from './ExamTypesSection';
+import { IntegrationsSection } from './IntegrationsSection';
 import { OffersSection } from './OffersSection';
 import { PolicySection } from './PolicySection';
 import { SpecialtiesSection } from './SpecialtiesSection';
@@ -14,6 +15,7 @@ const SECTIONS = [
   { value: 'exames', label: 'Exames', Component: ExamTypesSection },
   { value: 'ofertas', label: 'Exames por unidade', Component: OffersSection },
   { value: 'politica', label: 'Política', Component: PolicySection },
+  { value: 'integracoes', label: 'Integrações', Component: IntegrationsSection },
 ] as const satisfies readonly { value: string; label: string; Component: ComponentType }[];
 
 type SectionValue = (typeof SECTIONS)[number]['value'];
