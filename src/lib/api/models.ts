@@ -7,3 +7,5 @@ export type DoctorAppointment = components['schemas']['DoctorAppointment'];
 export type UserNotification = components['schemas']['Notification'];
 
 export type ExamResult = components['schemas']['ExamResult'];
+
+export type HealthMetricsInput = components['schemas']['HealthMetricsInput'];
