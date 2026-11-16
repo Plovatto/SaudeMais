@@ -1,14 +1,12 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import type { BrowserContext } from '@playwright/test';
 import { SESSION_STORAGE_KEY } from '../../src/lib/auth/token-store';
 import { WEB_ORIGIN } from './env';
 
 export type DemoRole = 'patient' | 'doctor';
 
-interface StorageState {
-  cookies: [];
-  origins: { origin: string; localStorage: { name: string; value: string }[] }[];
-}
+type StorageState = Awaited<ReturnType<BrowserContext['storageState']>>;
 
 const AUTH_DIR = path.join(import.meta.dirname, '..', '.auth');
 

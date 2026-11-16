@@ -69,6 +69,13 @@ export const api = {
   },
   bookAppointment: (token: string, data: Schemas['BookAppointmentRequest']) =>
     call<Schemas['Appointment']>('POST', '/api/appointments', { token, data }),
+  unreadCount: async (token: string, role: 'patient' | 'doctor') =>
+    (
+      await call<Schemas['UnreadNotificationCount']>('GET', '/api/notifications/unread-count', {
+        token,
+        params: { role },
+      })
+    ).count,
   saveSchedule: (token: string, data: Schemas['SaveDoctorScheduleRequest']) =>
     call<Schemas['SavedDoctorSchedule']>('PUT', '/api/doctor/schedule', { token, data }),
 };

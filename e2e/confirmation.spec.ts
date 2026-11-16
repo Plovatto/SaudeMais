@@ -9,11 +9,6 @@ const PATIENT_NAME = 'Ana Maria Silva';
 
 const bell = (page: Page) => page.getByRole('button', { name: /^Notificações/ });
 
-async function unreadCount(page: Page) {
-  const label = (await bell(page).getAttribute('aria-label')) ?? '';
-  return Number(/(\d+) não lidas?/.exec(label)?.[1] ?? 0);
-}
-
 test('the doctor confirms a request and the patient is notified', async ({ signedIn }) => {
   const token = await tokenFor('patient');
   const doctor = await api.doctor(token, DOCTOR_NAME);
@@ -24,11 +19,13 @@ test('the doctor confirms a request and the patient is notified', async ({ signe
     startsAt: await api.firstFreeSlot(token, doctor.id),
   });
   const when = formatDateTime(startsAt);
+  const unread = await api.unreadCount(token, 'patient');
 
   const patientPage = await signedIn('patient');
   await patientPage.goto('paciente');
-  await expect(bell(patientPage)).toBeVisible();
-  const unread = await unreadCount(patientPage);
+  await expect(bell(patientPage)).toHaveAccessibleName(
+    unread === 0 ? 'Notificações' : new RegExp(`, ${unread} `),
+  );
 
   const doctorPage = await signedIn('doctor');
   await doctorPage.goto('medico/agenda');
@@ -39,10 +36,9 @@ test('the doctor confirms a request and the patient is notified', async ({ signe
   await expect(doctorPage.getByText('Consulta confirmada.')).toBeVisible();
   await expect(confirm).toBeHidden();
 
+  await expect.poll(() => api.unreadCount(token, 'patient')).toBe(unread + 1);
   await patientPage.reload();
-  await expect(bell(patientPage)).toHaveAccessibleName(
-    `Notificações, ${unread + 1} ${unread + 1 === 1 ? 'não lida' : 'não lidas'}`,
-  );
+  await expect(bell(patientPage)).toHaveAccessibleName(new RegExp(`, ${unread + 1} não lidas?$`));
   await bell(patientPage).click();
   const notifications = patientPage.getByRole('dialog', { name: 'Notificações' });
   await expect(notifications.getByText('Consulta confirmada!').first()).toBeVisible();
