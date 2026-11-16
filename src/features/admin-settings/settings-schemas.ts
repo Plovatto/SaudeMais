@@ -77,6 +77,8 @@ export const policySchema = z.object({
   minLeadMinutes: wholeNumber(0, 10080, 'Use de 0 a 10080 minutos.'),
 });
 
+export const integrationSchema = z.object({ name: catalogName });
+
 export type SpecialtyValues = z.infer<typeof specialtySchema>;
 export type UnitValues = z.infer<typeof unitSchema>;
 export type ExamTypeValues = z.infer<typeof examTypeSchema>;

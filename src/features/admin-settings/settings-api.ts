@@ -9,6 +9,7 @@ export type Unit = ResponseOf<'/api/admin/units/{id}', 'patch'>;
 export type ExamType = ResponseOf<'/api/admin/exam-types/{id}', 'patch'>;
 export type ExamOffer = ResponseOf<'/api/admin/units/{id}/exam-offers', 'get'>[number];
 export type Policy = ResponseOf<'/api/admin/policy', 'get'>;
+export type IntegrationClient = ResponseOf<'/api/admin/integration-clients', 'get'>['items'][number];
 
 interface CatalogTypes {
   '/api/admin/specialties': {
@@ -66,4 +67,12 @@ export const offersApi = {
 export const policyApi = {
   get: (signal: AbortSignal) => apiFetch('get', '/api/admin/policy', { signal }),
   update: (body: BodyOf<'/api/admin/policy', 'put'>) => apiFetch('put', '/api/admin/policy', { body }),
+};
+
+export const integrationsApi = {
+  list: (page: number, signal: AbortSignal) =>
+    apiFetch('get', '/api/admin/integration-clients', { query: { page, pageSize: PAGE_SIZE }, signal }),
+  create: (body: BodyOf<'/api/admin/integration-clients', 'post'>) =>
+    apiFetch('post', '/api/admin/integration-clients', { body }),
+  revoke: (id: string) => apiFetch('post', '/api/admin/integration-clients/{id}/revoke', { params: { id } }),
 };

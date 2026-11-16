@@ -840,6 +840,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/integration-clients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar integrações
+         * @description Clientes de integração em ordem alfabética, com o prefixo visível da chave, o último uso e a revogação. A chave completa e o hash dela nunca são devolvidos. Limite: 120 requisições por minuto por IP.
+         */
+        get: operations["adminListIntegrationClients"];
+        put?: never;
+        /**
+         * Criar integração
+         * @description Cria um cliente de integração e gera a chave de API (`slab_`, 8 letras ou números do prefixo, `_` e 43 caracteres do segredo de 32 bytes). A chave completa aparece só nesta resposta: a API guarda apenas o hash SHA-256. A criação fica na auditoria. Limite: 120 requisições por minuto por IP.
+         */
+        post: operations["adminCreateIntegrationClient"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/integration-clients/{id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revogar a chave de uma integração
+         * @description Revoga a chave na hora: as próximas chamadas com ela recebem `INVALID_API_KEY`. Os resultados já publicados continuam guardados. Revogar de novo não muda nada e devolve a integração como está. A revogação fica na auditoria. Limite: 120 requisições por minuto por IP.
+         */
+        post: operations["adminRevokeIntegrationClient"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/integrations/lab/worklist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ver os exames que aguardam resultado
+         * @description Exames do dia `date` (fuso de São Paulo) que podem receber resultado e ainda não têm: confirmados cujo horário já começou ou concluídos. Exames cancelados, futuros ou com resultado ficam de fora. Cada exame vem só com o código público, o código do tipo de exame e o início, sem dados do paciente, em ordem de horário. Limite: 60 requisições por minuto por chave.
+         */
+        get: operations["getLabWorklist"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/integrations/lab/results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publicar o resultado de um exame
+         * @description Publica o resultado do exame `examCode`, que precisa estar confirmado com o horário já iniciado ou concluído (`NOT_ELIGIBLE`). `issuedAt` aceita no máximo 5 minutos à frente do relógio da API (`ISSUED_IN_FUTURE`). Exame laboratorial recebe `items`; exame de imagem recebe `report` (`WRONG_RESULT_FORMAT`). A primeira publicação cria a versão 1 (201). Reenviar com o mesmo `externalId` e o mesmo conteúdo da versão atual não muda nada (200, `unchanged`). Conteúdo diferente com `status` `amended` cria uma nova versão (200, `amended`); com `final`, é recusado (`RESULT_FINAL`). Outro `externalId` para o mesmo exame é recusado (`RESULT_EXISTS`), assim como reaproveitar um `externalId` em outro exame (`EXTERNAL_ID_TAKEN`). As versões são imutáveis. Cada versão nova conclui o exame, registra o evento `result_received`, avisa o paciente com a notificação `exam_result_available` e fica na auditoria, sem o conteúdo do resultado. Publicações simultâneas do mesmo exame são feitas uma de cada vez. Limite: 60 requisições por minuto por chave.
+         */
+        post: operations["publishLabResult"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/notifications": {
         parameters: {
             query?: never;
@@ -2588,6 +2672,129 @@ export interface components {
                 /** Format: date-time */
                 createdAt: string;
             }[];
+        };
+        CreateIntegrationClientRequest: {
+            /** @example Laboratório Central */
+            name: string;
+        };
+        IntegrationClient: {
+            /** Format: uuid */
+            id: string;
+            /** @example Laboratório Central */
+            name: string;
+            /**
+             * @description Começo visível da chave, para identificá-la sem expor o segredo.
+             * @example 7f3k2q9a
+             */
+            keyPrefix: string;
+            /** Format: date-time */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description Último uso da chave, atualizado no máximo a cada 5 minutos.
+             */
+            lastUsedAt: string | null;
+            /**
+             * Format: date-time
+             * @description Quando a chave foi revogada; nulo se ativa.
+             */
+            revokedAt: string | null;
+        };
+        CreatedIntegrationClient: components["schemas"]["IntegrationClient"] & {
+            /**
+             * @description Chave completa, para o cabeçalho `X-Api-Key`. Só aparece nesta resposta; a API guarda apenas o hash.
+             * @example slab_7f3k2q9a_q3Zp1vQx8n0rT2bYc4dEf6gHi8jKl0mNo2pQr4sTu6v
+             */
+            apiKey: string;
+        };
+        LabWorklist: {
+            /**
+             * @description Código público do exame.
+             * @example EX-7F3K2Q
+             */
+            examCode: string;
+            /**
+             * @description Código estável, usado na integração com o laboratório.
+             * @example hemograma
+             */
+            examTypeCode: string;
+            /**
+             * Format: date-time
+             * @example 2026-11-23T11:00:00.000Z
+             */
+            startsAt: string;
+        }[];
+        LabResultRequest: {
+            /**
+             * @description Identificador do resultado no laboratório; o mesmo em reenvios e retificações.
+             * @example LAB-2026-000123
+             */
+            externalId: string;
+            /**
+             * @description Código público do exame.
+             * @example EX-7F3K2Q
+             */
+            examCode: string;
+            /**
+             * @description `final` na primeira publicação; `amended` para retificar o conteúdo já publicado.
+             * @enum {string}
+             */
+            status: "final" | "amended";
+            /**
+             * Format: date-time
+             * @description Emissão do resultado no laboratório.
+             * @example 2026-11-23T11:00:00.000Z
+             */
+            issuedAt: string;
+            /** @description Itens do exame laboratorial. */
+            items?: {
+                /** @example Hemoglobina */
+                name: string;
+                /**
+                 * @description Número ou texto, como `Negativo`.
+                 * @example 13.8
+                 */
+                value: number | string;
+                /**
+                 * @default null
+                 * @example g/dL
+                 */
+                unit: string | null;
+                /**
+                 * @default null
+                 * @example 12,0 a 16,0
+                 */
+                referenceRange: string | null;
+                /**
+                 * @description Indicador do valor em relação à faixa de referência.
+                 * @enum {string}
+                 */
+                flag: "normal" | "low" | "high" | "critical";
+            }[];
+            /**
+             * @description Laudo em texto do exame de imagem.
+             * @example Fígado de dimensões normais.
+             */
+            report?: string;
+        };
+        LabResultReceipt: {
+            /**
+             * @description Código público do exame.
+             * @example EX-7F3K2Q
+             */
+            examCode: string;
+            /** @example LAB-2026-000123 */
+            externalId: string;
+            /**
+             * @description Versão atual do resultado.
+             * @example 1
+             */
+            version: number;
+            /**
+             * @description `created` na primeira publicação, `unchanged` no reenvio de conteúdo igual ao atual e `amended` quando a retificação criou uma versão.
+             * @enum {string}
+             */
+            outcome: "created" | "unchanged" | "amended";
         };
         PasswordResetRequest: {
             /** @example ana.silva@email.com */
@@ -8486,6 +8693,580 @@ export interface operations {
                      *       "code": "SAME_SLOT",
                      *       "fields": {
                      *         "newStartsAt": "Escolha um horário diferente do atual."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminListIntegrationClients: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Página de integrações. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["IntegrationClient"][];
+                        page: number;
+                        pageSize: number;
+                        total: number;
+                    };
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminCreateIntegrationClient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CreateIntegrationClientRequest"];
+            };
+        };
+        responses: {
+            /** @description Integração criada, com a chave. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedIntegrationClient"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflito com o estado atual (`NAME_TAKEN`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Já existe uma integração com esse nome.",
+                     *       "code": "NAME_TAKEN",
+                     *       "fields": {
+                     *         "name": "Já existe uma integração com esse nome."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminRevokeIntegrationClient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Integração revogada. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntegrationClient"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Integração não encontrada.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getLabWorklist: {
+        parameters: {
+            query: {
+                /** @description Dia dos exames, no fuso de São Paulo. */
+                date: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Exames que aguardam resultado. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabWorklist"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Chave de API ausente, inválida ou revogada (`INVALID_API_KEY`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Chave de API ausente, inválida ou revogada.",
+                     *       "code": "INVALID_API_KEY"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    publishLabResult: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["LabResultRequest"];
+            };
+        };
+        responses: {
+            /** @description Reenvio sem efeito ou nova versão. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabResultReceipt"];
+                };
+            };
+            /** @description Resultado criado. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabResultReceipt"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Chave de API ausente, inválida ou revogada (`INVALID_API_KEY`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Chave de API ausente, inválida ou revogada.",
+                     *       "code": "INVALID_API_KEY"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Nenhum exame tem este código.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflito com o estado atual (`RESULT_FINAL`, `RESULT_EXISTS`, `EXTERNAL_ID_TAKEN`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Este resultado já foi publicado com outro conteúdo. Para corrigi-lo, envie status amended.",
+                     *       "code": "RESULT_FINAL",
+                     *       "fields": {
+                     *         "status": "Este resultado já foi publicado com outro conteúdo. Para corrigi-lo, envie status amended."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Exame cancelado ou futuro (`NOT_ELIGIBLE`), formato errado para o tipo de exame (`WRONG_RESULT_FORMAT`) ou emissão no futuro (`ISSUED_IN_FUTURE`). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Este exame foi cancelado ou ainda não aconteceu, então não recebe resultado.",
+                     *       "code": "NOT_ELIGIBLE",
+                     *       "fields": {
+                     *         "examCode": "Este exame foi cancelado ou ainda não aconteceu, então não recebe resultado."
                      *       }
                      *     }
                      */

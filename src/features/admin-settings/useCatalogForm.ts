@@ -3,6 +3,7 @@ import { useQueryClient, type QueryKey } from '@tanstack/react-query';
 import { useForm, type DefaultValues, type FieldValues, type Path, type Resolver } from 'react-hook-form';
 import type { z } from 'zod';
 import { useToast } from '@components/ui';
+import type { MessageOverrides } from '@lib/messages/errors.pt-BR';
 import { useFormSubmit } from '@lib/useFormSubmit';
 import { catalogMessages } from './catalog-messages';
 
@@ -14,6 +15,7 @@ export interface CatalogFormOptions<T extends FieldValues> {
   invalidate: QueryKey;
   success: string;
   onDone?: () => void;
+  messages?: MessageOverrides;
 }
 
 export function useCatalogForm<T extends FieldValues>({
@@ -24,11 +26,12 @@ export function useCatalogForm<T extends FieldValues>({
   invalidate,
   success,
   onDone,
+  messages = catalogMessages,
 }: CatalogFormOptions<T>) {
   const queryClient = useQueryClient();
   const { show } = useToast();
   const form = useForm<T>({ resolver: zodResolver(schema) as Resolver<T>, defaultValues });
-  const { alert, run } = useFormSubmit(form.setError, fields, undefined, catalogMessages);
+  const { alert, run } = useFormSubmit(form.setError, fields, undefined, messages);
   const onSubmit = form.handleSubmit((values) =>
     run(async () => {
       await save(values);

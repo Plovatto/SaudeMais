@@ -31,7 +31,7 @@ export function FormShell({
       {alert && <FormAlert>{alert}</FormAlert>}
       <div className="flex flex-wrap justify-end gap-3">
         {onCancel && (
-          <Button variant="secondary" onClick={onCancel}>
+          <Button variant="secondary" disabled={submitting} onClick={onCancel}>
             Cancelar
           </Button>
         )}

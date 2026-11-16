@@ -1,8 +1,6 @@
-import { useMutation, useQueryClient, type QueryKey } from '@tanstack/react-query';
-import { useState } from 'react';
-import { ConfirmDialog, useToast } from '@components/ui';
-import { errorMessage } from '@lib/messages/errors.pt-BR';
+import type { QueryKey } from '@tanstack/react-query';
 import { catalogMessages } from './catalog-messages';
+import { useConfirmedAction } from './useConfirmedAction';
 
 export interface ActiveToggleOptions<T> {
   nameOf: (item: T) => string;
@@ -11,39 +9,32 @@ export interface ActiveToggleOptions<T> {
   invalidate: QueryKey;
 }
 
+interface Change<T> {
+  item: T;
+  isActive: boolean;
+}
+
 export function useActiveToggle<T>({ nameOf, keyOf, setActive, invalidate }: ActiveToggleOptions<T>) {
-  const queryClient = useQueryClient();
-  const { show } = useToast();
-  const [pending, setPending] = useState<T | null>(null);
-  const mutation = useMutation({
-    mutationFn: ({ item, isActive }: { item: T; isActive: boolean }) => setActive(item, isActive),
-    onSuccess: async (_result, { item, isActive }) => {
-      await queryClient.invalidateQueries({ queryKey: invalidate });
-      show({ message: `${nameOf(item)} ${isActive ? 'ativado' : 'desativado'}.`, tone: 'success' });
-    },
-    onError: (error) => show({ message: errorMessage(error, catalogMessages), tone: 'danger' }),
-    onSettled: () => setPending(null),
+  const action = useConfirmedAction<Change<T>>({
+    keyOf: ({ item }) => keyOf(item),
+    run: ({ item, isActive }) => setActive(item, isActive),
+    invalidate,
+    success: ({ item, isActive }) => `${nameOf(item)} ${isActive ? 'ativado' : 'desativado'}.`,
+    confirm: (change) => ({
+      title: change ? `Desativar ${nameOf(change.item)}?` : 'Desativar?',
+      description:
+        'Itens desativados deixam de aparecer para quem agenda. Você pode ativá-los de novo quando quiser.',
+      confirmLabel: 'Desativar',
+    }),
+    messages: catalogMessages,
   });
 
-  const request = (item: T, isActive: boolean) => {
-    if (isActive) mutation.mutate({ item, isActive });
-    else setPending(item);
+  const request = (item: T, isActive: boolean) =>
+    isActive ? action.run({ item, isActive }) : action.ask({ item, isActive });
+
+  return {
+    request,
+    isBusy: (item: T) => action.isBusy({ item, isActive: false }),
+    confirmation: action.confirmation,
   };
-
-  const confirmation = (
-    <ConfirmDialog
-      open={pending !== null}
-      onClose={() => setPending(null)}
-      title={pending ? `Desativar ${nameOf(pending)}?` : 'Desativar?'}
-      description="Itens desativados deixam de aparecer para quem agenda. Você pode ativá-los de novo quando quiser."
-      confirmLabel="Desativar"
-      loading={mutation.isPending}
-      onConfirm={() => pending && mutation.mutate({ item: pending, isActive: false })}
-    />
-  );
-
-  const isBusy = (item: T) =>
-    mutation.isPending && mutation.variables !== undefined && keyOf(mutation.variables.item) === keyOf(item);
-
-  return { request, isBusy, confirmation };
 }

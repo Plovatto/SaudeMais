@@ -1,6 +1,5 @@
-import { LuInbox } from 'react-icons/lu';
-import { Button, Card, EmptyState } from '@components/ui';
 import { CatalogRow } from './CatalogRow';
+import { ItemList, type EmptyList } from './ItemList';
 
 export interface CatalogItemsProps<T extends { isActive: boolean }> {
   items: readonly T[] | undefined;
@@ -9,7 +8,7 @@ export interface CatalogItemsProps<T extends { isActive: boolean }> {
   isBusy: (item: T) => boolean;
   onToggle: (item: T, isActive: boolean) => void;
   onEdit: (item: T) => void;
-  empty: { title: string; description: string; actionLabel: string; onCreate: () => void };
+  empty: EmptyList;
 }
 
 export function CatalogItems<T extends { isActive: boolean }>({
@@ -21,31 +20,20 @@ export function CatalogItems<T extends { isActive: boolean }>({
   onEdit,
   empty,
 }: CatalogItemsProps<T>) {
-  if (!items) return null;
-  if (items.length === 0) {
-    return (
-      <Card>
-        <EmptyState
-          icon={<LuInbox />}
-          title={empty.title}
-          description={empty.description}
-          action={<Button onClick={empty.onCreate}>{empty.actionLabel}</Button>}
-        />
-      </Card>
-    );
-  }
   return (
-    <ul className="grid gap-3 lg:grid-cols-2">
-      {items.map((item) => (
+    <ItemList
+      items={items}
+      keyOf={keyOf}
+      empty={empty}
+      renderItem={(item) => (
         <CatalogRow
-          key={keyOf(item)}
           {...describe(item)}
           isActive={item.isActive}
           busy={isBusy(item)}
           onToggle={(isActive) => onToggle(item, isActive)}
           onEdit={() => onEdit(item)}
         />
-      ))}
-    </ul>
+      )}
+    />
   );
 }

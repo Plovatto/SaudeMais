@@ -1,5 +1,6 @@
 import { LuPencil } from 'react-icons/lu';
-import { Card, IconButton, StatusChip, Switch } from '@components/ui';
+import { IconButton, Switch } from '@components/ui';
+import { SettingsRow } from './SettingsRow';
 
 export interface CatalogRowProps {
   name: string;
@@ -12,22 +13,14 @@ export interface CatalogRowProps {
 
 export function CatalogRow({ name, details, isActive, busy, onToggle, onEdit }: CatalogRowProps) {
   return (
-    <li>
-      <Card variant="outlined" className="flex flex-wrap items-center gap-3">
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <p className="text-text font-semibold break-words">{name}</p>
-          <p className="text-text-secondary text-sm break-words">{details}</p>
-        </div>
-        <StatusChip tone={isActive ? 'success' : 'neutral'}>{isActive ? 'Ativo' : 'Inativo'}</StatusChip>
-        <Switch
-          checked={isActive}
-          onCheckedChange={onToggle}
-          label={`${name} ativo`}
-          labelHidden
-          busy={busy}
-        />
-        <IconButton label={`Editar ${name}`} icon={<LuPencil />} onClick={onEdit} />
-      </Card>
-    </li>
+    <SettingsRow
+      name={name}
+      details={details}
+      status={isActive ? 'Ativo' : 'Inativo'}
+      tone={isActive ? 'success' : 'neutral'}
+    >
+      <Switch checked={isActive} onCheckedChange={onToggle} label={`${name} ativo`} labelHidden busy={busy} />
+      <IconButton label={`Editar ${name}`} icon={<LuPencil />} onClick={onEdit} />
+    </SettingsRow>
   );
 }
