@@ -54,9 +54,9 @@ A tela de login mostra as contas abaixo, com um botão **Preencher**. Elas são 
 - Administrador: usuários e perfis, catálogo, política de agendamento, integrações e relatórios
 - Notificações com contador de não lidas, consultado só com a aba visível
 - Tema claro e escuro, cor própria por perfil e layout para celular e computador
-- Acessibilidade WCAG 2.2 AA, conferida com axe nos testes ponta a ponta
+- Acessibilidade com alvo WCAG 2.2 AA, verificada com axe nos testes ponta a ponta
 - Tipos da API gerados a partir do contrato OpenAPI
-- Alias de importação configurados no Vite
+- Aliases de importação configurados no Vite
 
 ## Tecnologias
 
@@ -149,21 +149,21 @@ A origem `https://plovatto.github.io` também precisa constar em `CORS_ORIGIN` n
 
 ## Scripts
 
-| Comando                | Descrição                                              |
-| ---------------------- | ------------------------------------------------------ |
-| `npm run dev`          | Inicia o servidor de desenvolvimento                   |
-| `npm run build`        | Executa a checagem de tipos e gera o build de produção |
-| `npm run preview`      | Executa localmente o build de produção                 |
-| `npm run typecheck`    | Executa a checagem de tipos sem gerar arquivos         |
-| `npm run lint`         | Executa a análise do código com ESLint                 |
-| `npm run lint:fix`     | Corrige problemas de lint automaticamente              |
-| `npm run format`       | Formata o código com Prettier                          |
-| `npm run format:check` | Confere a formatação                                   |
-| `npm test`             | Executa os testes                                      |
-| `npm run test:watch`   | Executa os testes em modo de observação                |
-| `npm run api:types`    | Gera os tipos a partir do contrato da API              |
-| `npm run e2e`          | Executa os testes ponta a ponta                        |
-| `npm run e2e:ui`       | Abre os testes ponta a ponta no modo UI do Playwright  |
+| Comando                | Descrição                                                 |
+| ---------------------- | --------------------------------------------------------- |
+| `npm run dev`          | Inicia o servidor de desenvolvimento                      |
+| `npm run build`        | Executa a checagem de tipos e gera o build de produção    |
+| `npm run preview`      | Serve localmente o build de produção (rode `build` antes) |
+| `npm run typecheck`    | Executa a checagem de tipos sem gerar arquivos            |
+| `npm run lint`         | Executa a análise do código com ESLint                    |
+| `npm run lint:fix`     | Corrige problemas de lint automaticamente                 |
+| `npm run format`       | Formata o código com Prettier                             |
+| `npm run format:check` | Confere a formatação                                      |
+| `npm test`             | Executa os testes                                         |
+| `npm run test:watch`   | Executa os testes em modo de observação                   |
+| `npm run api:types`    | Gera os tipos a partir do contrato da API                 |
+| `npm run e2e`          | Executa os testes ponta a ponta                           |
+| `npm run e2e:ui`       | Abre os testes ponta a ponta no modo UI do Playwright     |
 
 Para rodar os testes ponta a ponta localmente, veja o [guia de contribuição](CONTRIBUTING.md#testes-ponta-a-ponta).
 

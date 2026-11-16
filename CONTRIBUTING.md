@@ -27,9 +27,10 @@ Os pull requests do Dependabot (`dependabot/...`) são a exceção às regras de
 
 ## Testes ponta a ponta
 
-Os testes em `e2e/` cobrem três fluxos no Chromium e no WebKit, em 402 px e 1280 px, e falham se o axe encontrar violação séria ou crítica. Eles precisam da [API](https://github.com/Plovatto/API-SaudeMais) em `http://localhost:3001` com um banco descartável, nunca o de produção. Na pasta da API, com o `.env` apontando para esse banco:
+Os testes em `e2e/` cobrem três fluxos no Chromium e no WebKit, em 402 px e 1280 px, e falham se o axe encontrar violação séria ou crítica. Eles precisam da [API](https://github.com/Plovatto/API-SaudeMais) em `http://localhost:3001` com um banco descartável, nunca o de produção. Na pasta da API, com o `.env` criado a partir do `.env.example` e apontando para esse banco:
 
 ```env
+NODE_ENV=development
 CORS_ORIGIN=http://localhost:4173
 APP_PUBLIC_URL=http://localhost:4173/SaudeMais
 MAIL_DRIVER=console
@@ -43,7 +44,7 @@ npm run db:seed
 npm run dev
 ```
 
-Aqui, instale os navegadores uma vez e rode os testes com as mesmas credenciais do Admin:
+Na pasta do front, instale os navegadores uma vez e rode os testes com as mesmas credenciais do administrador:
 
 ```bash
 npx playwright install chromium webkit
