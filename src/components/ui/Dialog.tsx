@@ -54,6 +54,10 @@ export function Dialog({
   }, [open, initialFocus]);
 
   const onDialogClose = useEffectEvent(() => {
+    if (!dismissible && !closingFromProp.current) {
+      ref.current?.showModal();
+      return;
+    }
     if (returnFocus.current?.isConnected) returnFocus.current.focus();
     else fallbackFocus?.current?.focus();
     returnFocus.current = null;
@@ -93,13 +97,14 @@ export function Dialog({
       )}
     >
       <div className={cx('relative flex flex-col gap-4 p-6 pt-8', centered && 'items-center text-center')}>
-        <IconButton
-          label={closeLabel}
-          icon={<LuX />}
-          onClick={() => ref.current?.close()}
-          disabled={!dismissible}
-          className="absolute end-2 top-2"
-        />
+        {dismissible && (
+          <IconButton
+            label={closeLabel}
+            icon={<LuX />}
+            onClick={() => ref.current?.close()}
+            className="absolute end-2 top-2"
+          />
+        )}
         {icon && <IconSlot badge="strong">{icon}</IconSlot>}
         <div className="flex flex-col gap-1">
           <h2 id={titleId} className="text-lg font-semibold">

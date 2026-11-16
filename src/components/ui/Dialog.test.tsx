@@ -154,7 +154,7 @@ describe('Dialog', () => {
     const dialog = screen.getByRole('dialog', { name: 'Registrar falta?' });
 
     expect(screen.getByRole('button', { name: 'Cancelar' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Fechar' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Fechar' })).not.toBeInTheDocument();
     const cancel = new Event('cancel', { cancelable: true });
     act(() => {
       dialog.dispatchEvent(cancel);
@@ -163,6 +163,24 @@ describe('Dialog', () => {
     await user.pointer({ keys: '[MouseLeft]', target: dialog });
 
     expect(dialog).toHaveAttribute('open');
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('reopens when the browser force-closes a dialog that cannot be dismissed', () => {
+    const onClose = vi.fn();
+    render(
+      <Dialog open onClose={onClose} title="Chave da integração" dismissible={false}>
+        <button type="button">Já copiei</button>
+      </Dialog>,
+    );
+    const dialog = screen.getByRole<HTMLDialogElement>('dialog', { name: 'Chave da integração' });
+
+    act(() => {
+      dialog.close();
+    });
+
+    expect(dialog).toHaveAttribute('open');
+    expect(screen.getByRole('button', { name: 'Já copiei' })).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
   });
 });
