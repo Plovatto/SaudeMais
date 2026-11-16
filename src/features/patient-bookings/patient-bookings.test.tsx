@@ -171,6 +171,48 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     expect(scope.getByText('Rua das Flores, 123')).not.toBeVisible();
   });
 
+  it('links to the reschedule page and tells how many reschedules are left', async () => {
+    serve({ upcoming: [booking('b1'), exam('b2', { actions: actions({ reschedulesLeft: 1 }) })] });
+    const { user } = renderApp('/paciente/agendamentos');
+    const appointment = await card(/Dr\. João Silveira/);
+    await user.click(appointment.header);
+    const link = appointment.scope.getByRole('link', { name: /^Reagendar: Dr\. João Silveira/ });
+    expect(link).toHaveAttribute('href', '/paciente/consultas/b1/reagendar');
+    expect(appointment.header).not.toContainElement(link);
+    expect(link).toHaveAccessibleDescription('2 reagendamentos restantes');
+    const examCard = await card(/Lab\. Central/);
+    await user.click(examCard.header);
+    expect(examCard.scope.getByRole('link', { name: /^Reagendar/ })).toHaveAttribute(
+      'href',
+      '/paciente/exames/b2/reagendar',
+    );
+    expect(examCard.scope.getByText('1 reagendamento restante')).toBeVisible();
+  });
+
+  it('explains why a booking can no longer be rescheduled', async () => {
+    serve({
+      upcoming: [
+        booking('b1', { actions: late }),
+        exam('b2', {
+          actions: actions({ canReschedule: false, rescheduleBlockedReason: 'limit', reschedulesLeft: 0 }),
+        }),
+      ],
+    });
+    const { user } = renderApp('/paciente/agendamentos');
+    const appointment = await card(/Dr\. João Silveira/);
+    await user.click(appointment.header);
+    expect(appointment.scope.queryByRole('link', { name: /^Reagendar/ })).not.toBeInTheDocument();
+    expect(appointment.scope.getByRole('note')).toHaveTextContent(
+      /não pode mais ser reagendado, só cancelado/,
+    );
+    expect(appointment.scope.getByRole('button', { name: /^Cancelar/ })).toBeVisible();
+    const examCard = await card(/Lab\. Central/);
+    await user.click(examCard.header);
+    expect(examCard.scope.queryByRole('link', { name: /^Reagendar/ })).not.toBeInTheDocument();
+    expect(examCard.scope.getByRole('note')).toHaveTextContent(/já usou todos os reagendamentos/);
+    expect(examCard.scope.queryByText(/reagendamentos? restantes?/)).not.toBeInTheDocument();
+  });
+
   it('shows who cancelled, the reason and the late flag', async () => {
     serve({
       past: [
