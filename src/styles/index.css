@@ -44,6 +44,9 @@
   --warning: #f2b53b;
   --warning-soft: #fdf6e7;
   --warning-text: #8c6922;
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #868e90;
   --focus: #424242;
   --overlay: rgb(20 28 29 / 0.45);
   --elevation-card: 0 5px 33px 2px rgb(0 0 0 / 0.15);
@@ -73,6 +76,9 @@
   --warning: #f2b53b;
   --warning-soft: #3e3c27;
   --warning-text: #f2b53b;
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #7d8a8c;
   --focus: #e8eef0;
   --overlay: rgb(0 0 0 / 0.6);
   --elevation-card: 0 5px 33px 2px rgb(0 0 0 / 0.45);
@@ -170,6 +176,9 @@
   --color-warning: var(--warning);
   --color-warning-soft: var(--warning-soft);
   --color-warning-text: var(--warning-text);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
   --color-focus: var(--focus);
   --color-overlay: var(--overlay);
   --shadow-card: var(--elevation-card);

@@ -7,7 +7,7 @@ import { pill } from './styles';
 export interface RadioChipsProps<T extends string> {
   legend: string;
   options: readonly { value: T; label: string }[];
-  value: T;
+  value: T | undefined;
   onValueChange: (value: T) => void;
 }
 
