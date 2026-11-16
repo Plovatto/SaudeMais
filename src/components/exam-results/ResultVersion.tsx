@@ -1,4 +1,5 @@
 import type { ExamResult } from '@lib/api/models';
+import { cx } from '@lib/cx';
 import { formatCount } from '@lib/number';
 import { FlagChip } from './FlagChip';
 
@@ -17,6 +18,15 @@ const paragraphs = (report: string) =>
     .filter(Boolean);
 
 const cell = 'border-border border-b px-2 py-2.5 align-top first:ps-0 last:pe-0';
+
+const wideOnly = 'hidden lg:table-cell print:table-cell';
+
+const columns = [
+  { label: 'Exame' },
+  { label: 'Resultado' },
+  { label: 'Referência', className: wideOnly },
+  { label: 'Indicador' },
+];
 
 export function ResultVersion({
   version: { items, report },
@@ -43,43 +53,41 @@ export function ResultVersion({
     );
   }
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <caption className="text-text pb-2 text-start text-sm font-semibold">{label}</caption>
-        <thead>
-          <tr className="text-text-secondary text-xs font-semibold">
-            <th scope="col" className={`${cell} text-start`}>
-              Exame
+    <table className="w-full text-sm">
+      <caption className="text-text pb-2 text-start text-sm font-semibold">{label}</caption>
+      <thead>
+        <tr className="text-text-secondary text-xs font-semibold">
+          {columns.map(({ label: column, className }) => (
+            <th key={column} scope="col" className={cx(cell, 'text-start', className)}>
+              {column}
             </th>
-            <th scope="col" className={`${cell} text-start`}>
-              Resultado
-            </th>
-            <th scope="col" className={`${cell} text-start`}>
-              Referência
-            </th>
-            <th scope="col" className={`${cell} text-start`}>
-              Indicador
-            </th>
-          </tr>
-        </thead>
-        <tbody className="text-text">
-          {items.map((item) => (
-            <tr key={item.name}>
-              <th scope="row" className={`${cell} text-start font-medium`}>
-                {item.name}
-              </th>
-              <td className={cell}>
-                <span className="font-semibold tabular-nums">{formatValue(item.value)}</span>
-                {item.unit && <span className="text-text-secondary"> {item.unit}</span>}
-              </td>
-              <td className={`${cell} text-text-secondary tabular-nums`}>{item.referenceRange ?? '—'}</td>
-              <td className={cell}>
-                <FlagChip flag={item.flag} />
-              </td>
-            </tr>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </tr>
+      </thead>
+      <tbody className="text-text">
+        {items.map((item) => (
+          <tr key={item.name}>
+            <th scope="row" className={`${cell} text-start font-medium`}>
+              {item.name}
+            </th>
+            <td className={cell}>
+              <span className="font-semibold tabular-nums">{formatValue(item.value)}</span>
+              {item.unit && <span className="text-text-secondary"> {item.unit}</span>}
+              {item.referenceRange && (
+                <span className="text-text-secondary block text-xs lg:hidden print:hidden">
+                  Referência: {item.referenceRange}
+                </span>
+              )}
+            </td>
+            <td className={cx(cell, wideOnly, 'text-text-secondary tabular-nums')}>
+              {item.referenceRange ?? '—'}
+            </td>
+            <td className={cell}>
+              <FlagChip flag={item.flag} />
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
