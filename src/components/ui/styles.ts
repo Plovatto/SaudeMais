@@ -3,10 +3,10 @@ import { cx } from '@lib/cx';
 export const disabledState = 'unavailable:cursor-not-allowed unavailable:opacity-50';
 
 export const buttonVariants = {
-  primary: 'bg-role-strong text-on-role shadow-button can-hover:bg-role-strong/90',
+  primary: 'bg-role-strong text-on-role shadow-button can-hover:bg-role-strong-hover',
   secondary: 'border border-role-strong bg-surface text-role-text can-hover:bg-role-soft',
   ghost: 'text-role-text can-hover:bg-role-soft',
-  danger: 'bg-danger-strong text-on-danger shadow-button can-hover:bg-danger-strong/90',
+  danger: 'bg-danger-strong text-on-danger shadow-button can-hover:bg-danger-strong-hover',
   'danger-outline': 'border border-danger bg-surface text-danger-text can-hover:bg-danger-soft',
   'success-outline': 'border border-success bg-success-soft/50 text-success-text can-hover:bg-success-soft',
 };

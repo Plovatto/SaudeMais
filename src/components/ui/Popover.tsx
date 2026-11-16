@@ -34,16 +34,16 @@ export function Popover({
 
   return (
     <div ref={rootRef} className={cx('relative', className)}>
-      <IconButton
-        {...triggerProps}
-        label={label}
-        icon={icon}
-        aria-haspopup="dialog"
-        className="relative"
-        onClick={() => setOpen((current) => !current)}
-      >
-        {badge}
-      </IconButton>
+      <span className="relative inline-flex">
+        <IconButton
+          {...triggerProps}
+          label={label}
+          icon={icon}
+          aria-haspopup="dialog"
+          onClick={() => setOpen((current) => !current)}
+        />
+        {badge && <span className="pointer-events-none">{badge}</span>}
+      </span>
       {open && (
         <div
           ref={panelRef}

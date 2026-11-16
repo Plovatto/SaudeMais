@@ -56,6 +56,10 @@ describe.each([
     expect(contrast(base[`on-${status}`], base[`${status}-strong`])).toBeGreaterThanOrEqual(4.5);
   });
 
+  it('text on the hovered danger button reaches 4.5:1', () => {
+    expect(contrast(base['on-danger'], base['danger-strong-hover'])).toBeGreaterThanOrEqual(4.5);
+  });
+
   it('keeps field borders visible on every background (3:1)', () => {
     for (const background of backgrounds) {
       expect(contrast(base['border-field'], base[background]), background).toBeGreaterThanOrEqual(3);
@@ -82,8 +86,8 @@ describe.each([
       ...(theme === DARK ? block(roleBlock(DARK, role)) : {}),
     };
 
-    it('reaches 4.5:1 for text on the strong role color', () => {
-      expect(contrast(colors['on-role'], colors['role-strong'])).toBeGreaterThanOrEqual(4.5);
+    it.each(['role-strong', 'role-strong-hover'])('reaches 4.5:1 for text on %s', (token) => {
+      expect(contrast(colors['on-role'], colors[token])).toBeGreaterThanOrEqual(4.5);
     });
 
     it('reaches 4.5:1 for role-colored and main text on surfaces and on the soft role background', () => {

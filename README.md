@@ -15,7 +15,7 @@ Interface do Saúde+, um sistema de agendamento de consultas e exames com três 
 | **Documentação interativa da API** | https://p01--saudemais--pgj2h2jjxzb4.code.run/docs/                 |
 | **Quadro do projeto**              | [Saúde+](https://github.com/users/Plovatto/projects/2)              |
 
-**Sumário:** [Contas de demonstração](#contas-de-demonstração) · [Telas](#telas) · [Funcionalidades](#funcionalidades) · [Decisões técnicas](#decisões-técnicas) · [Arquitetura](#arquitetura) · [Como executar](#como-executar-localmente) · [Deploy](#deploy) · [Desvios do Figma](#desvios-do-figma) · [Fluxo de trabalho](#fluxo-de-trabalho)
+**Sumário:** [Contas de demonstração](#contas-de-demonstração) · [Telas](#telas) · [Funcionalidades](#funcionalidades) · [Decisões técnicas](#decisões-técnicas) · [Arquitetura](#arquitetura) · [Como executar](#como-executar-localmente) · [Testes ponta a ponta](#testes-ponta-a-ponta) · [Deploy](#deploy) · [Desvios do Figma](#desvios-do-figma) · [Fluxo de trabalho](#fluxo-de-trabalho)
 
 ## Contas de demonstração
 
@@ -72,7 +72,7 @@ No computador, menu lateral, listas em duas colunas e tema escuro:
 | **Tipos gerados do OpenAPI, com conferência no CI** | O front guarda uma cópia do contrato da API (`src/lib/api/openapi.json`) e gera `schema.d.ts` com `openapi-typescript`. O `fetch` próprio é tipado por rota e método, sem cliente extra. O CI gera os tipos de novo e falha se forem diferentes do que está versionado, sem depender de a API estar no ar                                                                                                                |
 | **Token em `sessionStorage` e `BroadcastChannel`**  | Front e API ficam em sites diferentes, então não há cookie de sessão. O token fica em `sessionStorage` (ou em `localStorage` com "Lembrar de mim"), com memória como reserva quando o navegador bloqueia o armazenamento. Sair em uma aba encerra as outras pelo `BroadcastChannel`. Como `plovatto.github.io` é uma origem compartilhada, a proteção vem da validade curta, das sessões revogáveis e do "sair de todas" |
 | **CSP por meta tag**                                | O GitHub Pages não permite cabeçalhos próprios. O build injeta uma Content Security Policy que só aceita scripts, estilos e fontes do próprio site e chamadas para a origem da API. As fontes são servidas pelo site, sem CDN. Como `frame-ancestors` não funciona em meta tag, o `theme-init.js` esconde a página quando ela é carregada dentro de um frame                                                             |
-| **GitHub Pages com `404.html`**                     | O build copia `index.html` para `404.html`, então um link direto para qualquer rota abre a aplicação. O caminho base `/SaudeMais/` vale no build e no `preview`, e o build recusa uma `VITE_API_URL` ausente ou sem `https` em vez de publicar uma página em branco                                                                                                                                                      |
+| **GitHub Pages com `404.html`**                     | O build copia `index.html` para `404.html`, então um link direto para qualquer rota abre a aplicação. O caminho base `/SaudeMais/` vale no build e no `preview`, e o build recusa uma `VITE_API_URL` ausente ou sem `https` (salvo `localhost`, para os testes) em vez de publicar uma página em branco                                                                                                                  |
 | **Fuso de São Paulo**                               | O front nunca monta um instante: devolve à API o `startsAt` que recebeu na lista de vagas. Datas civis trocadas com a API são de São Paulo, e toda exibição usa `Intl` com `timeZone: 'America/Sao_Paulo'`, inclusive "Hoje" e "há 2 h". Os testes de datas rodam com o processo em Tóquio e em Los Angeles                                                                                                              |
 | **Acessibilidade WCAG 2.2 AA**                      | Diálogos com `<dialog>` nativo, menus com setas e Esc, cartões expansíveis com `aria-expanded`, status com texto e ícone, alvos de toque de 44 px, foco visível, `prefers-reduced-motion`, título por rota e link "Pular para o conteúdo". Onde a cor do Figma não chegava a 4,5:1, um tom mais escuro da mesma cor é usado só naquela superfície                                                                        |
 | **Tema claro e escuro por perfil**                  | Tokens por perfil (`data-role`) e por tema (`data-theme`): turquesa para paciente, azul para médico e cinza para administrador, cada um com a versão escura em contraste AA. O tema segue o sistema por padrão, pode ser trocado no menu de conta e nas telas públicas e é aplicado antes da primeira pintura, sem piscar                                                                                                |
@@ -104,12 +104,13 @@ src/
   test/         configuração dos testes
 public/
   theme-init.js tema antes da primeira pintura e proteção contra frames
+e2e/            testes ponta a ponta com Playwright e axe
 ```
 
 - Uma feature não importa outra. O que duas features usam sobe para `components`, `hooks` ou `lib`, e só `app` conhece as features, para montar as rotas.
 - Cada feature expõe o que as rotas usam pelo próprio `index.ts` e tem um `*-api.ts` com as chamadas dela.
 - Cada pasta de `src` tem um alias de importação (`@app`, `@components`, `@config`, `@constants`, `@features`, `@hooks`, `@lib`).
-- Os testes ficam ao lado do código: unidade com Vitest e componentes com Testing Library em jsdom.
+- Os testes ficam ao lado do código: unidade com Vitest e componentes com Testing Library em jsdom. Os ponta a ponta ficam em `e2e/`.
 
 ## Como executar localmente
 
@@ -131,7 +132,7 @@ O `.env` não é versionado; o `.env.example` traz o valor para a API local:
 VITE_API_URL=http://localhost:3001
 ```
 
-`VITE_API_URL` é o endereço da API, com `http` ou `https`, sem query string nem fragmento. O build é recusado se ela faltar ou for inválida, e o build de produção exige `https`. Como toda variável `VITE_`, ela fica visível no código publicado; nunca coloque segredos nela. A API precisa aceitar a origem do front no CORS.
+`VITE_API_URL` é o endereço da API, com `http` ou `https`, sem query string nem fragmento. O build é recusado se ela faltar ou for inválida, e o build de produção exige `https`, salvo para uma API em `localhost`, `127.0.0.1` ou `[::1]`. Como toda variável `VITE_`, ela fica visível no código publicado; nunca coloque segredos nela. A API precisa aceitar a origem do front no CORS.
 
 | Script                                    | Descrição                                                             |
 | ----------------------------------------- | --------------------------------------------------------------------- |
@@ -143,12 +144,47 @@ VITE_API_URL=http://localhost:3001
 | `npm run format` / `npm run format:check` | Formata com Prettier / confere a formatação                           |
 | `npm test` / `npm run test:watch`         | Roda os testes / em modo observação                                   |
 | `npm run api:types`                       | Gera `src/lib/api/schema.d.ts` a partir de `src/lib/api/openapi.json` |
+| `npm run e2e` / `npm run e2e:ui`          | Roda os testes ponta a ponta / no modo UI do Playwright               |
 
 Quando a API mudar, atualize `src/lib/api/openapi.json` a partir de `/docs/openapi.json` da API publicada e rode `npm run api:types` no mesmo PR que usa a mudança.
 
+### Testes ponta a ponta
+
+Os testes em `e2e/` usam [Playwright](https://playwright.dev/) e [axe](https://github.com/dequelabs/axe-core) e cobrem três fluxos: cadastro e agendamento; confirmação pelo médico e notificação ao paciente; o Admin torna um usuário médico e a vaga aparece para o paciente. Cada fluxo roda no Chromium e no WebKit, em 402 px e em 1280 px, e falha se o axe encontrar violação séria ou crítica.
+
+Eles precisam da [API](https://github.com/Plovatto/API-SaudeMais) rodando em `http://localhost:3001` com um banco descartável, nunca o de produção. Na pasta da API, com o `.env` apontando para esse banco:
+
+```env
+NODE_ENV=development
+CORS_ORIGIN=http://localhost:4173
+APP_PUBLIC_URL=http://localhost:4173/SaudeMais
+MAIL_DRIVER=console
+DEMO_ACCOUNTS_ENABLED=true
+ADMIN_EMAIL=admin@e2e.test
+ADMIN_PASSWORD=uma-senha-de-teste-longa
+```
+
+```bash
+npm run db:seed
+npm run dev
+```
+
+Aqui, instale os navegadores uma vez e rode os testes com as mesmas credenciais do Admin:
+
+```bash
+npx playwright install chromium webkit
+ADMIN_EMAIL=admin@e2e.test ADMIN_PASSWORD=uma-senha-de-teste-longa npm run e2e
+```
+
+O Playwright gera o build com `VITE_API_URL=http://localhost:3001` e o serve com `vite preview` em `http://localhost:4173/SaudeMais/`. Os testes recusam uma API fora desta máquina.
+
+A API limita cadastros a 10 por hora por IP e logins a 30 a cada 15 minutos por IP. Cada rodada cria 8 contas e faz cerca de 14 logins, por isso os testes não repetem em caso de falha; para rodar de novo antes do fim da janela, reinicie a API, que guarda os limites na memória.
+
+No CI, o workflow `E2E` sobe a API no commit fixado em `API_REF` (ou no informado ao disparar o workflow manualmente) contra um PostgreSQL 18 temporário. Quando algo falha, o relatório e os traces ficam disponíveis por 3 dias; eles podem conter as credenciais descartáveis da execução, nunca dados reais.
+
 ## Deploy
 
-Cada merge na `main` publica o site no GitHub Pages pelo workflow [Pages](.github/workflows/pages.yml): instala as dependências, roda lint, testes e build com Node 26 e publica `dist/`. `VITE_API_URL` vem da variável de mesmo nome do repositório (Settings → Secrets and variables → Actions → Variables). A API roda na Northflank e precisa aceitar `https://plovatto.github.io` no CORS.
+Cada merge na `main` publica o site no GitHub Pages pelo workflow [Pages](.github/workflows/pages.yml): confere que `VITE_API_URL` usa `https`, instala as dependências, roda lint, testes e build com Node 26 e publica `dist/`. `VITE_API_URL` vem da variável de mesmo nome do repositório (Settings → Secrets and variables → Actions → Variables). A API roda na Northflank e precisa aceitar `https://plovatto.github.io` no CORS.
 
 ## Desvios do Figma
 
@@ -171,6 +207,7 @@ O Figma tem 22 telas de celular (402 × 874) e nenhum layout de computador. As t
 - **Quadro kanban:** o trabalho é planejado no [Project Saúde+](https://github.com/users/Plovatto/projects/2), compartilhado com a API, com um milestone por fase. Cada card é uma issue, que corresponde a uma branch (`feature/`, `fix/`, `docs/`...) e a um pull request com o modelo O que foi feito, Detalhes e Testes.
 - **Commits:** [gitmoji](https://gitmoji.dev/) com [Conventional Commits](https://www.conventionalcommits.org/), em inglês e minúsculas.
 - **CI em todo PR** ([ci.yml](.github/workflows/ci.yml)), em Node 22, 24 e 26: formatação, conferência dos tipos da API contra o contrato, lint, typecheck, testes, build, conferência da saída estática (`404.html` igual a `index.html`, CSP no início do `<head>`, caminho base) e `npm audit` das dependências de produção.
+- **E2E em todo PR** ([e2e.yml](.github/workflows/e2e.yml)): os três fluxos ponta a ponta contra a API e um PostgreSQL temporários, como descrito em [Testes ponta a ponta](#testes-ponta-a-ponta).
 - **Merge** só com CI verde, por merge commit, na `main` protegida. Actions fixadas por SHA, Dependabot e [OpenSSF Scorecard](https://scorecard.dev/viewer/?uri=github.com/Plovatto/SaudeMais).
 
 Veja também o [guia de contribuição](CONTRIBUTING.md) e a [política de segurança](SECURITY.md).

@@ -78,7 +78,7 @@ describe('notifications', { timeout: 15_000 }, () => {
   });
 
   it.each([
-    [0, 'Notificações', null],
+    [0, 'Notificações', ''],
     [1, 'Notificações, 1 não lida', '1'],
     [3, 'Notificações, 3 não lidas', '3'],
     [12, 'Notificações, 12 não lidas', '9+'],
@@ -86,7 +86,7 @@ describe('notifications', { timeout: 15_000 }, () => {
     const { calls } = serve({ count });
     renderApp('/paciente/exames/e1/resultado');
 
-    expect((await bell(label)).textContent).toBe(badge ?? '');
+    expect((await bell(label)).parentElement?.textContent).toBe(badge);
     expect(countCalls(calls).every((call) => call.url.searchParams.get('role') === 'patient')).toBe(true);
   });
 
