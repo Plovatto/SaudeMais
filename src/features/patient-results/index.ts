@@ -1,0 +1,1 @@
+export { PatientResultsPage } from './PatientResultsPage';

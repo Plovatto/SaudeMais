@@ -54,6 +54,9 @@ const areaScreens: Record<string, typeof placeholder> = {
   relatorios: lazyComponent(async () => (await import('@features/admin-reports')).AdminReportsPage),
   'configuracoes/*': lazyComponent(async () => (await import('@features/admin-settings')).AdminSettingsPage),
   agenda: lazyComponent(async () => (await import('@features/doctor-agenda')).DoctorAgendaPage),
+  'pacientes/:id/exames': lazyComponent(
+    async () => (await import('@features/patient-results')).PatientResultsPage,
+  ),
   disponibilidade: lazyComponent(async () => (await import('@features/doctor-schedule')).DoctorSchedulePage),
   'consultas/nova': lazyComponent(
     async () => (await import('@features/book-appointment')).BookAppointmentPage,
@@ -63,6 +66,7 @@ const areaScreens: Record<string, typeof placeholder> = {
     async () => (await import('@features/book-appointment')).RescheduleAppointmentPage,
   ),
   'exames/:id/reagendar': lazyComponent(async () => (await import('@features/book-exam')).RescheduleExamPage),
+  'exames/:id/resultado': lazyComponent(async () => (await import('@features/exam-result')).ExamResultPage),
 };
 
 const homeScreens: Partial<Record<Area['role'], typeof placeholder>> = {

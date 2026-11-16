@@ -36,13 +36,14 @@ export function statusDisplay(key: StatusKey, viewer: Role): StatusDisplay {
   return { label: viewer === 'doctor' ? 'A confirmar' : 'Pendente', tone: 'warning', icon: <LuHourglass /> };
 }
 
+export const hasStarted = (startsAt: string, now = Date.now()) => new Date(startsAt).getTime() <= now;
+
 export function bookingStatus(
   { status, startsAt }: { status: BookingStatus; startsAt: string },
   viewer: Role,
   now = Date.now(),
 ): StatusDisplay {
-  const started = new Date(startsAt).getTime() <= now;
-  return statusDisplay(status === 'confirmed' && started ? 'awaiting' : status, viewer);
+  return statusDisplay(status === 'confirmed' && hasStarted(startsAt, now) ? 'awaiting' : status, viewer);
 }
 
 export function bookingTitle({ kind, doctor, specialty, examType, unit }: PatientBooking) {

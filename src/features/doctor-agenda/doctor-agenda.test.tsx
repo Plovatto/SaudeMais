@@ -556,6 +556,67 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     ).not.toBeInTheDocument();
   });
 
+  it('links to the patient results only from exam reviews confirmed or completed in the last 30 days', async () => {
+    const review = { visitType: 'exam_review' as const, actions: actions() };
+    const patient = (id: string, fullName: string) => ({ patient: { id, fullName, phone: null } });
+    const daysAgo = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();
+    const recent = daysAgo(2);
+    serve({
+      lists: {
+        history: [
+          appointment('a1', { ...review, status: 'completed', startsAt: recent }),
+          appointment('a2', {
+            ...review,
+            ...patient('p2', 'Jair Oliveira'),
+            status: 'confirmed',
+            startsAt: recent,
+          }),
+          appointment('a3', {
+            ...review,
+            ...patient('p3', 'Carla Dias'),
+            status: 'confirmed',
+            startsAt: FUTURE,
+          }),
+          appointment('a4', {
+            ...review,
+            ...patient('p4', 'Davi Lima'),
+            status: 'cancelled',
+            startsAt: recent,
+          }),
+          appointment('a5', {
+            ...patient('p5', 'Eva Rocha'),
+            status: 'completed',
+            startsAt: recent,
+            actions: actions(),
+          }),
+          appointment('a6', {
+            ...review,
+            ...patient('p6', 'Fábio Reis'),
+            status: 'completed',
+            startsAt: daysAgo(31),
+          }),
+        ],
+      },
+    });
+    const { user } = renderApp('/medico/agenda?aba=historico');
+
+    const links = await screen.findAllByRole('link', { name: /^Ver exames do paciente/ });
+    expect(links.map((link) => link.getAttribute('href'))).toEqual([
+      '/medico/pacientes/p-a1/exames',
+      '/medico/pacientes/p2/exames',
+    ]);
+    expect(links[1]).toHaveAccessibleName(/^Ver exames do paciente: Jair Oliveira/);
+
+    serveApi(['doctor'], {
+      '/api/doctor/patients/p-a1/exam-results': () => ({
+        status: 200,
+        body: { items: [], page: 1, pageSize: 10, total: 0 },
+      }),
+    });
+    await user.click(links[0] as HTMLElement);
+    expect(await screen.findByRole('heading', { level: 1, name: 'Exames de Andreia Soares' })).toBeVisible();
+  });
+
   it('completes with the start time it showed and refreshes the doctor data', async () => {
     const { calls } = serve({
       lists: { awaiting: [unrecorded('a1')] },

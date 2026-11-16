@@ -840,6 +840,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/patient/exam-results/{bookingId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ver o resultado de um exame
+         * @description Resultado do exame `bookingId` do paciente logado: o cabeçalho do exame, a versão atual (a de maior número) com os itens e o indicador de cada valor ou o laudo, e as versões anteriores, imutáveis, também com o conteúdo, da mais nova para a mais antiga. Exame de outra pessoa, consulta ou exame ainda sem resultado respondem 404. O administrador não tem rota para ver resultados. Cada resultado devolvido fica na auditoria como `exam_result.read`, só com o exame e a versão atual, nunca com o conteúdo. Limite: 120 requisições por minuto por IP.
+         */
+        get: operations["getPatientExamResult"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/doctor/patients/{patientId}/exam-results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ver os resultados de exame de um paciente
+         * @description Resultados de exame do paciente `patientId`, do exame mais recente para o mais antigo, cada um com a versão atual e as anteriores. Exige que o médico logado tenha com o paciente uma consulta do tipo avaliação de exames (`exam_review`) confirmada ou concluída que já começou há no máximo 30 dias; sem esse vínculo, inclusive com um paciente inexistente, a resposta é 403 `FORBIDDEN_NO_LINK`, sem revelar se o paciente existe. Cada resultado devolvido fica na auditoria como `exam_result.read`, só com o exame e a versão atual, nunca com o conteúdo. Limite: 120 requisições por minuto por IP.
+         */
+        get: operations["listDoctorPatientExamResults"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/integration-clients": {
         parameters: {
             query?: never;
@@ -2674,6 +2714,8 @@ export interface components {
                 /** @example +551133334444 */
                 phone: string;
             };
+            /** @description Se o exame já tem resultado, aberto em `GET /api/patient/exam-results/{bookingId}`. */
+            hasResult: boolean;
             /** @description Dados do cancelamento; nulo enquanto não foi cancelado. Só as partes veem o motivo. */
             cancellation: {
                 /**
@@ -2848,6 +2890,146 @@ export interface components {
              */
             outcome: "created" | "unchanged" | "amended";
         };
+        ExamResult: {
+            booking: {
+                /** Format: uuid */
+                id: string;
+                /** @example EX-7F3K2Q */
+                publicCode: string;
+                examType: {
+                    /** Format: uuid */
+                    id: string;
+                    /** @example Hemograma */
+                    name: string;
+                    /**
+                     * @description `lab` para exames laboratoriais, `imaging` para imagem.
+                     * @enum {string}
+                     */
+                    kind: "lab" | "imaging";
+                };
+                unit: {
+                    /** Format: uuid */
+                    id: string;
+                    /** @example Unidade Central */
+                    name: string;
+                    /** @example Rua das Flores, 123 - Centro, São Paulo - SP */
+                    address: string;
+                    /** @example +551133334444 */
+                    phone: string;
+                };
+                /**
+                 * Format: date-time
+                 * @example 2026-11-23T11:00:00.000Z
+                 */
+                startsAt: string;
+            };
+            /** @description Versão atual: a de maior número. */
+            current: {
+                /** @example 2 */
+                version: number;
+                /**
+                 * @description `final` na primeira publicação; `amended` nas retificações.
+                 * @enum {string}
+                 */
+                status: "final" | "amended";
+                /**
+                 * Format: date-time
+                 * @description Emissão no laboratório.
+                 */
+                issuedAt: string;
+                /**
+                 * Format: date-time
+                 * @description Recebimento pela API.
+                 */
+                receivedAt: string;
+                /** @description Itens do exame laboratorial, com o indicador de cada valor; nulo em exame de imagem. */
+                items: {
+                    /** @example Hemoglobina */
+                    name: string;
+                    /**
+                     * @description Número ou texto, como `Negativo`.
+                     * @example 13.8
+                     */
+                    value: number | string;
+                    /**
+                     * @default null
+                     * @example g/dL
+                     */
+                    unit: string | null;
+                    /**
+                     * @default null
+                     * @example 12,0 a 16,0
+                     */
+                    referenceRange: string | null;
+                    /**
+                     * @description Indicador do valor em relação à faixa de referência.
+                     * @enum {string}
+                     */
+                    flag: "normal" | "low" | "high" | "critical";
+                }[] | null;
+                /**
+                 * @description Laudo do exame de imagem; nulo em exame laboratorial.
+                 * @example null
+                 */
+                report: string | null;
+            };
+            /** @description Versões anteriores, imutáveis, da mais nova para a mais antiga; vazia sem retificação. */
+            previous: {
+                /** @example 2 */
+                version: number;
+                /**
+                 * @description `final` na primeira publicação; `amended` nas retificações.
+                 * @enum {string}
+                 */
+                status: "final" | "amended";
+                /**
+                 * Format: date-time
+                 * @description Emissão no laboratório.
+                 */
+                issuedAt: string;
+                /**
+                 * Format: date-time
+                 * @description Recebimento pela API.
+                 */
+                receivedAt: string;
+                /** @description Itens do exame laboratorial, com o indicador de cada valor; nulo em exame de imagem. */
+                items: {
+                    /** @example Hemoglobina */
+                    name: string;
+                    /**
+                     * @description Número ou texto, como `Negativo`.
+                     * @example 13.8
+                     */
+                    value: number | string;
+                    /**
+                     * @default null
+                     * @example g/dL
+                     */
+                    unit: string | null;
+                    /**
+                     * @default null
+                     * @example 12,0 a 16,0
+                     */
+                    referenceRange: string | null;
+                    /**
+                     * @description Indicador do valor em relação à faixa de referência.
+                     * @enum {string}
+                     */
+                    flag: "normal" | "low" | "high" | "critical";
+                }[] | null;
+                /**
+                 * @description Laudo do exame de imagem; nulo em exame laboratorial.
+                 * @example null
+                 */
+                report: string | null;
+            }[];
+        };
+        ExamResultPage: {
+            items: components["schemas"]["ExamResult"][];
+            page: number;
+            pageSize: number;
+            total: number;
+        };
         PasswordResetRequest: {
             /** @example ana.silva@email.com */
             email: string;
@@ -2920,6 +3102,8 @@ export interface components {
              * @example null
              */
             publicCode: string | null;
+            /** @description Se o exame já tem resultado, aberto em `GET /api/patient/exam-results/{bookingId}`; sempre falso em consultas. */
+            hasResult: boolean;
             unit: {
                 /** Format: uuid */
                 id: string;
@@ -8784,6 +8968,224 @@ export interface operations {
                      *       "fields": {
                      *         "newStartsAt": "Escolha um horário diferente do atual."
                      *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getPatientExamResult: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Resultado do exame. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamResult"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Resultado não encontrado.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listDoctorPatientExamResults: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path: {
+                patientId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Página de resultados do paciente. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamResultPage"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem o perfil de médico (`FORBIDDEN`) ou sem consulta de avaliação de exames com o paciente nos últimos 30 dias (`FORBIDDEN_NO_LINK`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "FORBIDDEN_NO_LINK",
+                     *       "message": "Você só vê os resultados de um paciente com quem tem uma consulta de avaliação de exames confirmada ou concluída nos últimos 30 dias."
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];
