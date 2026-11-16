@@ -2,6 +2,7 @@ import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
+import { ConfirmDialog } from './ConfirmDialog';
 import { Dialog } from './Dialog';
 import { Menu } from './Menu';
 import { Popover } from './Popover';
@@ -134,5 +135,34 @@ describe('Dialog', () => {
     (dialog as HTMLDialogElement).close();
 
     expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('keeps a confirmation open while its action is being sent', async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    render(
+      <ConfirmDialog
+        open
+        title="Registrar falta?"
+        description="Esse registro não pode ser desfeito."
+        confirmLabel="Registrar falta"
+        onConfirm={() => undefined}
+        onClose={onClose}
+        loading
+      />,
+    );
+    const dialog = screen.getByRole('dialog', { name: 'Registrar falta?' });
+
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Fechar' })).toBeDisabled();
+    const cancel = new Event('cancel', { cancelable: true });
+    act(() => {
+      dialog.dispatchEvent(cancel);
+    });
+    expect(cancel.defaultPrevented).toBe(true);
+    await user.pointer({ keys: '[MouseLeft]', target: dialog });
+
+    expect(dialog).toHaveAttribute('open');
+    expect(onClose).not.toHaveBeenCalled();
   });
 });

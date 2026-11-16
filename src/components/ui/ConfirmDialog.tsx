@@ -34,9 +34,10 @@ export function ConfirmDialog({
       title={title}
       description={description}
       fallbackFocus={fallbackFocus}
+      dismissible={!loading}
     >
       <div className="flex flex-wrap justify-end gap-3">
-        <Button variant="secondary" onClick={onClose}>
+        <Button variant="secondary" disabled={loading} onClick={onClose}>
           Cancelar
         </Button>
         <Button variant={tone} loading={loading} disabled={disabled} onClick={onConfirm}>
