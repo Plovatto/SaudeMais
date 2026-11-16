@@ -1,9 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { renderApp, serveApi, type MockResponse } from '@/test/render-app';
-import type { components } from '@lib/api/schema';
-
-type ExamResult = components['schemas']['ExamResult'];
+import type { ExamResult } from '@lib/api/models';
 
 const PATIENT = '0190c2a0-0000-7000-8000-0000000000aa';
 const PATH = `/api/doctor/patients/${PATIENT}/exam-results`;
@@ -43,12 +41,16 @@ const page = (items: ExamResult[], total = items.length) => ({
 describe('patient results for the doctor', { timeout: 15_000 }, () => {
   it('lists the results of the patient with a generic title when opened directly', async () => {
     serve(() => page([result('b1', 'Hemograma'), result('b2', 'Glicemia')]));
-    renderApp(PAGE);
+    const { user } = renderApp(PAGE);
 
     expect(await screen.findByText('2 resultados')).toBeVisible();
     expect(screen.getByRole('heading', { level: 1, name: 'Exames do paciente' })).toBeVisible();
     expect(screen.getByRole('button', { name: /^Hemograma/ })).toHaveAttribute('aria-expanded', 'false');
     expect(screen.getByRole('button', { name: /^Glicemia/ })).toBeVisible();
+
+    await user.click(screen.getByRole('button', { name: /^Hemograma/ }));
+    expect(screen.getByRole('table', { name: 'Itens do exame' })).toBeVisible();
+    expect(screen.getByRole('rowheader', { name: 'Hemoglobina' })).toBeVisible();
   });
 
   it('explains the missing link with a way back to the agenda', async () => {

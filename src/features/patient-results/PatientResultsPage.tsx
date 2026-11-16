@@ -3,6 +3,7 @@ import { useRef } from 'react';
 import { LuFileX, LuLock } from 'react-icons/lu';
 import { useLocation, useParams } from 'react-router';
 import { ExpandableCard } from '@components/bookings/ExpandableCard';
+import { ExamResultView } from '@components/exam-results/ExamResultView';
 import { PagedResults } from '@components/bookings/PagedResults';
 import { PageHeader } from '@components/layout/PageHeader';
 import { ButtonLink, Card, EmptyState } from '@components/ui';
@@ -71,27 +72,26 @@ export function PatientResultsPage() {
           >
             {(items) => (
               <ul className="flex flex-col gap-3">
-                {items.map(({ booking, current }) => (
-                  <li key={booking.id}>
-                    <ExpandableCard
-                      headline={
-                        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                          <span className="text-text font-semibold">{booking.examType.name}</span>
-                          <span className="text-text-secondary text-sm">{booking.unit.name}</span>
-                          <time dateTime={booking.startsAt} className="text-text-secondary text-sm">
-                            {formatDateTime(booking.startsAt)}
-                          </time>
-                        </span>
-                      }
-                    >
-                      <p className="text-text-secondary text-sm">
-                        {current.items
-                          ? current.items.map((item) => `${item.name}: ${item.value}`).join(', ')
-                          : current.report}
-                      </p>
-                    </ExpandableCard>
-                  </li>
-                ))}
+                {items.map((result) => {
+                  const { booking } = result;
+                  return (
+                    <li key={booking.id}>
+                      <ExpandableCard
+                        headline={
+                          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                            <span className="text-text font-semibold">{booking.examType.name}</span>
+                            <span className="text-text-secondary text-sm">{booking.unit.name}</span>
+                            <time dateTime={booking.startsAt} className="text-text-secondary text-sm">
+                              {formatDateTime(booking.startsAt)}
+                            </time>
+                          </span>
+                        }
+                      >
+                        <ExamResultView result={result} headingLevel={3} />
+                      </ExpandableCard>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </PagedResults>
