@@ -331,7 +331,7 @@ export interface paths {
         put?: never;
         /**
          * Concluir uma consulta
-         * @description Muda uma consulta confirmada (`confirmed`) que já começou para `completed` e registra o evento `completed` com o médico como autor; ninguém é avisado. Só o médico que atende a consulta registra, e só a partir do horário de início. Envie em `startsAt` o início que a tela mostrava: se a consulta está confirmada com esse horário, mas ainda não começou, a resposta é `NOT_STARTED`; se o horário mudou, se ela não está confirmada ou se já foi concluída ou marcada como falta, a resposta é `INVALID_STATE`. Nos dois casos nada muda. Conclusão e falta disputam a mesma consulta, e só a primeira vale. Responde o detalhe atualizado; para os demais médicos, responde como inexistente. Limite: 60 requisições por minuto por IP.
+         * @description Muda uma consulta confirmada (`confirmed`) que já começou para `completed` e registra o evento `completed` com o médico como autor; ninguém é avisado. Só o médico que atende a consulta registra, e só a partir do horário de início. Envie em `startsAt` o início que a tela mostrava: se a consulta está confirmada com esse horário, mas ainda não começou, a resposta é `NOT_STARTED`; se o horário mudou, se ela não está confirmada ou se já foi concluída ou marcada como falta, a resposta é `INVALID_STATE`. Nos dois casos nada muda. Conclusão e falta disputam a mesma consulta, e só a primeira vale. Em `metrics`, o médico pode registrar a pressão (sistólica e diastólica juntas), o peso ou os dois, gravados na mesma transação da conclusão; se a conclusão é recusada, nada é gravado. As medidas aparecem no detalhe da consulta e nos cartões do início do paciente, e nunca vão para logs, auditoria ou notificações. Responde o detalhe atualizado; para os demais médicos, responde como inexistente. Limite: 60 requisições por minuto por IP.
          */
         post: operations["completeAppointment"];
         delete?: never;
@@ -1053,7 +1053,7 @@ export interface paths {
         };
         /**
          * Ver o início do paciente
-         * @description Os 3 próximos agendamentos, os totais das abas agendados e realizados e o aviso mais recente do perfil de paciente. Cada agendamento traz as ações permitidas, como na lista. Limite: 120 requisições por minuto por IP.
+         * @description Os 3 próximos agendamentos, os totais das abas agendados e realizados, o aviso mais recente do perfil de paciente e os cartões de pressão e peso, cada um com a medida mais recente registrada pelo médico ao concluir uma consulta (nulo enquanto não houver). Cada agendamento traz as ações permitidas, como na lista. Limite: 120 requisições por minuto por IP.
          */
         get: operations["getPatientHome"];
         put?: never;
@@ -1765,6 +1765,33 @@ export interface components {
              */
             startsAt: string;
         };
+        /** @description Medidas tomadas na consulta: a pressão (sistólica e diastólica juntas, a sistólica maior), o peso ou os dois. */
+        HealthMetricsInput: {
+            /**
+             * @description Pressão sistólica, em mmHg.
+             * @example 120
+             */
+            systolic?: number;
+            /**
+             * @description Pressão diastólica, em mmHg.
+             * @example 80
+             */
+            diastolic?: number;
+            /**
+             * @description Peso, em kg, com até duas casas decimais.
+             * @example 72.4
+             */
+            weightKg?: number;
+        };
+        CompleteAppointmentRequest: {
+            /**
+             * Format: date-time
+             * @description Início do agendamento como o cliente o exibiu. Se ele mudou desde então, a resposta é `INVALID_STATE`.
+             * @example 2026-11-23T11:00:00.000Z
+             */
+            startsAt: string;
+            metrics?: components["schemas"]["HealthMetricsInput"];
+        };
         CancelAppointmentRequest: {
             /**
              * Format: date-time
@@ -1850,6 +1877,29 @@ export interface components {
              */
             canNoShow: boolean;
         };
+        /** @description Pressão e peso registrados ao concluir a consulta; o que não foi medido vem nulo. */
+        HealthMetrics: {
+            /**
+             * @description Pressão sistólica, em mmHg.
+             * @example 120
+             */
+            systolic: number | null;
+            /**
+             * @description Pressão diastólica, em mmHg.
+             * @example 80
+             */
+            diastolic: number | null;
+            /**
+             * @description Peso, em kg, com até duas casas decimais.
+             * @example 72.4
+             */
+            weightKg: number | null;
+            /**
+             * Format: date-time
+             * @description Quando o médico registrou as medidas.
+             */
+            recordedAt: string;
+        };
         Appointment: {
             /** Format: uuid */
             id: string;
@@ -1934,6 +1984,8 @@ export interface components {
             patientActions: components["schemas"]["BookingActions"] | null;
             /** @description O que o médico que atende a consulta pode fazer; nulo quando quem vê é o paciente. */
             doctorActions: components["schemas"]["DoctorActions"] | null;
+            /** @description Medidas registradas ao concluir a consulta; nulo quando não houve registro. */
+            metrics: components["schemas"]["HealthMetrics"] | null;
             /** @description Histórico da consulta, do mais antigo para o mais novo. */
             events: {
                 /**
@@ -2908,6 +2960,37 @@ export interface components {
                 past: number;
             };
         };
+        /** @description A pressão mais recente registrada pelo médico ao concluir uma consulta. */
+        BloodPressureReading: {
+            /**
+             * @description Pressão sistólica, em mmHg.
+             * @example 120
+             */
+            systolic: number;
+            /**
+             * @description Pressão diastólica, em mmHg.
+             * @example 80
+             */
+            diastolic: number;
+            /**
+             * Format: date-time
+             * @description Quando a medida foi registrada na consulta.
+             */
+            recordedAt: string;
+        };
+        /** @description O peso mais recente registrado pelo médico ao concluir uma consulta. */
+        WeightReading: {
+            /**
+             * @description Peso, em kg, com até duas casas decimais.
+             * @example 72.4
+             */
+            kg: number;
+            /**
+             * Format: date-time
+             * @description Quando a medida foi registrada na consulta.
+             */
+            recordedAt: string;
+        };
         PatientHome: {
             /** @description Os próximos agendamentos, do mais próximo para o mais distante. */
             upcoming: components["schemas"]["PatientBooking"][];
@@ -2920,6 +3003,13 @@ export interface components {
             };
             /** @description O aviso mais recente do perfil de paciente, lido ou não. */
             lastNotification: components["schemas"]["Notification"] | null;
+            /** @description Cartões de pressão e peso, cada um com a medida mais recente do paciente. */
+            metrics: {
+                /** @description A pressão mais recente; nula enquanto nenhuma consulta a registrou. */
+                bloodPressure: components["schemas"]["BloodPressureReading"] | null;
+                /** @description O peso mais recente; nulo enquanto nenhuma consulta o registrou. */
+                weight: components["schemas"]["WeightReading"] | null;
+            };
         };
     };
     responses: never;
@@ -5247,7 +5337,7 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": components["schemas"]["RecordAppointmentRequest"];
+                "application/json": components["schemas"]["CompleteAppointmentRequest"];
             };
         };
         responses: {

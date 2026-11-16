@@ -1234,6 +1234,52 @@
         ],
         "additionalProperties": false
       },
+      "HealthMetricsInput": {
+        "type": "object",
+        "properties": {
+          "systolic": {
+            "type": "integer",
+            "minimum": 50,
+            "maximum": 300,
+            "description": "Pressão sistólica, em mmHg.",
+            "example": 120
+          },
+          "diastolic": {
+            "type": "integer",
+            "minimum": 30,
+            "maximum": 200,
+            "description": "Pressão diastólica, em mmHg.",
+            "example": 80
+          },
+          "weightKg": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 500,
+            "description": "Peso, em kg, com até duas casas decimais.",
+            "example": 72.4
+          }
+        },
+        "additionalProperties": false,
+        "description": "Medidas tomadas na consulta: a pressão (sistólica e diastólica juntas, a sistólica maior), o peso ou os dois."
+      },
+      "CompleteAppointmentRequest": {
+        "type": "object",
+        "properties": {
+          "startsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Início do agendamento como o cliente o exibiu. Se ele mudou desde então, a resposta é `INVALID_STATE`.",
+            "example": "2026-11-23T11:00:00.000Z"
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/HealthMetricsInput"
+          }
+        },
+        "required": [
+          "startsAt"
+        ],
+        "additionalProperties": false
+      },
       "CancelAppointmentRequest": {
         "type": "object",
         "properties": {
@@ -1371,6 +1417,53 @@
           "canNoShow"
         ],
         "description": "O que o médico que atende a consulta pode fazer com ela."
+      },
+      "HealthMetrics": {
+        "type": "object",
+        "properties": {
+          "systolic": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 50,
+            "maximum": 300,
+            "description": "Pressão sistólica, em mmHg.",
+            "example": 120
+          },
+          "diastolic": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 30,
+            "maximum": 200,
+            "description": "Pressão diastólica, em mmHg.",
+            "example": 80
+          },
+          "weightKg": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 500,
+            "description": "Peso, em kg, com até duas casas decimais.",
+            "example": 72.4
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Quando o médico registrou as medidas."
+          }
+        },
+        "required": [
+          "systolic",
+          "diastolic",
+          "weightKg",
+          "recordedAt"
+        ],
+        "description": "Pressão e peso registrados ao concluir a consulta; o que não foi medido vem nulo."
       },
       "Appointment": {
         "type": "object",
@@ -1574,6 +1667,17 @@
             ],
             "description": "O que o médico que atende a consulta pode fazer; nulo quando quem vê é o paciente."
           },
+          "metrics": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HealthMetrics"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Medidas registradas ao concluir a consulta; nulo quando não houve registro."
+          },
           "events": {
             "type": "array",
             "items": {
@@ -1680,6 +1784,7 @@
           "createdAt",
           "patientActions",
           "doctorActions",
+          "metrics",
           "events"
         ]
       },
@@ -3860,6 +3965,58 @@
           "counts"
         ]
       },
+      "BloodPressureReading": {
+        "type": "object",
+        "properties": {
+          "systolic": {
+            "type": "integer",
+            "minimum": 50,
+            "maximum": 300,
+            "description": "Pressão sistólica, em mmHg.",
+            "example": 120
+          },
+          "diastolic": {
+            "type": "integer",
+            "minimum": 30,
+            "maximum": 200,
+            "description": "Pressão diastólica, em mmHg.",
+            "example": 80
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Quando a medida foi registrada na consulta."
+          }
+        },
+        "required": [
+          "systolic",
+          "diastolic",
+          "recordedAt"
+        ],
+        "description": "A pressão mais recente registrada pelo médico ao concluir uma consulta."
+      },
+      "WeightReading": {
+        "type": "object",
+        "properties": {
+          "kg": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 500,
+            "description": "Peso, em kg, com até duas casas decimais.",
+            "example": 72.4
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Quando a medida foi registrada na consulta."
+          }
+        },
+        "required": [
+          "kg",
+          "recordedAt"
+        ],
+        "description": "O peso mais recente registrado pelo médico ao concluir uma consulta."
+      },
       "PatientHome": {
         "type": "object",
         "properties": {
@@ -3900,12 +4057,45 @@
               }
             ],
             "description": "O aviso mais recente do perfil de paciente, lido ou não."
+          },
+          "metrics": {
+            "type": "object",
+            "properties": {
+              "bloodPressure": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/BloodPressureReading"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "A pressão mais recente; nula enquanto nenhuma consulta a registrou."
+              },
+              "weight": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/WeightReading"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "O peso mais recente; nulo enquanto nenhuma consulta o registrou."
+              }
+            },
+            "required": [
+              "bloodPressure",
+              "weight"
+            ],
+            "description": "Cartões de pressão e peso, cada um com a medida mais recente do paciente."
           }
         },
         "required": [
           "upcoming",
           "counts",
-          "lastNotification"
+          "lastNotification",
+          "metrics"
         ]
       }
     },
@@ -6470,7 +6660,7 @@
       "post": {
         "operationId": "completeAppointment",
         "summary": "Concluir uma consulta",
-        "description": "Muda uma consulta confirmada (`confirmed`) que já começou para `completed` e registra o evento `completed` com o médico como autor; ninguém é avisado. Só o médico que atende a consulta registra, e só a partir do horário de início. Envie em `startsAt` o início que a tela mostrava: se a consulta está confirmada com esse horário, mas ainda não começou, a resposta é `NOT_STARTED`; se o horário mudou, se ela não está confirmada ou se já foi concluída ou marcada como falta, a resposta é `INVALID_STATE`. Nos dois casos nada muda. Conclusão e falta disputam a mesma consulta, e só a primeira vale. Responde o detalhe atualizado; para os demais médicos, responde como inexistente. Limite: 60 requisições por minuto por IP.",
+        "description": "Muda uma consulta confirmada (`confirmed`) que já começou para `completed` e registra o evento `completed` com o médico como autor; ninguém é avisado. Só o médico que atende a consulta registra, e só a partir do horário de início. Envie em `startsAt` o início que a tela mostrava: se a consulta está confirmada com esse horário, mas ainda não começou, a resposta é `NOT_STARTED`; se o horário mudou, se ela não está confirmada ou se já foi concluída ou marcada como falta, a resposta é `INVALID_STATE`. Nos dois casos nada muda. Conclusão e falta disputam a mesma consulta, e só a primeira vale. Em `metrics`, o médico pode registrar a pressão (sistólica e diastólica juntas), o peso ou os dois, gravados na mesma transação da conclusão; se a conclusão é recusada, nada é gravado. As medidas aparecem no detalhe da consulta e nos cartões do início do paciente, e nunca vão para logs, auditoria ou notificações. Responde o detalhe atualizado; para os demais médicos, responde como inexistente. Limite: 60 requisições por minuto por IP.",
         "tags": [
           "Médico"
         ],
@@ -6494,7 +6684,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RecordAppointmentRequest"
+                "$ref": "#/components/schemas/CompleteAppointmentRequest"
               }
             }
           }
@@ -11765,7 +11955,7 @@
       "get": {
         "operationId": "getPatientHome",
         "summary": "Ver o início do paciente",
-        "description": "Os 3 próximos agendamentos, os totais das abas agendados e realizados e o aviso mais recente do perfil de paciente. Cada agendamento traz as ações permitidas, como na lista. Limite: 120 requisições por minuto por IP.",
+        "description": "Os 3 próximos agendamentos, os totais das abas agendados e realizados, o aviso mais recente do perfil de paciente e os cartões de pressão e peso, cada um com a medida mais recente registrada pelo médico ao concluir uma consulta (nulo enquanto não houver). Cada agendamento traz as ações permitidas, como na lista. Limite: 120 requisições por minuto por IP.",
         "tags": [
           "Paciente"
         ],
