@@ -42,11 +42,11 @@
     },
     {
       "name": "Paciente",
-      "description": "Início e agendamentos do paciente logado. Exige o perfil de paciente."
+      "description": "Início, agendamentos e resultados de exame do paciente logado. Exige o perfil de paciente."
     },
     {
       "name": "Médico",
-      "description": "Agenda e rotina do médico logado. Exige o perfil de médico."
+      "description": "Agenda e rotina do médico logado e resultados de exame dos pacientes em avaliação de exames. Exige o perfil de médico."
     },
     {
       "name": "Notificações",
@@ -3247,6 +3247,10 @@
               "phone"
             ]
           },
+          "hasResult": {
+            "type": "boolean",
+            "description": "Se o exame já tem resultado, aberto em `GET /api/patient/exam-results/{bookingId}`."
+          },
           "cancellation": {
             "type": [
               "object",
@@ -3395,6 +3399,7 @@
           "notes",
           "examType",
           "unit",
+          "hasResult",
           "cancellation",
           "createdAt",
           "actions",
@@ -3654,6 +3659,342 @@
           "outcome"
         ]
       },
+      "ExamResult": {
+        "type": "object",
+        "properties": {
+          "booking": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "publicCode": {
+                "type": "string",
+                "example": "EX-7F3K2Q"
+              },
+              "examType": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 80,
+                    "example": "Hemograma"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "lab",
+                      "imaging"
+                    ],
+                    "description": "`lab` para exames laboratoriais, `imaging` para imagem."
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "kind"
+                ]
+              },
+              "unit": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "name": {
+                    "type": "string",
+                    "example": "Unidade Central"
+                  },
+                  "address": {
+                    "type": "string",
+                    "example": "Rua das Flores, 123 - Centro, São Paulo - SP"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "example": "+551133334444"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "address",
+                  "phone"
+                ]
+              },
+              "startsAt": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2026-11-23T11:00:00.000Z"
+              }
+            },
+            "required": [
+              "id",
+              "publicCode",
+              "examType",
+              "unit",
+              "startsAt"
+            ]
+          },
+          "current": {
+            "type": "object",
+            "properties": {
+              "version": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "example": 2
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "final",
+                  "amended"
+                ],
+                "description": "`final` na primeira publicação; `amended` nas retificações."
+              },
+              "issuedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Emissão no laboratório."
+              },
+              "receivedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Recebimento pela API."
+              },
+              "items": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "maxLength": 80,
+                      "example": "Hemoglobina"
+                    },
+                    "value": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string",
+                          "maxLength": 40
+                        }
+                      ],
+                      "description": "Número ou texto, como `Negativo`.",
+                      "example": 13.8
+                    },
+                    "unit": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "maxLength": 20,
+                      "default": null,
+                      "example": "g/dL"
+                    },
+                    "referenceRange": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "maxLength": 60,
+                      "default": null,
+                      "example": "12,0 a 16,0"
+                    },
+                    "flag": {
+                      "type": "string",
+                      "enum": [
+                        "normal",
+                        "low",
+                        "high",
+                        "critical"
+                      ],
+                      "description": "Indicador do valor em relação à faixa de referência."
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "value",
+                    "flag"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "Itens do exame laboratorial, com o indicador de cada valor; nulo em exame de imagem."
+              },
+              "report": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Laudo do exame de imagem; nulo em exame laboratorial.",
+                "example": null
+              }
+            },
+            "required": [
+              "version",
+              "status",
+              "issuedAt",
+              "receivedAt",
+              "items",
+              "report"
+            ],
+            "description": "Versão atual: a de maior número."
+          },
+          "previous": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "version": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "example": 2
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "final",
+                    "amended"
+                  ],
+                  "description": "`final` na primeira publicação; `amended` nas retificações."
+                },
+                "issuedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Emissão no laboratório."
+                },
+                "receivedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Recebimento pela API."
+                },
+                "items": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "maxLength": 80,
+                        "example": "Hemoglobina"
+                      },
+                      "value": {
+                        "anyOf": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "string",
+                            "maxLength": 40
+                          }
+                        ],
+                        "description": "Número ou texto, como `Negativo`.",
+                        "example": 13.8
+                      },
+                      "unit": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 20,
+                        "default": null,
+                        "example": "g/dL"
+                      },
+                      "referenceRange": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 60,
+                        "default": null,
+                        "example": "12,0 a 16,0"
+                      },
+                      "flag": {
+                        "type": "string",
+                        "enum": [
+                          "normal",
+                          "low",
+                          "high",
+                          "critical"
+                        ],
+                        "description": "Indicador do valor em relação à faixa de referência."
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "value",
+                      "flag"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "description": "Itens do exame laboratorial, com o indicador de cada valor; nulo em exame de imagem."
+                },
+                "report": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Laudo do exame de imagem; nulo em exame laboratorial.",
+                  "example": null
+                }
+              },
+              "required": [
+                "version",
+                "status",
+                "issuedAt",
+                "receivedAt",
+                "items",
+                "report"
+              ]
+            },
+            "description": "Versões anteriores, imutáveis, da mais nova para a mais antiga; vazia sem retificação."
+          }
+        },
+        "required": [
+          "booking",
+          "current",
+          "previous"
+        ]
+      },
+      "ExamResultPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExamResult"
+            }
+          },
+          "page": {
+            "type": "integer"
+          },
+          "pageSize": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ]
+      },
       "PasswordResetRequest": {
         "type": "object",
         "properties": {
@@ -3829,6 +4170,10 @@
             "description": "Código do exame para apresentar na unidade; nulo em consultas.",
             "example": null
           },
+          "hasResult": {
+            "type": "boolean",
+            "description": "Se o exame já tem resultado, aberto em `GET /api/patient/exam-results/{bookingId}`; sempre falso em consultas."
+          },
           "unit": {
             "type": "object",
             "properties": {
@@ -3913,6 +4258,7 @@
           "specialty",
           "examType",
           "publicCode",
+          "hasResult",
           "unit",
           "cancellation",
           "actions"
@@ -10627,6 +10973,263 @@
                   "fields": {
                     "newStartsAt": "Escolha um horário diferente do atual."
                   }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patient/exam-results/{bookingId}": {
+      "get": {
+        "operationId": "getPatientExamResult",
+        "summary": "Ver o resultado de um exame",
+        "description": "Resultado do exame `bookingId` do paciente logado: o cabeçalho do exame, a versão atual (a de maior número) com os itens e o indicador de cada valor ou o laudo, e as versões anteriores, imutáveis, também com o conteúdo, da mais nova para a mais antiga. Exame de outra pessoa, consulta ou exame ainda sem resultado respondem 404. O administrador não tem rota para ver resultados. Cada resultado devolvido fica na auditoria como `exam_result.read`, só com o exame e a versão atual, nunca com o conteúdo. Limite: 120 requisições por minuto por IP.",
+        "tags": [
+          "Paciente"
+        ],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resultado do exame.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Dados inválidos.",
+                  "code": "VALIDATION_ERROR",
+                  "fields": {
+                    "email": "Informe um e-mail válido."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada (`UNAUTHENTICATED`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Sua sessão expirou. Entre novamente.",
+                  "code": "UNAUTHENTICATED"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A conta não tem o perfil exigido (`FORBIDDEN`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Você não tem acesso a esta área.",
+                  "code": "FORBIDDEN"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Registro inexistente (`NOT_FOUND`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Resultado não encontrado.",
+                  "code": "NOT_FOUND"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/patients/{patientId}/exam-results": {
+      "get": {
+        "operationId": "listDoctorPatientExamResults",
+        "summary": "Ver os resultados de exame de um paciente",
+        "description": "Resultados de exame do paciente `patientId`, do exame mais recente para o mais antigo, cada um com a versão atual e as anteriores. Exige que o médico logado tenha com o paciente uma consulta do tipo avaliação de exames (`exam_review`) confirmada ou concluída que já começou há no máximo 30 dias; sem esse vínculo, inclusive com um paciente inexistente, a resposta é 403 `FORBIDDEN_NO_LINK`, sem revelar se o paciente existe. Cada resultado devolvido fica na auditoria como `exam_result.read`, só com o exame e a versão atual, nunca com o conteúdo. Limite: 120 requisições por minuto por IP.",
+        "tags": [
+          "Médico"
+        ],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "patientId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            },
+            "required": false,
+            "name": "pageSize",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Página de resultados do paciente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamResultPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Dados inválidos.",
+                  "code": "VALIDATION_ERROR",
+                  "fields": {
+                    "email": "Informe um e-mail válido."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada (`UNAUTHENTICATED`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Sua sessão expirou. Entre novamente.",
+                  "code": "UNAUTHENTICATED"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem o perfil de médico (`FORBIDDEN`) ou sem consulta de avaliação de exames com o paciente nos últimos 30 dias (`FORBIDDEN_NO_LINK`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "FORBIDDEN_NO_LINK",
+                  "message": "Você só vê os resultados de um paciente com quem tem uma consulta de avaliação de exames confirmada ou concluída nos últimos 30 dias."
                 },
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"

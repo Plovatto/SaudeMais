@@ -7,7 +7,7 @@ import { useParams } from 'react-router';
 import { z } from 'zod';
 import { RESCHEDULE_CLOSED_NOTE, rescheduleBlockedNotes } from '@components/bookings/reschedule-text';
 import { FormAlert, Input, QueryError, Skeleton, TextLink } from '@components/ui';
-import { areas } from '@constants/areas';
+import { PATIENT_BOOKINGS_PATH } from '@constants/areas';
 import { ApiError } from '@lib/api/api-error';
 import type { PatientBooking } from '@lib/api/models';
 import { civilDateInSaoPaulo, formatDateTime } from '@lib/date';
@@ -38,7 +38,7 @@ function ClosedNote({ message, alert = false }: { message: string; alert?: boole
     <FormAlert {...(!alert && ({ tone: 'warning', role: 'note' } as const))}>
       <span>
         {message}{' '}
-        <TextLink to={`${areas.patient.base}/agendamentos`} className="text-current">
+        <TextLink to={PATIENT_BOOKINGS_PATH} className="text-current">
           Voltar para meus agendamentos
         </TextLink>
       </span>

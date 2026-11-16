@@ -137,3 +137,9 @@ export function roleFromSlug(slug: string | null): Role | undefined {
 }
 
 export const notificationsUrl = (role: Role) => `${NOTIFICATIONS_PATH}?${AREA_PARAM}=${areaSlug(role)}`;
+
+export const PATIENT_BOOKINGS_PATH = `${areas.patient.base}/agendamentos`;
+
+export const PATIENT_PAST_PATH = `${PATIENT_BOOKINGS_PATH}?aba=realizados`;
+
+export const examResultUrl = (bookingId: string) => `${areas.patient.base}/exames/${bookingId}/resultado`;
