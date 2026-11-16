@@ -110,6 +110,23 @@
         ],
         "description": "Corpo de toda resposta de erro."
       },
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "example": {
+          "status": "ok"
+        }
+      },
       "AdminHome": {
         "type": "object",
         "properties": {
@@ -136,6 +153,569 @@
           "patients",
           "doctors",
           "appointmentsToday"
+        ]
+      },
+      "Doctor": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fullName": {
+            "type": "string",
+            "example": "Dra. Ana Ferreira"
+          },
+          "specialty": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string",
+                "example": "Nutrição"
+              },
+              "council": {
+                "type": "string",
+                "example": "CRN"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "council"
+            ]
+          },
+          "unit": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string",
+                "example": "Unidade Central"
+              },
+              "address": {
+                "type": "string",
+                "example": "Rua das Flores, 123 - Centro, São Paulo - SP"
+              },
+              "phone": {
+                "type": "string",
+                "example": "+551133334444"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "address",
+              "phone"
+            ]
+          },
+          "registry": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "string",
+                "example": "45210"
+              },
+              "uf": {
+                "type": "string",
+                "example": "SP"
+              }
+            },
+            "required": [
+              "number",
+              "uf"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "fullName",
+          "specialty",
+          "unit",
+          "registry"
+        ]
+      },
+      "DoctorPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Doctor"
+            }
+          },
+          "page": {
+            "type": "integer"
+          },
+          "pageSize": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ]
+      },
+      "DoctorAvailability": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date",
+                  "description": "Dia no fuso de São Paulo.",
+                  "example": "2026-11-23"
+                },
+                "slots": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "startsAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2026-11-23T11:00:00.000Z"
+                      },
+                      "endsAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2026-11-23T11:30:00.000Z"
+                      }
+                    },
+                    "required": [
+                      "startsAt",
+                      "endsAt"
+                    ]
+                  },
+                  "description": "Vagas livres do dia, em ordem."
+                }
+              },
+              "required": [
+                "date",
+                "slots"
+              ]
+            },
+            "description": "Só os dias do período com ao menos uma vaga livre, em ordem."
+          }
+        },
+        "required": [
+          "days"
+        ]
+      },
+      "AdminReport": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string",
+                "format": "date",
+                "description": "Primeiro dia, no fuso de São Paulo.",
+                "example": "2026-10-22"
+              },
+              "to": {
+                "type": "string",
+                "format": "date",
+                "description": "Último dia, incluído.",
+                "example": "2026-11-20"
+              },
+              "granularity": {
+                "type": "string",
+                "enum": [
+                  "day",
+                  "week"
+                ],
+                "description": "Tamanho dos intervalos da série: dia até 62 dias de período, semana acima disso.",
+                "example": "day"
+              }
+            },
+            "required": [
+              "from",
+              "to",
+              "granularity"
+            ]
+          },
+          "appointments": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Todos os agendamentos do período.",
+                "example": 140
+              },
+              "pending": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Pedidos a confirmar que ainda não começaram.",
+                "example": 6
+              },
+              "confirmed": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Confirmados que ainda não começaram.",
+                "example": 30
+              },
+              "awaitingRecord": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Confirmados que já começaram e aguardam registro.",
+                "example": 3
+              },
+              "completed": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Concluídos.",
+                "example": 80
+              },
+              "noShow": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Faltas registradas.",
+                "example": 7
+              },
+              "cancelled": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Cancelados.",
+                "example": 12
+              },
+              "expired": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Pedidos que não foram confirmados a tempo.",
+                "example": 2
+              },
+              "lateCancellations": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Cancelados pelo paciente dentro da janela de cancelamento tardio.",
+                "example": 4
+              },
+              "cancelledBy": {
+                "type": "object",
+                "properties": {
+                  "patient": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Cancelados pelo paciente.",
+                    "example": 8
+                  },
+                  "doctor": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Cancelados pelo médico.",
+                    "example": 2
+                  },
+                  "admin": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Cancelados por um administrador.",
+                    "example": 1
+                  },
+                  "system": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Cancelados pelo sistema, como ao desativar uma conta.",
+                    "example": 1
+                  }
+                },
+                "required": [
+                  "patient",
+                  "doctor",
+                  "admin",
+                  "system"
+                ],
+                "description": "Cancelados por quem cancelou."
+              },
+              "noShowRate": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 1,
+                "description": "Faltas sobre concluídas mais faltas, de 0 a 1 com três casas; nulo sem nenhuma das duas.",
+                "example": 0.08
+              }
+            },
+            "required": [
+              "total",
+              "pending",
+              "confirmed",
+              "awaitingRecord",
+              "completed",
+              "noShow",
+              "cancelled",
+              "expired",
+              "lateCancellations",
+              "cancelledBy",
+              "noShowRate"
+            ],
+            "description": "Consultas do período, pela situação atual."
+          },
+          "exams": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Todos os agendamentos do período.",
+                "example": 140
+              },
+              "pending": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Pedidos a confirmar que ainda não começaram.",
+                "example": 6
+              },
+              "confirmed": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Confirmados que ainda não começaram.",
+                "example": 30
+              },
+              "awaitingRecord": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Confirmados que já começaram e aguardam registro.",
+                "example": 3
+              },
+              "completed": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Concluídos.",
+                "example": 80
+              },
+              "noShow": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Faltas registradas.",
+                "example": 7
+              },
+              "cancelled": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Cancelados.",
+                "example": 12
+              },
+              "expired": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Pedidos que não foram confirmados a tempo.",
+                "example": 2
+              },
+              "lateCancellations": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Cancelados pelo paciente dentro da janela de cancelamento tardio.",
+                "example": 4
+              },
+              "cancelledBy": {
+                "type": "object",
+                "properties": {
+                  "patient": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Cancelados pelo paciente.",
+                    "example": 8
+                  },
+                  "doctor": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Cancelados pelo médico.",
+                    "example": 2
+                  },
+                  "admin": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Cancelados por um administrador.",
+                    "example": 1
+                  },
+                  "system": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Cancelados pelo sistema, como ao desativar uma conta.",
+                    "example": 1
+                  }
+                },
+                "required": [
+                  "patient",
+                  "doctor",
+                  "admin",
+                  "system"
+                ],
+                "description": "Cancelados por quem cancelou."
+              }
+            },
+            "required": [
+              "total",
+              "pending",
+              "confirmed",
+              "awaitingRecord",
+              "completed",
+              "noShow",
+              "cancelled",
+              "expired",
+              "lateCancellations",
+              "cancelledBy"
+            ],
+            "description": "Exames do período, pela situação atual. Exames não têm pedido a confirmar nem falta, então esses totais são sempre 0; `awaitingRecord` conta os exames em andamento, que já começaram e ainda não terminaram."
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "start": {
+                  "type": "string",
+                  "format": "date",
+                  "description": "Primeiro dia do intervalo.",
+                  "example": "2026-10-22"
+                },
+                "total": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Todos os agendamentos do período.",
+                  "example": 140
+                },
+                "pending": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Pedidos a confirmar que ainda não começaram.",
+                  "example": 6
+                },
+                "confirmed": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Confirmados que ainda não começaram.",
+                  "example": 30
+                },
+                "awaitingRecord": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Confirmados que já começaram e aguardam registro.",
+                  "example": 3
+                },
+                "completed": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Concluídos.",
+                  "example": 80
+                },
+                "noShow": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Faltas registradas.",
+                  "example": 7
+                },
+                "cancelled": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Cancelados.",
+                  "example": 12
+                },
+                "expired": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Pedidos que não foram confirmados a tempo.",
+                  "example": 2
+                }
+              },
+              "required": [
+                "start",
+                "total",
+                "pending",
+                "confirmed",
+                "awaitingRecord",
+                "completed",
+                "noShow",
+                "cancelled",
+                "expired"
+              ]
+            },
+            "description": "Consultas e exames por intervalo, pela situação atual, do primeiro ao último dia do período, inclusive os intervalos vazios. As semanas começam no primeiro dia do período; a última pode ser mais curta."
+          },
+          "topSpecialties": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string",
+                  "example": "Cardiologia"
+                },
+                "total": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Agendamentos do período em qualquer situação, inclusive cancelados e não confirmados a tempo.",
+                  "example": 42
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "total"
+              ]
+            },
+            "description": "As 5 especialidades com mais consultas no período, em qualquer situação (inclusive canceladas e não confirmadas a tempo), da maior para a menor; empates pelo nome."
+          },
+          "topExamTypes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string",
+                  "example": "Cardiologia"
+                },
+                "total": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Agendamentos do período em qualquer situação, inclusive cancelados e não confirmados a tempo.",
+                  "example": 42
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "total"
+              ]
+            },
+            "description": "Os 5 tipos de exame com mais agendamentos no período, em qualquer situação (inclusive cancelados), do maior para o menor; empates pelo nome."
+          }
+        },
+        "required": [
+          "period",
+          "appointments",
+          "exams",
+          "series",
+          "topSpecialties",
+          "topExamTypes"
         ]
       },
       "RegisterRequest": {
@@ -577,168 +1157,6 @@
         "required": [
           "futureAppointmentsAsPatient",
           "futureAppointmentsAsDoctor"
-        ]
-      },
-      "Doctor": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "fullName": {
-            "type": "string",
-            "example": "Dra. Ana Ferreira"
-          },
-          "specialty": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string",
-                "format": "uuid"
-              },
-              "name": {
-                "type": "string",
-                "example": "Nutrição"
-              },
-              "council": {
-                "type": "string",
-                "example": "CRN"
-              }
-            },
-            "required": [
-              "id",
-              "name",
-              "council"
-            ]
-          },
-          "unit": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string",
-                "format": "uuid"
-              },
-              "name": {
-                "type": "string",
-                "example": "Unidade Central"
-              },
-              "address": {
-                "type": "string",
-                "example": "Rua das Flores, 123 - Centro, São Paulo - SP"
-              },
-              "phone": {
-                "type": "string",
-                "example": "+551133334444"
-              }
-            },
-            "required": [
-              "id",
-              "name",
-              "address",
-              "phone"
-            ]
-          },
-          "registry": {
-            "type": "object",
-            "properties": {
-              "number": {
-                "type": "string",
-                "example": "45210"
-              },
-              "uf": {
-                "type": "string",
-                "example": "SP"
-              }
-            },
-            "required": [
-              "number",
-              "uf"
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "fullName",
-          "specialty",
-          "unit",
-          "registry"
-        ]
-      },
-      "DoctorPage": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Doctor"
-            }
-          },
-          "page": {
-            "type": "integer"
-          },
-          "pageSize": {
-            "type": "integer"
-          },
-          "total": {
-            "type": "integer"
-          }
-        },
-        "required": [
-          "items",
-          "page",
-          "pageSize",
-          "total"
-        ]
-      },
-      "DoctorAvailability": {
-        "type": "object",
-        "properties": {
-          "days": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "date": {
-                  "type": "string",
-                  "format": "date",
-                  "description": "Dia no fuso de São Paulo.",
-                  "example": "2026-11-23"
-                },
-                "slots": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "startsAt": {
-                        "type": "string",
-                        "format": "date-time",
-                        "example": "2026-11-23T11:00:00.000Z"
-                      },
-                      "endsAt": {
-                        "type": "string",
-                        "format": "date-time",
-                        "example": "2026-11-23T11:30:00.000Z"
-                      }
-                    },
-                    "required": [
-                      "startsAt",
-                      "endsAt"
-                    ]
-                  },
-                  "description": "Vagas livres do dia, em ordem."
-                }
-              },
-              "required": [
-                "date",
-                "slots"
-              ]
-            },
-            "description": "Só os dias do período com ao menos uma vaga livre, em ordem."
-          }
-        },
-        "required": [
-          "days"
         ]
       },
       "BookAppointmentRequest": {
@@ -3489,28 +3907,47 @@
           "counts",
           "lastNotification"
         ]
-      },
-      "HealthResponse": {
-        "type": "object",
-        "properties": {
-          "status": {
-            "type": "string",
-            "enum": [
-              "ok"
-            ]
-          }
-        },
-        "required": [
-          "status"
-        ],
-        "example": {
-          "status": "ok"
-        }
       }
     },
     "parameters": {}
   },
   "paths": {
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "tags": [
+          "Sistema"
+        ],
+        "summary": "Verificar se o servidor está no ar",
+        "description": "Responde sem consultar o banco, para que verificações periódicas não acordem o banco de dados quando ele está desligado por inatividade.",
+        "responses": {
+          "200": {
+            "description": "Servidor no ar.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/home": {
       "get": {
         "operationId": "getAdminHome",
@@ -3531,6 +3968,132 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AdminHome"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada (`UNAUTHENTICATED`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Sua sessão expirou. Entre novamente.",
+                  "code": "UNAUTHENTICATED"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A conta não tem o perfil exigido (`FORBIDDEN`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Você não tem acesso a esta área.",
+                  "code": "FORBIDDEN"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/reports": {
+      "get": {
+        "operationId": "getAdminReports",
+        "summary": "Ver os relatórios",
+        "description": "Totais de consultas e exames que começam no período, pela situação atual, com cancelamentos por autor, taxa de faltas, série para gráfico e especialidades e exames mais procurados. Os dias seguem o fuso de São Paulo; sem datas, vale os últimos 30 dias até hoje, e o período tem no máximo 366 dias. Só números: nada de dados pessoais, observações, motivos ou resultados. Agendamentos de pacientes de demonstração não entram. Limite: 30 requisições por minuto por IP.",
+        "tags": [
+          "Administração"
+        ],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Primeiro dia, no fuso de São Paulo. Sem ele, 29 dias antes do último, que por padrão é hoje.",
+              "example": "2026-10-22"
+            },
+            "required": false,
+            "description": "Primeiro dia, no fuso de São Paulo. Sem ele, 29 dias antes do último, que por padrão é hoje.",
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Último dia, incluído, no fuso de São Paulo. Sem ele, hoje.",
+              "example": "2026-11-20"
+            },
+            "required": false,
+            "description": "Último dia, incluído, no fuso de São Paulo. Sem ele, hoje.",
+            "name": "to",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Relatório do período.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Dados inválidos.",
+                  "code": "VALIDATION_ERROR",
+                  "fields": {
+                    "email": "Informe um e-mail válido."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -12158,42 +12721,6 @@
                 },
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
-            "content": {
-              "application/json": {
-                "example": {
-                  "message": "Erro interno do servidor.",
-                  "code": "INTERNAL_ERROR"
-                },
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/health": {
-      "get": {
-        "operationId": "getHealth",
-        "tags": [
-          "Sistema"
-        ],
-        "summary": "Verificar se o servidor está no ar",
-        "description": "Responde sem consultar o banco, para que verificações periódicas não acordem o banco de dados quando ele está desligado por inatividade.",
-        "responses": {
-          "200": {
-            "description": "Servidor no ar.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HealthResponse"
                 }
               }
             }
