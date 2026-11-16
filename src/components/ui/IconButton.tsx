@@ -6,10 +6,9 @@ import { squareButton } from './styles';
 export interface IconButtonProps extends Omit<ComponentProps<'button'>, 'children' | 'aria-label'> {
   label: string;
   icon: ReactNode;
-  children?: ReactNode;
 }
 
-export function IconButton({ label, icon, className, children, type = 'button', ...props }: IconButtonProps) {
+export function IconButton({ label, icon, className, type = 'button', ...props }: IconButtonProps) {
   return (
     <button
       type={type}
@@ -18,7 +17,6 @@ export function IconButton({ label, icon, className, children, type = 'button', 
       {...props}
     >
       <IconSlot className="text-xl">{icon}</IconSlot>
-      {children}
     </button>
   );
 }

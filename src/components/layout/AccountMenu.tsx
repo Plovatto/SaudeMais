@@ -18,7 +18,7 @@ export function AccountMenu({ area }: { area: Area }) {
       label={`Menu da conta, ${area.label}`}
       icon={<area.icon />}
       align="start"
-      triggerClassName="rounded-tile bg-role-strong text-on-role can-hover:bg-role-strong/90 [&_svg]:text-2xl"
+      triggerClassName="rounded-tile bg-role-strong text-on-role can-hover:bg-role-strong-hover [&_svg]:text-2xl"
       items={[
         { label: 'Meu perfil', icon: <LuUser />, onSelect: go(`${area.base}/perfil`) },
         ...(canSwitch ? [{ label: 'Trocar perfil', icon: <LuRepeat />, onSelect: go('/perfis') }] : []),

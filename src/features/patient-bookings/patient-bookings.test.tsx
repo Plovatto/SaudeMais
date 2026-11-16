@@ -426,7 +426,7 @@ describe('patient bookings', { timeout: 15_000 }, () => {
       const { calls } = serve({ upcoming: [booking('b1'), exam('b2', { status: 'pending' })] });
       const { user, router } = renderApp('/paciente/agendamentos');
 
-      const filter = await screen.findByRole('button', { name: 'Filtrar' });
+      const filter = await screen.findByRole('button', { name: 'Filtrar, todos' });
       expect(filter).toHaveAttribute('aria-haspopup', 'dialog');
       const dialog = await openFilter(user);
       expectAllSelected(dialog);
@@ -437,7 +437,7 @@ describe('patient bookings', { timeout: 15_000 }, () => {
       expect(router.state.location.search).toBe('?tipo=exame&status=pendente');
       await waitFor(() => expect(dialog).not.toBeVisible());
       expect(document.activeElement).toBe(filter);
-      expect(filter).toHaveAccessibleName('Filtrar, 2 filtros ativos');
+      expect(filter).toHaveAccessibleName('Filtrar, filtros: 2 filtros ativos');
       expect(within(filter).getByText('2')).toBeVisible();
       await waitFor(() => {
         const params = listCalls(calls).at(-1)?.url.searchParams;
@@ -453,12 +453,12 @@ describe('patient bookings', { timeout: 15_000 }, () => {
       const { calls } = serve({ upcoming: [booking('b1')] }, undefined, 25);
       const { user, router } = renderApp('/paciente/agendamentos?pagina=2&tipo=consulta');
 
-      const dialog = await openFilter(user, 'Filtrar, 1 filtro ativo');
+      const dialog = await openFilter(user, 'Filtrar, filtros: 1 filtro ativo');
       expect(within(dialog).getByRole('radio', { name: 'Consultas' })).toBeChecked();
       await user.click(within(dialog).getByRole('button', { name: 'Limpar' }));
 
       expect(router.state.location.search).toBe('');
-      expect(screen.getByRole('button', { name: 'Filtrar' })).toBeVisible();
+      expect(screen.getByRole('button', { name: 'Filtrar, todos' })).toBeVisible();
       await waitFor(() => expect(listCalls(calls).at(-1)?.url.searchParams.has('kind')).toBe(false));
     });
 
@@ -479,7 +479,7 @@ describe('patient bookings', { timeout: 15_000 }, () => {
       serve({ upcoming: [booking('b1')] });
       const { user, router } = renderApp('/paciente/agendamentos');
 
-      const filter = await screen.findByRole('button', { name: 'Filtrar' });
+      const filter = await screen.findByRole('button', { name: 'Filtrar, todos' });
       const dialog = await openFilter(user);
       await user.click(within(dialog).getByRole('radio', { name: 'Exames' }));
       await user.keyboard('{Escape}');
@@ -488,7 +488,7 @@ describe('patient bookings', { timeout: 15_000 }, () => {
       expect(dialog).not.toBeVisible();
       expect(document.activeElement).toBe(filter);
       expect(router.state.location.search).toBe('');
-      expect(filter).toHaveAccessibleName('Filtrar');
+      expect(filter).toHaveAccessibleName('Filtrar, todos');
     });
 
     it('offers only the statuses of the open tab', async () => {
@@ -529,14 +529,14 @@ describe('patient bookings', { timeout: 15_000 }, () => {
       const params = listCalls(calls)[0]?.url.searchParams;
       expect(params?.has('kind')).toBe(false);
       expect(params?.has('status')).toBe(false);
-      expect(screen.getByRole('button', { name: 'Filtrar' })).toBeVisible();
+      expect(screen.getByRole('button', { name: 'Filtrar, todos' })).toBeVisible();
     });
 
     it('drops a status that the new tab does not offer', async () => {
       const { calls } = serve({ upcoming: [exam('b1', { status: 'pending' })], past: [] });
       const { user, router } = renderApp('/paciente/agendamentos?tipo=exame&status=pendente');
 
-      await screen.findByRole('button', { name: 'Filtrar, 2 filtros ativos' });
+      await screen.findByRole('button', { name: 'Filtrar, filtros: 2 filtros ativos' });
       await user.click(screen.getByRole('tab', { name: /Realizados/ }));
 
       await waitFor(() => expect(router.state.location.search).toBe('?tipo=exame&aba=realizados'));
@@ -545,7 +545,7 @@ describe('patient bookings', { timeout: 15_000 }, () => {
       expect(params?.get('scope')).toBe('past');
       expect(params?.get('kind')).toBe('exam');
       expect(params?.has('status')).toBe(false);
-      expect(screen.getByRole('button', { name: 'Filtrar, 1 filtro ativo' })).toBeVisible();
+      expect(screen.getByRole('button', { name: 'Filtrar, filtros: 1 filtro ativo' })).toBeVisible();
     });
 
     it('explains a filtered empty list and clears the filters from it', async () => {

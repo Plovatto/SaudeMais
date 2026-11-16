@@ -15,6 +15,7 @@ const activeText = (count: number) => (count === 1 ? '1 filtro ativo' : `${count
 export function BookingsFilter({ scope, filters, onApply }: BookingsFilterProps) {
   const [draft, setDraft] = useState<BookingFilters | null>(null);
   const count = activeCount(filters);
+  const label = count > 0 ? 'Filtros' : 'Todos';
   const apply = (next: BookingFilters) => {
     onApply(next);
     setDraft(null);
@@ -24,10 +25,10 @@ export function BookingsFilter({ scope, filters, onApply }: BookingsFilterProps)
     <>
       <TileButton
         aria-haspopup="dialog"
-        aria-label={count > 0 ? `Filtrar, ${activeText(count)}` : 'Filtrar'}
+        aria-label={`Filtrar, ${label.toLowerCase()}${count > 0 ? `: ${activeText(count)}` : ''}`}
         onClick={() => setDraft(filters)}
         icon={<LuSlidersHorizontal />}
-        label={count > 0 ? 'Filtros' : 'Todos'}
+        label={label}
         badge={
           count > 0 && (
             <CountBadge className="bg-role-strong text-on-role end-1.5 top-1.5">{count}</CountBadge>
