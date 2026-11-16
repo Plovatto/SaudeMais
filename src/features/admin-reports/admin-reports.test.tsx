@@ -97,6 +97,46 @@ describe('admin reports', () => {
     await waitFor(() => expect(router.state.location.search).toBe('?de=2026-11-09&ate=2026-11-15'));
     await waitFor(() => expect(lastQuery(calls)).toEqual({ from: '2026-11-09', to: '2026-11-15' }));
     expect(screen.getByRole('radio', { name: '7 dias' })).toBeChecked();
+    expect(router.state.historyAction).toBe('REPLACE');
+  });
+
+  it('takes the default period from the São Paulo calendar near midnight UTC', async () => {
+    vi.setSystemTime(new Date('2026-11-16T01:30:00.000Z'));
+    const { calls } = serve(() => ({ status: 200, body: report() }));
+    renderApp('/admin/relatorios');
+
+    await section('Consultas');
+
+    expect(lastQuery(calls)).toEqual({ from: '2026-10-17', to: '2026-11-15' });
+  });
+
+  it('hides the previous period while the next one loads', async () => {
+    const { fetchMock } = serve(() => ({ status: 200, body: report() }));
+    const { user } = renderApp('/admin/relatorios');
+    expect(await screen.findByText('17/10/2026 a 15/11/2026')).toBeInTheDocument();
+    fetchMock.mockImplementationOnce(() => new Promise<Response>(() => undefined));
+
+    await user.click(screen.getByRole('radio', { name: '90 dias' }));
+
+    await waitFor(() => expect(screen.queryByText('17/10/2026 a 15/11/2026')).not.toBeInTheDocument());
+    expect(screen.getByRole('region', { name: 'Consultas' })).toBeInTheDocument();
+  });
+
+  it('refuses a custom period that ends before it starts', async () => {
+    const { calls } = serve(() => ({ status: 200, body: report() }));
+    const { user, router } = renderApp('/admin/relatorios?de=2026-03-01&ate=2026-03-31');
+    await section('Consultas');
+    const requests = calls.length;
+    const to = screen.getByLabelText('Até');
+
+    await user.clear(to);
+    await user.type(to, '2026-02-01');
+    await user.click(screen.getByRole('button', { name: 'Aplicar' }));
+
+    expect(to).toHaveAccessibleDescription('A data final deve ser igual ou posterior à inicial.');
+    expect(to).toHaveFocus();
+    expect(router.state.location.search).toBe('?de=2026-03-01&ate=2026-03-31');
+    expect(calls).toHaveLength(requests);
   });
 
   it('reads a custom period from the URL and applies a new one', async () => {
@@ -176,7 +216,7 @@ describe('admin reports', () => {
     const examStatuses = within(exams.getByRole('list', { name: 'Exames: por situação' }));
     expect(examStatuses.getAllByRole('listitem').map((item) => item.textContent)).toEqual([
       'Confirmado8',
-      'Em andamento2',
+      'Aguardando registro2',
       'Concluída7',
       'Cancelada6',
     ]);
@@ -198,7 +238,9 @@ describe('admin reports', () => {
     const { user } = renderApp('/admin/relatorios');
     const chart = await section('Agendamentos por dia');
     expect(
-      chart.getByRole('img', { name: /Agendamentos por dia\. 2 intervalos; maior total: 9 em 15\/11\/2026/ }),
+      chart.getByRole('img', {
+        name: 'Agendamentos por dia. 2 intervalos; Concluídos: 8; Em aberto: 4; Não realizados: 4; maior total: 9 em 15/11/2026.',
+      }),
     ).toBeInTheDocument();
     expect(chart.queryByRole('table')).not.toBeInTheDocument();
 

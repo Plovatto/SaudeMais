@@ -112,7 +112,10 @@ export function AdminReportsPage() {
     <>
       <PageHeader
         title="Relatórios"
-        {...(data && { subtitle: `${formatDate(data.period.from)} a ${formatDate(data.period.to)}` })}
+        {...(data &&
+          !query.isPlaceholderData && {
+            subtitle: `${formatDate(data.period.from)} a ${formatDate(data.period.to)}`,
+          })}
       />
       <div className="flex flex-col gap-6">
         <PeriodControls errors={fieldErrors ?? NO_ERRORS} />

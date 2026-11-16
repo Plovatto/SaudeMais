@@ -30,6 +30,7 @@ export function usePeriod() {
     const candidate = presetPeriod(value, today);
     return candidate.from === period.from && candidate.to === period.to;
   })?.value;
-  const setPeriod = (next: Period) => setParams({ de: next.from, ate: next.to });
+  const setPeriod = (next: Period, options?: { replace?: boolean }) =>
+    setParams({ de: next.from, ate: next.to }, options);
   return { period, preset, setPeriod };
 }

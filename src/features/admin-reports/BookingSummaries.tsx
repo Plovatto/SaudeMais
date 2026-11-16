@@ -30,19 +30,16 @@ const KINDS = [
     key: 'appointments',
     title: 'Consultas',
     statuses: ['pending', 'confirmed', 'awaitingRecord', 'completed', 'noShow', 'cancelled', 'expired'],
-    labels: {},
   },
   {
     key: 'exams',
     title: 'Exames',
     statuses: ['confirmed', 'awaitingRecord', 'completed', 'cancelled'],
-    labels: { awaitingRecord: 'Em andamento' },
   },
 ] as const satisfies readonly {
   key: 'appointments' | 'exams';
   title: string;
   statuses: readonly StatusField[];
-  labels: Partial<Record<StatusField, string>>;
 }[];
 
 interface BookingSummaryProps {
@@ -51,7 +48,6 @@ interface BookingSummaryProps {
 }
 
 function BookingSummary({ kind, counts }: BookingSummaryProps) {
-  const labels: Partial<Record<StatusField, string>> = kind.labels;
   const stats = [
     { label: 'Total', value: counts.total },
     { label: 'Concluídos', value: counts.completed },
@@ -82,7 +78,7 @@ function BookingSummary({ kind, counts }: BookingSummaryProps) {
               value: counts[field],
               label: (
                 <StatusChip tone={status.tone} icon={status.icon}>
-                  {labels[field] ?? status.label}
+                  {status.label}
                 </StatusChip>
               ),
             };

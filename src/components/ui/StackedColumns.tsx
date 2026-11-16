@@ -24,6 +24,7 @@ export interface StackedColumnsProps<K extends string> {
 }
 
 const TICKS = 4;
+const DENSE_ROWS = 31;
 
 function axisTop(max: number) {
   const raw = Math.max(1, max / TICKS);
@@ -42,8 +43,14 @@ export function StackedColumns<K extends string>({ label, rowHeader, series, row
   const { step, top } = axisTop(peak);
   const ticks = Array.from({ length: Math.round(top / step) + 1 }, (_, index) => index * step);
   const peakRow = rows[totals.indexOf(peak)];
+  const seriesTotals = series
+    .map(({ key, label: seriesLabel }) => {
+      const sum = rows.reduce((total, row) => total + row.values[key], 0);
+      return `${seriesLabel}: ${formatCount(sum)}`;
+    })
+    .join('; ');
   const summary = peakRow
-    ? `${label}. ${rows.length} intervalos; maior total: ${formatCount(peak)} em ${peakRow.label}.`
+    ? `${label}. ${rows.length} intervalos; ${seriesTotals}; maior total: ${formatCount(peak)} em ${peakRow.label}.`
     : label;
   const activeRow = active === null ? undefined : rows[active];
   const axisLabels = new Set([0, Math.floor((rows.length - 1) / 2), rows.length - 1]);
@@ -71,11 +78,17 @@ export function StackedColumns<K extends string>({ label, rowHeader, series, row
               </span>
             </div>
           ))}
-          <div className="absolute inset-0 flex items-end gap-0.5" onPointerLeave={() => setActive(null)}>
+          <div
+            className={cx('absolute inset-0 flex items-end', rows.length > DENSE_ROWS ? 'gap-px' : 'gap-0.5')}
+            onPointerLeave={(event) => {
+              if (event.pointerType === 'mouse') setActive(null);
+            }}
+          >
             {rows.map((row, index) => (
               <div
                 key={row.key}
                 onPointerEnter={() => setActive(index)}
+                onPointerDown={() => setActive(index)}
                 className={cx(
                   'flex h-full min-w-0 flex-1 items-end justify-center transition-opacity',
                   active !== null && active !== index && 'opacity-50',
@@ -100,7 +113,7 @@ export function StackedColumns<K extends string>({ label, rowHeader, series, row
           </div>
           {activeRow && active !== null && (
             <div
-              className="rounded-field border-border bg-surface text-text shadow-card pointer-events-none absolute bottom-full z-10 mb-2 w-44 border p-2 text-xs"
+              className="rounded-field border-border bg-surface text-text shadow-card pointer-events-none absolute top-0 z-10 w-44 border p-2 text-xs"
               style={{
                 left: `clamp(0px, calc(${((active + 0.5) / rows.length) * 100}% - 5.5rem), calc(100% - 11rem))`,
               }}
