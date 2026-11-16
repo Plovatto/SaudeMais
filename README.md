@@ -136,7 +136,11 @@ npx playwright install chromium webkit
 ADMIN_EMAIL=admin@e2e.test ADMIN_PASSWORD=uma-senha-de-teste-longa npm run e2e
 ```
 
-O Playwright gera o build com `VITE_API_URL=http://localhost:3001` e o serve com `vite preview` em `http://localhost:4173/SaudeMais/`. A API limita cadastros a 10 por hora por IP e cada rodada cria 8 contas; reinicie a API para zerar os limites. No CI, o workflow `E2E` sobe a API da branch `main` contra um PostgreSQL 18 temporário e publica o relatório e os traces quando algo falha.
+O Playwright gera o build com `VITE_API_URL=http://localhost:3001` e o serve com `vite preview` em `http://localhost:4173/SaudeMais/`. Os testes recusam uma API fora desta máquina.
+
+A API limita cadastros a 10 por hora por IP e logins a 30 a cada 15 minutos por IP. Cada rodada cria 8 contas e faz cerca de 14 logins, por isso os testes não repetem em caso de falha; para rodar de novo antes do fim da janela, reinicie a API, que guarda os limites na memória.
+
+No CI, o workflow `E2E` sobe a API no commit fixado em `API_REF` (ou no informado ao disparar o workflow manualmente) contra um PostgreSQL 18 temporário. Quando algo falha, o relatório e os traces ficam disponíveis por 3 dias; eles podem conter as credenciais descartáveis da execução, nunca dados reais.
 
 ## Estrutura
 
