@@ -10,8 +10,17 @@ const NEXT_DAY = '2030-01-11T02:30:00.000Z';
 const PAST = '2020-01-10T13:00:00.000Z';
 const LIST = '/api/doctor/appointments';
 const HOME = '/api/doctor/home';
+const NOT_STARTED = 'Esta consulta ainda não começou. Registre o desfecho a partir do horário de início.';
 const STALE = 'Este agendamento mudou ou não pode mais ser alterado. Confira a lista atualizada.';
 const REASON = 'Informe o motivo do cancelamento.';
+
+const actions = (overrides: Partial<DoctorAppointment['actions']> = {}): DoctorAppointment['actions'] => ({
+  canConfirm: false,
+  canCancel: false,
+  canComplete: false,
+  canNoShow: false,
+  ...overrides,
+});
 
 const appointment = (id: string, overrides: Partial<DoctorAppointment> = {}): DoctorAppointment => ({
   id,
@@ -24,16 +33,15 @@ const appointment = (id: string, overrides: Partial<DoctorAppointment> = {}): Do
   specialty: { id: 's1', name: 'Cardiologia', council: 'CRM' },
   unit: { id: 'u1', name: 'Hospital Central', address: 'Rua das Flores, 123', phone: '+551133334444' },
   cancellation: null,
-  actions: { canConfirm: true, canCancel: true, canComplete: false, canNoShow: false },
+  actions: actions({ canConfirm: true, canCancel: true }),
   ...overrides,
 });
 
 const confirmed = (id: string, overrides: Partial<DoctorAppointment> = {}) =>
-  appointment(id, {
-    status: 'confirmed',
-    actions: { canConfirm: false, canCancel: true, canComplete: false, canNoShow: false },
-    ...overrides,
-  });
+  appointment(id, { status: 'confirmed', actions: actions({ canCancel: true }), ...overrides });
+
+const unrecorded = (id: string, overrides: Partial<DoctorAppointment> = {}) =>
+  confirmed(id, { startsAt: PAST, actions: actions({ canComplete: true, canNoShow: true }), ...overrides });
 
 const counts = { pending: 0, confirmed: 0, awaiting: 0, history: 0 };
 
@@ -90,6 +98,8 @@ const serve = ({ lists = {}, homeData = home(), action, totals = {} }: Serve) =>
     ...(action && {
       '/api/appointments/a1/confirm': () => action('confirm'),
       '/api/appointments/a1/cancel': () => action('cancel'),
+      '/api/appointments/a1/complete': () => action('complete'),
+      '/api/appointments/a1/no-show': () => action('no-show'),
     }),
   });
 
@@ -112,13 +122,7 @@ describe('doctor home', { timeout: 15_000 }, () => {
     serve({
       homeData: home({
         pending: [appointment('a1')],
-        awaitingRecord: [
-          confirmed('a2', {
-            startsAt: PAST,
-            patient: { id: 'p2', fullName: 'Beatriz Neves', phone: null },
-            actions: { canConfirm: false, canCancel: false, canComplete: false, canNoShow: false },
-          }),
-        ],
+        awaitingRecord: [unrecorded('a2', { patient: { id: 'p2', fullName: 'Beatriz Neves', phone: null } })],
         counts: { ...counts, pending: 2, awaiting: 1 },
       }),
     });
@@ -150,6 +154,8 @@ describe('doctor home', { timeout: 15_000 }, () => {
     expect(within(awaiting).getByRole('button', { name: /^Beatriz Neves/ })).toBeVisible();
     expect(within(awaiting).getByText('Aguardando registro', { selector: 'span' })).toBeVisible();
     expect(within(awaiting).queryByRole('button', { name: /^(Confirmar|Cancelar)/ })).not.toBeInTheDocument();
+    expect(within(awaiting).getByRole('button', { name: /^Concluir: Beatriz Neves/ })).toBeVisible();
+    expect(within(awaiting).getByRole('button', { name: /^Não compareceu: Beatriz Neves/ })).toBeVisible();
     expect(within(awaiting).getByRole('link', { name: 'Ver todas aguardando registro' })).toHaveAttribute(
       'href',
       '/medico/agenda?aba=aguardando-registro',
@@ -245,6 +251,52 @@ describe('doctor home', { timeout: 15_000 }, () => {
 
     expect(await screen.findByText('Nenhum pedido a confirmar')).toBeVisible();
     await waitFor(() => expect(screen.getByRole('link', { name: 'Ver Agenda Completa' })).toHaveFocus());
+  });
+
+  it('completes an appointment from the awaiting section and moves the focus when it leaves', async () => {
+    const data = home({ awaitingRecord: [unrecorded('a1')], counts: { ...counts, awaiting: 1 } });
+    const { calls } = serve({
+      homeData: data,
+      action: () => {
+        data.awaitingRecord = [];
+        data.counts = counts;
+        return { status: 200, body: {} };
+      },
+    });
+    const { user } = renderApp('/medico');
+    const section = await screen.findByRole('region', { name: 'Aguardando registro' });
+    await user.click(await within(section).findByRole('button', { name: /^Concluir/ }));
+    expect(await screen.findByText('Consulta concluída.')).toBeVisible();
+    expect(posts(calls)[0]?.url.pathname).toBe('/api/appointments/a1/complete');
+    expect(posts(calls)[0]?.body).toEqual({ startsAt: PAST });
+    expect(await screen.findByText('Nenhuma consulta aguardando registro')).toBeVisible();
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: 'Ver todas aguardando registro' })).toHaveFocus(),
+    );
+  });
+
+  it('registers a no-show from the awaiting section and moves the focus to its link', async () => {
+    const data = home({ awaitingRecord: [unrecorded('a1')], counts: { ...counts, awaiting: 1 } });
+    const { calls } = serve({
+      homeData: data,
+      action: () => {
+        data.awaitingRecord = [];
+        data.counts = counts;
+        return { status: 200, body: {} };
+      },
+    });
+    const { user } = renderApp('/medico');
+    const section = await screen.findByRole('region', { name: 'Aguardando registro' });
+    await user.click(await within(section).findByRole('button', { name: /^Não compareceu/ }));
+    const dialog = screen.getByRole('dialog', { name: 'Registrar falta?' });
+    await user.click(within(dialog).getByRole('button', { name: 'Registrar falta' }));
+    expect(await screen.findByText('Falta registrada.')).toBeVisible();
+    expect(posts(calls)[0]?.url.pathname).toBe('/api/appointments/a1/no-show');
+    expect(posts(calls)[0]?.body).toEqual({ startsAt: PAST });
+    expect(await screen.findByText('Nenhuma consulta aguardando registro')).toBeVisible();
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: 'Ver todas aguardando registro' })).toHaveFocus(),
+    );
   });
 
   it('hides the banner and shows empty sections when nothing waits', async () => {
@@ -349,7 +401,7 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
           appointment('a1', {
             status: 'cancelled',
             patient: { id: 'p1', fullName: 'Andreia Soares', phone: null },
-            actions: { canConfirm: false, canCancel: false, canComplete: false, canNoShow: false },
+            actions: actions(),
             cancellation: { byRole: 'patient', reason: 'Viagem.', late: false, cancelledAt: PAST },
           }),
         ],
@@ -414,10 +466,11 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     const { user } = renderApp('/medico/agenda');
 
     const { scope } = await card(/^Andreia Soares/);
+    const results = screen.getByText('1 consulta');
     await user.click(scope.getByRole('button', { name: /^Confirmar/ }));
 
     expect(await screen.findByText('Nenhum pedido a confirmar')).toBeVisible();
-    await waitFor(() => expect(document.activeElement).toHaveAttribute('aria-live', 'polite'));
+    await waitFor(() => expect(results).toHaveFocus());
   });
 
   it('blocks the other confirmations while one is being sent', async () => {
@@ -438,6 +491,221 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
 
     await waitFor(() => expect(second.scope.getByRole('button', { name: /^Confirmar/ })).toBeDisabled());
     expect(await screen.findByText('Consulta confirmada.')).toBeVisible();
+  });
+
+  it('shows the outcome buttons only when the API allows them', async () => {
+    serve({
+      lists: {
+        awaiting: [
+          unrecorded('a1'),
+          unrecorded('a2', {
+            patient: { id: 'p2', fullName: 'Jair Oliveira', phone: null },
+            actions: actions({ canComplete: true }),
+          }),
+        ],
+      },
+    });
+    renderApp('/medico/agenda?aba=aguardando-registro');
+    const first = await card(/^Andreia Soares/);
+    expect(first.scope.getByRole('button', { name: /^Concluir: Andreia Soares/ })).toBeVisible();
+    expect(first.scope.getByRole('button', { name: /^Não compareceu: Andreia Soares/ })).toBeVisible();
+    expect(first.scope.queryByRole('button', { name: /^(Confirmar|Cancelar)/ })).not.toBeInTheDocument();
+    const second = await card(/^Jair Oliveira/);
+    expect(second.scope.getByRole('button', { name: /^Concluir/ })).toBeVisible();
+    expect(second.scope.queryByRole('button', { name: /^Não compareceu/ })).not.toBeInTheDocument();
+  });
+
+  it('shows completed and missed appointments in the history with the doctor labels', async () => {
+    serve({
+      lists: {
+        history: [
+          appointment('a1', { status: 'completed', startsAt: PAST, actions: actions() }),
+          appointment('a2', {
+            status: 'no_show',
+            startsAt: PAST,
+            patient: { id: 'p2', fullName: 'Jair Oliveira', phone: null },
+            actions: actions(),
+          }),
+        ],
+      },
+    });
+    renderApp('/medico/agenda?aba=historico');
+    const completed = await card(/^Andreia Soares/);
+    expect(completed.scope.getByText('Concluída')).toBeVisible();
+    const missed = await card(/^Jair Oliveira/);
+    expect(missed.scope.getByText('Não compareceu')).toBeVisible();
+    expect(
+      screen.queryByRole('button', { name: /^(Concluir|Não compareceu|Confirmar|Cancelar)/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('completes with the start time it showed and refreshes the doctor data', async () => {
+    const { calls } = serve({
+      lists: { awaiting: [unrecorded('a1')] },
+      action: () => ({ status: 200, body: {} }),
+    });
+    const { user, queryClient } = renderApp('/medico/agenda?aba=aguardando-registro');
+    const { scope } = await card(/^Andreia Soares/);
+    queryClient.setQueryData(queryKeys.doctor.home, home());
+    const before = listCalls(calls).length;
+    await user.click(scope.getByRole('button', { name: /^Concluir/ }));
+    expect(await screen.findByText('Consulta concluída.')).toBeVisible();
+    expect(queryClient.getQueryState(queryKeys.doctor.home)?.isInvalidated).toBe(true);
+    expect(posts(calls)[0]?.url.pathname).toBe('/api/appointments/a1/complete');
+    expect(posts(calls)[0]?.body).toEqual({ startsAt: PAST });
+    await waitFor(() => expect(listCalls(calls).length).toBeGreaterThan(before));
+  });
+
+  it('asks before registering a no-show and sends it only after the confirmation', async () => {
+    const { calls } = serve({
+      lists: { awaiting: [unrecorded('a1')] },
+      action: () => ({ status: 200, body: {} }),
+    });
+    const { user } = renderApp('/medico/agenda?aba=aguardando-registro');
+    const { scope } = await card(/^Andreia Soares/);
+    const trigger = scope.getByRole('button', { name: /^Não compareceu/ });
+    await user.click(trigger);
+    let dialog = screen.getByRole('dialog', { name: 'Registrar falta?' });
+    expect(dialog).toHaveAccessibleDescription(
+      /^Andreia Soares não compareceu à consulta de .+\. Esse registro não pode ser desfeito\.$/,
+    );
+    await user.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
+    expect(dialog).not.toBeVisible();
+    expect(trigger).toHaveFocus();
+    expect(posts(calls)).toHaveLength(0);
+    await user.click(trigger);
+    dialog = screen.getByRole('dialog', { name: 'Registrar falta?' });
+    await user.click(within(dialog).getByRole('button', { name: 'Registrar falta' }));
+    expect(await screen.findByText('Falta registrada.')).toBeVisible();
+    expect(posts(calls)[0]?.url.pathname).toBe('/api/appointments/a1/no-show');
+    expect(posts(calls)[0]?.body).toEqual({ startsAt: PAST });
+    await waitFor(() => expect(dialog).not.toBeVisible());
+  });
+
+  it('explains an appointment that has not started yet and refreshes the list', async () => {
+    const { calls } = serve({
+      lists: { awaiting: [unrecorded('a1')] },
+      action: () => ({
+        status: 409,
+        body: { code: 'NOT_STARTED', message: 'A consulta ainda não começou.' },
+      }),
+    });
+    const { user } = renderApp('/medico/agenda?aba=aguardando-registro');
+    const { scope } = await card(/^Andreia Soares/);
+    const before = listCalls(calls).length;
+    await user.click(scope.getByRole('button', { name: /^Concluir/ }));
+    expect(await screen.findByText(NOT_STARTED)).toBeVisible();
+    expect(screen.queryByText('A consulta ainda não começou.')).not.toBeInTheDocument();
+    await waitFor(() => expect(listCalls(calls).length).toBeGreaterThan(before));
+  });
+
+  it('explains a stale outcome, closes the confirmation and refreshes the list on 409', async () => {
+    const { calls } = serve({
+      lists: { awaiting: [unrecorded('a1')] },
+      action: () => ({ status: 409, body: { code: 'INVALID_STATE', message: 'Consulta já registrada.' } }),
+    });
+    const { user } = renderApp('/medico/agenda?aba=aguardando-registro');
+    const { scope } = await card(/^Andreia Soares/);
+    const before = listCalls(calls).length;
+    await user.click(scope.getByRole('button', { name: /^Não compareceu/ }));
+    const dialog = screen.getByRole('dialog', { name: 'Registrar falta?' });
+    await user.click(within(dialog).getByRole('button', { name: 'Registrar falta' }));
+    expect(await screen.findByText(STALE)).toBeVisible();
+    await waitFor(() => expect(dialog).not.toBeVisible());
+    await waitFor(() => expect(listCalls(calls).length).toBeGreaterThan(before));
+  });
+
+  it('explains a missing appointment on 404 when completing', async () => {
+    serve({
+      lists: { awaiting: [unrecorded('a1')] },
+      action: () => ({ status: 404, body: { code: 'NOT_FOUND', message: 'Consulta não encontrada.' } }),
+    });
+    const { user } = renderApp('/medico/agenda?aba=aguardando-registro');
+    const { scope } = await card(/^Andreia Soares/);
+    await user.click(scope.getByRole('button', { name: /^Concluir/ }));
+    expect(
+      await screen.findByText('Este agendamento não existe mais. Confira a lista atualizada.'),
+    ).toBeVisible();
+  });
+
+  it('moves the focus to the results line when the missed appointment leaves the list', async () => {
+    const lists = { awaiting: [unrecorded('a1')] };
+    serve({
+      lists,
+      action: () => {
+        lists.awaiting = [];
+        return { status: 200, body: {} };
+      },
+    });
+    const { user } = renderApp('/medico/agenda?aba=aguardando-registro');
+    const { scope } = await card(/^Andreia Soares/);
+    const results = screen.getByText('1 consulta');
+    await user.click(scope.getByRole('button', { name: /^Não compareceu/ }));
+    await user.click(screen.getByRole('button', { name: 'Registrar falta' }));
+    expect(await screen.findByText('Nenhuma consulta aguardando registro')).toBeVisible();
+    await waitFor(() => expect(results).toHaveFocus());
+  });
+
+  it('moves the focus to the results line when the missed appointment leaves a list that keeps others', async () => {
+    const other = unrecorded('a2', { patient: { id: 'p2', fullName: 'Jair Oliveira', phone: null } });
+    const lists = { awaiting: [unrecorded('a1'), other] };
+    serve({
+      lists,
+      action: () => {
+        lists.awaiting = [other];
+        return { status: 200, body: {} };
+      },
+    });
+    const { user } = renderApp('/medico/agenda?aba=aguardando-registro');
+    const { scope } = await card(/^Andreia Soares/);
+    const results = screen.getByText('2 consultas');
+    await user.click(scope.getByRole('button', { name: /^Não compareceu/ }));
+    await user.click(screen.getByRole('button', { name: 'Registrar falta' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: /^Andreia Soares/ })).not.toBeInTheDocument(),
+    );
+    await waitFor(() => expect(results).toHaveFocus());
+  });
+
+  it('moves the focus to the results line when a stale outcome empties the list', async () => {
+    const lists = { awaiting: [unrecorded('a1')] };
+    serve({
+      lists,
+      action: () => {
+        lists.awaiting = [];
+        return { status: 409, body: { code: 'INVALID_STATE', message: 'Consulta já registrada.' } };
+      },
+    });
+    const { user } = renderApp('/medico/agenda?aba=aguardando-registro');
+    const { scope } = await card(/^Andreia Soares/);
+    const results = screen.getByText('1 consulta');
+    await user.click(scope.getByRole('button', { name: /^Concluir/ }));
+    expect(await screen.findByText(STALE)).toBeVisible();
+    expect(await screen.findByText('Nenhuma consulta aguardando registro')).toBeVisible();
+    await waitFor(() => expect(results).toHaveFocus());
+  });
+
+  it('blocks every outcome button while one is being sent', async () => {
+    serve({
+      lists: {
+        awaiting: [
+          unrecorded('a1'),
+          unrecorded('a2', { patient: { id: 'p2', fullName: 'Jair Oliveira', phone: null } }),
+        ],
+      },
+      action: () => ({ status: 200, body: {} }),
+    });
+    renderApp('/medico/agenda?aba=aguardando-registro');
+    const first = await card(/^Andreia Soares/);
+    const second = await card(/^Jair Oliveira/);
+    fireEvent.click(first.scope.getByRole('button', { name: /^Concluir/ }));
+    await waitFor(() => {
+      expect(first.scope.getByRole('button', { name: /^Concluir/ })).toHaveAttribute('aria-disabled', 'true');
+      expect(first.scope.getByRole('button', { name: /^Não compareceu/ })).toBeDisabled();
+      expect(second.scope.getByRole('button', { name: /^Concluir/ })).toBeDisabled();
+      expect(second.scope.getByRole('button', { name: /^Não compareceu/ })).toBeDisabled();
+    });
+    expect(await screen.findByText('Consulta concluída.')).toBeVisible();
   });
 
   it('requires a reason before cancelling', async () => {

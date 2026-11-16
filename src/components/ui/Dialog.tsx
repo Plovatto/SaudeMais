@@ -13,6 +13,7 @@ export interface DialogProps {
   centered?: boolean;
   placement?: 'center' | 'side' | 'sheet';
   closeLabel?: string;
+  dismissible?: boolean;
   fallbackFocus?: RefObject<HTMLElement | null> | undefined;
   initialFocus?: RefObject<HTMLElement | null>;
   children?: ReactNode;
@@ -27,6 +28,7 @@ export function Dialog({
   centered = false,
   placement = 'center',
   closeLabel = 'Fechar',
+  dismissible = true,
   fallbackFocus,
   initialFocus,
   children,
@@ -72,11 +74,15 @@ export function Dialog({
       ref={ref}
       aria-labelledby={titleId}
       aria-describedby={description ? descriptionId : undefined}
+      onCancel={(event) => {
+        if (!dismissible) event.preventDefault();
+      }}
       onPointerDown={(event) => {
         pressedBackdrop.current = event.target === event.currentTarget;
       }}
       onClick={(event) => {
-        if (pressedBackdrop.current && event.target === event.currentTarget) ref.current?.close();
+        if (dismissible && pressedBackdrop.current && event.target === event.currentTarget)
+          ref.current?.close();
       }}
       className={cx(
         'rounded-card border-role bg-surface text-text shadow-card m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-sm overflow-y-auto border p-0',
@@ -91,6 +97,7 @@ export function Dialog({
           label={closeLabel}
           icon={<LuX />}
           onClick={() => ref.current?.close()}
+          disabled={!dismissible}
           className="absolute end-2 top-2"
         />
         {icon && <IconSlot badge="strong">{icon}</IconSlot>}

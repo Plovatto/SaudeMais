@@ -12,10 +12,18 @@ export interface AgendaParams {
   page: number;
 }
 
+type DecisionPath = `/api/appointments/{id}/${'confirm' | 'complete' | 'no-show'}`;
+
+const decide =
+  (path: DecisionPath) =>
+  ({ id, startsAt }: DoctorAppointment) =>
+    apiFetch('post', path, { params: { id }, body: { startsAt } });
+
 export const doctorApi = {
   home: (signal: AbortSignal) => apiFetch('get', '/api/doctor/home', { signal }),
   list: ({ tab, page }: AgendaParams, signal: AbortSignal) =>
     apiFetch('get', '/api/doctor/appointments', { query: { tab, page, pageSize: PAGE_SIZE }, signal }),
-  confirm: ({ id, startsAt }: DoctorAppointment) =>
-    apiFetch('post', '/api/appointments/{id}/confirm', { params: { id }, body: { startsAt } }),
+  confirm: decide('/api/appointments/{id}/confirm'),
+  complete: decide('/api/appointments/{id}/complete'),
+  noShow: decide('/api/appointments/{id}/no-show'),
 };
