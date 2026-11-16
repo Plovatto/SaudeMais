@@ -3,6 +3,7 @@ import {
   addDays,
   civilDateInSaoPaulo,
   formatDateTime,
+  formatDate,
   formatDay,
   formatRelative,
   formatTime,
@@ -55,6 +56,11 @@ describe.each([
 
   it('labels a civil date without shifting the day', () => {
     expect(formatDay('2026-11-20')).toBe('sex., 20/11');
+  });
+
+  it('formats a civil date with and without the year', () => {
+    expect(formatDate('2026-01-05')).toBe('05/01/2026');
+    expect(formatDate('2026-01-05', { year: false })).toBe('05/01');
   });
 
   it('tells how long ago something happened', () => {

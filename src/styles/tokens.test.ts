@@ -67,6 +67,10 @@ describe.each([
     expect(contrast(base['surface'], base['border-field'])).toBeGreaterThanOrEqual(3);
   });
 
+  it.each(['chart-1', 'chart-2'])('keeps the %s chart mark visible on cards (3:1)', (token) => {
+    expect(contrast(base[token], base['surface'])).toBeGreaterThanOrEqual(3);
+  });
+
   it('keeps the focus ring visible outside a role (3:1)', () => {
     expect(contrast(base['focus'], base['canvas'])).toBeGreaterThanOrEqual(3);
   });
