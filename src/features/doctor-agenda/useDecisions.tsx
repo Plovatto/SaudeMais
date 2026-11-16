@@ -16,18 +16,21 @@ interface Request {
 export function useDecisions(refresh: () => Promise<unknown>, fallbackFocus: RefObject<HTMLElement | null>) {
   const { show } = useToast();
   const [asking, setAsking] = useState<Request | null>(null);
+  const settle = async (trigger: Element | null | undefined) => {
+    await refresh();
+    await nextTask();
+    if (trigger && !trigger.isConnected) fallbackFocus.current?.focus();
+  };
   const mutation = useMutation({
     mutationFn: ({ decision, appointment }: Request) => decision.send(appointment),
     onMutate: () => document.activeElement,
     onSuccess: async (_data, { decision }, trigger) => {
       show({ message: decision.success, tone: 'success' });
-      await refresh();
-      await nextTask();
-      if (trigger && !trigger.isConnected) fallbackFocus.current?.focus();
+      await settle(trigger);
     },
-    onError: (error) => {
+    onError: async (error, _request, trigger) => {
       show({ message: errorMessage(error, staleMessages), tone: 'danger' });
-      if (isStale(error)) void refresh();
+      if (isStale(error)) await settle(trigger);
     },
   });
   const run = (request: Request) => mutation.mutate(request, { onSettled: () => setAsking(null) });

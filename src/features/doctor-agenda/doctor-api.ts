@@ -12,8 +12,7 @@ export interface AgendaParams {
   page: number;
 }
 
-type DecisionPath =
-  '/api/appointments/{id}/confirm' | '/api/appointments/{id}/complete' | '/api/appointments/{id}/no-show';
+type DecisionPath = `/api/appointments/{id}/${'confirm' | 'complete' | 'no-show'}`;
 
 const decide =
   (path: DecisionPath) =>

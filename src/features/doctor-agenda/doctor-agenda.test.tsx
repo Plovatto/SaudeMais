@@ -275,6 +275,30 @@ describe('doctor home', { timeout: 15_000 }, () => {
     );
   });
 
+  it('registers a no-show from the awaiting section and moves the focus to its link', async () => {
+    const data = home({ awaitingRecord: [unrecorded('a1')], counts: { ...counts, awaiting: 1 } });
+    const { calls } = serve({
+      homeData: data,
+      action: () => {
+        data.awaitingRecord = [];
+        data.counts = counts;
+        return { status: 200, body: {} };
+      },
+    });
+    const { user } = renderApp('/medico');
+    const section = await screen.findByRole('region', { name: 'Aguardando registro' });
+    await user.click(await within(section).findByRole('button', { name: /^Não compareceu/ }));
+    const dialog = screen.getByRole('dialog', { name: 'Registrar falta?' });
+    await user.click(within(dialog).getByRole('button', { name: 'Registrar falta' }));
+    expect(await screen.findByText('Falta registrada.')).toBeVisible();
+    expect(posts(calls)[0]?.url.pathname).toBe('/api/appointments/a1/no-show');
+    expect(posts(calls)[0]?.body).toEqual({ startsAt: PAST });
+    expect(await screen.findByText('Nenhuma consulta aguardando registro')).toBeVisible();
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: 'Ver todas aguardando registro' })).toHaveFocus(),
+    );
+  });
+
   it('hides the banner and shows empty sections when nothing waits', async () => {
     serve({});
     renderApp('/medico');
@@ -442,10 +466,11 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     const { user } = renderApp('/medico/agenda');
 
     const { scope } = await card(/^Andreia Soares/);
+    const results = screen.getByText('1 consulta');
     await user.click(scope.getByRole('button', { name: /^Confirmar/ }));
 
     expect(await screen.findByText('Nenhum pedido a confirmar')).toBeVisible();
-    await waitFor(() => expect(document.activeElement).toHaveAttribute('aria-live', 'polite'));
+    await waitFor(() => expect(results).toHaveFocus());
   });
 
   it('blocks the other confirmations while one is being sent', async () => {
@@ -614,10 +639,11 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     });
     const { user } = renderApp('/medico/agenda?aba=aguardando-registro');
     const { scope } = await card(/^Andreia Soares/);
+    const results = screen.getByText('1 consulta');
     await user.click(scope.getByRole('button', { name: /^Não compareceu/ }));
     await user.click(screen.getByRole('button', { name: 'Registrar falta' }));
     expect(await screen.findByText('Nenhuma consulta aguardando registro')).toBeVisible();
-    await waitFor(() => expect(document.activeElement).toHaveAttribute('aria-live', 'polite'));
+    await waitFor(() => expect(results).toHaveFocus());
   });
 
   it('moves the focus to the results line when the missed appointment leaves a list that keeps others', async () => {
@@ -632,12 +658,31 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     });
     const { user } = renderApp('/medico/agenda?aba=aguardando-registro');
     const { scope } = await card(/^Andreia Soares/);
+    const results = screen.getByText('2 consultas');
     await user.click(scope.getByRole('button', { name: /^Não compareceu/ }));
     await user.click(screen.getByRole('button', { name: 'Registrar falta' }));
     await waitFor(() =>
       expect(screen.queryByRole('button', { name: /^Andreia Soares/ })).not.toBeInTheDocument(),
     );
-    await waitFor(() => expect(document.activeElement).toHaveAttribute('aria-live', 'polite'));
+    await waitFor(() => expect(results).toHaveFocus());
+  });
+
+  it('moves the focus to the results line when a stale outcome empties the list', async () => {
+    const lists = { awaiting: [unrecorded('a1')] };
+    serve({
+      lists,
+      action: () => {
+        lists.awaiting = [];
+        return { status: 409, body: { code: 'INVALID_STATE', message: 'Consulta já registrada.' } };
+      },
+    });
+    const { user } = renderApp('/medico/agenda?aba=aguardando-registro');
+    const { scope } = await card(/^Andreia Soares/);
+    const results = screen.getByText('1 consulta');
+    await user.click(scope.getByRole('button', { name: /^Concluir/ }));
+    expect(await screen.findByText(STALE)).toBeVisible();
+    expect(await screen.findByText('Nenhuma consulta aguardando registro')).toBeVisible();
+    await waitFor(() => expect(results).toHaveFocus());
   });
 
   it('blocks every outcome button while one is being sent', async () => {
