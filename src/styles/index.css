@@ -244,12 +244,26 @@
     ::after {
       color: #000 !important;
       background: transparent !important;
+      border-color: #000 !important;
       box-shadow: none !important;
+      font-variant-numeric: normal !important;
+      font-feature-settings: normal !important;
     }
 
     html {
       color-scheme: light !important;
       background: #fff !important;
+    }
+
+    tr,
+    section {
+      break-inside: avoid;
+    }
+
+    caption,
+    h2,
+    h3 {
+      break-after: avoid;
     }
 
     details:not([open]) {
@@ -266,4 +280,8 @@
       padding-inline: 0.5rem !important;
     }
   }
+}
+
+@page {
+  margin: 15mm;
 }

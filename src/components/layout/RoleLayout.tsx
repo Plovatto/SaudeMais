@@ -15,7 +15,7 @@ export function RoleLayout() {
         <aside className="hidden w-60 shrink-0 pt-6 lg:block print:hidden">
           <MainNav area={area} variant="side" />
         </aside>
-        <MainContent className="max-w-[480px] min-w-0 px-4 pt-6 pb-28 lg:max-w-[1040px] lg:px-0 lg:pb-10">
+        <MainContent className="max-w-[480px] min-w-0 px-4 pt-6 pb-28 lg:max-w-[1040px] lg:px-0 lg:pb-10 print:max-w-none print:px-0">
           <Outlet />
         </MainContent>
       </div>
