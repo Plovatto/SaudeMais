@@ -28,6 +28,7 @@ const booking = (id: string, overrides: Partial<PatientBooking> = {}): PatientBo
     reschedulesLeft: 2,
   },
   cancellation: null,
+  hasResult: false,
   ...overrides,
 });
 
