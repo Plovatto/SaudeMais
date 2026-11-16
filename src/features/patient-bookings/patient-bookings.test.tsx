@@ -33,6 +33,7 @@ const booking = (id: string, overrides: Partial<PatientBooking> = {}): PatientBo
   unit: { id: 'u1', name: 'Hospital Central', address: 'Rua das Flores, 123', phone: '+551133334444' },
   actions: actions(),
   cancellation: null,
+  hasResult: false,
   ...overrides,
 });
 
