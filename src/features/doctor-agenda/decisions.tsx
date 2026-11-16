@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { LuCircleCheck, LuCircleCheckBig, LuUserX } from 'react-icons/lu';
 import type { ButtonProps } from '@components/ui';
-import type { DoctorAppointment } from '@lib/api/models';
+import type { DoctorAppointment, HealthMetricsInput } from '@lib/api/models';
 import { formatDateTime } from '@lib/date';
 import { doctorApi } from './doctor-api';
 
@@ -12,7 +12,8 @@ export interface Decision {
   variant: ButtonProps['variant'];
   icon: ReactNode;
   success: string;
-  send: (appointment: DoctorAppointment) => Promise<unknown>;
+  send: (appointment: DoctorAppointment, metrics?: HealthMetricsInput) => Promise<unknown>;
+  recordsMetrics?: true;
   confirmation?: {
     title: string;
     confirmLabel: string;
@@ -38,6 +39,7 @@ export const DECISIONS: readonly Decision[] = [
     icon: <LuCircleCheckBig />,
     success: 'Consulta concluída.',
     send: doctorApi.complete,
+    recordsMetrics: true,
   },
   {
     flag: 'canNoShow',

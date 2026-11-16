@@ -58,7 +58,7 @@ export function PatientHomePage() {
           ))}
         </nav>
         <UpcomingBookings query={query} className="lg:[grid-area:list]" />
-        <HealthSummary className="lg:[grid-area:health]" />
+        <HealthSummary metrics={query.data?.metrics} className="lg:[grid-area:health]" />
       </div>
     </div>
   );

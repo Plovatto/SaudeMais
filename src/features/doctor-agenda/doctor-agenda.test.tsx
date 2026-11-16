@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { renderApp, serveApi, type ApiCall, type MockResponse } from '@/test/render-app';
 import type { DoctorAppointment } from '@lib/api/models';
+import { GENERIC_ERROR_MESSAGE } from '@lib/messages/errors.pt-BR';
 import { queryKeys } from '@lib/query-keys';
 import type { AgendaTab, DoctorHome } from './doctor-api';
 
@@ -111,10 +112,25 @@ const card = async (name: RegExp) => {
   return { header, scope: within(header.closest('li') as HTMLElement) };
 };
 
-const openCancel = async (user: ReturnType<typeof renderApp>['user']) => {
+type User = ReturnType<typeof renderApp>['user'];
+
+type Scope = Pick<typeof screen, 'getByRole'>;
+
+const openCancel = async (user: User) => {
   const { scope } = await card(/^Andreia Soares/);
   await user.click(scope.getByRole('button', { name: /^Cancelar/ }));
   return screen.getByRole('dialog', { name: 'Cancelar consulta?' });
+};
+
+const openComplete = async (user: User, scope: Scope) => {
+  await user.click(scope.getByRole('button', { name: /^Concluir/ }));
+  return within(screen.getByRole('dialog', { name: 'Concluir consulta' }));
+};
+
+const complete = async (user: User, scope: Scope) => {
+  const dialog = await openComplete(user, scope);
+  await user.click(dialog.getByRole('button', { name: 'Concluir consulta' }));
+  return dialog;
 };
 
 describe('doctor home', { timeout: 15_000 }, () => {
@@ -265,7 +281,8 @@ describe('doctor home', { timeout: 15_000 }, () => {
     });
     const { user } = renderApp('/medico');
     const section = await screen.findByRole('region', { name: 'Aguardando registro' });
-    await user.click(await within(section).findByRole('button', { name: /^Concluir/ }));
+    await within(section).findByRole('button', { name: /^Concluir/ });
+    await complete(user, within(section));
     expect(await screen.findByText('Consulta concluída.')).toBeVisible();
     expect(posts(calls)[0]?.url.pathname).toBe('/api/appointments/a1/complete');
     expect(posts(calls)[0]?.body).toEqual({ startsAt: PAST });
@@ -601,12 +618,180 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     const { scope } = await card(/^Andreia Soares/);
     queryClient.setQueryData(queryKeys.doctor.home, home());
     const before = listCalls(calls).length;
-    await user.click(scope.getByRole('button', { name: /^Concluir/ }));
+    await complete(user, scope);
     expect(await screen.findByText('Consulta concluída.')).toBeVisible();
     expect(queryClient.getQueryState(queryKeys.doctor.home)?.isInvalidated).toBe(true);
     expect(posts(calls)[0]?.url.pathname).toBe('/api/appointments/a1/complete');
     expect(posts(calls)[0]?.body).toEqual({ startsAt: PAST });
     await waitFor(() => expect(listCalls(calls).length).toBeGreaterThan(before));
+  });
+
+  it('sends the pressure and the weight with a decimal comma when completing', async () => {
+    const { calls } = serve({
+      lists: { awaiting: [unrecorded('a1')] },
+      action: () => ({ status: 200, body: {} }),
+    });
+    const { user } = renderApp('/medico/agenda?aba=aguardando-registro');
+    const { scope } = await card(/^Andreia Soares/);
+    const dialog = await openComplete(user, scope);
+    expect(screen.getByRole('dialog', { name: 'Concluir consulta' })).toHaveAccessibleDescription(
+      /^Andreia Soares, .+\. Registre a pressão e o peso medidos na consulta, se houver; os campos são opcionais\.$/,
+    );
+    expect(dialog.getByRole('group', { name: 'Pressão arterial' })).toBeVisible();
+    const systolic = dialog.getByRole('textbox', { name: 'Sistólica (mmHg)' });
+    const weight = dialog.getByRole('textbox', { name: 'Peso (kg)' });
+    expect(systolic).toHaveAttribute('inputmode', 'numeric');
+    expect(weight).toHaveAttribute('inputmode', 'decimal');
+    await waitFor(() => expect(systolic).toHaveFocus());
+    await user.type(systolic, '120');
+    await user.type(dialog.getByRole('textbox', { name: 'Diastólica (mmHg)' }), '80');
+    await user.type(weight, ' 72,450 ');
+    await user.click(dialog.getByRole('button', { name: 'Concluir consulta' }));
+    expect(await screen.findByText('Consulta concluída.')).toBeVisible();
+    expect(posts(calls)[0]?.body).toEqual({
+      startsAt: PAST,
+      metrics: { systolic: 120, diastolic: 80, weightKg: 72.45 },
+    });
+  });
+
+  it('sends only the weight when the pressure is left empty', async () => {
+    const { calls } = serve({
+      lists: { awaiting: [unrecorded('a1')] },
+      action: () => ({ status: 200, body: {} }),
+    });
+    const { user } = renderApp('/medico/agenda?aba=aguardando-registro');
+    const { scope } = await card(/^Andreia Soares/);
+    const dialog = await openComplete(user, scope);
+    await user.type(dialog.getByRole('textbox', { name: 'Peso (kg)' }), '80.25');
+    await user.click(dialog.getByRole('button', { name: 'Concluir consulta' }));
+    expect(await screen.findByText('Consulta concluída.')).toBeVisible();
+    expect(posts(calls)[0]?.body).toEqual({ startsAt: PAST, metrics: { weightKg: 80.25 } });
+  });
+
+  const METRIC_LABELS = { systolic: 'Sistólica (mmHg)', diastolic: 'Diastólica (mmHg)', weight: 'Peso (kg)' };
+
+  it.each<[string, Partial<Record<keyof typeof METRIC_LABELS, string>>, keyof typeof METRIC_LABELS, string]>([
+    [
+      'an incomplete pressure',
+      { systolic: '120' },
+      'diastolic',
+      'Informe a diastólica junto com a sistólica.',
+    ],
+    [
+      'a diastolic without systolic',
+      { diastolic: '80' },
+      'systolic',
+      'Informe a sistólica junto com a diastólica.',
+    ],
+    [
+      'a systolic out of range',
+      { systolic: '400', diastolic: '80' },
+      'systolic',
+      'A sistólica vai de 50 a 300 mmHg.',
+    ],
+    [
+      'a diastolic out of range',
+      { systolic: '120', diastolic: '20' },
+      'diastolic',
+      'A diastólica vai de 30 a 200 mmHg.',
+    ],
+    [
+      'a decimal systolic',
+      { systolic: '120,5', diastolic: '80' },
+      'systolic',
+      'Informe a sistólica em mmHg, sem casas decimais.',
+    ],
+    [
+      'an inverted pressure',
+      { systolic: '80', diastolic: '90' },
+      'systolic',
+      'A sistólica precisa ser maior que a diastólica.',
+    ],
+    ['a weight out of range', { weight: '501' }, 'weight', 'O peso vai de 1 a 500 kg.'],
+    ['a weight that is not a number', { weight: 'abc' }, 'weight', 'Informe o peso em kg.'],
+    [
+      'a weight with three decimals',
+      { weight: '72,456' },
+      'weight',
+      'Informe o peso com no máximo duas casas decimais.',
+    ],
+  ])('blocks %s and focuses the field with the error', async (_case, values, field, message) => {
+    const { calls } = serve({
+      lists: { awaiting: [unrecorded('a1')] },
+      action: () => ({ status: 200, body: {} }),
+    });
+    const { user } = renderApp('/medico/agenda?aba=aguardando-registro');
+    const { scope } = await card(/^Andreia Soares/);
+    const dialog = await openComplete(user, scope);
+    for (const [key, value] of Object.entries(values))
+      await user.type(dialog.getByRole('textbox', { name: METRIC_LABELS[key as typeof field] }), value);
+    await user.click(dialog.getByRole('button', { name: 'Concluir consulta' }));
+    const input = dialog.getByRole('textbox', { name: METRIC_LABELS[field] });
+    await waitFor(() => expect(input).toHaveFocus());
+    expect(input).toHaveAccessibleDescription(expect.stringContaining(message));
+    expect(input).toBeInvalid();
+    expect(posts(calls)).toHaveLength(0);
+  });
+
+  it('shows the field error from the API in the dialog', async () => {
+    const { calls } = serve({
+      lists: { awaiting: [unrecorded('a1')] },
+      action: () => ({
+        status: 400,
+        body: {
+          code: 'VALIDATION_ERROR',
+          message: 'Dados inválidos.',
+          fields: { 'metrics.weightKg': 'O peso vai de 1 a 500 kg.' },
+        },
+      }),
+    });
+    const { user } = renderApp('/medico/agenda?aba=aguardando-registro');
+    const { scope } = await card(/^Andreia Soares/);
+    const dialog = await openComplete(user, scope);
+    const weight = dialog.getByRole('textbox', { name: 'Peso (kg)' });
+    await user.type(weight, '72');
+    await user.click(dialog.getByRole('button', { name: 'Concluir consulta' }));
+    await waitFor(() => expect(weight).toHaveFocus());
+    expect(weight).toHaveAccessibleDescription(expect.stringContaining('O peso vai de 1 a 500 kg.'));
+    expect(posts(calls)).toHaveLength(1);
+    expect(screen.getByRole('dialog', { name: 'Concluir consulta' })).toBeVisible();
+    expect(screen.queryByText('Dados inválidos.')).not.toBeInTheDocument();
+  });
+
+  it('shows every metric error at once and focuses the first one', async () => {
+    const { calls } = serve({
+      lists: { awaiting: [unrecorded('a1')] },
+      action: () => ({ status: 200, body: {} }),
+    });
+    const { user } = renderApp('/medico/agenda?aba=aguardando-registro');
+    const { scope } = await card(/^Andreia Soares/);
+    const dialog = await openComplete(user, scope);
+    await user.type(dialog.getByRole('textbox', { name: 'Sistólica (mmHg)' }), '120');
+    await user.type(dialog.getByRole('textbox', { name: 'Peso (kg)' }), '72,456');
+    await user.click(dialog.getByRole('button', { name: 'Concluir consulta' }));
+    const diastolic = dialog.getByRole('textbox', { name: 'Diastólica (mmHg)' });
+    await waitFor(() => expect(diastolic).toHaveFocus());
+    expect(diastolic).toHaveAccessibleDescription('Informe a diastólica junto com a sistólica.');
+    expect(dialog.getByRole('textbox', { name: 'Peso (kg)' })).toHaveAccessibleDescription(
+      expect.stringContaining('Informe o peso com no máximo duas casas decimais.'),
+    );
+    expect(posts(calls)).toHaveLength(0);
+  });
+
+  it('keeps the dialog open with an alert after a server error', async () => {
+    serve({
+      lists: { awaiting: [unrecorded('a1')] },
+      action: () => ({ status: 500, body: { code: 'INTERNAL_ERROR', message: 'x' } }),
+    });
+    const { user } = renderApp('/medico/agenda?aba=aguardando-registro');
+    const { scope } = await card(/^Andreia Soares/);
+    const dialog = await complete(user, scope);
+    expect(await dialog.findByRole('alert')).toHaveTextContent(GENERIC_ERROR_MESSAGE);
+    expect(screen.getByRole('dialog', { name: 'Concluir consulta' })).toBeVisible();
+    expect(screen.getAllByRole('alert').filter((alert) => alert.textContent !== '')).toHaveLength(1);
+    await waitFor(() => expect(dialog.getByRole('textbox', { name: 'Peso (kg)' })).toBeEnabled());
+    expect(dialog.getByRole('button', { name: 'Voltar' })).toBeEnabled();
+    expect(dialog.getByRole('button', { name: 'Concluir consulta' })).not.toHaveAttribute('aria-disabled');
   });
 
   it('asks before registering a no-show and sends it only after the confirmation', async () => {
@@ -646,7 +831,7 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     const { user } = renderApp('/medico/agenda?aba=aguardando-registro');
     const { scope } = await card(/^Andreia Soares/);
     const before = listCalls(calls).length;
-    await user.click(scope.getByRole('button', { name: /^Concluir/ }));
+    await complete(user, scope);
     expect(await screen.findByText(NOT_STARTED)).toBeVisible();
     expect(screen.queryByText('A consulta ainda não começou.')).not.toBeInTheDocument();
     await waitFor(() => expect(listCalls(calls).length).toBeGreaterThan(before));
@@ -675,7 +860,7 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     });
     const { user } = renderApp('/medico/agenda?aba=aguardando-registro');
     const { scope } = await card(/^Andreia Soares/);
-    await user.click(scope.getByRole('button', { name: /^Concluir/ }));
+    await complete(user, scope);
     expect(
       await screen.findByText('Este agendamento não existe mais. Confira a lista atualizada.'),
     ).toBeVisible();
@@ -732,7 +917,7 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     const { user } = renderApp('/medico/agenda?aba=aguardando-registro');
     const { scope } = await card(/^Andreia Soares/);
     const results = screen.getByText('1 consulta');
-    await user.click(scope.getByRole('button', { name: /^Concluir/ }));
+    await complete(user, scope);
     expect(await screen.findByText(STALE)).toBeVisible();
     expect(await screen.findByText('Nenhuma consulta aguardando registro')).toBeVisible();
     await waitFor(() => expect(results).toHaveFocus());
@@ -752,6 +937,7 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     const first = await card(/^Andreia Soares/);
     const second = await card(/^Jair Oliveira/);
     fireEvent.click(first.scope.getByRole('button', { name: /^Concluir/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Concluir consulta' }));
     await waitFor(() => {
       expect(first.scope.getByRole('button', { name: /^Concluir/ })).toHaveAttribute('aria-disabled', 'true');
       expect(first.scope.getByRole('button', { name: /^Não compareceu/ })).toBeDisabled();
