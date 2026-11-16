@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useRef } from 'react';
 import { LuFileX, LuLock } from 'react-icons/lu';
 import { useLocation, useParams } from 'react-router';
@@ -8,13 +8,13 @@ import { PagedResults } from '@components/bookings/PagedResults';
 import { PageHeader } from '@components/layout/PageHeader';
 import { ButtonLink, Card, EmptyState } from '@components/ui';
 import { areas } from '@constants/areas';
+import type { ResultsLinkState } from '@constants/patient-results';
 import { useClampedPage, usePageParam } from '@hooks/usePageParam';
 import { ApiError } from '@lib/api/api-error';
 import { formatDateTime } from '@lib/date';
 import { NO_LINK_MESSAGE } from '@lib/messages/errors.pt-BR';
 import { queryKeys } from '@lib/query-keys';
 import { listPatientResults } from './results-api';
-import type { ResultsLinkState } from './results-link';
 
 const AGENDA = `${areas.doctor.base}/agenda`;
 const DENIED = new Set(['FORBIDDEN_NO_LINK', 'VALIDATION_ERROR']);
@@ -35,7 +35,7 @@ export function PatientResultsPage() {
   const query = useQuery({
     queryKey: queryKeys.doctor.patientResults(id, page),
     queryFn: ({ signal }) => listPatientResults(id, page, signal),
-    placeholderData: keepPreviousData,
+    placeholderData: (previous, previousQuery) => (previousQuery?.queryKey[2] === id ? previous : undefined),
   });
   const { lastPage, outOfRange } = useClampedPage(page, setPage, query.data);
   const results = useRef<HTMLParagraphElement>(null);
@@ -80,7 +80,6 @@ export function PatientResultsPage() {
                         headline={
                           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                             <span className="text-text font-semibold">{booking.examType.name}</span>
-                            <span className="text-text-secondary text-sm">{booking.unit.name}</span>
                             <time dateTime={booking.startsAt} className="text-text-secondary text-sm">
                               {formatDateTime(booking.startsAt)}
                             </time>

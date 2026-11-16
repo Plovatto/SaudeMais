@@ -1,4 +1,6 @@
-import { areas } from '@constants/areas';
+import { areas } from './areas';
+
+export const RESULTS_WINDOW_DAYS = 30;
 
 export interface ResultsLinkState {
   patientName: string;

@@ -1,12 +1,12 @@
 import { LuCircleX, LuFileText, LuMapPin, LuPhone } from 'react-icons/lu';
 import { AppointmentHeadline } from '@components/bookings/AppointmentHeadline';
 import { CancellationNote, Detail, Note, PhoneLink } from '@components/bookings/BookingDetails';
-import { bookingStatus } from '@components/bookings/booking-display';
+import { bookingStatus, hasStarted } from '@components/bookings/booking-display';
 import { ExpandableCard } from '@components/bookings/ExpandableCard';
 import { Button, ButtonLink } from '@components/ui';
 import { areas } from '@constants/areas';
+import { RESULTS_WINDOW_DAYS, resultsLink } from '@constants/patient-results';
 import { visitTypeLabels } from '@constants/visit-types';
-import { resultsLink } from '@features/patient-results/results-link';
 import { formatDateTime } from '@lib/date';
 import type { DoctorAppointment } from '@lib/api/models';
 import { DECISIONS, type Decision } from './decisions';
@@ -15,8 +15,13 @@ const PatientIcon = areas.patient.icon;
 
 const REVIEWABLE: ReadonlySet<DoctorAppointment['status']> = new Set(['confirmed', 'completed']);
 
-const canReviewResults = ({ visitType, status, startsAt }: DoctorAppointment) =>
-  visitType === 'exam_review' && REVIEWABLE.has(status) && new Date(startsAt).getTime() <= Date.now();
+const WINDOW_MS = RESULTS_WINDOW_DAYS * 86_400_000;
+
+const canReviewResults = ({ visitType, status, startsAt }: DoctorAppointment, now = Date.now()) =>
+  visitType === 'exam_review' &&
+  REVIEWABLE.has(status) &&
+  hasStarted(startsAt, now) &&
+  now - new Date(startsAt).getTime() <= WINDOW_MS;
 
 export interface AppointmentCardProps {
   appointment: DoctorAppointment;

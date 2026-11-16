@@ -1,11 +1,14 @@
-import { screen, waitFor, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
-import { renderApp, serveApi, type MockResponse } from '@/test/render-app';
+import { act, screen, waitFor, within } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { createMemoryRouter } from 'react-router';
+import { renderApp, renderRouter, serveApi, type MockResponse } from '@/test/render-app';
+import { routes } from '@app/routes';
 import type { ExamResult } from '@lib/api/models';
 
 const PATIENT = '0190c2a0-0000-7000-8000-0000000000aa';
 const PATH = `/api/doctor/patients/${PATIENT}/exam-results`;
 const PAGE = `/medico/pacientes/${PATIENT}/exames`;
+const OTHER = '0190c2a0-0000-7000-8000-0000000000bb';
 const NO_LINK =
   'Você só vê os resultados de um paciente com quem tem uma consulta de avaliação de exames confirmada ou concluída nos últimos 30 dias.';
 
@@ -64,6 +67,53 @@ describe('patient results for the doctor', { timeout: 15_000 }, () => {
       '/medico/agenda',
     );
     expect(screen.queryByRole('button', { name: 'Tentar de novo' })).not.toBeInTheDocument();
+  });
+
+  it('keeps the passed name in the no-access state', async () => {
+    serve(() => ({ status: 403, body: { code: 'FORBIDDEN_NO_LINK', message: 'Sem vínculo.' } }));
+    renderRouter(
+      createMemoryRouter(routes, {
+        initialEntries: [{ pathname: PAGE, state: { patientName: 'Andreia Soares' } }],
+      }),
+    );
+
+    expect(await screen.findByText(NO_LINK)).toBeVisible();
+    expect(screen.getByRole('heading', { level: 1, name: 'Exames de Andreia Soares' })).toBeVisible();
+  });
+
+  it('shows the no-access state for a malformed patient id', async () => {
+    serveApi(['doctor'], {
+      '/api/doctor/patients/abc/exam-results': () => ({
+        status: 400,
+        body: { code: 'VALIDATION_ERROR', message: 'Dados inválidos.' },
+      }),
+    });
+    renderApp('/medico/pacientes/abc/exames');
+
+    expect(await screen.findByText(NO_LINK)).toBeVisible();
+    expect(screen.queryByText('Confira os campos destacados.')).not.toBeInTheDocument();
+  });
+
+  it('never shows the previous patient results while another patient loads', async () => {
+    const { fetchMock } = serve(() => page([result('b1', 'Hemograma')]));
+    const { router } = renderApp(PAGE);
+    expect(await screen.findByRole('button', { name: /^Hemograma/ })).toBeVisible();
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: RequestInfo | URL, init?: RequestInit) =>
+        String(url instanceof Request ? url.url : url).includes(OTHER)
+          ? new Promise<Response>(() => {})
+          : fetchMock(url, init),
+      ),
+    );
+    await act(() =>
+      router.navigate(`/medico/pacientes/${OTHER}/exames`, { state: { patientName: 'Bruno Lima' } }),
+    );
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Exames de Bruno Lima' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: /^Hemograma/ })).not.toBeInTheDocument();
+    expect(document.querySelector('[aria-busy="true"]')).toBeInTheDocument();
   });
 
   it('paginates through the URL', async () => {
