@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { renderApp, serveApi, type ApiRoute } from '@/test/render-app';
 
@@ -80,7 +80,16 @@ describe('admin integrations', () => {
     const writeText = vi.spyOn(navigator.clipboard, 'writeText');
     await user.click(within(keyDialog).getByRole('button', { name: 'Copiar' }));
     expect(writeText).toHaveBeenCalledWith(API_KEY);
-    expect(within(keyDialog).getByRole('status')).toHaveTextContent('Chave copiada.');
+    const status = within(keyDialog).getByRole('status');
+    expect(status).toHaveTextContent('Chave copiada.');
+
+    const announced: string[] = [];
+    const observer = new MutationObserver(() => announced.push(status.textContent));
+    observer.observe(status, { childList: true, characterData: true, subtree: true });
+    await user.click(within(keyDialog).getByRole('button', { name: 'Copiar' }));
+    observer.disconnect();
+    expect(writeText).toHaveBeenCalledTimes(2);
+    expect(announced).toEqual(['', 'Chave copiada.']);
 
     await user.click(within(keyDialog).getByRole('button', { name: 'Já copiei' }));
 
@@ -116,7 +125,28 @@ describe('admin integrations', () => {
 
     expect(within(keyDialog).getByRole('status')).toHaveTextContent(/A chave está selecionada/);
     const input = within(keyDialog).getByLabelText<HTMLInputElement>('Chave de API');
+    expect(input).toHaveFocus();
     expect([input.selectionStart, input.selectionEnd]).toEqual([0, API_KEY.length]);
+  });
+
+  it('keeps the panel open while the integration is being created', async () => {
+    const { fetchMock } = serve({
+      '/api/admin/integration-clients': () => ({ status: 200, body: page([]) }),
+    });
+    const { user } = renderApp(PATH);
+    await user.click(await screen.findByRole('button', { name: 'Nova integração' }));
+    const panel = await screen.findByRole('dialog', { name: 'Nova integração' });
+    await user.type(within(panel).getByLabelText('Nome'), 'Laboratório Central');
+    fetchMock.mockImplementationOnce(() => new Promise<Response>(() => undefined));
+
+    await user.click(within(panel).getByRole('button', { name: 'Criar integração' }));
+
+    await waitFor(() => expect(within(panel).getByRole('button', { name: 'Cancelar' })).toBeDisabled());
+    expect(within(panel).queryByRole('button', { name: 'Fechar' })).not.toBeInTheDocument();
+    act(() => {
+      (panel as HTMLDialogElement).close();
+    });
+    expect(panel).toHaveAttribute('open');
   });
 
   it('shows a taken name on the field', async () => {
@@ -176,5 +206,29 @@ describe('admin integrations', () => {
     expect(calls.filter((call) => call.method === 'POST')).toHaveLength(1);
     expect(screen.queryByRole('button', { name: 'Revogar Laboratório A' })).not.toBeInTheDocument();
     expect(await screen.findByText('Chave de Laboratório A revogada.')).toBeInTheDocument();
+  });
+
+  it('refreshes the list when the integration no longer exists', async () => {
+    let removed = false;
+    const { calls } = serve({
+      '/api/admin/integration-clients': () => ({ status: 200, body: page(removed ? [] : [client('A')]) }),
+      '/api/admin/integration-clients/A/revoke': () => {
+        removed = true;
+        return { status: 404, body: { message: 'Integração não encontrada.', code: 'NOT_FOUND' } };
+      },
+    });
+    const { user } = renderApp(PATH);
+
+    await user.click(await screen.findByRole('button', { name: 'Revogar Laboratório A' }));
+    await user.click(
+      within(await screen.findByRole('dialog', { name: 'Revogar a chave de Laboratório A?' })).getByRole(
+        'button',
+        { name: 'Revogar chave' },
+      ),
+    );
+
+    expect(await screen.findByText('Esta integração não existe mais. Atualize a lista.')).toBeInTheDocument();
+    expect(await screen.findByText('Nenhuma integração criada')).toBeInTheDocument();
+    expect(listCalls(calls).length).toBeGreaterThan(1);
   });
 });

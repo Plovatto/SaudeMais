@@ -9,11 +9,13 @@ export function useCatalogEditor<T>(fallbackFocus: RefObject<HTMLElement | null>
   const panel = (
     titleOf: (item: T | null) => string,
     formOf: (item: T | null, close: () => void) => ReactNode,
+    dismissible = true,
   ) => (
     <Dialog
       open={editing !== null}
       onClose={close}
       placement="side"
+      dismissible={dismissible}
       title={editing ? titleOf(editing.item) : ''}
       fallbackFocus={fallbackFocus}
     >

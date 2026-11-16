@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import { useState } from 'react';
 import { ConfirmDialog, useToast } from '@components/ui';
+import { ApiError } from '@lib/api/api-error';
 import { errorMessage, type MessageOverrides } from '@lib/messages/errors.pt-BR';
 
 export interface ConfirmedActionOptions<P> {
@@ -29,7 +30,11 @@ export function useConfirmedAction<P>({
       await queryClient.invalidateQueries({ queryKey: invalidate });
       show({ message: success(payload), tone: 'success' });
     },
-    onError: (error) => show({ message: errorMessage(error, messages), tone: 'danger' }),
+    onError: (error) => {
+      show({ message: errorMessage(error, messages), tone: 'danger' });
+      if (error instanceof ApiError && error.code === 'NOT_FOUND')
+        void queryClient.invalidateQueries({ queryKey: invalidate });
+    },
     onSettled: () => setPending(null),
   });
 

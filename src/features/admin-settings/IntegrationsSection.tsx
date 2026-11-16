@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { LuPlus } from 'react-icons/lu';
 import { Button, Input } from '@components/ui';
 import { formatDateTime, formatRelative } from '@lib/date';
@@ -23,9 +23,11 @@ const idOf = (client: IntegrationClient) => client.id;
 function IntegrationForm({
   onCreated,
   onCancel,
+  onSubmittingChange,
 }: {
   onCreated: (apiKey: string) => void;
   onCancel: () => void;
+  onSubmittingChange: (submitting: boolean) => void;
 }) {
   const form = useCatalogForm({
     schema: integrationSchema,
@@ -37,6 +39,10 @@ function IntegrationForm({
     messages: integrationMessages,
   });
   const { errors, isSubmitting } = form.formState;
+  useEffect(() => {
+    onSubmittingChange(isSubmitting);
+    return () => onSubmittingChange(false);
+  }, [isSubmitting, onSubmittingChange]);
   return (
     <FormShell
       label="Integração"
@@ -80,6 +86,7 @@ export function IntegrationsSection() {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const editor = useCatalogEditor<null>(headingRef);
   const [apiKey, setApiKey] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
   const revoke = useConfirmedAction<IntegrationClient>({
     keyOf: idOf,
     run: (client) => integrationsApi.revoke(client.id),
@@ -151,8 +158,10 @@ export function IntegrationsSection() {
               setApiKey(key);
             }}
             onCancel={close}
+            onSubmittingChange={setCreating}
           />
         ),
+        !creating,
       )}
       {revoke.confirmation}
       <ApiKeyDialog apiKey={apiKey} onClose={() => setApiKey(null)} fallbackFocus={headingRef} />

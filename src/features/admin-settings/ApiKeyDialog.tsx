@@ -1,4 +1,5 @@
 import { useRef, useState, type RefObject } from 'react';
+import { flushSync } from 'react-dom';
 import { LuCopy } from 'react-icons/lu';
 import { Button, Dialog, FormAlert, Input } from '@components/ui';
 
@@ -20,10 +21,12 @@ export function ApiKeyDialog({ apiKey, onClose, fallbackFocus }: ApiKeyDialogPro
   const [status, setStatus] = useState<keyof typeof copyStatus>('idle');
 
   const copy = async (value: string) => {
+    flushSync(() => setStatus('idle'));
     try {
       await navigator.clipboard.writeText(value);
       setStatus('copied');
     } catch {
+      inputRef.current?.focus();
       inputRef.current?.select();
       setStatus('manual');
     }

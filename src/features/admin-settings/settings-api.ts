@@ -9,7 +9,7 @@ export type Unit = ResponseOf<'/api/admin/units/{id}', 'patch'>;
 export type ExamType = ResponseOf<'/api/admin/exam-types/{id}', 'patch'>;
 export type ExamOffer = ResponseOf<'/api/admin/units/{id}/exam-offers', 'get'>[number];
 export type Policy = ResponseOf<'/api/admin/policy', 'get'>;
-export type IntegrationClient = ResponseOf<'/api/admin/integration-clients/{id}/revoke', 'post'>;
+export type IntegrationClient = ResponseOf<'/api/admin/integration-clients', 'get'>['items'][number];
 
 interface CatalogTypes {
   '/api/admin/specialties': {
