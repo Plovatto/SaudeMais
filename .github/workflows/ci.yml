@@ -23,7 +23,7 @@ jobs:
       matrix:
         node: ['22', '24', '26']
     env:
-      VITE_API_URL: https://p01--saudemais--pgj2h2jjxzb4.code.run
+      VITE_API_URL: https://saudemais-api.plovatto.dev
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -46,5 +46,5 @@ jobs:
         run: |
           cmp dist/index.html dist/404.html
           head -c 300 dist/index.html | grep -q 'http-equiv="Content-Security-Policy"'
-          grep -q 'src="/SaudeMais/assets/' dist/index.html
+          grep -q 'src="/assets/' dist/index.html
       - run: npm audit --omit=dev --audit-level=moderate

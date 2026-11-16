@@ -27,11 +27,10 @@ function staticHosting(apiUrl: string): Plugin {
   };
 }
 
-export default defineConfig(({ command, mode, isPreview }) => {
+export default defineConfig(({ command, mode }) => {
   const env = command === 'build' ? parseEnv(loadEnv(mode, process.cwd(), 'VITE_')) : null;
 
   return {
-    base: env || isPreview ? '/SaudeMais/' : '/',
     plugins: [react(), tailwindcss(), env && staticHosting(env.apiUrl)],
     resolve: {
       alias: {
