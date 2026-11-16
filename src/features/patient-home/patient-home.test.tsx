@@ -2,6 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { PatientBooking, UserNotification } from '@lib/api/models';
 import { renderApp, serveApi, type MockResponse } from '@/test/render-app';
+import type { PatientHome } from './patient-home-api';
 
 const FUTURE = '2030-07-19T18:30:00.000Z';
 const HOUR_MS = 3_600_000;
@@ -41,15 +42,17 @@ const notification = (overrides: Partial<UserNotification> = {}): UserNotificati
   ...overrides,
 });
 
-interface Home {
-  upcoming: PatientBooking[];
-  lastNotification: UserNotification | null;
-}
+type Home = Omit<PatientHome, 'counts'>;
 
-const homeBody = ({ upcoming = [], lastNotification = null }: Partial<Home> = {}) => ({
+const homeBody = ({
+  upcoming = [],
+  lastNotification = null,
+  metrics = { bloodPressure: null, weight: null },
+}: Partial<Home> = {}): PatientHome => ({
   upcoming,
   counts: { upcoming: upcoming.length, past: 0 },
   lastNotification,
+  metrics,
 });
 
 const serve = (respond: () => MockResponse) => serveApi(['patient'], { '/api/patient/home': respond });
@@ -239,8 +242,43 @@ describe('patient home', { timeout: 15_000 }, () => {
       'Pressão arterial',
       'Peso atual',
     ]);
+    expect(await region.findByText(/depois que o médico registrar suas consultas/)).toBeVisible();
     region.getAllByRole('definition').forEach((value) => expect(value).toHaveTextContent('—Sem registro'));
-    expect(region.getByText(/depois que o médico registrar suas consultas/)).toBeVisible();
+  });
+
+  it('shows the latest pressure and weight with when they were recorded', async () => {
+    const ago = (hours: number) => new Date(Date.now() - hours * HOUR_MS).toISOString();
+    const pressureAt = ago(72);
+    serveHome({
+      metrics: {
+        bloodPressure: { systolic: 118, diastolic: 76, recordedAt: pressureAt },
+        weight: { kg: 72.4, recordedAt: ago(240) },
+      },
+    });
+    renderApp('/paciente');
+
+    const region = within(await screen.findByRole('region', { name: 'Minha saúde' }));
+    const since = await region.findByText('há 3 dias');
+    expect(since.tagName).toBe('TIME');
+    expect(since).toHaveAttribute('datetime', pressureAt);
+    const [pressure, weight] = region.getAllByRole('definition');
+    expect(pressure).toHaveTextContent('118/76 mmHghá 3 dias');
+    expect(weight).toHaveTextContent(/^72,4 kgem \d{2}\/\d{2}\/\d{4}$/);
+    expect(region.queryByText(/depois que o médico registrar suas consultas/)).not.toBeInTheDocument();
+  });
+
+  it('keeps a measure without a record when only the other one exists', async () => {
+    serveHome({
+      metrics: { bloodPressure: null, weight: { kg: 80, recordedAt: new Date().toISOString() } },
+    });
+    renderApp('/paciente');
+
+    const region = within(await screen.findByRole('region', { name: 'Minha saúde' }));
+    await region.findByText('agora');
+    const [pressure, weight] = region.getAllByRole('definition');
+    expect(pressure).toHaveTextContent('—Sem registro');
+    expect(weight).toHaveTextContent('80 kgagora');
+    expect(region.queryByText(/depois que o médico registrar suas consultas/)).not.toBeInTheDocument();
   });
 
   it.each([

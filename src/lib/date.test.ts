@@ -6,6 +6,7 @@ import {
   formatDate,
   formatDay,
   formatRelative,
+  formatSince,
   formatTime,
   todayInSaoPaulo,
 } from './date';
@@ -90,5 +91,12 @@ describe.each([
     const now = new Date('2026-11-20T15:00:00.000Z');
     expect(formatRelative('2026-11-13T15:00:00.000Z', now)).toBe('há 7 dias');
     expect(formatRelative('2026-11-12T15:00:00.000Z', now)).toBe('12/11/2026, 12:00');
+  });
+
+  it('tells since when with a neutral phrase that ends in the civil date after a week', () => {
+    const now = new Date('2026-11-20T15:00:00.000Z');
+    expect(formatSince('2026-11-17T15:00:00.000Z', now)).toBe('há 3 dias');
+    expect(formatSince('2026-11-13T02:30:00.000Z', now)).toBe('em 12/11/2026');
+    expect(formatSince('not-a-date', now)).toBe('data indisponível');
   });
 });
