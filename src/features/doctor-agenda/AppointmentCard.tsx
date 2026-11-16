@@ -1,16 +1,22 @@
-import { LuCircleX, LuMapPin, LuPhone } from 'react-icons/lu';
+import { LuCircleX, LuFileText, LuMapPin, LuPhone } from 'react-icons/lu';
 import { AppointmentHeadline } from '@components/bookings/AppointmentHeadline';
 import { CancellationNote, Detail, Note, PhoneLink } from '@components/bookings/BookingDetails';
 import { bookingStatus } from '@components/bookings/booking-display';
 import { ExpandableCard } from '@components/bookings/ExpandableCard';
-import { Button } from '@components/ui';
+import { Button, ButtonLink } from '@components/ui';
 import { areas } from '@constants/areas';
 import { visitTypeLabels } from '@constants/visit-types';
+import { resultsLink } from '@features/patient-results/results-link';
 import { formatDateTime } from '@lib/date';
 import type { DoctorAppointment } from '@lib/api/models';
 import { DECISIONS, type Decision } from './decisions';
 
 const PatientIcon = areas.patient.icon;
+
+const REVIEWABLE: ReadonlySet<DoctorAppointment['status']> = new Set(['confirmed', 'completed']);
+
+const canReviewResults = ({ visitType, status, startsAt }: DoctorAppointment) =>
+  visitType === 'exam_review' && REVIEWABLE.has(status) && new Date(startsAt).getTime() <= Date.now();
 
 export interface AppointmentCardProps {
   appointment: DoctorAppointment;
@@ -28,6 +34,7 @@ export function AppointmentCard({ appointment, pending, busy, onDecide, onCancel
     </span>
   );
   const decisions = DECISIONS.filter(({ flag }) => actions[flag]);
+  const reviewable = canReviewResults(appointment);
 
   return (
     <ExpandableCard
@@ -43,7 +50,7 @@ export function AppointmentCard({ appointment, pending, busy, onDecide, onCancel
         />
       }
       actions={
-        (decisions.length > 0 || actions.canCancel) && (
+        (decisions.length > 0 || actions.canCancel || reviewable) && (
           <div className="flex flex-wrap gap-3 *:min-w-fit *:flex-1">
             {decisions.map((decision) => (
               <Button
@@ -64,6 +71,13 @@ export function AppointmentCard({ appointment, pending, busy, onDecide, onCancel
                 Cancelar
                 {target}
               </Button>
+            )}
+            {reviewable && (
+              <ButtonLink {...resultsLink(patient)} variant="secondary">
+                <LuFileText aria-hidden />
+                Ver exames do paciente
+                {target}
+              </ButtonLink>
             )}
           </div>
         )

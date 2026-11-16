@@ -54,6 +54,9 @@ const areaScreens: Record<string, typeof placeholder> = {
   relatorios: lazyComponent(async () => (await import('@features/admin-reports')).AdminReportsPage),
   'configuracoes/*': lazyComponent(async () => (await import('@features/admin-settings')).AdminSettingsPage),
   agenda: lazyComponent(async () => (await import('@features/doctor-agenda')).DoctorAgendaPage),
+  'pacientes/:id/exames': lazyComponent(
+    async () => (await import('@features/patient-results')).PatientResultsPage,
+  ),
   disponibilidade: lazyComponent(async () => (await import('@features/doctor-schedule')).DoctorSchedulePage),
   'consultas/nova': lazyComponent(
     async () => (await import('@features/book-appointment')).BookAppointmentPage,
