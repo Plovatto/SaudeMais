@@ -44,6 +44,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ver os relatórios
+         * @description Totais de consultas e exames que começam no período, pela situação atual, com cancelamentos por autor, taxa de faltas, série para gráfico e especialidades e exames mais procurados. Os dias seguem o fuso de São Paulo; sem datas, vale os últimos 30 dias até hoje, e o período tem no máximo 366 dias. Só números: nada de dados pessoais, observações, motivos ou resultados. Agendamentos de pacientes de demonstração não entram. Limite: 30 requisições por minuto por IP.
+         */
+        get: operations["getAdminReports"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/users": {
         parameters: {
             query?: never;
@@ -1160,6 +1180,308 @@ export interface components {
              */
             appointmentsToday: number;
         };
+        Doctor: {
+            /** Format: uuid */
+            id: string;
+            /** @example Dra. Ana Ferreira */
+            fullName: string;
+            specialty: {
+                /** Format: uuid */
+                id: string;
+                /** @example Nutrição */
+                name: string;
+                /** @example CRN */
+                council: string;
+            };
+            unit: {
+                /** Format: uuid */
+                id: string;
+                /** @example Unidade Central */
+                name: string;
+                /** @example Rua das Flores, 123 - Centro, São Paulo - SP */
+                address: string;
+                /** @example +551133334444 */
+                phone: string;
+            };
+            registry: {
+                /** @example 45210 */
+                number: string;
+                /** @example SP */
+                uf: string;
+            };
+        };
+        DoctorPage: {
+            items: components["schemas"]["Doctor"][];
+            page: number;
+            pageSize: number;
+            total: number;
+        };
+        DoctorAvailability: {
+            /** @description Só os dias do período com ao menos uma vaga livre, em ordem. */
+            days: {
+                /**
+                 * Format: date
+                 * @description Dia no fuso de São Paulo.
+                 * @example 2026-11-23
+                 */
+                date: string;
+                /** @description Vagas livres do dia, em ordem. */
+                slots: {
+                    /**
+                     * Format: date-time
+                     * @example 2026-11-23T11:00:00.000Z
+                     */
+                    startsAt: string;
+                    /**
+                     * Format: date-time
+                     * @example 2026-11-23T11:30:00.000Z
+                     */
+                    endsAt: string;
+                }[];
+            }[];
+        };
+        AdminReport: {
+            period: {
+                /**
+                 * Format: date
+                 * @description Primeiro dia, no fuso de São Paulo.
+                 * @example 2026-10-22
+                 */
+                from: string;
+                /**
+                 * Format: date
+                 * @description Último dia, incluído.
+                 * @example 2026-11-20
+                 */
+                to: string;
+                /**
+                 * @description Tamanho dos intervalos da série: dia até 62 dias de período, semana acima disso.
+                 * @example day
+                 * @enum {string}
+                 */
+                granularity: "day" | "week";
+            };
+            /** @description Consultas do período, pela situação atual. */
+            appointments: {
+                /**
+                 * @description Todos os agendamentos do período.
+                 * @example 140
+                 */
+                total: number;
+                /**
+                 * @description Pedidos a confirmar que ainda não começaram.
+                 * @example 6
+                 */
+                pending: number;
+                /**
+                 * @description Confirmados que ainda não começaram.
+                 * @example 30
+                 */
+                confirmed: number;
+                /**
+                 * @description Confirmados que já começaram e aguardam registro.
+                 * @example 3
+                 */
+                awaitingRecord: number;
+                /**
+                 * @description Concluídos.
+                 * @example 80
+                 */
+                completed: number;
+                /**
+                 * @description Faltas registradas.
+                 * @example 7
+                 */
+                noShow: number;
+                /**
+                 * @description Cancelados.
+                 * @example 12
+                 */
+                cancelled: number;
+                /**
+                 * @description Pedidos que não foram confirmados a tempo.
+                 * @example 2
+                 */
+                expired: number;
+                /**
+                 * @description Cancelados pelo paciente dentro da janela de cancelamento tardio.
+                 * @example 4
+                 */
+                lateCancellations: number;
+                /** @description Cancelados por quem cancelou. */
+                cancelledBy: {
+                    /**
+                     * @description Cancelados pelo paciente.
+                     * @example 8
+                     */
+                    patient: number;
+                    /**
+                     * @description Cancelados pelo médico.
+                     * @example 2
+                     */
+                    doctor: number;
+                    /**
+                     * @description Cancelados por um administrador.
+                     * @example 1
+                     */
+                    admin: number;
+                    /**
+                     * @description Cancelados pelo sistema, como ao desativar uma conta.
+                     * @example 1
+                     */
+                    system: number;
+                };
+                /**
+                 * @description Faltas sobre concluídas mais faltas, de 0 a 1 com três casas; nulo sem nenhuma das duas.
+                 * @example 0.08
+                 */
+                noShowRate: number | null;
+            };
+            /** @description Exames do período, pela situação atual. Exames não têm pedido a confirmar nem falta, então esses totais são sempre 0; `awaitingRecord` conta os exames em andamento, que já começaram e ainda não terminaram. */
+            exams: {
+                /**
+                 * @description Todos os agendamentos do período.
+                 * @example 140
+                 */
+                total: number;
+                /**
+                 * @description Pedidos a confirmar que ainda não começaram.
+                 * @example 6
+                 */
+                pending: number;
+                /**
+                 * @description Confirmados que ainda não começaram.
+                 * @example 30
+                 */
+                confirmed: number;
+                /**
+                 * @description Confirmados que já começaram e aguardam registro.
+                 * @example 3
+                 */
+                awaitingRecord: number;
+                /**
+                 * @description Concluídos.
+                 * @example 80
+                 */
+                completed: number;
+                /**
+                 * @description Faltas registradas.
+                 * @example 7
+                 */
+                noShow: number;
+                /**
+                 * @description Cancelados.
+                 * @example 12
+                 */
+                cancelled: number;
+                /**
+                 * @description Pedidos que não foram confirmados a tempo.
+                 * @example 2
+                 */
+                expired: number;
+                /**
+                 * @description Cancelados pelo paciente dentro da janela de cancelamento tardio.
+                 * @example 4
+                 */
+                lateCancellations: number;
+                /** @description Cancelados por quem cancelou. */
+                cancelledBy: {
+                    /**
+                     * @description Cancelados pelo paciente.
+                     * @example 8
+                     */
+                    patient: number;
+                    /**
+                     * @description Cancelados pelo médico.
+                     * @example 2
+                     */
+                    doctor: number;
+                    /**
+                     * @description Cancelados por um administrador.
+                     * @example 1
+                     */
+                    admin: number;
+                    /**
+                     * @description Cancelados pelo sistema, como ao desativar uma conta.
+                     * @example 1
+                     */
+                    system: number;
+                };
+            };
+            /** @description Consultas e exames por intervalo, pela situação atual, do primeiro ao último dia do período, inclusive os intervalos vazios. As semanas começam no primeiro dia do período; a última pode ser mais curta. */
+            series: {
+                /**
+                 * Format: date
+                 * @description Primeiro dia do intervalo.
+                 * @example 2026-10-22
+                 */
+                start: string;
+                /**
+                 * @description Todos os agendamentos do período.
+                 * @example 140
+                 */
+                total: number;
+                /**
+                 * @description Pedidos a confirmar que ainda não começaram.
+                 * @example 6
+                 */
+                pending: number;
+                /**
+                 * @description Confirmados que ainda não começaram.
+                 * @example 30
+                 */
+                confirmed: number;
+                /**
+                 * @description Confirmados que já começaram e aguardam registro.
+                 * @example 3
+                 */
+                awaitingRecord: number;
+                /**
+                 * @description Concluídos.
+                 * @example 80
+                 */
+                completed: number;
+                /**
+                 * @description Faltas registradas.
+                 * @example 7
+                 */
+                noShow: number;
+                /**
+                 * @description Cancelados.
+                 * @example 12
+                 */
+                cancelled: number;
+                /**
+                 * @description Pedidos que não foram confirmados a tempo.
+                 * @example 2
+                 */
+                expired: number;
+            }[];
+            /** @description As 5 especialidades com mais consultas no período, em qualquer situação (inclusive canceladas e não confirmadas a tempo), da maior para a menor; empates pelo nome. */
+            topSpecialties: {
+                /** Format: uuid */
+                id: string;
+                /** @example Cardiologia */
+                name: string;
+                /**
+                 * @description Agendamentos do período em qualquer situação, inclusive cancelados e não confirmados a tempo.
+                 * @example 42
+                 */
+                total: number;
+            }[];
+            /** @description Os 5 tipos de exame com mais agendamentos no período, em qualquer situação (inclusive cancelados), do maior para o menor; empates pelo nome. */
+            topExamTypes: {
+                /** Format: uuid */
+                id: string;
+                /** @example Cardiologia */
+                name: string;
+                /**
+                 * @description Agendamentos do período em qualquer situação, inclusive cancelados e não confirmados a tempo.
+                 * @example 42
+                 */
+                total: number;
+            }[];
+        };
         RegisterRequest: {
             /**
              * @description Nome completo, de 2 a 120 caracteres.
@@ -1313,66 +1635,6 @@ export interface components {
             futureAppointmentsAsPatient: number;
             /** @description Consultas futuras que ela atende. */
             futureAppointmentsAsDoctor: number;
-        };
-        Doctor: {
-            /** Format: uuid */
-            id: string;
-            /** @example Dra. Ana Ferreira */
-            fullName: string;
-            specialty: {
-                /** Format: uuid */
-                id: string;
-                /** @example Nutrição */
-                name: string;
-                /** @example CRN */
-                council: string;
-            };
-            unit: {
-                /** Format: uuid */
-                id: string;
-                /** @example Unidade Central */
-                name: string;
-                /** @example Rua das Flores, 123 - Centro, São Paulo - SP */
-                address: string;
-                /** @example +551133334444 */
-                phone: string;
-            };
-            registry: {
-                /** @example 45210 */
-                number: string;
-                /** @example SP */
-                uf: string;
-            };
-        };
-        DoctorPage: {
-            items: components["schemas"]["Doctor"][];
-            page: number;
-            pageSize: number;
-            total: number;
-        };
-        DoctorAvailability: {
-            /** @description Só os dias do período com ao menos uma vaga livre, em ordem. */
-            days: {
-                /**
-                 * Format: date
-                 * @description Dia no fuso de São Paulo.
-                 * @example 2026-11-23
-                 */
-                date: string;
-                /** @description Vagas livres do dia, em ordem. */
-                slots: {
-                    /**
-                     * Format: date-time
-                     * @example 2026-11-23T11:00:00.000Z
-                     */
-                    startsAt: string;
-                    /**
-                     * Format: date-time
-                     * @example 2026-11-23T11:30:00.000Z
-                     */
-                    endsAt: string;
-                }[];
-            }[];
         };
         BookAppointmentRequest: {
             /**
@@ -2512,6 +2774,109 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminHome"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getAdminReports: {
+        parameters: {
+            query?: {
+                /** @description Primeiro dia, no fuso de São Paulo. Sem ele, 29 dias antes do último, que por padrão é hoje. */
+                from?: string;
+                /** @description Último dia, incluído, no fuso de São Paulo. Sem ele, hoje. */
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Relatório do período. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminReport"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
