@@ -2,6 +2,9 @@ import { ApiError } from '@lib/api/api-error';
 
 export const GENERIC_ERROR_MESSAGE = 'Algo deu errado. Tente de novo em instantes.';
 
+export const NO_LINK_MESSAGE =
+  'Você só vê os resultados de um paciente com quem tem uma consulta de avaliação de exames confirmada ou concluída nos últimos 30 dias.';
+
 export const errorMessages: Record<string, string> = {
   EMAIL_TAKEN: 'Este e-mail já está cadastrado.',
   NAME_TAKEN: 'Já existe um cadastro com esse nome.',
@@ -35,6 +38,7 @@ export const errorMessages: Record<string, string> = {
   USER_INACTIVE: 'Esta conta está desativada.',
   UNAUTHENTICATED: 'Sua sessão expirou. Entre novamente.',
   FORBIDDEN: 'Você não tem acesso a esta área.',
+  FORBIDDEN_NO_LINK: NO_LINK_MESSAGE,
   PROTECTED_ACCOUNT: 'Esta é uma conta de demonstração e não pode ser alterada.',
   INVALID_STATE: 'Este agendamento mudou ou não pode mais ser alterado. Confira a lista atualizada.',
   NOT_STARTED: 'Esta consulta ainda não começou. Registre o desfecho a partir do horário de início.',

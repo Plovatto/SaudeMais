@@ -1,16 +1,27 @@
-import { LuCircleX, LuMapPin, LuPhone } from 'react-icons/lu';
+import { LuCircleX, LuFileText, LuMapPin, LuPhone } from 'react-icons/lu';
 import { AppointmentHeadline } from '@components/bookings/AppointmentHeadline';
 import { CancellationNote, Detail, Note, PhoneLink } from '@components/bookings/BookingDetails';
-import { bookingStatus } from '@components/bookings/booking-display';
+import { bookingStatus, hasStarted } from '@components/bookings/booking-display';
 import { ExpandableCard } from '@components/bookings/ExpandableCard';
-import { Button } from '@components/ui';
+import { Button, ButtonLink } from '@components/ui';
 import { areas } from '@constants/areas';
+import { RESULTS_WINDOW_DAYS, resultsLink } from '@constants/patient-results';
 import { visitTypeLabels } from '@constants/visit-types';
 import { formatDateTime } from '@lib/date';
 import type { DoctorAppointment } from '@lib/api/models';
 import { DECISIONS, type Decision } from './decisions';
 
 const PatientIcon = areas.patient.icon;
+
+const REVIEWABLE: ReadonlySet<DoctorAppointment['status']> = new Set(['confirmed', 'completed']);
+
+const WINDOW_MS = RESULTS_WINDOW_DAYS * 86_400_000;
+
+const canReviewResults = ({ visitType, status, startsAt }: DoctorAppointment, now = Date.now()) =>
+  visitType === 'exam_review' &&
+  REVIEWABLE.has(status) &&
+  hasStarted(startsAt, now) &&
+  now - new Date(startsAt).getTime() <= WINDOW_MS;
 
 export interface AppointmentCardProps {
   appointment: DoctorAppointment;
@@ -28,6 +39,7 @@ export function AppointmentCard({ appointment, pending, busy, onDecide, onCancel
     </span>
   );
   const decisions = DECISIONS.filter(({ flag }) => actions[flag]);
+  const reviewable = canReviewResults(appointment);
 
   return (
     <ExpandableCard
@@ -43,7 +55,7 @@ export function AppointmentCard({ appointment, pending, busy, onDecide, onCancel
         />
       }
       actions={
-        (decisions.length > 0 || actions.canCancel) && (
+        (decisions.length > 0 || actions.canCancel || reviewable) && (
           <div className="flex flex-wrap gap-3 *:min-w-fit *:flex-1">
             {decisions.map((decision) => (
               <Button
@@ -64,6 +76,13 @@ export function AppointmentCard({ appointment, pending, busy, onDecide, onCancel
                 Cancelar
                 {target}
               </Button>
+            )}
+            {reviewable && (
+              <ButtonLink {...resultsLink(patient)} variant="secondary">
+                <LuFileText aria-hidden />
+                Ver exames do paciente
+                {target}
+              </ButtonLink>
             )}
           </div>
         )
