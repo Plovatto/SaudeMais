@@ -3,7 +3,7 @@
   "info": {
     "title": "Saúde+ API",
     "version": "0.1.0",
-    "description": "API do **Saúde+**, sistema de agendamento de consultas e exames com três perfis: paciente, médico e administrador.\n\nAs rotas de negócio ficam sob `/api`. Nesta versão existem o cadastro, o login, o logout, a redefinição de senha, o perfil da própria conta, o catálogo com a administração dele, a administração de usuários, a agenda semanal do médico, a lista de médicos com as vagas livres de cada um, o pedido de consulta com o detalhe, a confirmação, o cancelamento, a conclusão e o registro de falta dela, o início e os agendamentos do paciente, o início e a agenda do médico e as notificações, além de `/health` e desta documentação. Cada rota lista o que realmente pode devolver.\n\n## Erros\n\nToda resposta de erro tem o mesmo formato:\n\n```json\n{\n  \"message\": \"Dados inválidos.\",\n  \"code\": \"VALIDATION_ERROR\",\n  \"fields\": { \"email\": \"E-mail inválido.\" }\n}\n```\n\n- `message` é um texto em português, pronto para exibir.\n- `code` é estável e serve para o cliente decidir o que fazer ou escolher o próprio texto.\n- `fields` aparece em erros de validação e nos de regra ligados a um campo, com uma mensagem por campo.\n\n| Status | Quando acontece |\n|---|---|\n| `400` | Corpo, parâmetros ou JSON inválidos |\n| `401` | Sem sessão, sessão expirada ou credenciais incorretas |\n| `403` | Conta desativada, sem o perfil exigido ou de demonstração |\n| `404` | Rota, método ou registro inexistente |\n| `409` | Conflito com o estado atual, como e-mail já cadastrado |\n| `422` | Regra de negócio não atendida, como senha atual incorreta |\n| `413` | Corpo maior que 100 KB |\n| `415` | Charset ou codificação do corpo não suportados |\n| `429` | Limite de tentativas atingido; o cabeçalho `RateLimit` diz quando tentar de novo |\n| `500` | Erro interno; os detalhes ficam só nos logs |\n| `503` | Servidor ocupado conferindo senhas; tente de novo em instantes |\n\nUm agendamento de outra pessoa responde `404`, como se não existisse, e um horário já ocupado responde `409`.\n\n## Códigos de erro\n\nCódigos comuns a todas as rotas. Cada rota lista também os códigos específicos dela.\n\n| Código | Status | Significado |\n|---|---|---|\n| `VALIDATION_ERROR` | 400 | Algum campo não passou na validação; veja `fields` |\n| `INVALID_JSON` | 400 | O corpo não é um JSON válido ou não é um objeto ou array |\n| `BAD_REQUEST` | 400 ou 415 | Requisição malformada, como parâmetro de URL inválido, charset ou codificação não suportados |\n| `UNAUTHENTICATED` | 401 | Rota exige login e o token falta, é inválido ou expirou |\n| `FORBIDDEN` | 403 | A conta não tem o perfil exigido pela rota |\n| `INVALID_RESET_TOKEN` | 400 | Link de redefinição de senha inválido, usado ou vencido |\n| `INVALID_CURRENT_PASSWORD` | 422 | A senha atual informada na troca de senha está errada |\n| `PROTECTED_ACCOUNT` | 403 | Contas de demonstração não podem ser alteradas |\n| `NOT_FOUND` | 404 | O registro pedido não existe |\n| `NAME_TAKEN` | 409 | Já existe um cadastro com esse nome, sem distinguir maiúsculas |\n| `CODE_TAKEN` | 409 | Já existe um tipo de exame com esse código |\n| `EXAM_TYPE_INACTIVE` | 409 | O tipo de exame está inativo e não pode ter oferta ativa |\n| `IN_USE` | 409 | Há agendamento futuro ativo ligado ao cadastro; ele não pode ser desativado, nem a oferta pode ter a capacidade reduzida abaixo de um lugar ocupado |\n| `COUNCIL_IN_USE` | 409 | A especialidade tem médicos; o conselho não pode mudar |\n| `SELF_OR_LAST_ADMIN` | 409 | O administrador não pode desativar nem rebaixar a si mesmo nem deixar o sistema sem administradores |\n| `USER_INACTIVE` | 403 ou 409 | Conta desativada: login recusado (403) ou ação que exige conta ativa (409) |\n| `REGISTRY_TAKEN` | 409 | O registro profissional já pertence a outro médico |\n| `DOCTOR_PROFILE_EXISTS` | 409 | A conta já tem perfil médico |\n| `HAS_FUTURE_APPOINTMENTS` | 409 | O médico tem consultas futuras que impedem a mudança |\n| `RESET_NOT_SENT` | 409 | Um link de redefinição foi enviado há pouco ou o limite do dia foi atingido |\n| `SLOT_TAKEN` | 409 | O horário escolhido acabou de ser ocupado na agenda do médico |\n| `NO_CAPACITY` | 409 | Não há mais lugares na vaga de exame escolhida |\n| `PATIENT_CONFLICT` | 409 | O paciente já tem um agendamento ativo que coincide com o horário |\n| `RESCHEDULE_WINDOW_CLOSED` | 409 | O agendamento confirmado está dentro da janela da política e só pode ser cancelado, não reagendado |\n| `RESCHEDULE_LIMIT` | 409 | O agendamento já foi reagendado o máximo de vezes da política |\n| `INVALID_STATE` | 409 | O agendamento mudou, já foi confirmado, já começou ou já foi encerrado desde que foi exibido; atualize e tente de novo |\n| `NOT_STARTED` | 409 | A consulta confirmada ainda não começou; conclusão e falta só valem a partir do horário de início |\n| `SPECIALTY_UNAVAILABLE`, `UNIT_UNAVAILABLE` | 422 | A especialidade ou a unidade escolhida está inativa ou não existe |\n| `OVERLAP` | 422 | Faixas de horário do mesmo dia se sobrepõem; veja `fields` |\n| `OUTSIDE_UNIT_HOURS` | 422 | A faixa de horário fica fora do horário da unidade; veja `fields` |\n| `OUTSIDE_AVAILABILITY` | 422 | O horário não é uma vaga gerada pela agenda do médico ou, no exame, pelo horário da unidade |\n| `SAME_SLOT` | 422 | O novo horário pedido no reagendamento é o horário atual |\n| `ACTIVE_LIMIT` | 422 | O paciente já tem 5 agendamentos ativos futuros |\n| `SPECIALTY_MISMATCH` | 422 | O médico escolhido não atende a especialidade escolhida |\n| `SELF_BOOKING` | 422 | O médico tentou marcar consulta consigo mesmo |\n| `REASON_REQUIRED` | 422 | O médico precisa informar o motivo ao cancelar uma consulta |\n| `ROUTE_NOT_FOUND` | 404 | A rota ou o método não existe |\n| `PAYLOAD_TOO_LARGE` | 413 | O corpo passou de 100 KB |\n| `TOO_MANY_REQUESTS` | 429 | Muitas requisições do mesmo IP (300 por minuto) ou limite próprio da rota |\n| `INTERNAL_ERROR` | 500 | Erro inesperado no servidor |\n| `SERVER_BUSY` | 503 | Muitas senhas sendo conferidas ao mesmo tempo |\n\n## Autenticação\n\nCrie uma conta em `POST /api/users/register` e entre em `POST /api/users/login` para receber o token. As rotas que exigem login mostram um cadeado e recebem o token no cabeçalho:\n\n```http\nAuthorization: Bearer <token>\n```\n\nSem \"Lembrar de mim\", a sessão expira após 12 horas sem uso; com ele, dura 7 dias. Nenhuma sessão passa de 7 dias, e `POST /api/users/logout` encerra a sessão na hora. Quando a sessão não vale mais, a rota responde `401` com `UNAUTHENTICATED`.\n\nO botão **Authorize** desta página envia o token em todas as chamadas de teste. Fora de produção, o token fica salvo neste navegador até você clicar em **Logout**.\n\n## Conta de demonstração\n\nPara testar sem criar conta, entre com uma das contas de demonstração. As credenciais são públicas e servem só para demonstração:\n\n- Paciente: `paciente@saudemais.test`, senha `paciente-demo-123`.\n- Médico, que também é paciente e passa pela escolha de perfil: `medico@saudemais.test`, senha `medico-demo-123`.\n\nOs dados delas são de exemplo, e elas não podem ser alteradas nem desativadas. Esses e-mails não podem ser usados em um cadastro novo.\n\n## Datas\n\n- Data e hora, como o início de uma vaga, em ISO 8601 e UTC: `2026-11-20T13:30:00.000Z`.\n- Datas sem horário, como `from` e `to` das vagas, em `YYYY-MM-DD`, no fuso de São Paulo (`America/Sao_Paulo`).\n- Para agendar, envie de volta o `startsAt` recebido na lista de vagas, sem montar o horário no cliente.\n\n## Paginação\n\nAs listas paginadas recebem `page` (a partir de 1) e `pageSize` (até 50) e respondem:\n\n```json\n{ \"items\": [], \"page\": 1, \"pageSize\": 20, \"total\": 0 }\n```",
+    "description": "API do **Saúde+**, sistema de agendamento de consultas e exames com três perfis: paciente, médico e administrador.\n\nAs rotas de negócio ficam sob `/api`. Nesta versão existem o cadastro, o login, o logout, a redefinição de senha, o perfil da própria conta, o catálogo com a administração dele, a administração de usuários, a agenda semanal do médico, a lista de médicos com as vagas livres de cada um, o pedido de consulta com o detalhe, a confirmação, o cancelamento, a conclusão e o registro de falta dela, o início e os agendamentos do paciente, o início e a agenda do médico, as notificações e a integração com o laboratório, além de `/health` e desta documentação. Cada rota lista o que realmente pode devolver.\n\n## Erros\n\nToda resposta de erro tem o mesmo formato:\n\n```json\n{\n  \"message\": \"Dados inválidos.\",\n  \"code\": \"VALIDATION_ERROR\",\n  \"fields\": { \"email\": \"E-mail inválido.\" }\n}\n```\n\n- `message` é um texto em português, pronto para exibir.\n- `code` é estável e serve para o cliente decidir o que fazer ou escolher o próprio texto.\n- `fields` aparece em erros de validação e nos de regra ligados a um campo, com uma mensagem por campo.\n\n| Status | Quando acontece |\n|---|---|\n| `400` | Corpo, parâmetros ou JSON inválidos |\n| `401` | Sem sessão, sessão expirada, credenciais incorretas ou chave de API inválida |\n| `403` | Conta desativada, sem o perfil exigido ou de demonstração |\n| `404` | Rota, método ou registro inexistente |\n| `409` | Conflito com o estado atual, como e-mail já cadastrado |\n| `422` | Regra de negócio não atendida, como senha atual incorreta |\n| `413` | Corpo maior que 100 KB |\n| `415` | Charset ou codificação do corpo não suportados |\n| `429` | Limite de tentativas atingido; o cabeçalho `RateLimit` diz quando tentar de novo |\n| `500` | Erro interno; os detalhes ficam só nos logs |\n| `503` | Servidor ocupado conferindo senhas; tente de novo em instantes |\n\nUm agendamento de outra pessoa responde `404`, como se não existisse, e um horário já ocupado responde `409`.\n\n## Códigos de erro\n\nCódigos comuns a todas as rotas. Cada rota lista também os códigos específicos dela.\n\n| Código | Status | Significado |\n|---|---|---|\n| `VALIDATION_ERROR` | 400 | Algum campo não passou na validação; veja `fields` |\n| `INVALID_JSON` | 400 | O corpo não é um JSON válido ou não é um objeto ou array |\n| `BAD_REQUEST` | 400 ou 415 | Requisição malformada, como parâmetro de URL inválido, charset ou codificação não suportados |\n| `UNAUTHENTICATED` | 401 | Rota exige login e o token falta, é inválido ou expirou |\n| `FORBIDDEN` | 403 | A conta não tem o perfil exigido pela rota |\n| `INVALID_API_KEY` | 401 | Rota do laboratório sem a chave `X-Api-Key` ou com chave inválida ou revogada |\n| `INVALID_RESET_TOKEN` | 400 | Link de redefinição de senha inválido, usado ou vencido |\n| `INVALID_CURRENT_PASSWORD` | 422 | A senha atual informada na troca de senha está errada |\n| `PROTECTED_ACCOUNT` | 403 | Contas de demonstração não podem ser alteradas |\n| `NOT_FOUND` | 404 | O registro pedido não existe |\n| `NAME_TAKEN` | 409 | Já existe um cadastro com esse nome, sem distinguir maiúsculas |\n| `CODE_TAKEN` | 409 | Já existe um tipo de exame com esse código |\n| `EXAM_TYPE_INACTIVE` | 409 | O tipo de exame está inativo e não pode ter oferta ativa |\n| `IN_USE` | 409 | Há agendamento futuro ativo ligado ao cadastro; ele não pode ser desativado, nem a oferta pode ter a capacidade reduzida abaixo de um lugar ocupado |\n| `COUNCIL_IN_USE` | 409 | A especialidade tem médicos; o conselho não pode mudar |\n| `SELF_OR_LAST_ADMIN` | 409 | O administrador não pode desativar nem rebaixar a si mesmo nem deixar o sistema sem administradores |\n| `USER_INACTIVE` | 403 ou 409 | Conta desativada: login recusado (403) ou ação que exige conta ativa (409) |\n| `REGISTRY_TAKEN` | 409 | O registro profissional já pertence a outro médico |\n| `DOCTOR_PROFILE_EXISTS` | 409 | A conta já tem perfil médico |\n| `HAS_FUTURE_APPOINTMENTS` | 409 | O médico tem consultas futuras que impedem a mudança |\n| `RESET_NOT_SENT` | 409 | Um link de redefinição foi enviado há pouco ou o limite do dia foi atingido |\n| `SLOT_TAKEN` | 409 | O horário escolhido acabou de ser ocupado na agenda do médico |\n| `NO_CAPACITY` | 409 | Não há mais lugares na vaga de exame escolhida |\n| `PATIENT_CONFLICT` | 409 | O paciente já tem um agendamento ativo que coincide com o horário |\n| `RESCHEDULE_WINDOW_CLOSED` | 409 | O agendamento confirmado está dentro da janela da política e só pode ser cancelado, não reagendado |\n| `RESCHEDULE_LIMIT` | 409 | O agendamento já foi reagendado o máximo de vezes da política |\n| `INVALID_STATE` | 409 | O agendamento mudou, já foi confirmado, já começou ou já foi encerrado desde que foi exibido; atualize e tente de novo |\n| `NOT_STARTED` | 409 | A consulta confirmada ainda não começou; conclusão e falta só valem a partir do horário de início |\n| `RESULT_FINAL` | 409 | O exame já tem resultado com outro conteúdo; a correção precisa vir com `status` `amended` |\n| `RESULT_EXISTS` | 409 | O exame já tem resultado com outro `externalId` |\n| `EXTERNAL_ID_TAKEN` | 409 | O `externalId` já foi usado no resultado de outro exame |\n| `SPECIALTY_UNAVAILABLE`, `UNIT_UNAVAILABLE` | 422 | A especialidade ou a unidade escolhida está inativa ou não existe |\n| `OVERLAP` | 422 | Faixas de horário do mesmo dia se sobrepõem; veja `fields` |\n| `OUTSIDE_UNIT_HOURS` | 422 | A faixa de horário fica fora do horário da unidade; veja `fields` |\n| `OUTSIDE_AVAILABILITY` | 422 | O horário não é uma vaga gerada pela agenda do médico ou, no exame, pelo horário da unidade |\n| `SAME_SLOT` | 422 | O novo horário pedido no reagendamento é o horário atual |\n| `ACTIVE_LIMIT` | 422 | O paciente já tem 5 agendamentos ativos futuros |\n| `SPECIALTY_MISMATCH` | 422 | O médico escolhido não atende a especialidade escolhida |\n| `SELF_BOOKING` | 422 | O médico tentou marcar consulta consigo mesmo |\n| `REASON_REQUIRED` | 422 | O médico precisa informar o motivo ao cancelar uma consulta |\n| `NOT_ELIGIBLE` | 422 | O exame foi cancelado ou ainda não começou, então não recebe resultado |\n| `ISSUED_IN_FUTURE` | 422 | A data de emissão do resultado passa de 5 minutos à frente do relógio da API |\n| `WRONG_RESULT_FORMAT` | 422 | Exame laboratorial recebe `items`; exame de imagem, `report` |\n| `ROUTE_NOT_FOUND` | 404 | A rota ou o método não existe |\n| `PAYLOAD_TOO_LARGE` | 413 | O corpo passou de 100 KB |\n| `TOO_MANY_REQUESTS` | 429 | Muitas requisições do mesmo IP (300 por minuto) ou limite próprio da rota |\n| `INTERNAL_ERROR` | 500 | Erro inesperado no servidor |\n| `SERVER_BUSY` | 503 | Muitas senhas sendo conferidas ao mesmo tempo |\n\n## Autenticação\n\nCrie uma conta em `POST /api/users/register` e entre em `POST /api/users/login` para receber o token. As rotas que exigem login mostram um cadeado e recebem o token no cabeçalho:\n\n```http\nAuthorization: Bearer <token>\n```\n\nSem \"Lembrar de mim\", a sessão expira após 12 horas sem uso; com ele, dura 7 dias. Nenhuma sessão passa de 7 dias, e `POST /api/users/logout` encerra a sessão na hora. Quando a sessão não vale mais, a rota responde `401` com `UNAUTHENTICATED`.\n\nO botão **Authorize** desta página envia o token em todas as chamadas de teste. Fora de produção, o token fica salvo neste navegador até você clicar em **Logout**.\n\n## Integração com o laboratório\n\nO laboratório parceiro usa uma chave de API criada pelo administrador em `POST /api/admin/integration-clients`. A chave aparece uma única vez, a API guarda só o hash, e o administrador pode revogá-la a qualquer momento. As rotas do laboratório recebem a chave no cabeçalho, sem sessão:\n\n```http\nX-Api-Key: slab_<prefixo>_<segredo>\n```\n\n`GET /api/integrations/lab/worklist` lista, só pelo código público, os exames do dia que aguardam resultado, e `POST /api/integrations/lab/results` publica o resultado de um deles. Reenviar o mesmo conteúdo não muda nada, e uma correção (`amended`) cria uma nova versão. Cada chave tem um limite próprio de 60 requisições por minuto.\n\n## Conta de demonstração\n\nPara testar sem criar conta, entre com uma das contas de demonstração. As credenciais são públicas e servem só para demonstração:\n\n- Paciente: `paciente@saudemais.test`, senha `paciente-demo-123`.\n- Médico, que também é paciente e passa pela escolha de perfil: `medico@saudemais.test`, senha `medico-demo-123`.\n\nOs dados delas são de exemplo, e elas não podem ser alteradas nem desativadas. Esses e-mails não podem ser usados em um cadastro novo. Uma vez por dia, os agendamentos delas voltam ao exemplo inicial.\n\n## Rotinas automáticas\n\nUma rotina de manutenção grava o que o tempo já decidiu. Ela aproveita quando o banco já está ativo, no máximo de hora em hora, e roda no mínimo uma vez por dia; por isso, uma mudança abaixo pode levar até um dia para aparecer:\n\n- Pedido de consulta `pending` cujo horário chegou passa a `expired`, e o paciente recebe a notificação `appointment_expired`. Antes disso, as listas já o mostram como `expired`.\n- Exame `confirmed` cujo horário terminou passa a `completed`.\n- Consulta `confirmed` que começou há 72 horas sem registro do médico passa a `completed`, com o sistema como autor no histórico.\n- Sessões vencidas são apagadas, assim como links de redefinição de senha com mais de 48 horas, notificações com mais de 90 dias e registros de auditoria com mais de 180 dias.\n\n## Datas\n\n- Data e hora, como o início de uma vaga, em ISO 8601 e UTC: `2026-11-20T13:30:00.000Z`.\n- Datas sem horário, como `from` e `to` das vagas, em `YYYY-MM-DD`, no fuso de São Paulo (`America/Sao_Paulo`).\n- Para agendar, envie de volta o `startsAt` recebido na lista de vagas, sem montar o horário no cliente.\n\n## Paginação\n\nAs listas paginadas recebem `page` (a partir de 1) e `pageSize` (até 50) e respondem:\n\n```json\n{ \"items\": [], \"page\": 1, \"pageSize\": 20, \"total\": 0 }\n```",
     "contact": {
       "name": "Plovatto",
       "url": "https://github.com/Plovatto"
@@ -55,6 +55,10 @@
     {
       "name": "Administração",
       "description": "Usuários, papéis e perfis médicos; cadastro de especialidades, unidades, horários, exames, ofertas e da política de agendamento. Só administradores."
+    },
+    {
+      "name": "Integrações",
+      "description": "Rotas do laboratório parceiro, autenticadas pela chave de API no cabeçalho `X-Api-Key`: lista de exames que aguardam resultado e publicação de resultados. Não usam sessão nem devolvem dados pessoais."
     }
   ],
   "externalDocs": {
@@ -67,6 +71,12 @@
         "type": "http",
         "scheme": "bearer",
         "description": "Token de sessão obtido no login, enviado como \"Authorization: Bearer <token>\"."
+      },
+      "labApiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Api-Key",
+        "description": "Chave de API do laboratório, criada pelo administrador e exibida uma única vez."
       }
     },
     "schemas": {
@@ -99,23 +109,6 @@
           "code"
         ],
         "description": "Corpo de toda resposta de erro."
-      },
-      "HealthResponse": {
-        "type": "object",
-        "properties": {
-          "status": {
-            "type": "string",
-            "enum": [
-              "ok"
-            ]
-          }
-        },
-        "required": [
-          "status"
-        ],
-        "example": {
-          "status": "ok"
-        }
       },
       "AdminHome": {
         "type": "object",
@@ -2885,6 +2878,259 @@
           "events"
         ]
       },
+      "CreateIntegrationClientRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "example": "Laboratório Central"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "IntegrationClient": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "example": "Laboratório Central"
+          },
+          "keyPrefix": {
+            "type": "string",
+            "description": "Começo visível da chave, para identificá-la sem expor o segredo.",
+            "example": "7f3k2q9a"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastUsedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Último uso da chave, atualizado no máximo a cada 5 minutos."
+          },
+          "revokedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Quando a chave foi revogada; nulo se ativa."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "keyPrefix",
+          "createdAt",
+          "lastUsedAt",
+          "revokedAt"
+        ]
+      },
+      "CreatedIntegrationClient": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/IntegrationClient"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "apiKey": {
+                "type": "string",
+                "description": "Chave completa, para o cabeçalho `X-Api-Key`. Só aparece nesta resposta; a API guarda apenas o hash.",
+                "example": "slab_7f3k2q9a_q3Zp1vQx8n0rT2bYc4dEf6gHi8jKl0mNo2pQr4sTu6v"
+              }
+            },
+            "required": [
+              "apiKey"
+            ]
+          }
+        ]
+      },
+      "LabWorklist": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "examCode": {
+              "type": "string",
+              "pattern": "^EX-[0-9A-HJKMNP-TV-Z]{6}$",
+              "description": "Código público do exame.",
+              "example": "EX-7F3K2Q"
+            },
+            "examTypeCode": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]{1,39}$",
+              "description": "Código estável, usado na integração com o laboratório.",
+              "example": "hemograma"
+            },
+            "startsAt": {
+              "type": "string",
+              "format": "date-time",
+              "example": "2026-11-23T11:00:00.000Z"
+            }
+          },
+          "required": [
+            "examCode",
+            "examTypeCode",
+            "startsAt"
+          ]
+        }
+      },
+      "LabResultRequest": {
+        "type": "object",
+        "properties": {
+          "externalId": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "Identificador do resultado no laboratório; o mesmo em reenvios e retificações.",
+            "example": "LAB-2026-000123"
+          },
+          "examCode": {
+            "type": "string",
+            "pattern": "^EX-[0-9A-HJKMNP-TV-Z]{6}$",
+            "description": "Código público do exame.",
+            "example": "EX-7F3K2Q"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "final",
+              "amended"
+            ],
+            "description": "`final` na primeira publicação; `amended` para retificar o conteúdo já publicado."
+          },
+          "issuedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Emissão do resultado no laboratório.",
+            "example": "2026-11-23T11:00:00.000Z"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "maxLength": 80,
+                  "example": "Hemoglobina"
+                },
+                "value": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "maxLength": 40
+                    }
+                  ],
+                  "description": "Número ou texto, como `Negativo`.",
+                  "example": 13.8
+                },
+                "unit": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 20,
+                  "default": null,
+                  "example": "g/dL"
+                },
+                "referenceRange": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 60,
+                  "default": null,
+                  "example": "12,0 a 16,0"
+                },
+                "flag": {
+                  "type": "string",
+                  "enum": [
+                    "normal",
+                    "low",
+                    "high",
+                    "critical"
+                  ],
+                  "description": "Indicador do valor em relação à faixa de referência."
+                }
+              },
+              "required": [
+                "name",
+                "value",
+                "flag"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 50,
+            "description": "Itens do exame laboratorial."
+          },
+          "report": {
+            "type": "string",
+            "maxLength": 10000,
+            "description": "Laudo em texto do exame de imagem.",
+            "example": "Fígado de dimensões normais."
+          }
+        },
+        "required": [
+          "externalId",
+          "examCode",
+          "status",
+          "issuedAt"
+        ],
+        "additionalProperties": false
+      },
+      "LabResultReceipt": {
+        "type": "object",
+        "properties": {
+          "examCode": {
+            "type": "string",
+            "pattern": "^EX-[0-9A-HJKMNP-TV-Z]{6}$",
+            "description": "Código público do exame.",
+            "example": "EX-7F3K2Q"
+          },
+          "externalId": {
+            "type": "string",
+            "example": "LAB-2026-000123"
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Versão atual do resultado.",
+            "example": 1
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "created",
+              "unchanged",
+              "amended"
+            ],
+            "description": "`created` na primeira publicação, `unchanged` no reenvio de conteúdo igual ao atual e `amended` quando a retificação criou uma versão."
+          }
+        },
+        "required": [
+          "examCode",
+          "externalId",
+          "version",
+          "outcome"
+        ]
+      },
       "PasswordResetRequest": {
         "type": "object",
         "properties": {
@@ -3243,47 +3489,28 @@
           "counts",
           "lastNotification"
         ]
+      },
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "example": {
+          "status": "ok"
+        }
       }
     },
     "parameters": {}
   },
   "paths": {
-    "/health": {
-      "get": {
-        "operationId": "getHealth",
-        "tags": [
-          "Sistema"
-        ],
-        "summary": "Verificar se o servidor está no ar",
-        "description": "Responde sem consultar o banco, para que verificações periódicas não acordem o banco de dados quando ele está desligado por inatividade.",
-        "responses": {
-          "200": {
-            "description": "Servidor no ar.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HealthResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
-            "content": {
-              "application/json": {
-                "example": {
-                  "message": "Erro interno do servidor.",
-                  "code": "INTERNAL_ERROR"
-                },
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/admin/home": {
       "get": {
         "operationId": "getAdminHome",
@@ -9685,6 +9912,654 @@
         }
       }
     },
+    "/api/admin/integration-clients": {
+      "get": {
+        "operationId": "adminListIntegrationClients",
+        "summary": "Listar integrações",
+        "description": "Clientes de integração em ordem alfabética, com o prefixo visível da chave, o último uso e a revogação. A chave completa e o hash dela nunca são devolvidos. Limite: 120 requisições por minuto por IP.",
+        "tags": [
+          "Administração"
+        ],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            },
+            "required": false,
+            "name": "pageSize",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Página de integrações.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/IntegrationClient"
+                      }
+                    },
+                    "page": {
+                      "type": "integer"
+                    },
+                    "pageSize": {
+                      "type": "integer"
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "page",
+                    "pageSize",
+                    "total"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Dados inválidos.",
+                  "code": "VALIDATION_ERROR",
+                  "fields": {
+                    "email": "Informe um e-mail válido."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada (`UNAUTHENTICATED`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Sua sessão expirou. Entre novamente.",
+                  "code": "UNAUTHENTICATED"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A conta não tem o perfil exigido (`FORBIDDEN`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Você não tem acesso a esta área.",
+                  "code": "FORBIDDEN"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "adminCreateIntegrationClient",
+        "summary": "Criar integração",
+        "description": "Cria um cliente de integração e gera a chave de API (`slab_`, 8 letras ou números do prefixo, `_` e 43 caracteres do segredo de 32 bytes). A chave completa aparece só nesta resposta: a API guarda apenas o hash SHA-256. A criação fica na auditoria. Limite: 120 requisições por minuto por IP.",
+        "tags": [
+          "Administração"
+        ],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateIntegrationClientRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Integração criada, com a chave.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedIntegrationClient"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Dados inválidos.",
+                  "code": "VALIDATION_ERROR",
+                  "fields": {
+                    "email": "Informe um e-mail válido."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada (`UNAUTHENTICATED`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Sua sessão expirou. Entre novamente.",
+                  "code": "UNAUTHENTICATED"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A conta não tem o perfil exigido (`FORBIDDEN`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Você não tem acesso a esta área.",
+                  "code": "FORBIDDEN"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito com o estado atual (`NAME_TAKEN`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Já existe uma integração com esse nome.",
+                  "code": "NAME_TAKEN",
+                  "fields": {
+                    "name": "Já existe uma integração com esse nome."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/integration-clients/{id}/revoke": {
+      "post": {
+        "operationId": "adminRevokeIntegrationClient",
+        "summary": "Revogar a chave de uma integração",
+        "description": "Revoga a chave na hora: as próximas chamadas com ela recebem `INVALID_API_KEY`. Os resultados já publicados continuam guardados. Revogar de novo não muda nada e devolve a integração como está. A revogação fica na auditoria. Limite: 120 requisições por minuto por IP.",
+        "tags": [
+          "Administração"
+        ],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Integração revogada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationClient"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Dados inválidos.",
+                  "code": "VALIDATION_ERROR",
+                  "fields": {
+                    "email": "Informe um e-mail válido."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada (`UNAUTHENTICATED`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Sua sessão expirou. Entre novamente.",
+                  "code": "UNAUTHENTICATED"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A conta não tem o perfil exigido (`FORBIDDEN`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Você não tem acesso a esta área.",
+                  "code": "FORBIDDEN"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Registro inexistente (`NOT_FOUND`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Integração não encontrada.",
+                  "code": "NOT_FOUND"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/integrations/lab/worklist": {
+      "get": {
+        "operationId": "getLabWorklist",
+        "summary": "Ver os exames que aguardam resultado",
+        "description": "Exames do dia `date` (fuso de São Paulo) que podem receber resultado e ainda não têm: confirmados cujo horário já começou ou concluídos. Exames cancelados, futuros ou com resultado ficam de fora. Cada exame vem só com o código público, o código do tipo de exame e o início, sem dados do paciente, em ordem de horário. Limite: 60 requisições por minuto por chave.",
+        "tags": [
+          "Integrações"
+        ],
+        "security": [
+          {
+            "labApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Dia dos exames, no fuso de São Paulo.",
+              "example": "2026-11-23"
+            },
+            "required": true,
+            "description": "Dia dos exames, no fuso de São Paulo.",
+            "name": "date",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Exames que aguardam resultado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabWorklist"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Dados inválidos.",
+                  "code": "VALIDATION_ERROR",
+                  "fields": {
+                    "email": "Informe um e-mail válido."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chave de API ausente, inválida ou revogada (`INVALID_API_KEY`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Chave de API ausente, inválida ou revogada.",
+                  "code": "INVALID_API_KEY"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/integrations/lab/results": {
+      "post": {
+        "operationId": "publishLabResult",
+        "summary": "Publicar o resultado de um exame",
+        "description": "Publica o resultado do exame `examCode`, que precisa estar confirmado com o horário já iniciado ou concluído (`NOT_ELIGIBLE`). `issuedAt` aceita no máximo 5 minutos à frente do relógio da API (`ISSUED_IN_FUTURE`). Exame laboratorial recebe `items`; exame de imagem recebe `report` (`WRONG_RESULT_FORMAT`). A primeira publicação cria a versão 1 (201). Reenviar com o mesmo `externalId` e o mesmo conteúdo da versão atual não muda nada (200, `unchanged`). Conteúdo diferente com `status` `amended` cria uma nova versão (200, `amended`); com `final`, é recusado (`RESULT_FINAL`). Outro `externalId` para o mesmo exame é recusado (`RESULT_EXISTS`), assim como reaproveitar um `externalId` em outro exame (`EXTERNAL_ID_TAKEN`). As versões são imutáveis. Cada versão nova conclui o exame, registra o evento `result_received`, avisa o paciente com a notificação `exam_result_available` e fica na auditoria, sem o conteúdo do resultado. Publicações simultâneas do mesmo exame são feitas uma de cada vez. Limite: 60 requisições por minuto por chave.",
+        "tags": [
+          "Integrações"
+        ],
+        "security": [
+          {
+            "labApiKey": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabResultRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reenvio sem efeito ou nova versão.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabResultReceipt"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Resultado criado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabResultReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Dados inválidos.",
+                  "code": "VALIDATION_ERROR",
+                  "fields": {
+                    "email": "Informe um e-mail válido."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chave de API ausente, inválida ou revogada (`INVALID_API_KEY`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Chave de API ausente, inválida ou revogada.",
+                  "code": "INVALID_API_KEY"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Registro inexistente (`NOT_FOUND`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Nenhum exame tem este código.",
+                  "code": "NOT_FOUND"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito com o estado atual (`RESULT_FINAL`, `RESULT_EXISTS`, `EXTERNAL_ID_TAKEN`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Este resultado já foi publicado com outro conteúdo. Para corrigi-lo, envie status amended.",
+                  "code": "RESULT_FINAL",
+                  "fields": {
+                    "status": "Este resultado já foi publicado com outro conteúdo. Para corrigi-lo, envie status amended."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Exame cancelado ou futuro (`NOT_ELIGIBLE`), formato errado para o tipo de exame (`WRONG_RESULT_FORMAT`) ou emissão no futuro (`ISSUED_IN_FUTURE`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Este exame foi cancelado ou ainda não aconteceu, então não recebe resultado.",
+                  "code": "NOT_ELIGIBLE",
+                  "fields": {
+                    "examCode": "Este exame foi cancelado ou ainda não aconteceu, então não recebe resultado."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/notifications": {
       "get": {
         "operationId": "listNotifications",
@@ -11283,6 +12158,42 @@
                 },
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "tags": [
+          "Sistema"
+        ],
+        "summary": "Verificar se o servidor está no ar",
+        "description": "Responde sem consultar o banco, para que verificações periódicas não acordem o banco de dados quando ele está desligado por inatividade.",
+        "responses": {
+          "200": {
+            "description": "Servidor no ar.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
                 }
               }
             }
