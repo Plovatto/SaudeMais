@@ -248,19 +248,22 @@ describe('patient home', { timeout: 15_000 }, () => {
 
   it('shows the latest pressure and weight with when they were recorded', async () => {
     const ago = (hours: number) => new Date(Date.now() - hours * HOUR_MS).toISOString();
+    const pressureAt = ago(72);
     serveHome({
       metrics: {
-        bloodPressure: { systolic: 118, diastolic: 76, recordedAt: ago(72) },
-        weight: { kg: 72.4, recordedAt: ago(2) },
+        bloodPressure: { systolic: 118, diastolic: 76, recordedAt: pressureAt },
+        weight: { kg: 72.4, recordedAt: ago(240) },
       },
     });
     renderApp('/paciente');
 
     const region = within(await screen.findByRole('region', { name: 'Minha saúde' }));
-    await region.findByText('registrado há 3 dias');
+    const since = await region.findByText('há 3 dias');
+    expect(since.tagName).toBe('TIME');
+    expect(since).toHaveAttribute('datetime', pressureAt);
     const [pressure, weight] = region.getAllByRole('definition');
-    expect(pressure).toHaveTextContent('118/76 mmHgregistrado há 3 dias');
-    expect(weight).toHaveTextContent('72,4 kgregistrado há 2 h');
+    expect(pressure).toHaveTextContent('118/76 mmHghá 3 dias');
+    expect(weight).toHaveTextContent(/^72,4 kgem \d{2}\/\d{2}\/\d{4}$/);
     expect(region.queryByText(/depois que o médico registrar suas consultas/)).not.toBeInTheDocument();
   });
 
@@ -271,10 +274,10 @@ describe('patient home', { timeout: 15_000 }, () => {
     renderApp('/paciente');
 
     const region = within(await screen.findByRole('region', { name: 'Minha saúde' }));
-    await region.findByText(/^registrado/);
+    await region.findByText('agora');
     const [pressure, weight] = region.getAllByRole('definition');
     expect(pressure).toHaveTextContent('—Sem registro');
-    expect(weight).toHaveTextContent('80 kgregistrado agora');
+    expect(weight).toHaveTextContent('80 kgagora');
     expect(region.queryByText(/depois que o médico registrar suas consultas/)).not.toBeInTheDocument();
   });
 

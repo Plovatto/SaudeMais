@@ -2,13 +2,13 @@ import { useId } from 'react';
 import { LuHeart, LuWeight } from 'react-icons/lu';
 import { IconSlot } from '@components/ui';
 import { cx } from '@lib/cx';
-import { formatRelative } from '@lib/date';
-import { formatCount, formatDecimal } from '@lib/number';
+import { formatSince } from '@lib/date';
+import { formatCount } from '@lib/number';
 import type { PatientHome } from './patient-home-api';
 
-type HealthMetrics = PatientHome['metrics'];
+type HomeMetrics = PatientHome['metrics'];
 
-const measures = ({ bloodPressure, weight }: Partial<HealthMetrics>) => [
+const measures = ({ bloodPressure, weight }: Partial<HomeMetrics>) => [
   {
     label: 'Pressão arterial',
     icon: <LuHeart />,
@@ -20,12 +20,12 @@ const measures = ({ bloodPressure, weight }: Partial<HealthMetrics>) => [
   {
     label: 'Peso atual',
     icon: <LuWeight />,
-    reading: weight && { value: `${formatDecimal(weight.kg)} kg`, recordedAt: weight.recordedAt },
+    reading: weight && { value: `${formatCount(weight.kg)} kg`, recordedAt: weight.recordedAt },
   },
 ];
 
 export interface HealthSummaryProps {
-  metrics: HealthMetrics | undefined;
+  metrics: HomeMetrics | undefined;
   className?: string;
 }
 
@@ -54,9 +54,9 @@ export function HealthSummary({ metrics, className }: HealthSummaryProps) {
               {reading ? (
                 <span className="flex flex-col items-center gap-0.5">
                   {reading.value}
-                  <span className="text-text-secondary text-xs font-normal">
-                    registrado {formatRelative(reading.recordedAt)}
-                  </span>
+                  <time dateTime={reading.recordedAt} className="text-text-secondary text-xs font-normal">
+                    {formatSince(reading.recordedAt)}
+                  </time>
                 </span>
               ) : (
                 <>

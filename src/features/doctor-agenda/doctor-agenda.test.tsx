@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { renderApp, serveApi, type ApiCall, type MockResponse } from '@/test/render-app';
 import type { DoctorAppointment } from '@lib/api/models';
+import { GENERIC_ERROR_MESSAGE } from '@lib/messages/errors.pt-BR';
 import { queryKeys } from '@lib/query-keys';
 import type { AgendaTab, DoctorHome } from './doctor-api';
 
@@ -588,14 +589,15 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     const weight = dialog.getByRole('textbox', { name: 'Peso (kg)' });
     expect(systolic).toHaveAttribute('inputmode', 'numeric');
     expect(weight).toHaveAttribute('inputmode', 'decimal');
+    await waitFor(() => expect(systolic).toHaveFocus());
     await user.type(systolic, '120');
     await user.type(dialog.getByRole('textbox', { name: 'Diastólica (mmHg)' }), '80');
-    await user.type(weight, ' 72,4 ');
+    await user.type(weight, ' 72,450 ');
     await user.click(dialog.getByRole('button', { name: 'Concluir consulta' }));
     expect(await screen.findByText('Consulta concluída.')).toBeVisible();
     expect(posts(calls)[0]?.body).toEqual({
       startsAt: PAST,
-      metrics: { systolic: 120, diastolic: 80, weightKg: 72.4 },
+      metrics: { systolic: 120, diastolic: 80, weightKg: 72.45 },
     });
   });
 
@@ -653,11 +655,12 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
       'A sistólica precisa ser maior que a diastólica.',
     ],
     ['a weight out of range', { weight: '501' }, 'weight', 'O peso vai de 1 a 500 kg.'],
+    ['a weight that is not a number', { weight: 'abc' }, 'weight', 'Informe o peso em kg.'],
     [
       'a weight with three decimals',
       { weight: '72,456' },
       'weight',
-      'Informe o peso em kg, com no máximo duas casas decimais.',
+      'Informe o peso com no máximo duas casas decimais.',
     ],
   ])('blocks %s and focuses the field with the error', async (_case, values, field, message) => {
     const { calls } = serve({
@@ -700,6 +703,42 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     expect(posts(calls)).toHaveLength(1);
     expect(screen.getByRole('dialog', { name: 'Concluir consulta' })).toBeVisible();
     expect(screen.queryByText('Dados inválidos.')).not.toBeInTheDocument();
+  });
+
+  it('shows every metric error at once and focuses the first one', async () => {
+    const { calls } = serve({
+      lists: { awaiting: [unrecorded('a1')] },
+      action: () => ({ status: 200, body: {} }),
+    });
+    const { user } = renderApp('/medico/agenda?aba=aguardando-registro');
+    const { scope } = await card(/^Andreia Soares/);
+    const dialog = await openComplete(user, scope);
+    await user.type(dialog.getByRole('textbox', { name: 'Sistólica (mmHg)' }), '120');
+    await user.type(dialog.getByRole('textbox', { name: 'Peso (kg)' }), '72,456');
+    await user.click(dialog.getByRole('button', { name: 'Concluir consulta' }));
+    const diastolic = dialog.getByRole('textbox', { name: 'Diastólica (mmHg)' });
+    await waitFor(() => expect(diastolic).toHaveFocus());
+    expect(diastolic).toHaveAccessibleDescription('Informe a diastólica junto com a sistólica.');
+    expect(dialog.getByRole('textbox', { name: 'Peso (kg)' })).toHaveAccessibleDescription(
+      expect.stringContaining('Informe o peso com no máximo duas casas decimais.'),
+    );
+    expect(posts(calls)).toHaveLength(0);
+  });
+
+  it('keeps the dialog open with an alert after a server error', async () => {
+    serve({
+      lists: { awaiting: [unrecorded('a1')] },
+      action: () => ({ status: 500, body: { code: 'INTERNAL_ERROR', message: 'x' } }),
+    });
+    const { user } = renderApp('/medico/agenda?aba=aguardando-registro');
+    const { scope } = await card(/^Andreia Soares/);
+    const dialog = await complete(user, scope);
+    expect(await dialog.findByRole('alert')).toHaveTextContent(GENERIC_ERROR_MESSAGE);
+    expect(screen.getByRole('dialog', { name: 'Concluir consulta' })).toBeVisible();
+    expect(screen.getAllByRole('alert').filter((alert) => alert.textContent !== '')).toHaveLength(1);
+    await waitFor(() => expect(dialog.getByRole('textbox', { name: 'Peso (kg)' })).toBeEnabled());
+    expect(dialog.getByRole('button', { name: 'Voltar' })).toBeEnabled();
+    expect(dialog.getByRole('button', { name: 'Concluir consulta' })).not.toHaveAttribute('aria-disabled');
   });
 
   it('asks before registering a no-show and sends it only after the confirmation', async () => {

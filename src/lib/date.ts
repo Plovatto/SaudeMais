@@ -82,7 +82,7 @@ const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
 const RELATIVE_DAYS = 7;
 
-export function formatRelative(iso: string, now = new Date()): string {
+function relativeOr(iso: string, now: Date, older: (date: Date) => string): string {
   const date = new Date(iso);
   const elapsed = now.getTime() - date.getTime();
   if (Number.isNaN(elapsed)) return INVALID_DATE;
@@ -91,5 +91,11 @@ export function formatRelative(iso: string, now = new Date()): string {
   if (elapsed < DAY_MS) return relativeTime.format(-Math.floor(elapsed / HOUR_MS), 'hour');
   const days =
     (utcDay(todayInSaoPaulo(now)).getTime() - utcDay(civilDateInSaoPaulo(date)).getTime()) / DAY_MS;
-  return days > RELATIVE_DAYS ? dateTime.format(date) : relativeTime.format(-days, 'day');
+  return days > RELATIVE_DAYS ? older(date) : relativeTime.format(-days, 'day');
 }
+
+export const formatRelative = (iso: string, now = new Date()) =>
+  relativeOr(iso, now, (date) => dateTime.format(date));
+
+export const formatSince = (iso: string, now = new Date()) =>
+  relativeOr(iso, now, (date) => `em ${formatDate(civilDateInSaoPaulo(date))}`);

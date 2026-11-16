@@ -1,8 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { RefObject } from 'react';
+import { useRef, type RefObject } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { isStale, staleMessages } from '@components/bookings/stale-appointment';
+import { isStale } from '@components/bookings/stale-appointment';
 import { Button, Dialog, FormAlert, Input } from '@components/ui';
 import type { DoctorAppointment, HealthMetricsInput } from '@lib/api/models';
 import { formatDateTime } from '@lib/date';
@@ -28,30 +28,34 @@ const metricsSchema = z.object({
         min: 1,
         max: 500,
         decimals: 2,
-        format: 'Informe o peso em kg, com no máximo duas casas decimais.',
+        format: 'Informe o peso em kg.',
+        precision: 'Informe o peso com no máximo duas casas decimais.',
         range: 'O peso vai de 1 a 500 kg.',
       }),
     })
-    .superRefine(({ systolic, diastolic }, ctx) => {
-      if (systolic === undefined && diastolic !== undefined)
-        ctx.addIssue({
-          code: 'custom',
-          path: ['systolic'],
-          message: 'Informe a sistólica junto com a diastólica.',
-        });
-      else if (systolic !== undefined && diastolic === undefined)
-        ctx.addIssue({
-          code: 'custom',
-          path: ['diastolic'],
-          message: 'Informe a diastólica junto com a sistólica.',
-        });
-      else if (systolic !== undefined && diastolic !== undefined && systolic <= diastolic)
-        ctx.addIssue({
-          code: 'custom',
-          path: ['systolic'],
-          message: 'A sistólica precisa ser maior que a diastólica.',
-        });
-    })
+    .superRefine(
+      ({ systolic, diastolic }, ctx) => {
+        if (systolic === undefined && diastolic !== undefined)
+          ctx.addIssue({
+            code: 'custom',
+            path: ['systolic'],
+            message: 'Informe a sistólica junto com a diastólica.',
+          });
+        else if (systolic !== undefined && diastolic === undefined)
+          ctx.addIssue({
+            code: 'custom',
+            path: ['diastolic'],
+            message: 'Informe a diastólica junto com a sistólica.',
+          });
+        else if (typeof systolic === 'number' && typeof diastolic === 'number' && systolic <= diastolic)
+          ctx.addIssue({
+            code: 'custom',
+            path: ['systolic'],
+            message: 'A sistólica precisa ser maior que a diastólica.',
+          });
+      },
+      { when: () => true },
+    )
     .transform(({ systolic, diastolic, weightKg }): HealthMetricsInput | undefined => {
       const metrics = {
         ...(systolic !== undefined && diastolic !== undefined && { systolic, diastolic }),
@@ -71,7 +75,12 @@ interface CompleteFormProps {
   onClose: () => void;
 }
 
-function CompleteForm({ loading, onSubmit, onClose }: CompleteFormProps) {
+function CompleteForm({
+  loading,
+  onSubmit,
+  onClose,
+  firstFieldRef,
+}: CompleteFormProps & { firstFieldRef: RefObject<HTMLInputElement | null> }) {
   const {
     register,
     handleSubmit,
@@ -81,46 +90,48 @@ function CompleteForm({ loading, onSubmit, onClose }: CompleteFormProps) {
     resolver: zodResolver(metricsSchema),
     defaultValues: { metrics: { systolic: '', diastolic: '', weightKg: '' } },
   });
-  const { alert, run } = useFormSubmit(
-    setError,
-    FIELDS,
-    (error) => {
-      if (!isStale(error)) return false;
-      onClose();
-      return true;
-    },
-    staleMessages,
-  );
+  const { alert, run } = useFormSubmit(setError, FIELDS, (error) => {
+    if (!isStale(error)) return false;
+    onClose();
+    return true;
+  });
   const submit = handleSubmit(({ metrics }) => run(() => onSubmit(metrics)));
   const pressure = { inputMode: 'numeric', autoComplete: 'off' } as const;
+  const systolic = register('metrics.systolic');
 
   return (
     <form noValidate onSubmit={(event) => void submit(event)} className="flex flex-col gap-4">
-      <fieldset className="flex flex-col gap-3">
-        <legend className="text-text mb-3 text-[0.9375rem] font-semibold">Pressão arterial</legend>
-        <div className="grid grid-cols-2 gap-3">
-          <Input
-            label="Sistólica (mmHg)"
-            error={errors.metrics?.systolic?.message}
-            {...pressure}
-            {...register('metrics.systolic')}
-          />
-          <Input
-            label="Diastólica (mmHg)"
-            error={errors.metrics?.diastolic?.message}
-            {...pressure}
-            {...register('metrics.diastolic')}
-          />
-        </div>
+      <fieldset disabled={loading} className="flex min-w-0 flex-col gap-4">
+        <fieldset className="flex min-w-0 flex-col gap-3">
+          <legend className="text-text mb-3 text-[0.9375rem] font-semibold">Pressão arterial</legend>
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Sistólica (mmHg)"
+              error={errors.metrics?.systolic?.message}
+              {...pressure}
+              {...systolic}
+              ref={(element) => {
+                systolic.ref(element);
+                firstFieldRef.current = element;
+              }}
+            />
+            <Input
+              label="Diastólica (mmHg)"
+              error={errors.metrics?.diastolic?.message}
+              {...pressure}
+              {...register('metrics.diastolic')}
+            />
+          </div>
+        </fieldset>
+        <Input
+          label="Peso (kg)"
+          hint="Use vírgula para os decimais, como em 72,4."
+          inputMode="decimal"
+          autoComplete="off"
+          error={errors.metrics?.weightKg?.message}
+          {...register('metrics.weightKg')}
+        />
       </fieldset>
-      <Input
-        label="Peso (kg)"
-        hint="Use vírgula para os decimais, como em 72,4."
-        inputMode="decimal"
-        autoComplete="off"
-        error={errors.metrics?.weightKg?.message}
-        {...register('metrics.weightKg')}
-      />
       {alert && <FormAlert>{alert}</FormAlert>}
       <div className="flex flex-wrap justify-end gap-3">
         <Button variant="secondary" disabled={loading} onClick={onClose}>
@@ -146,6 +157,7 @@ export function CompleteDialog({
   onClose,
   fallbackFocus,
 }: CompleteDialogProps) {
+  const firstFieldRef = useRef<HTMLInputElement>(null);
   return (
     <Dialog
       open={appointment !== null}
@@ -156,10 +168,17 @@ export function CompleteDialog({
         `${appointment.patient.fullName}, ${formatDateTime(appointment.startsAt)}. Registre a pressão e o peso medidos na consulta, se houver; os campos são opcionais.`
       }
       dismissible={!loading}
+      initialFocus={firstFieldRef}
       fallbackFocus={fallbackFocus}
     >
       {appointment && (
-        <CompleteForm key={appointment.id} loading={loading} onSubmit={onSubmit} onClose={onClose} />
+        <CompleteForm
+          key={appointment.id}
+          loading={loading}
+          onSubmit={onSubmit}
+          onClose={onClose}
+          firstFieldRef={firstFieldRef}
+        />
       )}
     </Dialog>
   );
