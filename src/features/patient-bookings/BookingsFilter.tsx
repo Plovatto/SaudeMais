@@ -10,7 +10,7 @@ export interface BookingsFilterProps {
   onApply: (filters: BookingFilters) => void;
 }
 
-const activeText = (count: number) => (count === 1 ? '1 filtro ativo' : `${count} filtros ativos`);
+const activeText = (count: number) => (count === 1 ? '1 ativo' : `${count} ativos`);
 
 export function BookingsFilter({ scope, filters, onApply }: BookingsFilterProps) {
   const [draft, setDraft] = useState<BookingFilters | null>(null);

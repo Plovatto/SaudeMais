@@ -40,6 +40,7 @@
   --danger-soft: #feeaea;
   --danger-text: #b94040;
   --danger-strong: #b94040;
+  --danger-strong-hover: #a33838;
   --on-danger: #ffffff;
   --warning: #f2b53b;
   --warning-soft: #fdf6e7;
@@ -72,6 +73,7 @@
   --danger-soft: #3e2a2c;
   --danger-text: #f66c6c;
   --danger-strong: #f45454;
+  --danger-strong-hover: #f56969;
   --on-danger: #0e1516;
   --warning: #f2b53b;
   --warning-soft: #3e3c27;
@@ -89,6 +91,7 @@
 [data-role='patient'] {
   --role: #21bfc2;
   --role-strong: #168284;
+  --role-strong-hover: #137274;
   --on-role: #ffffff;
   --role-soft: #e0f6f6;
   --role-text: #15787a;
@@ -98,6 +101,7 @@
 [data-role='doctor'] {
   --role: #65a8f5;
   --role-strong: #4877ae;
+  --role-strong-hover: #3f6999;
   --on-role: #ffffff;
   --role-soft: #e9f3fe;
   --role-text: #436fa2;
@@ -107,6 +111,7 @@
 [data-role='admin'] {
   --role: #909090;
   --role-strong: #757575;
+  --role-strong-hover: #676767;
   --on-role: #ffffff;
   --role-soft: #efefef;
   --role-text: #6b6b6b;
@@ -115,6 +120,7 @@
 
 :root[data-theme='dark'] [data-role='patient'] {
   --role-strong: #21bfc2;
+  --role-strong-hover: #3cc7c9;
   --on-role: #0e1516;
   --role-soft: #184446;
   --role-text: #21bfc2;
@@ -123,6 +129,7 @@
 
 :root[data-theme='dark'] [data-role='doctor'] {
   --role-strong: #65a8f5;
+  --role-strong-hover: #77b2f6;
   --on-role: #0e1516;
   --role-soft: #273f51;
   --role-text: #6dacf6;
@@ -131,6 +138,7 @@
 
 :root[data-theme='dark'] [data-role='admin'] {
   --role-strong: #909090;
+  --role-strong-hover: #9d9d9d;
   --on-role: #0e1516;
   --role-soft: #31393b;
   --role-text: #a2a2a2;
@@ -160,7 +168,7 @@
   --color-text-muted: var(--text-muted);
   --color-role: var(--role);
   --color-role-strong: var(--role-strong);
-  --color-role-strong-hover: color-mix(in oklab, var(--role-strong), black 12%);
+  --color-role-strong-hover: var(--role-strong-hover);
   --color-on-role: var(--on-role);
   --color-role-soft: var(--role-soft);
   --color-role-text: var(--role-text);
@@ -173,7 +181,7 @@
   --color-danger-soft: var(--danger-soft);
   --color-danger-text: var(--danger-text);
   --color-danger-strong: var(--danger-strong);
-  --color-danger-strong-hover: color-mix(in oklab, var(--danger-strong), black 12%);
+  --color-danger-strong-hover: var(--danger-strong-hover);
   --color-on-danger: var(--on-danger);
   --color-warning: var(--warning);
   --color-warning-soft: var(--warning-soft);
