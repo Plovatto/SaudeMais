@@ -54,7 +54,7 @@ describe('notification targets', () => {
     ['appointment_confirmed', 'patient', '/paciente/agendamentos'],
     ['appointment_cancelled', 'patient', '/paciente/agendamentos?aba=realizados'],
     ['appointment_expired', 'patient', '/paciente/agendamentos?aba=realizados'],
-    ['exam_result_available', 'patient', '/paciente/agendamentos?aba=realizados'],
+    ['exam_result_available', 'patient', '/paciente/exames/b1/resultado'],
     ['appointment_requested', 'doctor', '/medico/agenda?aba=a-confirmar'],
     ['appointment_rescheduled', 'doctor', '/medico/agenda?aba=a-confirmar'],
     ['appointment_cancelled_by_patient', 'doctor', '/medico/agenda?aba=historico'],
@@ -63,5 +63,11 @@ describe('notification targets', () => {
     ['brand_new' as UserNotification['type'], 'doctor', '/medico'],
   ])('opens %s for the %s at %s', (type, role, target) => {
     expect(notificationTarget(notification(type), role)).toBe(target);
+  });
+
+  it('falls back to the past bookings for a result without a booking', () => {
+    expect(notificationTarget({ ...notification('exam_result_available'), bookingId: null }, 'patient')).toBe(
+      '/paciente/agendamentos?aba=realizados',
+    );
   });
 });

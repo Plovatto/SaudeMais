@@ -237,4 +237,33 @@
       animation-iteration-count: infinite !important;
     }
   }
+
+  @media print {
+    *,
+    ::before,
+    ::after {
+      color: #000 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+
+    html {
+      color-scheme: light !important;
+      background: #fff !important;
+    }
+
+    details:not([open]) {
+      display: none;
+    }
+
+    table {
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      border: 1px solid #000 !important;
+      padding-inline: 0.5rem !important;
+    }
+  }
 }

@@ -16,7 +16,9 @@ export function PageHeader({ title, back = false, backFallback = '/', icon, subt
   const navigate = useNavigate();
   const { key } = useLocation();
   const goBack = () => void (key === 'default' ? navigate(backFallback) : navigate(-1));
-  const backButton = back && <IconButton label="Voltar" icon={<LuArrowLeft />} onClick={goBack} />;
+  const backButton = back && (
+    <IconButton label="Voltar" icon={<LuArrowLeft />} onClick={goBack} className="print:hidden" />
+  );
   const subtitleText = subtitle && <p className="text-text-secondary text-sm">{subtitle}</p>;
   if (!icon) {
     return (

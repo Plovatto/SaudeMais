@@ -130,6 +130,20 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     expect(await screen.findByText('Concluída')).toBeVisible();
   });
 
+  it('links to the result only for an exam that has one', async () => {
+    const done = { status: 'completed', startsAt: PAST, actions: closed } as const;
+    serve({ past: [exam('b1', { ...done, hasResult: true }), exam('b2', done)] });
+    const { user, router } = renderApp('/paciente/agendamentos?aba=realizados');
+
+    const links = await screen.findAllByRole('link', { name: /^Ver resultado/ });
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveAccessibleName('Ver resultado: Lab. Central, 10/01/2020, 10:00');
+
+    await user.click(links[0] as HTMLElement);
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/paciente/exames/b1/resultado'));
+  });
+
   it('shows the patient label for each effective status', async () => {
     const statuses: [Partial<PatientBooking>, string][] = [
       [{ status: 'pending' }, 'Pendente'],

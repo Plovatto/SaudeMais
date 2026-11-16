@@ -2,7 +2,7 @@ import { useRef, useState, type ReactNode } from 'react';
 import { LuCheck } from 'react-icons/lu';
 import { PageHeader } from '@components/layout/PageHeader';
 import { ButtonLink, Card, Dialog } from '@components/ui';
-import { areas } from '@constants/areas';
+import { areas, PATIENT_BOOKINGS_PATH } from '@constants/areas';
 
 const PATIENT = areas.patient.base;
 
@@ -38,7 +38,7 @@ export function BookingPage<R>({
         centered
         initialFocus={detailsLink}
       >
-        <ButtonLink ref={detailsLink} to={`${PATIENT}/agendamentos`} className="min-w-48">
+        <ButtonLink ref={detailsLink} to={PATIENT_BOOKINGS_PATH} className="min-w-48">
           Ver detalhes
         </ButtonLink>
       </Dialog>
