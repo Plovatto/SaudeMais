@@ -32,7 +32,7 @@ Os testes em `e2e/` cobrem três fluxos no Chromium e no WebKit, em 402 px e 128
 ```env
 NODE_ENV=development
 CORS_ORIGIN=http://localhost:4173
-APP_PUBLIC_URL=http://localhost:4173/SaudeMais
+APP_PUBLIC_URL=http://localhost:4173
 MAIL_DRIVER=console
 DEMO_ACCOUNTS_ENABLED=true
 ADMIN_EMAIL=admin@e2e.test

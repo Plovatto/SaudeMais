@@ -9,7 +9,7 @@
 
 Interface do Saúde+, uma SPA desenvolvida com React, TypeScript e Vite para agendamento de consultas e exames, com áreas para paciente, médico e administrador.
 
-**Acesse o app:** https://plovatto.github.io/SaudeMais/ · **API:** https://p01--saudemais--pgj2h2jjxzb4.code.run/docs/
+**Acesse o app:** https://saudemais.plovatto.dev/ · **API:** https://saudemais-api.plovatto.dev/docs/
 
 <table>
   <tr>
@@ -143,9 +143,11 @@ Duas configurações são necessárias no repositório:
 - Em **Settings → Pages**, a origem deve estar como **GitHub Actions**.
 - Em **Settings → Secrets and variables → Actions → Variables**, `VITE_API_URL` deve apontar para a API publicada, com `https`.
 
-O build usa `/SaudeMais/` como caminho base, copia `index.html` para `404.html` para que links diretos funcionem e injeta uma Content Security Policy que só permite chamadas para a API.
+O site é servido no domínio próprio `saudemais.plovatto.dev`, e a API em `saudemais-api.plovatto.dev`. No DNS, o subdomínio `saudemais` é um registro `CNAME` apontando para `plovatto.github.io`, e em **Settings → Pages → Custom domain** o valor deve ser `saudemais.plovatto.dev`, com **Enforce HTTPS** ativo.
 
-A origem `https://plovatto.github.io` também precisa constar em `CORS_ORIGIN` na API.
+O build copia `index.html` para `404.html` para que links diretos funcionem e injeta uma Content Security Policy que só permite chamadas para a API.
+
+A origem `https://saudemais.plovatto.dev` também precisa constar em `CORS_ORIGIN` na API.
 
 ## Scripts
 

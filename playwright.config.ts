@@ -23,7 +23,7 @@ export default defineConfig({
   retries: 0,
   reporter: CI ? [['github'], ['html', { open: 'never' }]] : [['list'], ['html', { open: 'never' }]],
   use: {
-    baseURL: `${WEB_ORIGIN}/SaudeMais/`,
+    baseURL: `${WEB_ORIGIN}/`,
     locale: 'pt-BR',
     timezoneId: 'America/Sao_Paulo',
     reducedMotion: 'reduce',
@@ -42,7 +42,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run build && npm run preview -- --strictPort',
-    url: `${WEB_ORIGIN}/SaudeMais/`,
+    url: `${WEB_ORIGIN}/`,
     reuseExistingServer: !CI,
     timeout: 180_000,
     env: { VITE_API_URL: API_URL },
