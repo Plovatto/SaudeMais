@@ -1,6 +1,6 @@
 import type { ExamResult } from '@lib/api/models';
 import { cx } from '@lib/cx';
-import { formatCount } from '@lib/number';
+import { formatMeasurement } from '@lib/number';
 import { FlagChip } from './FlagChip';
 
 export type Version = ExamResult['current'];
@@ -9,7 +9,8 @@ export type ResultItem = NonNullable<Version['items']>[number];
 
 export type HeadingLevel = 2 | 3 | 4 | 5;
 
-const formatValue = (value: ResultItem['value']) => (typeof value === 'number' ? formatCount(value) : value);
+const formatValue = (value: ResultItem['value']) =>
+  typeof value === 'number' ? formatMeasurement(value) : value;
 
 const paragraphs = (report: string) =>
   report
@@ -38,12 +39,14 @@ export function ResultVersion({
   headingLevel: HeadingLevel;
 }) {
   if (!items) {
+    const text = paragraphs(report ?? '');
+    if (text.length === 0) return null;
     const Heading = `h${headingLevel}` as const;
     return (
       <section className="flex flex-col gap-2">
         <Heading className="text-text text-sm font-semibold">Laudo</Heading>
         <div className="text-text flex flex-col gap-3 text-sm leading-relaxed">
-          {paragraphs(report ?? '').map((paragraph, index) => (
+          {text.map((paragraph, index) => (
             <p key={index} className="break-words whitespace-pre-line">
               {paragraph}
             </p>
@@ -65,8 +68,8 @@ export function ResultVersion({
         </tr>
       </thead>
       <tbody className="text-text">
-        {items.map((item) => (
-          <tr key={item.name}>
+        {items.map((item, index) => (
+          <tr key={`${index}-${item.name}`}>
             <th scope="row" className={`${cell} text-start font-medium`}>
               {item.name}
             </th>

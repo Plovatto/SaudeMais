@@ -4,3 +4,7 @@ const percent = new Intl.NumberFormat('pt-BR', { style: 'percent', maximumFracti
 export const formatCount = (value: number) => count.format(value);
 
 export const formatPercent = (value: number) => percent.format(value);
+
+const measurement = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 20 });
+
+export const formatMeasurement = (value: number) => measurement.format(value);
