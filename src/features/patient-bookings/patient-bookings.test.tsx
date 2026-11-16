@@ -137,7 +137,7 @@ describe('patient bookings', { timeout: 15_000 }, () => {
 
     const links = await screen.findAllByRole('link', { name: /^Ver resultado/ });
     expect(links).toHaveLength(1);
-    expect(links[0]).toHaveAccessibleName('Ver resultado: Lab. Central, 10/01/2020, 10:00');
+    expect(links[0]).toHaveAccessibleName('Ver resultado: Lab. Central, Ultrassom, 10/01/2020, 10:00');
 
     await user.click(links[0] as HTMLElement);
 

@@ -23,7 +23,7 @@ export function BookingCard({ booking, onCancel }: BookingCardProps) {
   const leftId = useId();
   const { title } = bookingTitle(booking);
   const { unit, notes, publicCode, cancellation, actions } = booking;
-  const target = `: ${title}, ${formatDateTime(booking.startsAt)}`;
+  const target = `: ${[title, booking.examType?.name, formatDateTime(booking.startsAt)].filter(Boolean).join(', ')}`;
   const blocked = [
     actions.cancelBlockedReason && blockedNotes[actions.cancelBlockedReason],
     actions.rescheduleBlockedReason && rescheduleBlockedNotes[actions.rescheduleBlockedReason],

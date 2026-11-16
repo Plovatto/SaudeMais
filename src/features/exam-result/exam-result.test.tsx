@@ -1,6 +1,8 @@
-import { screen, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderApp, serveApi, type MockResponse } from '@/test/render-app';
+import { ExamResultView } from '@components/exam-results/ExamResultView';
 import type { ExamResult } from '@lib/api/models';
 
 const PAGE = '/paciente/exames/b1/resultado';
@@ -108,10 +110,15 @@ describe('exam result', { timeout: 15_000 }, () => {
     await user.click(await screen.findByRole('button', { name: 'Imprimir' }));
 
     expect(print).toHaveBeenCalledOnce();
+    expect(screen.getByText('Paciente: Ana Maria Silva')).toBeInTheDocument();
+    expect(screen.getByText(/^Impresso em \d{2}\/\d{2}\/\d{4}/)).toBeInTheDocument();
   });
 
-  it('explains a missing result and links back to the past bookings', async () => {
-    serve({ status: 404, body: { code: 'NOT_FOUND', message: 'Not found', fields: {} } });
+  it.each([
+    [404, 'NOT_FOUND'],
+    [400, 'VALIDATION_ERROR'],
+  ])('explains a missing result (%i) and links back to the past bookings', async (status, code) => {
+    serve({ status, body: { code, message: 'API', fields: {} } });
     renderApp(PAGE);
 
     expect(await screen.findByText('Resultado não encontrado')).toBeVisible();
@@ -127,5 +134,41 @@ describe('exam result', { timeout: 15_000 }, () => {
     renderApp(PAGE);
 
     expect(await screen.findByRole('button', { name: 'Tentar de novo' })).toBeVisible();
+  });
+
+  it('keeps every decimal, text values and the narrow reference inside the result cell', async () => {
+    serve({
+      status: 200,
+      body: result({
+        current: version({
+          items: [
+            { name: 'TSH', value: 2.34567, unit: 'mUI/L', referenceRange: '0,4 a 4,0', flag: 'normal' },
+            { name: 'Urina', value: 'Negativo', unit: null, referenceRange: null, flag: 'normal' },
+          ],
+        }),
+      }),
+    });
+    renderApp(PAGE);
+
+    const table = await screen.findByRole('table', { name: 'Itens do exame' });
+    const [tsh, urine] = within(table).getAllByRole('row').slice(1);
+    const tshResult = within(tsh as HTMLElement).getAllByRole('cell')[0] as HTMLElement;
+    expect(within(tshResult).getByText('2,34567')).toBeVisible();
+    expect(within(tshResult).getByText('Referência: 0,4 a 4,0')).toBeInTheDocument();
+    expect(within(urine as HTMLElement).getByText('Negativo')).toBeVisible();
+  });
+
+  it('nests its headings under the given level', async () => {
+    const user = userEvent.setup();
+    render(
+      <ExamResultView
+        result={result({ current: version({ version: 2, status: 'amended' }), previous: [version()] })}
+        headingLevel={3}
+      />,
+    );
+
+    expect(screen.getByRole('heading', { level: 3, name: 'Hemograma' })).toBeVisible();
+    await user.click(screen.getByText('Versões anteriores (1)'));
+    expect(screen.getByRole('heading', { level: 4, name: 'Versão 1' })).toBeVisible();
   });
 });
