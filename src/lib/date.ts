@@ -31,6 +31,15 @@ const dayLabel = new Intl.DateTimeFormat('pt-BR', {
   month: '2-digit',
 });
 
+const shortDate = new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC', day: '2-digit', month: '2-digit' });
+
+const fullDate = new Intl.DateTimeFormat('pt-BR', {
+  timeZone: 'UTC',
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+});
+
 const utcDay = (date: string) => new Date(`${date}T00:00:00.000Z`);
 
 export function formatDateTime(iso: string): string {
@@ -60,6 +69,10 @@ export function addDays(date: string, days: number): string {
 
 export function formatDay(date: string): string {
   return dayLabel.format(utcDay(date));
+}
+
+export function formatDate(date: string, { year = true } = {}): string {
+  return (year ? fullDate : shortDate).format(utcDay(date));
 }
 
 const relativeTime = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto', style: 'short' });
