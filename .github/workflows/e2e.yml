@@ -5,6 +5,12 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      api_ref:
+        description: API-SaudeMais commit, branch or tag to test against (empty uses the pinned commit)
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -20,7 +26,7 @@ jobs:
     timeout-minutes: 30
     services:
       postgres:
-        image: postgres:18-alpine
+        image: postgres:18-alpine@sha256:b6972e1115a4ff8eba5d7f7d19184926d1e16d7d1136ae1e1a7ebf286da0f015
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: saudemais_e2e
@@ -34,6 +40,7 @@ jobs:
     env:
       VITE_API_URL: http://localhost:3001
       ADMIN_EMAIL: admin@e2e.test
+      API_REF: ${{ inputs.api_ref || '1f3b56ed42db18e09323ee77d328d44ebaa910e6' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -41,7 +48,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Plovatto/API-SaudeMais
-          ref: main
+          ref: ${{ env.API_REF }}
           path: api
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -91,4 +98,4 @@ jobs:
           path: |
             playwright-report
             test-results
-          retention-days: 7
+          retention-days: 3
