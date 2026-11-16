@@ -1,0 +1,31 @@
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { SESSION_STORAGE_KEY } from '../../src/lib/auth/token-store';
+import { WEB_ORIGIN } from './env';
+
+export type DemoRole = 'patient' | 'doctor';
+
+interface StorageState {
+  cookies: [];
+  origins: { origin: string; localStorage: { name: string; value: string }[] }[];
+}
+
+const AUTH_DIR = path.join(import.meta.dirname, '..', '.auth');
+
+export const storageStateFor = (role: DemoRole) => path.join(AUTH_DIR, `${role}.json`);
+
+export async function saveSession(role: DemoRole, token: string) {
+  const state: StorageState = {
+    cookies: [],
+    origins: [{ origin: WEB_ORIGIN, localStorage: [{ name: SESSION_STORAGE_KEY, value: token }] }],
+  };
+  await mkdir(AUTH_DIR, { recursive: true });
+  await writeFile(storageStateFor(role), JSON.stringify(state));
+}
+
+export async function tokenFor(role: DemoRole) {
+  const state = JSON.parse(await readFile(storageStateFor(role), 'utf8')) as StorageState;
+  const token = state.origins[0]?.localStorage[0]?.value;
+  if (!token) throw new Error(`No saved session for ${role}`);
+  return token;
+}
