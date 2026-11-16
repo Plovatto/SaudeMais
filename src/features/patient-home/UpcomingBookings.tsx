@@ -3,7 +3,7 @@ import { LuCalendarX } from 'react-icons/lu';
 import { UPCOMING_EMPTY } from '@components/bookings/booking-display';
 import { BookingHeadline } from '@components/bookings/BookingHeadline';
 import { ButtonLink, Card, EmptyState, QueryError, SectionCard, Skeleton } from '@components/ui';
-import { areas } from '@constants/areas';
+import { PATIENT_BOOKINGS_PATH } from '@constants/areas';
 import type { PatientBooking } from '@lib/api/models';
 import { cx } from '@lib/cx';
 
@@ -22,7 +22,7 @@ export function UpcomingBookings({ query, className }: UpcomingBookingsProps) {
       className={className}
       action={
         <ButtonLink
-          to={`${areas.patient.base}/agendamentos`}
+          to={PATIENT_BOOKINGS_PATH}
           aria-label="Ver todos os agendamentos"
           className="rounded-full px-4 text-sm"
         >

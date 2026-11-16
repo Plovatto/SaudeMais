@@ -1,4 +1,4 @@
-import { areas, type Role } from '@constants/areas';
+import { areas, examResultUrl, PATIENT_BOOKINGS_PATH, PATIENT_PAST_PATH, type Role } from '@constants/areas';
 import { AGENDA_TABS, doctorAgendaUrl } from '@constants/doctor-agenda';
 import type { PatientBooking, UserNotification } from '@lib/api/models';
 import { formatDateTime } from '@lib/date';
@@ -77,11 +77,9 @@ export function notificationText({
   return notificationTexts[type]?.(params) ?? DEFAULT_TEXT;
 }
 
-const patientBookings = `${areas.patient.base}/agendamentos`;
-const patientPast = `${patientBookings}?aba=realizados`;
 const doctorHistory = doctorAgendaUrl(AGENDA_TABS.history);
 
-export function notificationTarget({ type }: UserNotification, role: Role): string {
+export function notificationTarget({ type, bookingId }: UserNotification, role: Role): string {
   switch (type) {
     case 'appointment_requested':
     case 'appointment_rescheduled':
@@ -89,12 +87,13 @@ export function notificationTarget({ type }: UserNotification, role: Role): stri
     case 'appointment_cancelled_by_patient':
       return doctorHistory;
     case 'appointment_confirmed':
-      return patientBookings;
+      return PATIENT_BOOKINGS_PATH;
     case 'appointment_cancelled':
-      return role === 'doctor' ? doctorHistory : patientPast;
+      return role === 'doctor' ? doctorHistory : PATIENT_PAST_PATH;
     case 'appointment_expired':
+      return PATIENT_PAST_PATH;
     case 'exam_result_available':
-      return patientPast;
+      return bookingId ? examResultUrl(bookingId) : PATIENT_PAST_PATH;
     case 'user_registered':
       return `${areas.admin.base}/usuarios`;
     default:

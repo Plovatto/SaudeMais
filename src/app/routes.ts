@@ -66,6 +66,7 @@ const areaScreens: Record<string, typeof placeholder> = {
     async () => (await import('@features/book-appointment')).RescheduleAppointmentPage,
   ),
   'exames/:id/reagendar': lazyComponent(async () => (await import('@features/book-exam')).RescheduleExamPage),
+  'exames/:id/resultado': lazyComponent(async () => (await import('@features/exam-result')).ExamResultPage),
 };
 
 const homeScreens: Partial<Record<Area['role'], typeof placeholder>> = {

@@ -26,6 +26,7 @@ export const queryKeys = {
     home: ['patient', 'home'] as const,
     bookings: (params: object) => ['patient', 'bookings', params] as const,
     booking: (kind: string, id: string) => ['patient', 'booking', kind, id] as const,
+    examResult: (bookingId: string) => ['patient', 'exam-result', bookingId] as const,
   },
   notifications: {
     all: ['notifications'] as const,
