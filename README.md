@@ -105,6 +105,42 @@ VITE_API_URL=http://localhost:3001
 | `npm test`             | Roda os testes                            |
 | `npm run test:watch`   | Roda os testes a cada alteração           |
 | `npm run api:types`    | Gera os tipos a partir do contrato da API |
+| `npm run e2e`          | Roda os testes ponta a ponta              |
+| `npm run e2e:ui`       | Abre os testes ponta a ponta no modo UI   |
+
+## Testes ponta a ponta
+
+Os testes em `e2e/` usam [Playwright](https://playwright.dev/) e [axe](https://github.com/dequelabs/axe-core) e cobrem três fluxos: cadastro e agendamento; confirmação pelo médico e notificação ao paciente; o Admin torna um usuário médico e a vaga aparece para o paciente. Cada fluxo roda no Chromium e no WebKit, em 402 px e em 1280 px, e falha se o axe encontrar violação séria ou crítica.
+
+Eles precisam da [API](https://github.com/Plovatto/API-SaudeMais) rodando em `http://localhost:3001` com um banco descartável, nunca o de produção. Na pasta da API, com o `.env` apontando para esse banco:
+
+```env
+NODE_ENV=development
+CORS_ORIGIN=http://localhost:4173
+APP_PUBLIC_URL=http://localhost:4173/SaudeMais
+MAIL_DRIVER=console
+DEMO_ACCOUNTS_ENABLED=true
+ADMIN_EMAIL=admin@e2e.test
+ADMIN_PASSWORD=uma-senha-de-teste-longa
+```
+
+```bash
+npm run db:seed
+npm run dev
+```
+
+Aqui, instale os navegadores uma vez e rode os testes com as mesmas credenciais do Admin:
+
+```bash
+npx playwright install chromium webkit
+ADMIN_EMAIL=admin@e2e.test ADMIN_PASSWORD=uma-senha-de-teste-longa npm run e2e
+```
+
+O Playwright gera o build com `VITE_API_URL=http://localhost:3001` e o serve com `vite preview` em `http://localhost:4173/SaudeMais/`. Os testes recusam uma API fora desta máquina.
+
+A API limita cadastros a 10 por hora por IP e logins a 30 a cada 15 minutos por IP. Cada rodada cria 8 contas e faz cerca de 14 logins, por isso os testes não repetem em caso de falha; para rodar de novo antes do fim da janela, reinicie a API, que guarda os limites na memória.
+
+No CI, o workflow `E2E` sobe a API no commit fixado em `API_REF` (ou no informado ao disparar o workflow manualmente) contra um PostgreSQL 18 temporário. Quando algo falha, o relatório e os traces ficam disponíveis por 3 dias; eles podem conter as credenciais descartáveis da execução, nunca dados reais.
 
 ## Estrutura
 

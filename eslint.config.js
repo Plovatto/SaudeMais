@@ -28,6 +28,11 @@ export default defineConfig(
     },
   },
   { files: ['*.config.{js,ts}'], languageOptions: { globals: globals.node } },
+  {
+    files: ['e2e/**/*.ts'],
+    languageOptions: { globals: globals.node },
+    rules: { 'react-hooks/rules-of-hooks': 'off' },
+  },
   { files: ['eslint.config.js', 'public/*.js'], extends: [tseslint.configs.disableTypeChecked] },
   prettier,
 );

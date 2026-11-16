@@ -26,6 +26,12 @@ jobs:
         with:
           node-version: 26
           cache: npm
+      - name: check the API address uses https
+        run: |
+          case "$VITE_API_URL" in
+            https://*) ;;
+            *) echo "::error::VITE_API_URL must start with https://"; exit 1 ;;
+          esac
       - run: npm ci --ignore-scripts
       - run: npm run lint
       - run: npm test
