@@ -41,7 +41,15 @@ describe('buildCsp', () => {
     for (const url of ['http://localhost:3001', 'http://127.0.0.1:3001', 'http://[::1]:3001']) {
       expect(directives(buildCsp(url)).get('connect-src'), url).toEqual([new URL(url).origin]);
     }
-    expect(() => buildCsp('http://localhost.example.com')).toThrow(/https/);
+    for (const url of [
+      'http://localhost.example.com',
+      'http://127.0.0.1.nip.io',
+      'http://localhost.',
+      'http://127.0.0.2',
+      'ftp://localhost',
+    ]) {
+      expect(() => buildCsp(url), url).toThrow(/https/);
+    }
   });
 
   it('keeps only the origin when the API URL has a path', () => {
