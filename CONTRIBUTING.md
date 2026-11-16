@@ -24,3 +24,31 @@ O front usa uma cópia versionada do contrato da API em `src/lib/api/openapi.jso
 ## Atualizações de dependências
 
 Os pull requests do Dependabot (`dependabot/...`) são a exceção às regras de nome de branch e de issue vinculada: entram depois que o CI passar.
+
+## Testes ponta a ponta
+
+Os testes em `e2e/` cobrem três fluxos no Chromium e no WebKit, em 402 px e 1280 px, e falham se o axe encontrar violação séria ou crítica. Eles precisam da [API](https://github.com/Plovatto/API-SaudeMais) em `http://localhost:3001` com um banco descartável, nunca o de produção. Na pasta da API, com o `.env` criado a partir do `.env.example` e apontando para esse banco:
+
+```env
+NODE_ENV=development
+CORS_ORIGIN=http://localhost:4173
+APP_PUBLIC_URL=http://localhost:4173/SaudeMais
+MAIL_DRIVER=console
+DEMO_ACCOUNTS_ENABLED=true
+ADMIN_EMAIL=admin@e2e.test
+ADMIN_PASSWORD=uma-senha-de-teste-longa
+```
+
+```bash
+npm run db:seed
+npm run dev
+```
+
+Na pasta do front, instale os navegadores uma vez e rode os testes com as mesmas credenciais do administrador:
+
+```bash
+npx playwright install chromium webkit
+ADMIN_EMAIL=admin@e2e.test ADMIN_PASSWORD=uma-senha-de-teste-longa npm run e2e
+```
+
+Cada rodada cria 8 contas e faz cerca de 14 logins. Se os limites por IP da API forem atingidos, reinicie a API, que guarda os limites em memória.
