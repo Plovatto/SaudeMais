@@ -1,6 +1,6 @@
 import { LuChevronRight } from 'react-icons/lu';
 import { Link, useLocation } from 'react-router';
-import { currentPage, findPage, pageUrl, profileUrl, type Area } from '@constants/areas';
+import { NOTIFICATIONS_PATH, parentLink, profileUrl, type Area } from '@constants/areas';
 import { NotificationBell } from '@features/notifications';
 import { useCurrentUser } from '@lib/auth/useSession';
 import { cx } from '@lib/cx';
@@ -9,10 +9,9 @@ import { ThemeToggle } from './ThemeToggle';
 
 function useCrumb(area: Area): { label: string; to: string } | undefined {
   const { pathname } = useLocation();
-  const page = currentPage(area, pathname);
-  if (!page) return { label: 'Conta', to: profileUrl(area.role) };
-  const parent = page.parent === undefined ? undefined : findPage(area, page.parent);
-  return parent && { label: parent.nav?.label ?? parent.title, to: pageUrl(area, parent) };
+  return pathname === NOTIFICATIONS_PATH
+    ? { label: 'Conta', to: profileUrl(area.role) }
+    : parentLink(area, pathname);
 }
 
 function Who({ area }: { area: Area }) {
@@ -20,7 +19,7 @@ function Who({ area }: { area: Area }) {
   return (
     <Link
       to={profileUrl(area.role)}
-      aria-label="Meu perfil"
+      aria-label={`${area.label}, ${user.fullName}. Meu perfil`}
       className="flex min-w-0 flex-1 items-center gap-3 lg:hidden"
     >
       <span
@@ -33,7 +32,7 @@ function Who({ area }: { area: Area }) {
       >
         <area.icon aria-hidden className="size-[22px]" />
       </span>
-      <span aria-hidden className="flex min-w-0 flex-col">
+      <span className="flex min-w-0 flex-col">
         <span className="text-text-secondary text-[1.0625rem] leading-tight font-bold tracking-[-0.01em]">
           {area.label}
         </span>
@@ -68,7 +67,7 @@ function Crumbs({ area }: { area: Area }) {
 
 export function TopBar({ area }: { area: Area }) {
   return (
-    <header className="max-lg:border-border max-lg:bg-surface/88 sticky top-0 z-20 flex min-h-[68px] items-center gap-3 px-4 pt-[env(safe-area-inset-top)] max-lg:border-b max-lg:shadow-[0_8px_20px_-16px_rgb(16_42_41/0.35)] max-lg:backdrop-blur-[14px] lg:static lg:min-h-16 lg:px-8 lg:pt-0 print:hidden">
+    <header className="max-lg:border-border max-lg:bg-surface/88 dark:max-lg:bg-surface/92 sticky top-0 z-20 flex min-h-[68px] items-center gap-3 px-4 pt-[env(safe-area-inset-top)] max-lg:border-b max-lg:ps-[max(1rem,env(safe-area-inset-left))] max-lg:pe-[max(1rem,env(safe-area-inset-right))] max-lg:shadow-[0_8px_20px_-16px_rgb(16_42_41/0.35)] max-lg:backdrop-blur-[14px] lg:static lg:min-h-16 lg:px-8 lg:pt-0 print:hidden">
       <Who area={area} />
       <Crumbs area={area} />
       <div className="flex items-center gap-1">
@@ -83,7 +82,7 @@ export function Masthead() {
   return (
     <div
       aria-hidden
-      className="bg-role-soft absolute inset-x-0 top-0 -z-10 h-[180px] [mask-image:linear-gradient(to_bottom,#000_35%,transparent)] opacity-55 lg:h-[220px] dark:opacity-25 print:hidden"
+      className="bg-role-soft absolute inset-x-0 top-0 -z-10 h-[180px] [mask-image:linear-gradient(to_bottom,#000_35%,transparent)] opacity-55 lg:h-[220px] dark:[mask-image:linear-gradient(to_bottom,#000_10%,transparent_85%)] dark:opacity-25 print:hidden"
     />
   );
 }

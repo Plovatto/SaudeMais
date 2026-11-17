@@ -3,15 +3,12 @@ import { useEffect, useState } from 'react';
 import { LuBell } from 'react-icons/lu';
 import { ButtonLink, CountBadge, Popover } from '@components/ui';
 import { notificationsUrl, type Role } from '@constants/areas';
-import { notificationsQuery, unreadCountQuery } from '@lib/api/notifications-api';
+import { notificationsQuery, unreadText, useUnreadCount } from '@lib/api/notifications-api';
 import { NotificationList } from './NotificationList';
 import { ReadAllButton } from './ReadAllButton';
 
 const PREVIEW_SIZE = 5;
 const BADGE_MAX = 9;
-const POLL_INTERVAL_MS = 120_000;
-
-const unreadText = (count: number) => (count === 1 ? '1 não lida' : `${count} não lidas`);
 
 function NotificationsPreview({ role }: { role: Role }) {
   const query = useQuery(notificationsQuery(role, 1, PREVIEW_SIZE));
@@ -52,11 +49,7 @@ function useIncreaseAnnouncement(count: number | undefined) {
 }
 
 export function NotificationBell({ role }: { role: Role }) {
-  const count = useQuery({
-    ...unreadCountQuery(role),
-    refetchInterval: POLL_INTERVAL_MS,
-    refetchIntervalInBackground: false,
-  }).data;
+  const count = useUnreadCount(role);
   const announcement = useIncreaseAnnouncement(count);
   const unread = count ?? 0;
   return (

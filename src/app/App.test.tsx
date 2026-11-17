@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { Role } from '@constants/areas';
-import { renderApp, renderRouter } from '@/test/render-app';
+import { mockApi, renderApp, renderRouter } from '@/test/render-app';
 
 const ALL_ROLES: Role[] = ['patient', 'doctor', 'admin'];
 
@@ -60,15 +60,26 @@ describe('role areas', () => {
   });
 
   it.each([
-    ['/paciente/consultas/1/reagendar', 1],
-    ['/paciente/exames/1/resultado', 1],
-    ['/admin/usuarios/1', 1],
-    ['/admin/configuracoes/especialidades', 3],
-  ])('marks the section of %s without calling it the current page', async (path, index) => {
+    ['/paciente/consultas/1/reagendar', 'Meus agendamentos'],
+    ['/paciente/exames/1/resultado', 'Meus agendamentos'],
+    ['/admin/usuarios/1', 'Usuários'],
+    ['/admin/configuracoes/especialidades', 'Configurações'],
+  ])('marks the section of %s without calling it the current page', async (path, label) => {
     renderAt(path);
 
     const menu = await navigation('Menu');
-    expect(menu.getAllByRole('link')[index]).toHaveAttribute('aria-current', 'true');
+    const item = menu.getAllByRole('link').find((link) => itemName(link) === label);
+    expect(item).toHaveAttribute('aria-current', 'true');
+  });
+
+  it('keeps the ids of the current address in the link to the parent page', async () => {
+    renderAt('/admin/usuarios/42/medico');
+
+    const crumbs = await navigation('Você está em');
+    expect(crumbs.getByRole('link', { name: 'Editar usuário' })).toHaveAttribute(
+      'href',
+      '/admin/usuarios/42',
+    );
   });
 
   it('shows where the page sits and links back to its parent', async () => {
@@ -108,7 +119,7 @@ describe('role areas', () => {
     await waitFor(() => expect(document.title).toBe('Agendar consulta · Saúde+'));
     expect(heading).toHaveFocus();
     expect(menu.getByRole('link', { name: 'Agendar consulta' })).toHaveAttribute('aria-current', 'page');
-    expect(menu.getAllByRole('link')[0]).not.toHaveAttribute('aria-current');
+    expect(menu.getByRole('link', { name: 'Início' })).not.toHaveAttribute('aria-current');
   });
 
   it('hides the bottom bar on booking steps', async () => {
@@ -137,6 +148,15 @@ describe('account', () => {
     await screen.findByRole('heading', { level: 1, name: 'Meu perfil' });
 
     expect(screen.queryByRole('link', { name: 'Trocar perfil' })).not.toBeInTheDocument();
+  });
+
+  it('leaves the account from the profile page', async () => {
+    mockApi({ status: 204 });
+    const { user, router } = renderAt('/admin/perfil');
+
+    await user.click(await screen.findByRole('button', { name: 'Sair' }));
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/login'));
   });
 
   it('switches the theme from the top bar and keeps it on public pages', async () => {

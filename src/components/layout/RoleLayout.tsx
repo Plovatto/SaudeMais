@@ -12,7 +12,8 @@ export function RoleLayout() {
   const area = areas[useAreaRole()];
   const { pathname } = useLocation();
   const { menu, account, tabs, fab } = useNavItems(area);
-  const flow = currentPage(area, pathname)?.flow === true;
+  const page = currentPage(area, pathname);
+  const flow = page?.flow === true;
   return (
     <div data-role={area.role} className={cx(pageSurface, 'flex')}>
       <SkipLink />
@@ -28,12 +29,12 @@ export function RoleLayout() {
               : 'pb-[calc(6.5rem+env(safe-area-inset-bottom))]',
           )}
         >
-          <div key={pathname} data-shell className="motion-safe:animate-rise">
+          <div key={page?.path ?? pathname} data-shell className="motion-safe:animate-rise">
             <Outlet />
           </div>
         </MainContent>
       </div>
-      {!flow && <BottomNav area={area} tabs={tabs} fab={fab} />}
+      {!flow && <BottomNav tabs={tabs} fab={fab} />}
     </div>
   );
 }

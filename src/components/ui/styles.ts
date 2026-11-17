@@ -14,13 +14,14 @@ export const buttonVariants = {
   'danger-outline':
     'border border-border-strong bg-surface text-danger-text shadow-button can-hover:border-danger can-hover:bg-danger-soft',
   'danger-ghost': 'border border-transparent text-danger-text can-hover:bg-danger-soft',
-  'success-outline': 'border border-success bg-success-soft text-success-text can-hover:bg-success-soft',
+  'success-outline':
+    'border border-success bg-success-soft text-success-text can-hover:border-success-strong',
 };
 
 export type ButtonVariant = keyof typeof buttonVariants;
 
 export const buttonSizes = {
-  sm: 'min-h-9 rounded-lg px-3 text-[0.8125rem] font-semibold lg:min-h-8',
+  sm: 'min-h-9 rounded-field px-3 text-[0.8125rem] font-semibold lg:min-h-8',
   md: 'min-h-11 rounded-field px-4 text-sm font-semibold lg:min-h-10',
   lg: 'min-h-[50px] rounded-tile px-6 text-[0.9375rem] font-semibold lg:min-h-12',
 };
@@ -42,7 +43,7 @@ export function buttonClass({ variant = 'primary', size = 'md', fullWidth = fals
 }
 
 export const squareButton = cx(
-  'relative inline-flex size-10 shrink-0 items-center justify-center rounded-field transition-colors duration-150',
+  'relative inline-flex size-11 shrink-0 lg:size-10 items-center justify-center rounded-field transition-colors duration-150',
   disabledState,
 );
 
@@ -51,7 +52,7 @@ export const controlInput =
 
 export function controlBox(invalid: boolean): string {
   return cx(
-    'flex min-h-[50px] items-center gap-2.5 rounded-tile border bg-surface px-3 text-text shadow-field transition-[border-color,box-shadow] duration-150 lg:min-h-[42px] has-[:is(input,select,textarea):focus-visible]:border-role-strong has-[:is(input,select,textarea):focus-visible]:shadow-[0_0_0_3px_var(--role-soft-strong)] has-[:is(input,select,textarea):disabled]:cursor-not-allowed has-[:is(input,select,textarea):disabled]:bg-surface-muted has-[:is(input,select,textarea):disabled]:shadow-none has-[:is(input,select,textarea):disabled]:opacity-60',
+    'flex min-h-[50px] items-center gap-2.5 rounded-tile border bg-surface px-3 text-text shadow-field transition-[border-color,box-shadow] duration-150 lg:min-h-[42px] has-[:is(input,select,textarea):focus-visible]:border-role-strong has-[:is(input,select,textarea):focus-visible]:outline-2 has-[:is(input,select,textarea):focus-visible]:outline-offset-2 has-[:is(input,select,textarea):focus-visible]:outline-focus has-[:is(input,select,textarea):focus-visible]:shadow-[0_0_0_3px_var(--role-soft-strong)] has-[:is(input,select,textarea):disabled]:cursor-not-allowed has-[:is(input,select,textarea):disabled]:bg-surface-muted has-[:is(input,select,textarea):disabled]:shadow-none has-[:is(input,select,textarea):disabled]:opacity-60',
     invalid
       ? 'border-danger shadow-[0_0_0_3px_var(--danger-soft)]'
       : 'border-border-strong can-hover:border-border-field',

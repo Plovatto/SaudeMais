@@ -14,7 +14,7 @@ import {
   LuTrendingUp,
   LuUsers,
 } from 'react-icons/lu';
-import { matchPath } from 'react-router';
+import { generatePath, matchPath } from 'react-router';
 
 export type Role = 'patient' | 'doctor' | 'admin';
 
@@ -153,11 +153,26 @@ export function pageUrl(area: Area, page: Pick<AreaPage, 'path'>): string {
 
 export const findPage = (area: Area, path: string) => area.pages.find((page) => page.path === path);
 
+const patternOf = (area: Area, page: AreaPage) => (page.path ? `${area.base}/${page.path}` : area.base);
+
+const matchOf = (area: Area, page: AreaPage, pathname: string) =>
+  matchPath({ path: patternOf(area, page), end: true }, pathname);
+
 export function currentPage(area: Area, pathname: string): AreaPage | undefined {
-  return area.pages.find(
-    (page) =>
-      matchPath({ path: page.path ? `${area.base}/${page.path}` : area.base, end: true }, pathname) !== null,
-  );
+  return area.pages.find((page) => matchOf(area, page, pathname) !== null);
+}
+
+export function parentLink(area: Area, pathname: string): { label: string; to: string } | undefined {
+  const page = currentPage(area, pathname);
+  const parent = page?.parent === undefined ? undefined : findPage(area, page.parent);
+  if (!page || !parent) return undefined;
+  return {
+    label: parent.nav?.label ?? parent.title,
+    to: generatePath(
+      patternOf(area, parent).replace(/\/\*$/, ''),
+      matchOf(area, page, pathname)?.params ?? {},
+    ),
+  };
 }
 
 export type NavState = 'page' | 'section' | undefined;
@@ -196,7 +211,5 @@ export const examResultUrl = (bookingId: string) => `${areas.patient.base}/exame
 
 export function parentUrl(pathname: string): string | undefined {
   const area = Object.values(areas).find(({ base }) => pathname === base || pathname.startsWith(`${base}/`));
-  const page = area && currentPage(area, pathname);
-  const parent = area && page?.parent !== undefined ? findPage(area, page.parent) : undefined;
-  return area && parent && pageUrl(area, parent);
+  return area && parentLink(area, pathname)?.to;
 }

@@ -25,12 +25,17 @@ export function PageHeader({
   const { pathname } = useLocation();
   const target = parentUrl(pathname) ?? (back ? backFallback : undefined);
   return (
-    <header className={cx('mb-4 flex flex-wrap items-start gap-x-4 gap-y-3 lg:mb-6 lg:items-end', className)}>
+    <header
+      className={cx(
+        'mb-4 flex flex-wrap items-start gap-x-1.5 gap-y-2.5 lg:mb-6 lg:items-end lg:gap-x-4 lg:gap-y-3',
+        className,
+      )}
+    >
       {target && (
         <Link
           to={target}
           aria-label="Voltar"
-          className="text-text-secondary can-hover:bg-surface-strong rounded-field -ms-2 -mt-0.5 grid size-[34px] shrink-0 place-items-center transition-colors duration-150 lg:in-data-shell:hidden print:hidden"
+          className="text-text-secondary can-hover:bg-surface-strong rounded-field relative -ms-2 -mt-0.5 grid size-[34px] shrink-0 place-items-center transition-colors duration-150 after:absolute after:-inset-[5px] lg:in-data-shell:hidden print:hidden"
         >
           <LuArrowLeft aria-hidden className="size-[18px]" />
         </Link>

@@ -1,16 +1,15 @@
 import { Link } from 'react-router';
-import { pageUrl, type Area } from '@constants/areas';
 import { cx } from '@lib/cx';
-import { badgeText, countLabel, type NavItem } from './useNavItems';
+import { ariaCurrent, badgeText, countLabel, type NavItem } from './useNavItems';
 
 function Tab({ item }: { item: NavItem }) {
   return (
     <li className="min-w-0">
       <Link
         to={item.to}
-        aria-current={item.active === 'section' ? 'true' : item.active}
+        aria-current={ariaCurrent(item)}
         className={cx(
-          'pressable:scale-95 relative flex min-h-12 flex-col items-center justify-center gap-1 text-[0.6875rem] font-semibold transition-colors duration-150',
+          'pressable:scale-95 relative flex min-h-12 flex-col items-center justify-center gap-1 text-[0.6875rem] font-semibold transition-[color,scale] duration-150',
           item.active ? 'text-role-text [&_svg]:text-role-strong' : 'text-text-muted',
         )}
       >
@@ -27,12 +26,12 @@ function Tab({ item }: { item: NavItem }) {
   );
 }
 
-export function BottomNav({ area, tabs, fab }: { area: Area; tabs: NavItem[]; fab: Area['fab'] }) {
+export function BottomNav({ tabs, fab }: { tabs: NavItem[]; fab: NavItem | undefined }) {
   const middle = Math.ceil(tabs.length / 2);
   return (
     <nav
       aria-label="Principal"
-      className="border-border bg-surface shadow-dock fixed inset-x-0 bottom-0 z-30 border-t px-2 pt-2 pb-[calc(0.625rem+env(safe-area-inset-bottom))] lg:hidden print:hidden"
+      className="border-border bg-surface shadow-dock fixed inset-x-0 bottom-0 z-30 border-t ps-[max(0.5rem,env(safe-area-inset-left))] pe-[max(0.5rem,env(safe-area-inset-right))] pt-2 pb-[calc(0.625rem+env(safe-area-inset-bottom))] lg:hidden print:hidden"
     >
       <ul className="grid auto-cols-fr grid-flow-col items-end">
         {tabs.slice(0, middle).map((item) => (
@@ -41,9 +40,10 @@ export function BottomNav({ area, tabs, fab }: { area: Area; tabs: NavItem[]; fa
         {fab && (
           <li>
             <Link
-              to={pageUrl(area, fab)}
+              to={fab.to}
               aria-label={fab.label}
-              className="bg-role-strong text-on-role pressable:scale-95 mx-auto -mt-[22px] grid size-[52px] place-items-center rounded-2xl shadow-[0_8px_20px_-6px_var(--role-strong),0_0_0_4px_var(--surface)] transition-transform duration-150 ease-out"
+              aria-current={ariaCurrent(fab)}
+              className="bg-role-strong text-on-role pressable:scale-95 rounded-card mx-auto -mt-[22px] grid size-[52px] place-items-center shadow-[0_8px_20px_-6px_var(--role-strong),0_0_0_4px_var(--surface)] transition-transform duration-150 ease-out"
             >
               <fab.icon aria-hidden className="size-[22px]" />
             </Link>

@@ -1,9 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
 import type { IconType } from 'react-icons';
 import { LuBell, LuUser } from 'react-icons/lu';
 import { useLocation } from 'react-router';
 import {
-  findPage,
   navState,
   NOTIFICATIONS_PATH,
   notificationsUrl,
@@ -11,7 +9,7 @@ import {
   profileUrl,
   type Area,
 } from '@constants/areas';
-import { unreadCountQuery } from '@lib/api/notifications-api';
+import { unreadText, useUnreadCount } from '@lib/api/notifications-api';
 import { useNavBadges } from './useNavBadges';
 
 export interface NavItem {
@@ -27,32 +25,17 @@ export interface NavItem {
 
 export const countLabel = (count: number) => (count > 99 ? '99+' : String(count));
 
-const BADGE_WORDS: Record<string, [string, string]> = {
-  notificacoes: ['não lida', 'não lidas'],
-  agendamentos: ['agendado', 'agendados'],
-};
-
 export const badgeText = ({ key, badge = 0 }: NavItem) => {
-  const [one, many] = BADGE_WORDS[key] ?? ['pendente', 'pendentes'];
-  return `${badge} ${badge === 1 ? one : many}`;
+  if (key === 'notificacoes') return unreadText(badge);
+  return `${badge} ${key === 'agendamentos' ? 'agendado' : 'pendente'}${badge === 1 ? '' : 's'}`;
 };
 
-const POLL_INTERVAL_MS = 120_000;
-
-export function useUnreadCount(role: Area['role']): number {
-  return (
-    useQuery({
-      ...unreadCountQuery(role),
-      refetchInterval: POLL_INTERVAL_MS,
-      refetchIntervalInBackground: false,
-    }).data ?? 0
-  );
-}
+export const ariaCurrent = ({ active }: Pick<NavItem, 'active'>) => (active === 'section' ? 'true' : active);
 
 export function useNavItems(area: Area) {
   const { pathname } = useLocation();
   const badges = useNavBadges(area.role);
-  const unread = useUnreadCount(area.role);
+  const unread = useUnreadCount(area.role) ?? 0;
   const menu: NavItem[] = area.pages.flatMap((page) =>
     page.nav
       ? [
@@ -89,6 +72,13 @@ export function useNavItems(area: Area) {
     },
   ];
   const tabs = area.tabs.flatMap((path) => menu.find((item) => item.key === path) ?? []);
-  const fabPage = area.fab && findPage(area, area.fab.path);
-  return { menu, account, tabs: tabs.length < 4 ? [...tabs, ...account] : tabs, fab: fabPage && area.fab };
+  const fab: NavItem | undefined = area.fab && {
+    key: area.fab.path,
+    to: pageUrl(area, area.fab),
+    label: area.fab.label,
+    short: area.fab.label,
+    icon: area.fab.icon,
+    active: navState(area, area.fab.path, pathname),
+  };
+  return { menu, account, tabs: tabs.length < 4 ? [...tabs, ...account] : tabs, fab };
 }
