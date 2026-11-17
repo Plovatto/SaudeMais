@@ -44,7 +44,12 @@ export function LoginPage() {
     try {
       const session = await login(values);
       startSession(session.token, values.remember);
-      queryClient.setQueryData(sessionQuery.queryKey, session.user);
+      queryClient.setQueryData(sessionQuery.queryKey, {
+        birthDate: null,
+        passwordChangedAt: null,
+        ...session.user,
+      });
+      void queryClient.invalidateQueries({ queryKey: sessionQuery.queryKey });
       await navigate(homeFor(session.user.roles, params.get('returnTo')), { replace: true });
     } catch (error) {
       setAlert(applyApiErrors(error, setError, ['email', 'password']));

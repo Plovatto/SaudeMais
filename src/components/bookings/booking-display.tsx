@@ -10,7 +10,9 @@ import {
 } from 'react-icons/lu';
 import type { StatusChipProps } from '@components/ui';
 import type { Role } from '@constants/areas';
+import { visitTypeLabels } from '@constants/visit-types';
 import type { PatientBooking } from '@lib/api/models';
+import { formatTime } from '@lib/date';
 
 export interface StatusDisplay {
   label: string;
@@ -46,11 +48,18 @@ export function bookingStatus(
   return statusDisplay(status === 'confirmed' && hasStarted(startsAt, now) ? 'awaiting' : status, viewer);
 }
 
-export function bookingTitle({ kind, doctor, specialty, examType, unit }: PatientBooking) {
+export function bookingTitle({ kind, doctor, specialty, examType, visitType }: PatientBooking) {
   return kind === 'exam'
-    ? { title: unit.name, subtitle: `Exame · ${examType?.name ?? ''}` }
-    : { title: doctor?.fullName ?? '', subtitle: specialty?.name ?? '' };
+    ? { title: examType?.name ?? 'Exame', subtitle: 'Exame', kindLabel: 'Exame' }
+    : {
+        title: doctor?.fullName ?? '',
+        subtitle: [specialty?.name, visitType && visitTypeLabels[visitType]].filter(Boolean).join(' · '),
+        kindLabel: visitType ? visitTypeLabels[visitType] : 'Consulta',
+      };
 }
+
+export const bookingMeta = (booking: PatientBooking) =>
+  [formatTime(booking.startsAt), bookingTitle(booking).kindLabel, booking.unit.name].join(' · ');
 
 export const UPCOMING_EMPTY = {
   title: 'Nenhum agendamento futuro',

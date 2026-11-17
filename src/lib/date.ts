@@ -51,9 +51,13 @@ export function formatTime(iso: string): string {
   return timeOfDay.format(new Date(iso));
 }
 
+function partsOf(format: Intl.DateTimeFormat, instant: Date) {
+  const parts = format.formatToParts(instant);
+  return (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? '';
+}
+
 export function civilDateInSaoPaulo(instant: Date): string {
-  const part = (type: Intl.DateTimeFormatPartTypes) =>
-    civilDate.formatToParts(instant).find((item) => item.type === type)?.value ?? '';
+  const part = partsOf(civilDate, instant);
   return `${part('year')}-${part('month')}-${part('day')}`;
 }
 
@@ -99,3 +103,29 @@ export const formatRelative = (iso: string, now = new Date()) =>
 
 export const formatSince = (iso: string, now = new Date()) =>
   relativeOr(iso, now, (date) => `em ${formatDate(civilDateInSaoPaulo(date))}`);
+
+const zonedParts = new Intl.DateTimeFormat('pt-BR', {
+  timeZone: TIME_ZONE,
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+});
+
+const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
+const civilDay = (iso: string) => partsOf(dayLabel, utcDay(civilDateInSaoPaulo(new Date(iso))));
+
+export function dayTile(iso: string): { weekday: string; day: string } {
+  const part = civilDay(iso);
+  return { weekday: part('weekday').replace('.', ''), day: part('day') };
+}
+
+export function formatShortDay(iso: string): string {
+  const part = civilDay(iso);
+  return `${capitalize(part('weekday').replace('.', ''))}, ${part('day')}/${part('month')}`;
+}
+
+export function formatLongDay(iso: string): string {
+  const part = partsOf(zonedParts, new Date(iso));
+  return `${capitalize(part('weekday').replace('-feira', ''))}, ${part('day')} de ${part('month')}`;
+}

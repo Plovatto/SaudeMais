@@ -1,9 +1,8 @@
-import { useId } from 'react';
 import { LuHeart, LuWeight } from 'react-icons/lu';
-import { IconSlot } from '@components/ui';
-import { cx } from '@lib/cx';
+import { SectionCard } from '@components/ui';
+import { tile } from '@components/ui/styles';
 import { formatSince } from '@lib/date';
-import { formatCount } from '@lib/number';
+import { formatCount, formatMeasurement } from '@lib/number';
 import type { PatientHome } from './patient-home-api';
 
 type HomeMetrics = PatientHome['metrics'];
@@ -13,64 +12,57 @@ const measures = ({ bloodPressure, weight }: Partial<HomeMetrics>) => [
     label: 'Pressão arterial',
     icon: <LuHeart />,
     reading: bloodPressure && {
-      value: `${formatCount(bloodPressure.systolic)}/${formatCount(bloodPressure.diastolic)} mmHg`,
+      value: `${formatCount(bloodPressure.systolic)}/${formatCount(bloodPressure.diastolic)}`,
+      unit: 'mmHg',
       recordedAt: bloodPressure.recordedAt,
     },
   },
   {
-    label: 'Peso atual',
+    label: 'Peso',
     icon: <LuWeight />,
-    reading: weight && { value: `${formatCount(weight.kg)} kg`, recordedAt: weight.recordedAt },
+    reading: weight && { value: formatMeasurement(weight.kg), unit: 'kg', recordedAt: weight.recordedAt },
   },
 ];
 
-export interface HealthSummaryProps {
-  metrics: HomeMetrics | undefined;
-  className?: string;
-}
-
-export function HealthSummary({ metrics, className }: HealthSummaryProps) {
-  const titleId = useId();
+export function HealthSummary({ metrics }: { metrics: HomeMetrics | undefined }) {
   const items = measures(metrics ?? {});
   return (
-    <section
-      aria-labelledby={titleId}
-      className={cx('rounded-card bg-role-soft text-text flex flex-col gap-4 p-5', className)}
-    >
-      <h2 id={titleId} className="font-semibold">
-        Minha saúde
-      </h2>
-      <dl className="grid grid-cols-2 gap-4">
+    <SectionCard title="Minha saúde">
+      <ul className="divide-border flex flex-col divide-y">
         {items.map(({ label, icon, reading }) => (
-          <div
-            key={label}
-            className="rounded-tile bg-surface flex flex-col-reverse items-center gap-1 px-3 py-4 text-center"
-          >
-            <dt className="text-text-secondary text-xs">{label}</dt>
-            <dd className="flex flex-col items-center gap-2 text-lg font-bold">
-              <IconSlot className="bg-role-soft text-role-text size-10 justify-center rounded-full text-xl">
-                {icon}
-              </IconSlot>
-              {reading ? (
-                <span className="flex flex-col items-center gap-0.5">
-                  {reading.value}
-                  <time dateTime={reading.recordedAt} className="text-text-secondary text-xs font-normal">
-                    {formatSince(reading.recordedAt)}
-                  </time>
-                </span>
-              ) : (
-                <>
-                  <span aria-hidden>—</span>
-                  <span className="sr-only">Sem registro</span>
-                </>
-              )}
-            </dd>
-          </div>
+          <li key={label} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+            <span aria-hidden className={tile}>
+              {icon}
+            </span>
+            <p className="flex min-w-0 flex-1 flex-col-reverse">
+              <span className="text-text-muted text-xs">{label}</span>
+              <span className="text-text text-sm font-semibold tabular-nums">
+                {reading ? (
+                  <>
+                    {reading.value}{' '}
+                    <span className="text-text-muted text-xs font-medium">{reading.unit}</span>
+                  </>
+                ) : (
+                  <>
+                    <span aria-hidden>—</span>
+                    <span className="sr-only">Sem registro</span>
+                  </>
+                )}
+              </span>
+            </p>
+            {reading && (
+              <time dateTime={reading.recordedAt} className="text-text-muted shrink-0 text-xs">
+                {formatSince(reading.recordedAt)}
+              </time>
+            )}
+          </li>
         ))}
-      </dl>
+      </ul>
       {metrics && items.every(({ reading }) => !reading) && (
-        <p className="text-sm">Os valores aparecem aqui depois que o médico registrar suas consultas.</p>
+        <p className="text-text-muted text-xs">
+          Os valores aparecem aqui depois que o médico registrar suas consultas.
+        </p>
       )}
-    </section>
+    </SectionCard>
   );
 }
