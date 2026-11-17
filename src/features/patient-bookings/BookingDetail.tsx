@@ -10,6 +10,7 @@ import {
   FormAlert,
   IconButton,
   InfoList,
+  SheetMore,
   StatusChip,
   type InfoItem,
 } from '@components/ui';
@@ -193,7 +194,7 @@ export function BookingDetail({ booking, titleId, onCancel, onClose, tips = fals
 
 function Tips({ id, title, items }: { id: string; title: string; items: string[] }) {
   return (
-    <div className="border-border flex flex-col gap-3 border-t pt-5">
+    <SheetMore className="border-border flex flex-col gap-3 border-t pt-5">
       <p id={id} className={overline}>
         {title}
       </p>
@@ -207,6 +208,6 @@ function Tips({ id, title, items }: { id: string; title: string; items: string[]
           </li>
         ))}
       </ul>
-    </div>
+    </SheetMore>
   );
 }

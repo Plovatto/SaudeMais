@@ -43,7 +43,7 @@ function Who({ area }: { area: Area }) {
 }
 
 function Crumbs({ area }: { area: Area }) {
-  const { title } = useRouteHandle();
+  const { title, crumb: current } = useRouteHandle();
   const crumb = useCrumb(area);
   return (
     <nav
@@ -59,7 +59,7 @@ function Crumbs({ area }: { area: Area }) {
         </>
       )}
       <span aria-current="page" className="text-text truncate font-semibold">
-        {title}
+        {current ?? title}
       </span>
     </nav>
   );

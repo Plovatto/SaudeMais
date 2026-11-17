@@ -4,6 +4,7 @@ import { useCurrentUser } from '@lib/auth/useSession';
 
 export interface RouteHandle {
   title?: string;
+  crumb?: string;
   role?: Role;
   surface?: 'brand';
 }

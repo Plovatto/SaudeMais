@@ -15,7 +15,7 @@ export function Drawer({ open, onClose, title, fallbackFocus, children }: Drawer
   return (
     <Dialog open={open} onClose={onClose} title={title} placement="sheet" fallbackFocus={fallbackFocus} bare>
       <div className="flex min-h-full flex-col">
-        <header className="border-border bg-surface sticky top-0 z-10 flex min-h-[61px] items-center gap-3 border-b px-5 py-3.5">
+        <header className="border-border bg-surface sticky top-0 z-10 flex min-h-[61px] items-center gap-3 border-b px-5 py-3.5 max-sm:top-[30px]">
           <p aria-hidden className="text-text flex-1 text-[0.9375rem] font-semibold tracking-[-0.01em]">
             {title}
           </p>

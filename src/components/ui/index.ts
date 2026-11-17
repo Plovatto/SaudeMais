@@ -27,6 +27,7 @@ export { RadioChips, type RadioChipsProps } from './RadioChips';
 export { SearchInput, type SearchInputProps } from './SearchInput';
 export { SectionCard, type SectionCardProps } from './SectionCard';
 export { Select, type SelectProps } from './Select';
+export { SheetMore } from './SheetMore';
 export { Skeleton } from './Skeleton';
 export { Spinner } from './Spinner';
 export { StackedColumns, type ChartRow, type ChartSeries, type StackedColumnsProps } from './StackedColumns';

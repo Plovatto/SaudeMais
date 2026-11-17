@@ -20,15 +20,16 @@ const notFound: RouteObject = {
 interface PageOptions {
   lazy?: typeof placeholder;
   surface?: 'brand';
+  crumb?: string | undefined;
 }
 
 const page = (
   path: string,
   title: string,
-  { lazy = placeholder, surface }: PageOptions = {},
+  { lazy = placeholder, surface, crumb }: PageOptions = {},
 ): RouteObject => ({
   ...(path === '' ? { index: true } : { path }),
-  handle: { title, ...(surface && { surface }) },
+  handle: { title, ...(surface && { surface }), ...(crumb && { crumb }) },
   ErrorBoundary: RouteError,
   lazy,
 });
@@ -93,7 +94,12 @@ const roleRoute = (path: string, children: RouteObject[], role?: Area['role']): 
 const areaRoute = (area: Area): RouteObject =>
   roleRoute(
     area.base,
-    [...area.pages.map(({ path, title }) => page(path, title, { lazy: screenFor(area, path) })), notFound],
+    [
+      ...area.pages.map(({ path, title, crumb }) =>
+        page(path, title, { lazy: screenFor(area, path), crumb }),
+      ),
+      notFound,
+    ],
     area.role,
   );
 
