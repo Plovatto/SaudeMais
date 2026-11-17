@@ -1,8 +1,11 @@
 import { useEffect, useEffectEvent, useId, useRef, type ReactNode, type RefObject } from 'react';
 import { LuX } from 'react-icons/lu';
+import { useMediaQuery } from '@hooks/useMediaQuery';
+import { SHEET_QUERY, useSheetDrag } from '@hooks/useSheetDrag';
 import { cx } from '@lib/cx';
 import { IconButton } from './IconButton';
 import { IconSlot } from './IconSlot';
+import { SheetGrab } from './SheetGrab';
 
 export interface DialogProps {
   open: boolean;
@@ -43,6 +46,7 @@ export function Dialog({
   const closingFromProp = useRef(false);
   const titleId = useId();
   const descriptionId = useId();
+  const draggable = useMediaQuery(SHEET_QUERY) && placement === 'sheet';
 
   useEffect(() => {
     const dialog = ref.current;
@@ -56,6 +60,8 @@ export function Dialog({
       dialog.close();
     }
   }, [open, initialFocus]);
+
+  const grab = useSheetDrag(ref, open && draggable);
 
   const onDialogClose = useEffectEvent(() => {
     if (!dismissible && !closingFromProp.current) {
@@ -97,9 +103,10 @@ export function Dialog({
         placement === 'side' &&
           'lg:motion-safe:animate-slide max-w-lg lg:me-0 lg:h-dvh lg:max-h-dvh lg:w-full lg:rounded-e-none lg:border-y-0 lg:border-e-0',
         placement === 'sheet' &&
-          'max-sm:rounded-t-sheet max-sm:motion-safe:animate-sheet max-sm:mb-0 max-sm:w-full max-sm:max-w-none max-sm:rounded-b-none max-sm:border-x-0 max-sm:border-b-0 max-sm:pb-[env(safe-area-inset-bottom)] sm:max-w-md',
+          'max-sm:rounded-t-sheet max-sm:motion-safe:animate-sheet max-sm:mb-0 max-sm:w-full max-sm:max-w-none max-sm:rounded-b-none max-sm:border-x-0 max-sm:border-b-0 max-sm:pb-[env(safe-area-inset-bottom)] max-sm:motion-safe:[transition:height_0.28s_cubic-bezier(0.2,0.8,0.2,1),transform_0.22s_cubic-bezier(0.2,0.8,0.2,1)] max-sm:motion-safe:data-dragging:transition-none sm:max-w-md',
       )}
     >
+      {draggable && <SheetGrab {...grab} />}
       {bare ? (
         <>
           <h2 id={titleId} className="sr-only">
