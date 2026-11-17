@@ -34,12 +34,11 @@ export function DoctorPicker({
   return (
     <SectionCard
       title="Médico"
-      flush
       action={
         doctors && <span className="text-text-muted text-[0.8125rem]">{countText(doctors.length)}</span>
       }
     >
-      <div className="px-4 py-3 lg:px-5">
+      <div className="-mt-1 lg:-mt-0.5">
         <SearchInput
           label="Buscar médico"
           placeholder="Buscar pelo nome"
@@ -58,7 +57,10 @@ export function DoctorPicker({
         aria-busy={!doctors}
         aria-describedby={error ? errorId : undefined}
         onKeyDown={(event) => moveFocus(event, '[role="radio"]', 'vertical')}
-        className="border-border max-h-[196px] overflow-y-auto border-t [mask-image:linear-gradient(to_bottom,#000_calc(100%-32px),transparent)] focus-visible:outline-none lg:max-h-[360px]"
+        className={cx(
+          'border-border -mx-4 max-h-[196px] overflow-y-auto border-t [mask-image:linear-gradient(to_bottom,#000_calc(100%-32px),transparent)] pb-3 focus-visible:outline-none lg:-mx-5 lg:max-h-[300px]',
+          !error && '-mb-5',
+        )}
       >
         {!doctors ? (
           <div className="flex flex-col gap-3 p-4 lg:p-5">
@@ -81,8 +83,10 @@ export function DoctorPicker({
                 tabIndex={selected || (!hasChecked && index === 0) ? 0 : -1}
                 onClick={() => onPick(doctor)}
                 className={cx(
-                  'border-border flex w-full items-center gap-3 border-b px-4 py-3 text-start transition-colors duration-150 last:border-b-0 lg:px-5',
-                  selected ? 'bg-role-soft/60' : 'can-hover:bg-surface-muted',
+                  'border-border relative flex w-full items-center gap-3.5 border-b px-4 py-3 text-start transition-colors duration-150 lg:px-5',
+                  selected
+                    ? 'before:bg-role bg-[color-mix(in_oklab,var(--role-soft)_55%,var(--surface))] before:absolute before:inset-y-2.5 before:start-0 before:w-[3px] before:rounded-e-[3px]'
+                    : 'can-hover:bg-surface-muted',
                 )}
               >
                 <span
@@ -95,20 +99,14 @@ export function DoctorPicker({
                 <Avatar name={doctor.fullName} seed={doctor.id} />
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="text-text truncate text-sm font-semibold">{doctor.fullName}</span>
-                  <span className="text-text-secondary truncate text-[0.8125rem]">
-                    {doctor.specialty.name} · {doctor.unit.name}
-                  </span>
+                  <span className="text-text-secondary truncate text-[0.8125rem]">{doctor.unit.name}</span>
                 </span>
               </button>
             );
           })
         )}
       </div>
-      {error && (
-        <div className="border-border border-t px-4 py-3 lg:px-5">
-          <FieldError id={errorId}>{error}</FieldError>
-        </div>
-      )}
+      {error && <FieldError id={errorId}>{error}</FieldError>}
     </SectionCard>
   );
 }

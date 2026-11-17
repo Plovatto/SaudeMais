@@ -386,6 +386,7 @@ describe('book appointment', { timeout: 20_000 }, () => {
   it('asks for every field before sending', async () => {
     const { calls } = serve();
     const { user } = await start();
+    expect(screen.getByRole('button', { name: 'Agendar' })).toHaveAttribute('aria-disabled', 'true');
 
     await submit(user);
 

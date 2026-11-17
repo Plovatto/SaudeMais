@@ -159,7 +159,7 @@ describe('book exam', { timeout: 20_000 }, () => {
 
     await waitFor(() => expect(openDays()).toEqual([MONDAY]));
     await pickDay(user, MONDAY);
-    expect(slotTimes()).toEqual(['08:002 vagas', '08:101 vaga']);
+    expect(slotTimes()).toEqual(['08:00, 2 vagas', '08:10, 1 vaga']);
     await user.click(
       within(screen.getByRole('group', { name: 'Período' })).getByRole('button', { name: /^Tarde/ }),
     );

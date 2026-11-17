@@ -42,9 +42,12 @@ export function CancellationNote({ cancellation, viewer }: { cancellation: Cance
   );
 }
 
-export function PhoneLink({ phone }: { phone: string }) {
+export function PhoneLink({ phone, plain = false }: { phone: string; plain?: boolean }) {
   return (
-    <a href={`tel:${phone}`} className="text-role-text font-medium underline underline-offset-2">
+    <a
+      href={`tel:${phone}`}
+      className={plain ? 'tabular-nums' : 'text-role-text font-medium underline underline-offset-2'}
+    >
       {formatPhone(phone)}
     </a>
   );

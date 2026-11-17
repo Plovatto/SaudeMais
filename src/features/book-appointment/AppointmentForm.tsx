@@ -2,12 +2,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
-import { LuMapPin, LuNotebookText, LuStethoscope } from 'react-icons/lu';
-import { BookingForm, NotesCard, WhenCard } from '@components/booking-form/BookingForm';
+import { LuFileText, LuMapPin, LuStethoscope, LuUserRound } from 'react-icons/lu';
+import { BookingForm, fieldGrid, NotesCard, WhenCard } from '@components/booking-form/BookingForm';
 import { whenItem } from '@components/booking-form/when';
 import { toBody } from '@components/booking-form/slot-schema';
 import { useBookingForm } from '@components/booking-form/useBookingForm';
-import { Avatar, Dropdown, QueryError, SectionCard } from '@components/ui';
+import { Avatar, Dropdown, InfoList, QueryError, SectionCard } from '@components/ui';
 import { VISIT_TYPES, visitTypeHints, visitTypeLabels } from '@constants/visit-types';
 import { useActiveSpecialties } from '@hooks/useActiveCatalog';
 import { SEARCH_DELAY_MS, useDebouncedValue } from '@hooks/useDebouncedValue';
@@ -90,30 +90,35 @@ export function AppointmentForm({ onBooked }: { onBooked: (appointment: Appointm
         line: booking.startsAt ? whenText(booking.startsAt) : null,
         sub: [doctor?.fullName, visitLabel].filter(Boolean).join(' · ') || 'Escolha o médico',
         note: 'Você recebe um aviso quando o médico confirmar.',
-        items: [
-          {
-            key: 'care',
-            icon: <LuStethoscope />,
-            label: 'Atendimento',
-            value: [specialty?.name ?? doctor?.specialty.name, visitLabel].filter(Boolean).join(' · ') || '—',
-          },
-          {
-            key: 'doctor',
-            icon: doctor ? <Avatar name={doctor.fullName} seed={doctor.id} square /> : <LuNotebookText />,
-            boxed: !doctor,
-            label: 'Médico',
-            value: doctor?.fullName ?? '—',
-            hint: doctor?.specialty.name,
-          },
-          {
-            key: 'unit',
-            icon: <LuMapPin />,
-            label: 'Local',
-            value: doctor?.unit.name ?? '—',
-            hint: doctor?.unit.address,
-          },
-          whenItem(booking.startsAt),
-        ],
+        details: (
+          <InfoList
+            items={[
+              {
+                key: 'care',
+                icon: <LuStethoscope />,
+                label: 'Atendimento',
+                value:
+                  [specialty?.name ?? doctor?.specialty.name, visitLabel].filter(Boolean).join(' · ') || '—',
+              },
+              {
+                key: 'doctor',
+                icon: doctor ? <Avatar name={doctor.fullName} seed={doctor.id} square /> : <LuUserRound />,
+                boxed: !doctor,
+                label: 'Médico',
+                value: doctor?.fullName ?? '—',
+                hint: doctor?.specialty.name,
+              },
+              {
+                key: 'unit',
+                icon: <LuMapPin />,
+                label: 'Local',
+                value: doctor?.unit.name ?? '—',
+                hint: doctor?.unit.address,
+              },
+              whenItem(booking.startsAt),
+            ]}
+          />
+        ),
       }}
     >
       {catalogError && (
@@ -126,7 +131,7 @@ export function AppointmentForm({ onBooked }: { onBooked: (appointment: Appointm
         />
       )}
       <SectionCard title="Atendimento">
-        <div className="grid gap-4 @min-[560px]:grid-cols-2">
+        <div className={fieldGrid}>
           <Controller
             control={control}
             name="specialtyId"
@@ -162,7 +167,7 @@ export function AppointmentForm({ onBooked }: { onBooked: (appointment: Appointm
                 ref={field.ref}
                 label="Tipo de consulta"
                 placeholder="Escolha o tipo"
-                icon={<LuNotebookText />}
+                icon={<LuFileText />}
                 options={VISIT_OPTIONS}
                 value={field.value}
                 error={fieldState.error?.message}

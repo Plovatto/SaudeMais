@@ -230,6 +230,7 @@ export function PatientBookingsPage() {
               titleId={detailId}
               onCancel={setCancelling}
               onClose={closeSheet}
+              tips
             />
           )}
         </Dialog>

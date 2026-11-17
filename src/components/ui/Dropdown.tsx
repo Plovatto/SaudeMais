@@ -151,7 +151,7 @@ export function Dropdown({
             <span
               id={`${control.id}-value`}
               className={cx(
-                'min-w-0 flex-1 truncate text-sm font-semibold',
+                'min-w-0 flex-1 truncate text-[0.9375rem] font-semibold lg:text-sm',
                 !chosen && 'text-text-muted font-normal',
               )}
             >

@@ -261,6 +261,7 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     expect(first).not.toHaveAttribute('aria-haspopup');
     expect(await screen.findByRole('heading', { name: 'Dr. João Silveira' })).toBeVisible();
     expect(screen.queryByRole('dialog', { name: SHEET })).not.toBeInTheDocument();
+    expect(screen.queryByText('Antes de ir')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /Ultrassom/ }));
 
