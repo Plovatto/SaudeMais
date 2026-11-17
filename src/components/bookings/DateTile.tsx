@@ -37,7 +37,7 @@ export function DateTile({ startsAt, size = 'md', muted = false, className }: Da
         className={cx(
           'block font-bold tracking-[0.06em] uppercase',
           style.head,
-          muted ? 'bg-surface-strong text-text-muted' : 'bg-role-soft text-role-text',
+          muted ? 'bg-surface-strong text-text-secondary' : 'bg-role-soft text-role-text',
         )}
       >
         {weekday}
