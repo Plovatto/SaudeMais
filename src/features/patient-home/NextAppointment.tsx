@@ -8,7 +8,7 @@ import { overline } from '@components/ui/styles';
 import { bookingUrl } from '@constants/areas';
 import type { PatientBooking } from '@lib/api/models';
 import { cx } from '@lib/cx';
-import { formatLongDay, formatShortDay, formatTime } from '@lib/date';
+import { formatShortDay, formatTime } from '@lib/date';
 
 const cardClass =
   'rounded-card border-border bg-surface flex flex-col gap-3.5 border px-4 pt-[18px] pb-5 lg:px-5';
@@ -52,7 +52,6 @@ export function NextAppointment({ query, next, waiting }: NextAppointmentProps) 
   return (
     <Link
       to={bookingUrl(next.id)}
-      aria-label={`Próximo compromisso: ${formatLongDay(next.startsAt)}, ${formatTime(next.startsAt)}, ${title}, ${kindLabel}, ${status.label}. Ver detalhes`}
       className={cx(
         cardClass,
         'shadow-raised group can-hover:border-role-soft-strong transition-[border-color,box-shadow] duration-150',
@@ -72,6 +71,7 @@ export function NextAppointment({ query, next, waiting }: NextAppointmentProps) 
             {title} · {kindLabel}
           </span>
         </span>
+        <span className="sr-only">, ver detalhes</span>
         <Chevron />
       </span>
     </Link>

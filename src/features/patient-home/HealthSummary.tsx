@@ -28,15 +28,15 @@ export function HealthSummary({ metrics }: { metrics: HomeMetrics | undefined })
   const items = measures(metrics ?? {});
   return (
     <SectionCard title="Minha saúde">
-      <dl className="divide-border flex flex-col divide-y">
+      <ul className="divide-border flex flex-col divide-y">
         {items.map(({ label, icon, reading }) => (
-          <div key={label} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+          <li key={label} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
             <span aria-hidden className={tile}>
               {icon}
             </span>
-            <div className="flex min-w-0 flex-1 flex-col-reverse">
-              <dt className="text-text-muted text-xs">{label}</dt>
-              <dd className="text-text text-sm font-semibold tabular-nums">
+            <p className="flex min-w-0 flex-1 flex-col-reverse">
+              <span className="text-text-muted text-xs">{label}</span>
+              <span className="text-text text-sm font-semibold tabular-nums">
                 {reading ? (
                   <>
                     {reading.value}{' '}
@@ -48,16 +48,16 @@ export function HealthSummary({ metrics }: { metrics: HomeMetrics | undefined })
                     <span className="sr-only">Sem registro</span>
                   </>
                 )}
-              </dd>
-            </div>
+              </span>
+            </p>
             {reading && (
               <time dateTime={reading.recordedAt} className="text-text-muted shrink-0 text-xs">
                 {formatSince(reading.recordedAt)}
               </time>
             )}
-          </div>
+          </li>
         ))}
-      </dl>
+      </ul>
       {metrics && items.every(({ reading }) => !reading) && (
         <p className="text-text-muted text-xs">
           Os valores aparecem aqui depois que o médico registrar suas consultas.
