@@ -10,7 +10,8 @@ import {
   StatusChip,
   useToast,
 } from '@components/ui';
-import { tile } from '@components/ui/styles';
+import { footerBar, tile } from '@components/ui/styles';
+import { cx } from '@lib/cx';
 import { isProtectedAccount } from '@lib/auth/protected-account';
 import { useSignOut } from '@lib/auth/useSignOut';
 import { formatDateTime } from '@lib/date';
@@ -115,7 +116,7 @@ export function SessionsSection({ locked, onProtected }: { locked: boolean; onPr
       ) : (
         !sessions.isError && <ListPlaceholder pending message="" />
       )}
-      <div className="border-border bg-surface-muted rounded-b-card flex flex-wrap items-center gap-3 border-t px-4 py-3 lg:px-5">
+      <div className={cx(footerBar, 'flex flex-wrap items-center gap-3 px-4 py-3 lg:px-5')}>
         <p className="text-text-muted min-w-0 flex-1 basis-56 text-xs">
           Se não reconhecer um aparelho, encerre a sessão e troque a senha.
         </p>

@@ -2,7 +2,7 @@ import { useId, type ReactNode } from 'react';
 import { LuCalendar, LuCheck } from 'react-icons/lu';
 import { PageHeader } from '@components/layout/PageHeader';
 import { Button, FieldError, FormAlert, QueryError, SectionCard, Skeleton, Textarea } from '@components/ui';
-import { tile } from '@components/ui/styles';
+import { footerBar, tile } from '@components/ui/styles';
 import { cx } from '@lib/cx';
 import { DESKTOP_QUERY, useMediaQuery } from '@hooks/useMediaQuery';
 import { FREE_TEXT_MAX } from '@lib/validation/text';
@@ -178,7 +178,7 @@ export function BookingForm({
           {desktop ? (
             <SectionCard title={summary.title} raised className="motion-safe:animate-rise sticky top-4">
               {summary.details}
-              <div className="border-border rounded-b-card bg-surface-muted -mx-5 -mb-5 flex flex-col gap-2.5 border-t px-5 pt-4 pb-[18px]">
+              <div className={cx(footerBar, '-mx-5 -mb-5 flex flex-col gap-2.5 px-5 pt-4 pb-[18px]')}>
                 {submit(submitLabel, 'w-full', <LuCheck />)}
                 <p className="text-text-muted text-center text-xs">{summary.note}</p>
               </div>

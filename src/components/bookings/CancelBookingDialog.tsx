@@ -4,6 +4,8 @@ import { LuCircleX } from 'react-icons/lu';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button, Dialog, FormAlert, Textarea, useToast } from '@components/ui';
+import { footerBar } from '@components/ui/styles';
+import { cx } from '@lib/cx';
 import { useFormSubmit } from '@lib/useFormSubmit';
 import { FREE_TEXT_MAX, freeText } from '@lib/validation/text';
 import { isStale, staleMessages } from './stale-appointment';
@@ -81,7 +83,9 @@ function CancelForm({ target, reason: mode, cancel, warning, refresh, onClose }:
         />
       )}
       {alert && <FormAlert>{alert}</FormAlert>}
-      <div className="border-border bg-surface-muted -mx-6 -mb-6 grid grid-cols-2 gap-2.5 border-t px-6 py-3.5 sm:flex sm:justify-end">
+      <div
+        className={cx(footerBar, '-mx-6 -mb-6 grid grid-cols-2 gap-2.5 px-6 py-3.5 sm:flex sm:justify-end')}
+      >
         <Button variant="secondary" onClick={onClose} className={stale ? 'col-span-2' : undefined}>
           Voltar
         </Button>
