@@ -1,7 +1,7 @@
 import { LuHeart } from 'react-icons/lu';
 import { SectionCard } from '@components/ui';
 import { tile } from '@components/ui/styles';
-import { formatDateTime, formatSince } from '@lib/date';
+import { formatAgo, formatDateTime } from '@lib/date';
 import { formatCount, formatMeasurement } from '@lib/number';
 import type { PatientHome } from './patient-home-api';
 
@@ -71,7 +71,7 @@ export function HealthSummary({ metrics }: { metrics: HomeMetrics | undefined })
                 title={formatDateTime(reading.recordedAt)}
                 className="text-text-muted shrink-0 text-xs/normal"
               >
-                {formatSince(reading.recordedAt)}
+                {formatAgo(reading.recordedAt)}
               </time>
             )}
           </li>

@@ -10,6 +10,7 @@ import {
   formatLongDay,
   formatMonth,
   formatRelative,
+  formatAgo,
   formatSince,
   formatShortDay,
   formatTime,
@@ -98,30 +99,27 @@ describe.each([
     expect(formatRelative('2026-11-12T15:00:00.000Z', now)).toBe('12/11/2026, 12:00');
   });
 
-  it('tells since when in days, then weeks, months and years', () => {
+  it('tells since when with a neutral phrase that ends in the civil date after a week', () => {
     const now = new Date('2026-11-20T15:00:00.000Z');
     expect(formatSince('2026-11-17T15:00:00.000Z', now)).toBe('há 3 dias');
-    expect(formatSince('2026-11-13T02:30:00.000Z', now)).toBe('há 1 semana');
-    expect(formatSince('2026-10-30T15:00:00.000Z', now)).toBe('há 3 semanas');
-    expect(formatSince('2026-09-01T15:00:00.000Z', now)).toBe('há 2 meses');
-    expect(formatSince('2024-11-01T15:00:00.000Z', now)).toBe('há 2 anos');
+    expect(formatSince('2026-11-13T02:30:00.000Z', now)).toBe('em 12/11/2026');
     expect(formatSince('not-a-date', now)).toBe('data indisponível');
   });
 
-  it('switches unit at the week, month and year boundaries', () => {
+  it('counts how long ago in weeks, months and years and switches unit at the week, month and year boundaries', () => {
     const now = new Date('2026-11-20T15:00:00.000Z');
     const ago = (days: number) => new Date(now.getTime() - days * 86_400_000).toISOString();
-    expect(formatSince(ago(7), now)).toBe('há 7 dias');
-    expect(formatSince(ago(8), now)).toBe('há 1 semana');
-    expect(formatSince(ago(29), now)).toBe('há 4 semanas');
-    expect(formatSince(ago(30), now)).toBe('há 1 mês');
-    expect(formatSince(ago(364), now)).toBe('há 12 meses');
-    expect(formatSince(ago(365), now)).toBe('há 1 ano');
+    expect(formatAgo(ago(7), now)).toBe('há 7 dias');
+    expect(formatAgo(ago(8), now)).toBe('há 1 semana');
+    expect(formatAgo(ago(29), now)).toBe('há 4 semanas');
+    expect(formatAgo(ago(30), now)).toBe('há 1 mês');
+    expect(formatAgo(ago(364), now)).toBe('há 12 meses');
+    expect(formatAgo(ago(365), now)).toBe('há 1 ano');
   });
 
   it('treats a future date as just now', () => {
     const now = new Date('2026-11-20T15:00:00.000Z');
-    expect(formatSince('2026-11-21T15:00:00.000Z', now)).toBe('agora');
+    expect(formatAgo('2026-11-21T15:00:00.000Z', now)).toBe('agora');
   });
 });
 

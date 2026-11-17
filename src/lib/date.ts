@@ -113,6 +113,9 @@ function spanSince(days: number): string {
 }
 
 export const formatSince = (iso: string, now = new Date()) =>
+  relativeOr(iso, now, (date) => `em ${formatDate(civilDateInSaoPaulo(date))}`);
+
+export const formatAgo = (iso: string, now = new Date()) =>
   relativeOr(iso, now, (_date, days) => spanSince(days));
 
 const zonedParts = new Intl.DateTimeFormat('pt-BR', {
