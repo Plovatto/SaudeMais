@@ -20,9 +20,7 @@ export function RecentResults() {
   return (
     <SectionCard title="Resultados recentes" flush aria-busy={query.isPending}>
       {query.isError && !items ? (
-        <div className="p-4 lg:p-5">
-          <QueryError error={query.error} onRetry={() => void query.refetch()} />
-        </div>
+        <QueryError padded error={query.error} onRetry={() => void query.refetch()} />
       ) : items?.length ? (
         <ul className="divide-border divide-y">
           {items.map((result) => (

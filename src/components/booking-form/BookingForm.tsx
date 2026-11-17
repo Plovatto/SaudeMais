@@ -1,8 +1,17 @@
 import { useId, type ReactNode } from 'react';
 import { LuCalendar, LuCheck } from 'react-icons/lu';
 import { PageHeader } from '@components/layout/PageHeader';
-import { Button, FieldError, FormAlert, QueryError, SectionCard, Skeleton, Textarea } from '@components/ui';
-import { footerBar, tile } from '@components/ui/styles';
+import {
+  Button,
+  FieldError,
+  FormAlert,
+  ListMessage,
+  QueryError,
+  SectionCard,
+  Skeleton,
+  Textarea,
+} from '@components/ui';
+import { footerBar, sectionPad, tile } from '@components/ui/styles';
 import { cx } from '@lib/cx';
 import { DESKTOP_QUERY, useMediaQuery } from '@hooks/useMediaQuery';
 import { FREE_TEXT_MAX } from '@lib/validation/text';
@@ -42,25 +51,23 @@ export function WhenCard({
       action={hint && <span className="text-text-muted text-[0.8125rem] max-lg:basis-full">{hint}</span>}
     >
       {waitingNote && days.length === 0 && !loading && !failure && !empty ? (
-        <p className="text-text-muted px-4 py-6 text-center text-[0.8125rem] lg:px-5">{waitingNote}</p>
+        <ListMessage>{waitingNote}</ListMessage>
       ) : loading ? (
-        <div className={cx(whenGrid, 'gap-4 p-4 lg:p-5')}>
+        <div className={cx(whenGrid, 'gap-4', sectionPad)}>
           <Skeleton className="h-64" />
           <Skeleton className="h-64" />
         </div>
       ) : failure ? (
-        <div className="p-4 lg:p-5">
-          <QueryError error={failure} messages={messages} onRetry={retry} />
-        </div>
+        <QueryError padded error={failure} messages={messages} onRetry={retry} />
       ) : empty ? (
-        <div className="p-4 lg:p-5">
+        <div className={sectionPad}>
           <FormAlert tone="warning" role="note">
             {emptyNote}
           </FormAlert>
         </div>
       ) : (
         <div className={whenGrid}>
-          <div className="min-w-0 p-4 lg:p-5">
+          <div className={cx('min-w-0', sectionPad)}>
             <MonthCalendar
               available={days.map((day) => day.date)}
               selected={booking.date}

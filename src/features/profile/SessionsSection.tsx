@@ -5,12 +5,13 @@ import {
   Button,
   ConfirmDialog,
   FormAlert,
-  ListPlaceholder,
+  ListSkeleton,
+  SettingRow,
   SectionCard,
   StatusChip,
   useToast,
 } from '@components/ui';
-import { footerBar, tile } from '@components/ui/styles';
+import { footerBar, sectionPad, tile } from '@components/ui/styles';
 import { cx } from '@lib/cx';
 import { isProtectedAccount } from '@lib/auth/protected-account';
 import { useSignOut } from '@lib/auth/useSignOut';
@@ -74,7 +75,7 @@ export function SessionsSection({ locked, onProtected }: { locked: boolean; onPr
       action={list && <span className="text-text-muted text-[0.8125rem]">{devicesText(list.length)}</span>}
     >
       {sessions.isError && (
-        <div className="p-4 lg:p-5">
+        <div className={sectionPad}>
           <FormAlert>{errorMessage(sessions.error)}</FormAlert>
         </div>
       )}
@@ -83,38 +84,43 @@ export function SessionsSection({ locked, onProtected }: { locked: boolean; onPr
           {list.map((session) => {
             const device = describeUserAgent(session.userAgent);
             return (
-              <li key={session.id} className="flex items-center gap-3.5 px-4 py-3.5 lg:px-5">
-                <span aria-hidden className={tile}>
-                  {isMobileUserAgent(session.userAgent) ? <LuSmartphone /> : <LuMonitor />}
-                </span>
-                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <p className="text-text truncate text-sm font-semibold">{device}</p>
-                  <p className="text-text-secondary text-[0.8125rem] tabular-nums">
-                    Último acesso em {formatDateTime(session.lastUsedAt)}
-                  </p>
-                </div>
-                {session.current ? (
-                  <StatusChip tone="info" dot={false}>
-                    Esta sessão
-                  </StatusChip>
-                ) : (
-                  <Button
-                    variant="danger-outline"
-                    size="sm"
-                    aria-label={`Encerrar sessão: ${device}`}
-                    disabled={locked || (endOne.isPending && endOne.variables !== session.id)}
-                    loading={endOne.isPending && endOne.variables === session.id}
-                    onClick={() => endOne.mutate(session.id)}
-                  >
-                    Encerrar
-                  </Button>
-                )}
-              </li>
+              <SettingRow
+                key={session.id}
+                as="li"
+                className="gap-3.5 px-4 py-3.5 lg:px-5"
+                leading={
+                  <span aria-hidden className={tile}>
+                    {isMobileUserAgent(session.userAgent) ? <LuSmartphone /> : <LuMonitor />}
+                  </span>
+                }
+                title={device}
+                titleClassName="truncate"
+                meta={`Último acesso em ${formatDateTime(session.lastUsedAt)}`}
+                metaClassName="tabular-nums"
+                trailing={
+                  session.current ? (
+                    <StatusChip tone="info" dot={false}>
+                      Esta sessão
+                    </StatusChip>
+                  ) : (
+                    <Button
+                      variant="danger-outline"
+                      size="sm"
+                      aria-label={`Encerrar sessão: ${device}`}
+                      disabled={locked || (endOne.isPending && endOne.variables !== session.id)}
+                      loading={endOne.isPending && endOne.variables === session.id}
+                      onClick={() => endOne.mutate(session.id)}
+                    >
+                      Encerrar
+                    </Button>
+                  )
+                }
+              />
             );
           })}
         </ul>
       ) : (
-        !sessions.isError && <ListPlaceholder pending message="" />
+        !sessions.isError && <ListSkeleton />
       )}
       <div className={cx(footerBar, 'flex flex-wrap items-center gap-3 px-4 py-3 lg:px-5')}>
         <p className="text-text-muted min-w-0 flex-1 basis-56 text-xs">

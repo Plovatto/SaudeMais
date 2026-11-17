@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { Fragment } from 'react';
-import { QueryError, SectionCard, Skeleton, Switch, useToast } from '@components/ui';
+import { QueryError, SectionCard, SettingRow, Skeleton, Switch, useToast } from '@components/ui';
 import { overline } from '@components/ui/styles';
 import { areas } from '@constants/areas';
 import { isProtectedAccount } from '@lib/auth/protected-account';
@@ -44,19 +44,21 @@ function PreferenceRow({
 }) {
   const { title, description } = topics[preference.topic];
   return (
-    <li className="border-border flex items-center gap-4 py-3.5 not-first:border-t">
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <p className="text-text text-sm font-semibold">{title}</p>
-        <p className="text-text-secondary text-[0.8125rem]">{description}</p>
-      </div>
-      <Switch
-        checked={preference.enabled}
-        onCheckedChange={onChange}
-        label={title}
-        labelHidden
-        disabled={disabled}
-      />
-    </li>
+    <SettingRow
+      as="li"
+      className="border-border gap-4 py-3.5 not-first:border-t"
+      title={title}
+      meta={description}
+      trailing={
+        <Switch
+          checked={preference.enabled}
+          onCheckedChange={onChange}
+          label={title}
+          labelHidden
+          disabled={disabled}
+        />
+      }
+    />
   );
 }
 

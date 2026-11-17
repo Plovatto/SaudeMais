@@ -18,7 +18,7 @@ import type { Role } from '@constants/areas';
 import type { UserNotification } from '@lib/api/models';
 import { useMarkNotificationRead, type NotificationPage } from '@lib/api/notifications-api';
 import { cx } from '@lib/cx';
-import { softTones, type SoftTone } from '@components/ui/styles';
+import { sectionPad, softTones, type SoftTone } from '@components/ui/styles';
 import { civilDateInSaoPaulo, formatDateTime, formatSince, todayInSaoPaulo } from '@lib/date';
 import { notificationTarget, notificationText } from '@lib/messages/notifications.pt-BR';
 
@@ -198,7 +198,7 @@ export function NotificationList({
   placeholders,
   perGroup = Number.POSITIVE_INFINITY,
 }: NotificationListProps) {
-  const padding = variant === 'page' ? 'p-4 lg:p-5' : 'px-4 py-3';
+  const padding = variant === 'page' ? sectionPad : 'px-4 py-3';
   if (query.isPending) {
     return (
       <div aria-busy="true" className={cx('flex flex-col gap-2', padding)}>

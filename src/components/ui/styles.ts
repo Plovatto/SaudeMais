@@ -95,6 +95,8 @@ export const tile = cx(
   'inline-grid size-9 shrink-0 place-items-center rounded-field [&_svg]:size-[18px]',
 );
 
+export const sectionPad = 'p-4 lg:p-5';
+
 export const headerBar = 'flex min-h-14 items-center gap-x-3 px-4 lg:px-5';
 
 export const footerBar = 'border-border bg-surface-muted rounded-b-card border-t';
