@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import { LuBell } from 'react-icons/lu';
 import { ListRow } from '@components/ui';
+import { cx } from '@lib/cx';
 import { tile } from '@components/ui/styles';
 import type { Role } from '@constants/areas';
 import type { UserNotification } from '@lib/api/models';
@@ -29,20 +30,18 @@ export function LastNotification({ notification, role }: LastNotificationProps) 
         onClick={() => markRead(notification)}
         className="rounded-card border-border bg-surface shadow-card border"
         leading={
-          <span aria-hidden className={tile}>
+          <span aria-hidden className={cx(tile, 'relative')}>
             <LuBell />
+            {unread && (
+              <span className="bg-role-strong border-surface absolute -end-1 -top-1 size-3 rounded-full border-2" />
+            )}
           </span>
         }
         title={
-          <span className="flex min-w-0 flex-wrap items-center gap-x-2">
-            <span>{title}</span>
-            {unread && (
-              <>
-                <span aria-hidden className="bg-role-strong size-2 shrink-0 rounded-full" />
-                <span className="sr-only"> (não lida)</span>
-              </>
-            )}
-          </span>
+          <>
+            {title}
+            {unread && <span className="sr-only"> (não lida)</span>}
+          </>
         }
         meta={<span className="line-clamp-2 break-words lg:line-clamp-1">{body}</span>}
         trailing={

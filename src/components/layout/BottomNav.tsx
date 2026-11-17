@@ -43,7 +43,7 @@ export function BottomNav({ tabs, fab }: { tabs: NavItem[]; fab: NavItem | undef
               to={fab.to}
               aria-label={fab.label}
               aria-current={ariaCurrent(fab)}
-              className="bg-role-strong text-on-role pressable:scale-95 rounded-card mx-auto -mt-[22px] grid size-[52px] place-items-center shadow-[0_8px_20px_-6px_var(--role-strong),0_0_0_4px_var(--surface)] transition-transform duration-150 ease-out"
+              className="bg-role-strong text-on-role pressable:scale-95 rounded-card mx-auto -mt-[22px] mb-[9px] grid size-[52px] place-items-center shadow-[0_8px_20px_-6px_var(--role-strong),0_0_0_4px_var(--surface)] transition-transform duration-150 ease-out"
             >
               <fab.icon aria-hidden className="size-[22px]" />
             </Link>
