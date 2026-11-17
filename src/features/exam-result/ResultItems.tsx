@@ -125,7 +125,7 @@ export function ResultItems({ items, meta }: { items: ResultItem[]; meta: ReactN
         <span>Faixa de referência</span>
         <span className="text-end">Situação</span>
       </div>
-      <ul role="list" className="divide-border max-sm:border-border divide-y max-sm:border-t">
+      <ul role="list" className="divide-border divide-y">
         {items.map((item, index) => (
           <ItemRow key={`${index}-${item.name}`} item={item} />
         ))}

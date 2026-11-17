@@ -122,15 +122,17 @@ export function ExamResultPage() {
           </Button>
         }
       />
-      <div className="flex flex-col gap-4 lg:gap-5">
+      <div className="flex flex-col gap-6">
         {current.items ? (
           <>
             <ResultSummary items={current.items} />
             <ResultItems items={current.items} meta={meta} />
-            <FormAlert tone="quiet" role="note" icon={<LuFileText />}>
-              Os indicadores comparam cada resultado com a faixa de referência do laboratório. Converse com
-              seu médico sobre o que eles significam para você.
-            </FormAlert>
+            <div className="-mt-3">
+              <FormAlert tone="quiet" role="note" icon={<LuFileText />}>
+                Os indicadores comparam cada resultado com a faixa de referência do laboratório. Converse com
+                seu médico sobre o que eles significam para você.
+              </FormAlert>
+            </div>
           </>
         ) : (
           <SectionCard title="Laudo" action={meta} className="motion-safe:animate-rise">
