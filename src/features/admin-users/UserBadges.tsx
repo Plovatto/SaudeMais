@@ -1,4 +1,4 @@
-import { LuHeartPulse, LuLock, LuShieldCheck, LuStethoscope } from 'react-icons/lu';
+import { LuHeartPulse, LuShieldCheck, LuStethoscope } from 'react-icons/lu';
 import { StatusChip } from '@components/ui';
 import type { Role } from '@constants/areas';
 import type { UserLocks } from './user-cache';
@@ -41,13 +41,6 @@ export function UserBadges({ roles, locks, specialty }: UserBadgesProps) {
           </StatusChip>
         </li>
       ))}
-      {locks.isProtected && (
-        <li>
-          <StatusChip tone="warning" icon={<LuLock />}>
-            Demonstração
-          </StatusChip>
-        </li>
-      )}
       {locks.isSelf && (
         <li>
           <StatusChip tone="neutral">Você</StatusChip>

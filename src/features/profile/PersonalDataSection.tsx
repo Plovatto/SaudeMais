@@ -23,23 +23,16 @@ function Row({ label, value, extra }: { label: string; value: ReactNode; extra?:
 export interface PersonalDataSectionProps {
   user: CurrentUser;
   withBirthDate: boolean;
-  locked: boolean;
   onEdit: () => void;
 }
 
-export function PersonalDataSection({ user, withBirthDate, locked, onEdit }: PersonalDataSectionProps) {
+export function PersonalDataSection({ user, withBirthDate, onEdit }: PersonalDataSectionProps) {
   return (
     <SectionCard
       title="Dados pessoais"
       flush
       action={
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={locked}
-          onClick={onEdit}
-          aria-label="Editar dados pessoais"
-        >
+        <Button variant="ghost" size="sm" onClick={onEdit} aria-label="Editar dados pessoais">
           Editar
         </Button>
       }

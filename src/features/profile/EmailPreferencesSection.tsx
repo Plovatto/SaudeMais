@@ -3,7 +3,6 @@ import { Fragment } from 'react';
 import { QueryError, SectionCard, Skeleton, Switch, useToast } from '@components/ui';
 import { overline } from '@components/ui/styles';
 import { areas } from '@constants/areas';
-import { isProtectedAccount } from '@lib/auth/protected-account';
 import { cx } from '@lib/cx';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
 import { queryKeys } from '@lib/query-keys';
@@ -35,11 +34,9 @@ function setPreference(queryClient: QueryClient, changed: EmailPreference) {
 
 function PreferenceRow({
   preference,
-  disabled,
   onChange,
 }: {
   preference: EmailPreference;
-  disabled: boolean;
   onChange: (enabled: boolean) => void;
 }) {
   const { title, description } = topics[preference.topic];
@@ -49,24 +46,12 @@ function PreferenceRow({
         <p className="text-text text-sm font-semibold">{title}</p>
         <p className="text-text-secondary text-[0.8125rem]">{description}</p>
       </div>
-      <Switch
-        checked={preference.enabled}
-        onCheckedChange={onChange}
-        label={title}
-        labelHidden
-        disabled={disabled}
-      />
+      <Switch checked={preference.enabled} onCheckedChange={onChange} label={title} labelHidden />
     </li>
   );
 }
 
-export function EmailPreferencesSection({
-  locked,
-  onProtected,
-}: {
-  locked: boolean;
-  onProtected: () => void;
-}) {
+export function EmailPreferencesSection() {
   const queryClient = useQueryClient();
   const { show } = useToast();
   const query = useQuery({
@@ -86,8 +71,7 @@ export function EmailPreferencesSection({
     },
     onError: (error, _changed, previous) => {
       if (previous) setPreference(queryClient, previous);
-      if (isProtectedAccount(error)) onProtected();
-      else show({ message: errorMessage(error), tone: 'danger' });
+      show({ message: errorMessage(error), tone: 'danger' });
     },
     onSettled: () => {
       if (queryClient.isMutating({ mutationKey: queryKeys.emailPreferences }) === 1)
@@ -113,7 +97,6 @@ export function EmailPreferencesSection({
                     <PreferenceRow
                       key={item.topic}
                       preference={item}
-                      disabled={locked}
                       onChange={(enabled) => mutation.mutate({ ...item, enabled })}
                     />
                   ))}

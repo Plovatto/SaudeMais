@@ -1,8 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { DEMO_DOCTOR } from '@constants/demo-accounts';
-import { SESSION_STORAGE_KEY } from '@lib/auth/token-store';
-import { mockFetch, renderApp, serveApi, TEST_TOKEN, testUser, type MockResponse } from '@/test/render-app';
+import { renderApp, serveApi, type MockResponse } from '@/test/render-app';
 
 const PATH = '/api/doctor/schedule';
 
@@ -303,45 +301,6 @@ describe('doctor schedule', { timeout: 15_000 }, () => {
     expect(friday.getByText('11 horários configurados')).toBeInTheDocument();
     expect(friday.getByRole('button', { name: 'Adicionar Horário' })).toBeDisabled();
     expect(friday.getByRole('button', { name: 'Remover faixa 08:00–09:00 de sexta-feira' })).toHaveFocus();
-  });
-
-  it('shows the demo doctor a read-only schedule', async () => {
-    sessionStorage.setItem(SESSION_STORAGE_KEY, TEST_TOKEN);
-    mockFetch((path) =>
-      path === '/api/me'
-        ? { status: 200, body: { ...testUser(['doctor', 'patient']), email: DEMO_DOCTOR.email } }
-        : path === PATH
-          ? { status: 200, body: schedule }
-          : undefined,
-    );
-    renderApp('/medico/disponibilidade');
-
-    expect(await screen.findByRole('note')).toHaveTextContent(/conta de demonstração/);
-    expect(screen.getByRole('switch', { name: 'Ativo: Segunda-feira' })).toBeDisabled();
-    expect(screen.getByRole('combobox', { name: 'Início da faixa 1 de segunda-feira' })).toBeDisabled();
-    expect(saveButton()).toBeDisabled();
-  });
-
-  it('locks the schedule when the API refuses a protected account', async () => {
-    serve(() => ({
-      status: 403,
-      body: {
-        code: 'PROTECTED_ACCOUNT',
-        message: 'Esta é uma conta de demonstração e não pode ser alterada.',
-      },
-    }));
-    const { user } = renderApp('/medico/disponibilidade');
-    const monday = await day('Segunda-feira');
-    await user.click(monday.getByRole('switch', { name: 'Ativo: Segunda-feira' }));
-
-    await user.click(saveButton());
-
-    expect(await screen.findByRole('note')).toHaveTextContent(/conta de demonstração/);
-    await waitFor(() => expect(saveButton()).toBeDisabled());
-    expect(monday.getByRole('switch', { name: 'Ativo: Segunda-feira' })).toHaveAttribute(
-      'aria-checked',
-      'true',
-    );
   });
 
   it('explains when the account has no doctor profile', async () => {

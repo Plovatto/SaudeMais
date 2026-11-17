@@ -287,21 +287,6 @@ describe('notifications', { timeout: 15_000 }, () => {
     expect(await bell('Notificações')).toBeInTheDocument();
   });
 
-  it('tells a demo account that notices cannot be marked as read', async () => {
-    serve({ count: 2, items: [notification('n1')], readAll: DEMO });
-    const { user } = renderApp('/paciente/exames/e1/resultado');
-
-    const popover = await openPopover(user);
-    await user.click(popover.getByRole('button', { name: 'Marcar todas como lidas' }));
-
-    expect(
-      await screen.findByText(
-        'Esta é uma conta de demonstração: as notificações podem ser vistas, mas não marcadas como lidas.',
-      ),
-    ).toBeVisible();
-    expect(screen.queryByText('Conta de demonstração.')).not.toBeInTheDocument();
-  });
-
   it('opens the page of the area role from the popover', async () => {
     const { calls } = serve({ roles: ['patient', 'doctor'], items: [notification('n1')] });
     const { user, router } = renderApp('/medico');

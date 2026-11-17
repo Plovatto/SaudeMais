@@ -12,15 +12,8 @@ export interface UserDetailGateProps {
   children: (user: AdminUserDetail, locks: UserLocks) => ReactNode;
 }
 
-function lockNotice({ isProtected, isInactive }: UserLocks) {
-  if (isProtected) return 'Esta é uma conta de demonstração. Os dados podem ser vistos, mas não alterados.';
-  if (isInactive) return 'Esta conta está desativada. Reative-a para alterar dados e perfis.';
-  return null;
-}
-
 export function UserDetailGate({ title, backFallback, children }: UserDetailGateProps) {
   const { id, query, locks } = useUserDetail();
-  const notice = locks && lockNotice(locks);
   return (
     <>
       <PageHeader title={title} back backFallback={backFallback(id)} />
@@ -34,9 +27,9 @@ export function UserDetailGate({ title, backFallback, children }: UserDetailGate
         {query.isError && (
           <QueryError error={query.error} messages={userMessages} onRetry={() => void query.refetch()} />
         )}
-        {notice && (
+        {locks?.isInactive && (
           <FormAlert tone="warning" role="note">
-            {notice}
+            Esta conta está desativada. Reative-a para alterar dados e perfis.
           </FormAlert>
         )}
         {query.data && locks && children(query.data, locks)}

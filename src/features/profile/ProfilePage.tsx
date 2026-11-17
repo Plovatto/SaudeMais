@@ -1,11 +1,10 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { LuArrowUpDown, LuLogOut } from 'react-icons/lu';
 import { Link } from 'react-router';
 import { PageHeader } from '@components/layout/PageHeader';
 import { useAreaRole } from '@components/layout/route-handle';
-import { Button, Dialog, FormAlert } from '@components/ui';
+import { Button, Dialog } from '@components/ui';
 import { areas } from '@constants/areas';
-import { isDemoEmail } from '@constants/demo-accounts';
 import { useCurrentUser } from '@lib/auth/useSession';
 import { useSignOut } from '@lib/auth/useSignOut';
 import { AppearanceSection } from './AppearanceSection';
@@ -30,11 +29,8 @@ export function ProfilePage() {
   const user = useCurrentUser();
   const role = useAreaRole();
   const signOut = useSignOut();
-  const [locked, setLocked] = useState(isDemoEmail(user.email));
   const [panel, setPanel] = useState<Panel>(null);
   const [leaving, setLeaving] = useState(false);
-  const demoNote = useRef<HTMLDivElement>(null);
-  const lock = () => setLocked(true);
   const close = () => setPanel(null);
   const withBirthDate = role === 'patient';
   const Area = areas[role];
@@ -66,38 +62,24 @@ export function ProfilePage() {
             </span>
           </Link>
         )}
-        {locked && (
-          <div ref={demoNote} tabIndex={-1} className="outline-none">
-            <FormAlert tone="warning" role="note">
-              Esta é uma conta de demonstração, compartilhada com outros visitantes. Os dados e a senha não
-              podem ser alterados.
-            </FormAlert>
-          </div>
-        )}
         <div className={STAGGER[0]}>
-          <ProfileHero user={user} role={role} locked={locked} onEdit={() => setPanel('edit')} />
+          <ProfileHero user={user} role={role} onEdit={() => setPanel('edit')} />
         </div>
         <div className={`grid items-stretch gap-4 lg:grid-cols-2 lg:gap-5 ${STAGGER[1] ?? ''}`}>
           <div className="flex min-w-0 flex-col gap-4 lg:gap-5">
-            <PersonalDataSection
-              user={user}
-              withBirthDate={withBirthDate}
-              locked={locked}
-              onEdit={() => setPanel('edit')}
-            />
+            <PersonalDataSection user={user} withBirthDate={withBirthDate} onEdit={() => setPanel('edit')} />
             <SecuritySection
               passwordChangedAt={user.passwordChangedAt}
-              locked={locked}
               onChangePassword={() => setPanel('password')}
             />
           </div>
           <div className="flex min-w-0 flex-col gap-4 lg:gap-5">
             <AppearanceSection />
-            <EmailPreferencesSection locked={locked} onProtected={lock} />
+            <EmailPreferencesSection />
           </div>
         </div>
         <div className={STAGGER[2]}>
-          <SessionsSection locked={locked} onProtected={lock} />
+          <SessionsSection />
         </div>
         <Button
           variant="danger"
@@ -114,15 +96,8 @@ export function ProfilePage() {
         role={role}
         withBirthDate={withBirthDate}
         onClose={close}
-        onProtected={lock}
-        fallbackFocus={demoNote}
       />
-      <PasswordDrawer
-        open={panel === 'password'}
-        onClose={close}
-        onProtected={lock}
-        fallbackFocus={demoNote}
-      />
+      <PasswordDrawer open={panel === 'password'} onClose={close} />
       <Dialog
         open={panel === 'logout'}
         onClose={close}

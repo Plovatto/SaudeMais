@@ -7,11 +7,10 @@ import { ageText, phoneText } from './profile-text';
 export interface ProfileHeroProps {
   user: CurrentUser;
   role: Role;
-  locked: boolean;
   onEdit: () => void;
 }
 
-export function ProfileHero({ user, role, locked, onEdit }: ProfileHeroProps) {
+export function ProfileHero({ user, role, onEdit }: ProfileHeroProps) {
   const age = role === 'patient' && user.birthDate ? ageText(user.birthDate) : null;
   return (
     <section
@@ -41,7 +40,6 @@ export function ProfileHero({ user, role, locked, onEdit }: ProfileHeroProps) {
         </div>
         <Button
           icon={<LuPencil />}
-          disabled={locked}
           onClick={onEdit}
           className="mt-1.5 w-full max-sm:min-h-[50px] max-sm:text-[0.9375rem] sm:mt-[42px] sm:mb-1 sm:w-auto"
         >
