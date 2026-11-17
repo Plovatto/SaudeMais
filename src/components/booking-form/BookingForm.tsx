@@ -154,7 +154,7 @@ export function BookingForm({
       loading={booking.submitting}
       loadingLabel="Enviando pedido"
       aria-disabled={!ready || booking.submitting || undefined}
-      className={className}
+      className={cx('transition-none', className)}
     >
       {text}
     </Button>
