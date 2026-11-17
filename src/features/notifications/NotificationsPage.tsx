@@ -1,33 +1,60 @@
 import { useQuery } from '@tanstack/react-query';
+import { useRef } from 'react';
 import { PageHeader } from '@components/layout/PageHeader';
 import { useAreaRole } from '@components/layout/route-handle';
 import { Card, Pagination } from '@components/ui';
-import { areas } from '@constants/areas';
+import { areas, type Role } from '@constants/areas';
 import { useClampedPage, usePageParam } from '@hooks/usePageParam';
-import { notificationsQuery } from '@lib/api/notifications-api';
+import { notificationsQuery, unreadCountQuery, unreadNoun } from '@lib/api/notifications-api';
 import { NotificationList } from './NotificationList';
 import { ReadAllButton } from './ReadAllButton';
 
 const PAGE_SIZE = 20;
 
+const subtitles: Record<Role, string> = {
+  patient: 'Avisos sobre seus agendamentos e resultados.',
+  doctor: 'Avisos sobre pedidos e mudanças na sua agenda.',
+  admin: 'Avisos sobre cadastros e a operação da clínica.',
+};
+
+function UnreadSummary({ role }: { role: Role }) {
+  const unread = useQuery(unreadCountQuery(role)).data ?? 0;
+  const summaryRef = useRef<HTMLParagraphElement>(null);
+  return (
+    <div className="border-border flex min-h-14 items-center gap-3 border-b px-4 py-2.5 lg:px-5">
+      <p ref={summaryRef} tabIndex={-1} className="text-text-secondary min-w-0 flex-1 text-[0.8125rem]">
+        {unread > 0 ? (
+          <>
+            <b className="text-role-text font-bold">{unread}</b> {unreadNoun(unread)}
+          </>
+        ) : (
+          'Tudo lido'
+        )}
+      </p>
+      <ReadAllButton role={role} unread={unread} focusAfter={summaryRef} />
+    </div>
+  );
+}
+
 export function NotificationsPage() {
   const role = useAreaRole();
-  const area = areas[role];
   const [page, setPage] = usePageParam();
   const query = useQuery(notificationsQuery(role, page, PAGE_SIZE));
   const { lastPage } = useClampedPage(page, setPage, query.data);
   return (
-    <>
-      <PageHeader title="Notificações" subtitle={`Perfil ${area.label}`} back backFallback={area.base} />
-      <div className="flex flex-col gap-4 lg:max-w-2xl">
-        <Card className="flex flex-col gap-3 p-4 sm:p-6">
-          <div className="flex justify-end">
-            <ReadAllButton role={role} />
-          </div>
-          <NotificationList query={query} role={role} placeholders={4} />
+    <div className="mx-auto w-full max-w-[856px]">
+      <PageHeader title="Notificações" subtitle={subtitles[role]} back backFallback={areas[role].base} />
+      <div className="flex flex-col gap-4">
+        <Card
+          role="region"
+          aria-label={`Notificações do perfil ${areas[role].label}`}
+          className="min-w-0 overflow-hidden p-0"
+        >
+          <UnreadSummary role={role} />
+          <NotificationList query={query} role={role} variant="page" placeholders={4} />
         </Card>
         <Pagination page={page} totalPages={lastPage} onPageChange={(next) => setPage(next)} />
       </div>
-    </>
+    </div>
   );
 }

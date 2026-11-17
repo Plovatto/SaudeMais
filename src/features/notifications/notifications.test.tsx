@@ -61,6 +61,11 @@ const countCalls = (calls: ApiCall[]) => callsTo(calls, '/api/notifications/unre
 
 const bell = (name: string | RegExp = /^Notificações/) => screen.findByRole('button', { name });
 
+const bellLink = async (name: string) =>
+  (await screen.findAllByRole('link', { name })).find((link) => link.closest('header'));
+
+const region = (label: string) => screen.findByRole('region', { name: `Notificações do perfil ${label}` });
+
 async function openPopover(user: ReturnType<typeof renderApp>['user']) {
   await user.click(await bell());
   return within(await screen.findByRole('dialog', { name: 'Notificações' }));
@@ -150,13 +155,13 @@ describe('notifications', { timeout: 15_000 }, () => {
   it('does not announce when the area role changes', async () => {
     const { state } = serve({ roles: ['patient', 'doctor'], count: 1 });
     const { router } = renderApp('/notificacoes?perfil=paciente');
-    await bell('Notificações, 1 não lida');
+    await bellLink('Notificações, 1 não lida');
 
     state.count = 5;
     await act(() => router.navigate('/notificacoes?perfil=medico'));
 
-    await bell('Notificações, 5 não lidas');
-    expect(screen.getByText('Perfil Médico')).toBeVisible();
+    await bellLink('Notificações, 5 não lidas');
+    expect(await region('Médico')).toBeVisible();
     expect(screen.queryByText(/Nova notificação/)).not.toBeInTheDocument();
   });
 
@@ -164,8 +169,8 @@ describe('notifications', { timeout: 15_000 }, () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const { calls } = serve({ count: 1 });
     renderApp('/notificacoes?perfil=paciente');
-    await screen.findByRole('button', { name: 'Marcar todas como lidas' });
-    await bell('Notificações, 1 não lida');
+    await screen.findByRole('button', { name: 'Marcar como lidas' });
+    await bellLink('Notificações, 1 não lida');
     await act(() => vi.advanceTimersByTimeAsync(1_000));
     const initial = countCalls(calls).length;
 
@@ -208,7 +213,7 @@ describe('notifications', { timeout: 15_000 }, () => {
     expect(unread?.querySelector('time')).toHaveAttribute('title', formatDateTime(createdAt));
     expect(read).toHaveTextContent('Consulta cancelada');
     expect(read).not.toHaveTextContent('(não lida)');
-    expect(popover.getByRole('link', { name: 'Ver todas' })).toHaveAttribute(
+    expect(popover.getByRole('link', { name: 'Ver todas as notificações' })).toHaveAttribute(
       'href',
       '/notificacoes?perfil=paciente',
     );
@@ -224,7 +229,8 @@ describe('notifications', { timeout: 15_000 }, () => {
 
     const popover = await openPopover(user);
     expect(await popover.findByText('Nenhuma notificação')).toBeVisible();
-    expect(popover.getByRole('button', { name: 'Marcar todas como lidas' })).toBeDisabled();
+    expect(popover.getByText('Tudo lido')).toBeVisible();
+    expect(popover.queryByRole('button', { name: 'Marcar todas como lidas' })).not.toBeInTheDocument();
   });
 
   it('marks a notice as read, opens its target and closes the popover', async () => {
@@ -276,9 +282,8 @@ describe('notifications', { timeout: 15_000 }, () => {
     expect(callsTo(calls, '/api/notifications/read-all', 'POST')[0]?.url.searchParams.get('role')).toBe(
       'doctor',
     );
-    await waitFor(() =>
-      expect(popover.getByRole('button', { name: 'Marcar todas como lidas' })).toBeDisabled(),
-    );
+    await waitFor(() => expect(popover.getByText('Tudo lido')).toHaveFocus());
+    expect(popover.queryByRole('button', { name: 'Marcar todas como lidas' })).not.toBeInTheDocument();
     expect(await bell('Notificações')).toBeInTheDocument();
   });
 
@@ -302,12 +307,12 @@ describe('notifications', { timeout: 15_000 }, () => {
     const { user, router } = renderApp('/medico');
 
     const popover = await openPopover(user);
-    await user.click(popover.getByRole('link', { name: 'Ver todas' }));
+    await user.click(popover.getByRole('link', { name: 'Ver todas as notificações' }));
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/notificacoes'));
     expect(router.state.location.search).toBe('?perfil=medico');
     expect(await screen.findByRole('heading', { level: 1, name: 'Notificações' })).toBeVisible();
-    expect(screen.getByText('Perfil Médico')).toBeVisible();
+    expect(await region('Médico')).toBeVisible();
     await waitFor(() =>
       expect(callsTo(calls, '/api/notifications').at(-1)?.url.searchParams.get('pageSize')).toBe('20'),
     );
@@ -339,7 +344,7 @@ describe('notifications', { timeout: 15_000 }, () => {
       const { calls } = serve({ roles: ['admin'] });
       const { router } = renderApp(path);
 
-      expect(await screen.findByText('Perfil Administrador')).toBeVisible();
+      expect(await region('Administrador')).toBeVisible();
       await waitFor(() => expect(callsTo(calls, '/api/notifications')).not.toHaveLength(0));
       expect(callsTo(calls, '/api/notifications')[0]?.url.searchParams.get('role')).toBe('admin');
       expect(new URLSearchParams(router.state.location.search).get('perfil')).toBe('admin');
@@ -351,5 +356,48 @@ describe('notifications', { timeout: 15_000 }, () => {
     renderApp('/notificacoes?perfil=admin');
 
     expect(await screen.findByRole('heading', { name: 'Acesso negado' })).toBeVisible();
+  });
+  it('groups the page by day and marks every notice as read from it', async () => {
+    const old = new Date(Date.now() - 10 * 24 * HOUR_MS).toISOString();
+    const { calls } = serve({
+      count: 1,
+      items: [
+        notification('n1', { createdAt: new Date().toISOString() }),
+        notification('n2', { createdAt: old, readAt: old }),
+      ],
+    });
+    const { user } = renderApp('/notificacoes?perfil=paciente');
+
+    const page = within(await region('Paciente'));
+    const today = await page.findByRole('list', { name: 'Hoje' });
+    expect(within(today).getByRole('link')).toHaveTextContent('(não lida)');
+    expect(within(page.getByRole('list', { name: 'Anteriores' })).getByRole('link')).not.toHaveTextContent(
+      '(não lida)',
+    );
+    expect(await bellLink('Notificações, 1 não lida')).toHaveAttribute('aria-current', 'page');
+    expect(page.getByText('não lida')).toBeVisible();
+
+    await user.click(page.getByRole('button', { name: 'Marcar como lidas' }));
+
+    await waitFor(() => expect(page.getByText('Tudo lido')).toHaveFocus());
+    expect(callsTo(calls, '/api/notifications/read-all', 'POST')).toHaveLength(1);
+  });
+
+  it('previews up to three notices a day and closes from its button', async () => {
+    const now = new Date().toISOString();
+    serve({
+      count: 4,
+      items: ['n1', 'n2', 'n3', 'n4'].map((id) => notification(id, { createdAt: now })),
+    });
+    const { user } = renderApp('/paciente/exames/e1/resultado');
+
+    const popover = await openPopover(user);
+    expect(popover.getByText('4 novas')).toBeVisible();
+    expect(within(await popover.findByRole('list', { name: 'Hoje' })).getAllByRole('link')).toHaveLength(3);
+    expect(popover.queryByRole('list', { name: 'Anteriores' })).not.toBeInTheDocument();
+
+    await user.click(popover.getByRole('button', { name: 'Fechar notificações' }));
+    expect(screen.queryByRole('dialog', { name: 'Notificações' })).not.toBeInTheDocument();
+    expect(await bell()).toHaveFocus();
   });
 });

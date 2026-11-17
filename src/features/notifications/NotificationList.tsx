@@ -1,27 +1,32 @@
 import type { UseQueryResult } from '@tanstack/react-query';
+import { useId } from 'react';
 import type { IconType } from 'react-icons';
 import {
   LuBell,
   LuBellOff,
   LuCalendarClock,
-  LuCalendarX,
-  LuCircleCheck,
+  LuCalendarPlus,
+  LuCheck,
+  LuClock,
   LuFileText,
   LuUserPlus,
+  LuX,
 } from 'react-icons/lu';
 import { Link } from 'react-router';
-import { EmptyState, IconSlot, QueryError, Skeleton } from '@components/ui';
+import { EmptyState, QueryError, Skeleton } from '@components/ui';
 import type { Role } from '@constants/areas';
 import type { UserNotification } from '@lib/api/models';
 import { useMarkNotificationRead, type NotificationPage } from '@lib/api/notifications-api';
 import { cx } from '@lib/cx';
-import { formatDateTime, formatRelative } from '@lib/date';
+import { civilDateInSaoPaulo, formatDateTime, formatSince, todayInSaoPaulo } from '@lib/date';
 import { notificationTarget, notificationText } from '@lib/messages/notifications.pt-BR';
 
 const tones = {
-  role: 'bg-role-strong text-on-role',
-  success: 'bg-success-strong text-on-success',
-  danger: 'bg-danger-strong text-on-danger',
+  role: 'bg-role-soft text-role-text',
+  success: 'bg-success-soft text-success-text',
+  warning: 'bg-warning-soft text-warning-text',
+  danger: 'bg-danger-soft text-danger-text',
+  info: 'bg-info-soft text-info',
 };
 
 interface Visual {
@@ -29,99 +34,201 @@ interface Visual {
   tone: keyof typeof tones;
 }
 
-const cancelled: Visual = { icon: LuCalendarX, tone: 'danger' };
-const requested: Visual = { icon: LuCalendarClock, tone: 'role' };
+const cancelled: Visual = { icon: LuX, tone: 'danger' };
 
 const visuals: Record<UserNotification['type'], Visual> = {
-  appointment_requested: requested,
-  appointment_rescheduled: requested,
+  appointment_requested: { icon: LuCalendarPlus, tone: 'warning' },
+  appointment_rescheduled: { icon: LuCalendarClock, tone: 'warning' },
   appointment_cancelled_by_patient: cancelled,
-  appointment_confirmed: { icon: LuCircleCheck, tone: 'success' },
+  appointment_confirmed: { icon: LuCheck, tone: 'success' },
   appointment_cancelled: cancelled,
-  appointment_expired: cancelled,
-  exam_result_available: { icon: LuFileText, tone: 'role' },
-  user_registered: { icon: LuUserPlus, tone: 'role' },
+  appointment_expired: { icon: LuClock, tone: 'warning' },
+  exam_result_available: { icon: LuFileText, tone: 'info' },
+  user_registered: { icon: LuUserPlus, tone: 'info' },
 };
 
 const fallbackVisual: Visual = { icon: LuBell, tone: 'role' };
 
-function NotificationItem({ notification, role }: { notification: UserNotification; role: Role }) {
+export type NotificationVariant = 'page' | 'popover';
+
+const looks = {
+  page: {
+    group: 'border-border border-t first:border-t-0',
+    day: 'border-border bg-surface-muted text-text-muted border-b px-4 py-2.5 text-xs font-semibold lg:px-5',
+    list: 'divide-border divide-y',
+    row: 'can-hover:bg-surface-muted items-start gap-3.5 px-4 py-4 lg:px-5',
+    read: '',
+    unread: '',
+    icon: 'size-10 rounded-[11px] [&_svg]:size-[18px]',
+    badge: 'ring-surface size-[11px]',
+    body: 'flex flex-col gap-0.5',
+    title: 'text-sm',
+    text: 'text-[0.8125rem]',
+    time: 'mt-1 text-xs',
+  },
+  popover: {
+    group: '',
+    day: 'text-text-muted px-4 pt-2 pb-0.5 text-[0.65625rem] font-semibold tracking-[0.06em] uppercase',
+    list: 'flex flex-col gap-0.5',
+    row: 'mx-1.5 items-center gap-2.5 rounded-[10px] py-2 ps-3 pe-2.5',
+    read: 'can-hover:bg-surface-muted',
+    unread: 'bg-role-soft/55 can-hover:bg-role-soft',
+    icon: 'size-7 rounded-full [&_svg]:size-3.5',
+    badge: 'size-[9px] ring-[color-mix(in_oklab,var(--role-soft)_55%,var(--surface))]',
+    body: 'grid grid-cols-[minmax(0,1fr)_auto] gap-x-2.5 gap-y-0.5',
+    title: 'text-[0.8125rem]',
+    text: 'col-span-full line-clamp-2 text-xs leading-[1.45]',
+    time: 'col-start-2 row-start-1 mt-px text-[0.6875rem]',
+  },
+};
+
+interface ItemProps {
+  notification: UserNotification;
+  role: Role;
+  variant: NotificationVariant;
+}
+
+function NotificationItem({ notification, role, variant }: ItemProps) {
   const markRead = useMarkNotificationRead();
   const { title, body } = notificationText(notification);
   const { icon: Icon, tone } = visuals[notification.type] ?? fallbackVisual;
   const unread = notification.readAt === null;
+  const look = looks[variant];
   return (
     <Link
       to={notificationTarget(notification, role)}
       onClick={() => markRead(notification)}
       className={cx(
-        'rounded-tile border-border can-hover:border-role flex min-h-11 items-start gap-3 border p-3 transition-colors',
-        unread ? 'bg-surface' : 'bg-surface-muted',
+        'flex min-h-11 min-w-0 transition-colors duration-150',
+        look.row,
+        unread ? look.unread : look.read,
       )}
     >
-      <IconSlot
+      <span
+        aria-hidden
         className={cx(
-          'mt-0.5 size-8 justify-center rounded-full text-base',
-          unread ? tones[tone] : 'bg-border text-text-secondary',
+          'relative grid shrink-0 place-items-center',
+          look.icon,
+          tones[tone],
+          variant === 'popover' && !unread && 'opacity-80 saturate-[0.4]',
         )}
       >
         <Icon />
-      </IconSlot>
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="flex items-baseline justify-between gap-2">
-          <span className={cx('text-sm font-semibold', unread ? 'text-text' : 'text-text-secondary')}>
-            {title}
-            {unread && <span className="sr-only"> (não lida)</span>}
-          </span>
-          <time
-            dateTime={notification.createdAt}
-            title={formatDateTime(notification.createdAt)}
-            className="text-text-secondary shrink-0 text-xs"
-          >
-            {formatRelative(notification.createdAt)}
-          </time>
-        </span>
-        <span className="text-text-secondary text-xs break-words">{body}</span>
+        {unread && (
+          <span
+            className={cx('bg-role-strong absolute -end-0.5 -top-0.5 rounded-full ring-[2.5px]', look.badge)}
+          />
+        )}
       </span>
-      {unread && <span aria-hidden className="bg-role-strong mt-2 size-2 shrink-0 rounded-full" />}
+      <span className={cx('min-w-0 flex-1', look.body)}>
+        <span
+          className={cx(
+            'leading-[1.35]',
+            look.title,
+            unread ? 'text-text font-[650]' : 'text-text-secondary font-medium',
+          )}
+        >
+          {title}
+          {unread && <span className="sr-only"> (não lida)</span>}
+        </span>
+        <span className={cx('text-text-secondary break-words', look.text)}>{body}</span>
+        <time
+          dateTime={notification.createdAt}
+          title={formatDateTime(notification.createdAt)}
+          className={cx('text-text-muted block whitespace-nowrap', look.time)}
+        >
+          {formatSince(notification.createdAt)}
+        </time>
+      </span>
     </Link>
+  );
+}
+
+interface Group {
+  day: string;
+  items: UserNotification[];
+}
+
+function groupByDay(items: UserNotification[], perGroup: number): Group[] {
+  const today = todayInSaoPaulo();
+  const isToday = (item: UserNotification) => civilDateInSaoPaulo(new Date(item.createdAt)) === today;
+  return [
+    { day: 'Hoje', items: items.filter(isToday) },
+    { day: 'Anteriores', items: items.filter((item) => !isToday(item)) },
+  ]
+    .map((group) => ({ ...group, items: group.items.slice(0, perGroup) }))
+    .filter((group) => group.items.length > 0);
+}
+
+interface GroupProps {
+  group: Group;
+  role: Role;
+  variant: NotificationVariant;
+}
+
+function NotificationGroup({ group, role, variant }: GroupProps) {
+  const dayId = useId();
+  const look = looks[variant];
+  const Heading = variant === 'page' ? 'h2' : 'h3';
+  return (
+    <div className={look.group}>
+      <Heading id={dayId} className={look.day}>
+        {group.day}
+      </Heading>
+      <ul aria-labelledby={dayId} className={look.list}>
+        {group.items.map((notification) => (
+          <li key={notification.id}>
+            <NotificationItem notification={notification} role={role} variant={variant} />
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
 export interface NotificationListProps {
   query: UseQueryResult<NotificationPage>;
   role: Role;
+  variant: NotificationVariant;
   placeholders: number;
+  perGroup?: number;
 }
 
-export function NotificationList({ query, role, placeholders }: NotificationListProps) {
+export function NotificationList({
+  query,
+  role,
+  variant,
+  placeholders,
+  perGroup = Number.POSITIVE_INFINITY,
+}: NotificationListProps) {
+  const padding = variant === 'page' ? 'p-4 lg:p-5' : 'px-4 py-3';
   if (query.isPending) {
     return (
-      <div aria-busy="true" className="flex flex-col gap-2">
+      <div aria-busy="true" className={cx('flex flex-col gap-2', padding)}>
         {Array.from({ length: placeholders }, (_, index) => (
-          <Skeleton key={index} className="h-16" />
+          <Skeleton key={index} className={variant === 'page' ? 'h-16' : 'h-12'} />
         ))}
       </div>
     );
   }
-  if (query.isError) return <QueryError error={query.error} onRetry={() => void query.refetch()} />;
+  if (query.isError) {
+    return (
+      <div className={padding}>
+        <QueryError error={query.error} onRetry={() => void query.refetch()} />
+      </div>
+    );
+  }
   if (query.data.items.length === 0) {
     return (
       <EmptyState
         icon={<LuBellOff />}
         title="Nenhuma notificação"
         description="Quando houver novidades, elas aparecem aqui."
-        className="py-6"
+        className="px-4 py-8"
       />
     );
   }
-  return (
-    <ul className="flex flex-col gap-2">
-      {query.data.items.map((notification) => (
-        <li key={notification.id}>
-          <NotificationItem notification={notification} role={role} />
-        </li>
-      ))}
-    </ul>
-  );
+  return groupByDay(query.data.items, perGroup).map((group) => (
+    <NotificationGroup key={group.day} group={group} role={role} variant={variant} />
+  ));
 }

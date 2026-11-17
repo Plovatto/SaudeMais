@@ -1,7 +1,7 @@
 import type { ComponentProps, ReactNode } from 'react';
 import { cx } from '@lib/cx';
 import { IconSlot } from './IconSlot';
-import { squareButton } from './styles';
+import { iconButton } from './styles';
 
 export interface IconButtonProps extends Omit<ComponentProps<'button'>, 'children' | 'aria-label'> {
   label: string;
@@ -10,16 +10,7 @@ export interface IconButtonProps extends Omit<ComponentProps<'button'>, 'childre
 
 export function IconButton({ label, icon, className, type = 'button', ...props }: IconButtonProps) {
   return (
-    <button
-      type={type}
-      aria-label={label}
-      className={cx(
-        squareButton,
-        'text-text-secondary can-hover:bg-surface-strong can-hover:text-text',
-        className,
-      )}
-      {...props}
-    >
+    <button type={type} aria-label={label} className={cx(iconButton, className)} {...props}>
       <IconSlot className="text-xl">{icon}</IconSlot>
     </button>
   );

@@ -47,6 +47,11 @@ export const squareButton = cx(
   disabledState,
 );
 
+export const iconButton = cx(
+  squareButton,
+  'text-text-secondary can-hover:bg-surface-strong can-hover:text-text aria-expanded:bg-surface-strong aria-expanded:text-text',
+);
+
 export const controlInput =
   'min-w-0 flex-1 bg-transparent py-2.5 text-[0.9375rem] outline-none focus-visible:outline-none disabled:cursor-not-allowed lg:text-sm';
 
