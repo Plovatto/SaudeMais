@@ -5,6 +5,8 @@ export const THEME_STORAGE_KEY = 'saudemais:v1:theme';
 
 const DARK_QUERY = '(prefers-color-scheme: dark)';
 
+const preferenceListeners = new Set<() => void>();
+
 function isPreference(value: unknown): value is ThemePreference {
   return value === 'light' || value === 'dark' || value === 'system';
 }
@@ -35,6 +37,12 @@ export function setThemePreference(preference: ThemePreference): void {
     else localStorage.setItem(THEME_STORAGE_KEY, preference);
   } catch {}
   applyTheme(resolveTheme(preference));
+  for (const listener of preferenceListeners) listener();
+}
+
+export function subscribeThemePreference(onChange: () => void): () => void {
+  preferenceListeners.add(onChange);
+  return () => preferenceListeners.delete(onChange);
 }
 
 export function followSystemTheme(): () => void {
