@@ -62,7 +62,8 @@ export function Dialog({
       ref.current?.showModal();
       return;
     }
-    if (returnFocus.current?.isConnected) returnFocus.current.focus();
+    const target = returnFocus.current;
+    if (target?.isConnected && !target.matches(':disabled')) target.focus();
     else fallbackFocus?.current?.focus();
     returnFocus.current = null;
     if (closingFromProp.current) closingFromProp.current = false;

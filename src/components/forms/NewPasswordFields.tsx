@@ -12,6 +12,7 @@ export interface NewPasswordFieldsProps {
   errors: { password?: string | undefined; confirmation?: string | undefined };
   variant?: keyof typeof labels;
   disabled?: boolean;
+  showHint?: boolean;
 }
 
 export function NewPasswordFields({
@@ -20,13 +21,14 @@ export function NewPasswordFields({
   errors,
   variant = 'change',
   disabled,
+  showHint = true,
 }: NewPasswordFieldsProps) {
   return (
     <>
       <PasswordInput
         label={labels[variant].password}
         autoComplete="new-password"
-        hint="Pelo menos 8 caracteres."
+        hint={showHint ? 'Pelo menos 8 caracteres.' : undefined}
         disabled={disabled}
         error={errors.password}
         {...password}

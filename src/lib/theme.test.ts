@@ -6,6 +6,7 @@ import {
   getThemePreference,
   resolveTheme,
   setThemePreference,
+  subscribeThemePreference,
   THEME_STORAGE_KEY,
 } from './theme';
 
@@ -18,8 +19,9 @@ function mockSystemDark(dark: boolean) {
 
 beforeEach(() => {
   localStorage.clear();
-  delete document.documentElement.dataset.theme;
   mockSystemDark(false);
+  setThemePreference('system');
+  delete document.documentElement.dataset.theme;
 });
 
 afterEach(() => {
@@ -96,6 +98,20 @@ describe('applyTheme and setThemePreference', () => {
     setThemePreference('dark');
 
     expect(document.documentElement.dataset.theme).toBe('dark');
+  });
+
+  it('remembers the choice for this page when storage rejects writes', () => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    const onChange = vi.fn();
+    const unsubscribe = subscribeThemePreference(onChange);
+
+    setThemePreference('dark');
+
+    expect(getThemePreference()).toBe('dark');
+    expect(onChange).toHaveBeenCalledOnce();
+    unsubscribe();
   });
 });
 

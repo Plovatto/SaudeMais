@@ -2,6 +2,7 @@ export const queryKeys = {
   health: ['health'] as const,
   session: ['session'] as const,
   sessions: ['sessions'] as const,
+  emailPreferences: ['email-preferences'] as const,
   adminHome: ['admin-home'] as const,
   adminReport: (period: object) => ['admin-report', period] as const,
   doctorSchedule: ['doctor-schedule'] as const,
