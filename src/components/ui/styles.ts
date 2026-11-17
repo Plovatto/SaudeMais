@@ -97,6 +97,8 @@ export const tile = cx(
 
 export const sectionPad = 'p-4 lg:p-5';
 
+export const groupHeader = 'border-border bg-surface-muted border-b px-4 py-2.5 lg:px-5';
+
 export const headerBar = 'flex min-h-14 items-center gap-x-3 px-4 lg:px-5';
 
 export const footerBar = 'border-border bg-surface-muted rounded-b-card border-t';

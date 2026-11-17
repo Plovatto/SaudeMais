@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { groupByDay } from './day-groups';
+import { groupByAppointmentDay } from './day-groups';
 
 const NOW = new Date('2026-11-20T15:00:00.000Z');
 
@@ -23,7 +23,11 @@ describe.each(['Asia/Tokyo', 'America/Los_Angeles'])('day groups with the proces
     ];
 
     expect(
-      groupByDay(items, NOW).map(({ date, label, items: day }) => [date, label, day.map(({ id }) => id)]),
+      groupByAppointmentDay(items, NOW).map(({ date, label, items: day }) => [
+        date,
+        label,
+        day.map(({ id }) => id),
+      ]),
     ).toEqual([
       ['2026-11-19', 'Ontem', ['a', 'b']],
       ['2026-11-20', 'Hoje', ['c', 'd']],

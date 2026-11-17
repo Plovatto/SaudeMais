@@ -18,7 +18,7 @@ import type { Role } from '@constants/areas';
 import type { UserNotification } from '@lib/api/models';
 import { useMarkNotificationRead, type NotificationPage } from '@lib/api/notifications-api';
 import { cx } from '@lib/cx';
-import { sectionPad, softTones, type SoftTone } from '@components/ui/styles';
+import { groupHeader, sectionPad, softTones, type SoftTone } from '@components/ui/styles';
 import { civilDateInSaoPaulo, formatDateTime, formatSince, todayInSaoPaulo } from '@lib/date';
 import { notificationTarget, notificationText } from '@lib/messages/notifications.pt-BR';
 
@@ -47,7 +47,7 @@ export type NotificationVariant = 'page' | 'popover';
 const looks = {
   page: {
     group: 'border-border border-t first:border-t-0',
-    day: 'border-border bg-surface-muted text-text-muted border-b px-4 py-2.5 text-xs font-semibold lg:px-5',
+    day: cx(groupHeader, 'text-text-muted text-xs font-semibold'),
     list: 'divide-border divide-y',
     row: 'can-hover:bg-surface-muted items-start gap-3.5 px-4 py-4 lg:px-5',
     read: '',
@@ -146,7 +146,7 @@ interface Group {
   items: UserNotification[];
 }
 
-function groupByDay(items: UserNotification[], perGroup: number): Group[] {
+function groupByRecency(items: UserNotification[], perGroup: number): Group[] {
   const today = todayInSaoPaulo();
   const isToday = (item: UserNotification) => civilDateInSaoPaulo(new Date(item.createdAt)) === today;
   return [
@@ -225,7 +225,7 @@ export function NotificationList({
       />
     );
   }
-  return groupByDay(query.data.items, perGroup).map((group) => (
+  return groupByRecency(query.data.items, perGroup).map((group) => (
     <NotificationGroup key={group.day} group={group} role={role} variant={variant} />
   ));
 }

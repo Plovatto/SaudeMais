@@ -1,4 +1,5 @@
 import { addDays, civilDateInSaoPaulo, formatDay } from '@lib/date';
+import { groupConsecutive } from '@lib/group';
 
 interface DayGroup<T> {
   date: string;
@@ -6,7 +7,7 @@ interface DayGroup<T> {
   items: T[];
 }
 
-export function groupByDay<T extends { startsAt: string }>(
+export function groupByAppointmentDay<T extends { startsAt: string }>(
   items: readonly T[],
   now = new Date(),
 ): DayGroup<T>[] {
@@ -16,14 +17,7 @@ export function groupByDay<T extends { startsAt: string }>(
     [addDays(today, 1)]: 'Amanhã',
     [addDays(today, -1)]: 'Ontem',
   };
-  const groups = new Map<string, T[]>();
-  for (const item of items) {
-    const date = civilDateInSaoPaulo(new Date(item.startsAt));
-    groups.set(date, [...(groups.get(date) ?? []), item]);
-  }
-  return [...groups].map(([date, dayItems]) => ({
-    date,
-    label: named[date] ?? formatDay(date),
-    items: dayItems,
-  }));
+  return groupConsecutive(items, (item) => civilDateInSaoPaulo(new Date(item.startsAt))).map(
+    ({ key, items: day }) => ({ date: key, label: named[key] ?? formatDay(key), items: day }),
+  );
 }
