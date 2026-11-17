@@ -61,7 +61,7 @@ export function Dialog({
     }
   }, [open, initialFocus]);
 
-  const grab = useSheetDrag(ref, open && draggable);
+  const sheet = useSheetDrag({ dialogRef: ref, active: open && draggable, dismissible });
 
   const onDialogClose = useEffectEvent(() => {
     if (!dismissible && !closingFromProp.current) {
@@ -88,6 +88,7 @@ export function Dialog({
     <dialog
       ref={ref}
       aria-labelledby={titleId}
+      {...sheet.dialogProps}
       aria-describedby={description ? descriptionId : undefined}
       onCancel={(event) => {
         if (!dismissible) event.preventDefault();
@@ -107,7 +108,7 @@ export function Dialog({
           'max-sm:rounded-t-sheet max-sm:motion-safe:animate-sheet max-sm:mb-0 max-sm:w-full max-sm:max-w-none max-sm:rounded-b-none max-sm:border-x-0 max-sm:border-b-0 max-sm:pb-[env(safe-area-inset-bottom)] max-sm:motion-safe:[transition:height_0.28s_cubic-bezier(0.2,0.8,0.2,1),transform_0.22s_cubic-bezier(0.2,0.8,0.2,1)] max-sm:motion-safe:data-dragging:transition-none sm:max-w-md',
       )}
     >
-      {draggable && <SheetGrab {...grab} />}
+      {draggable && <SheetGrab {...sheet.grabProps} />}
       {bare ? (
         <>
           <h2 id={titleId} className="sr-only">
