@@ -93,12 +93,11 @@ function TimeSwap({ current, next, moved }: { current: string; next: string; mov
         className="border-border bg-surface-muted"
         textClassName="text-text-muted line-through"
       />
-      <span
-        aria-hidden
-        className="border-border bg-surface text-text-muted relative z-10 -my-3.5 grid size-7 place-items-center self-center rounded-full border"
-      >
-        <LuChevronDown className="size-3.5" />
-      </span>
+      <div aria-hidden className="relative z-10 -my-3.5 grid place-items-center">
+        <span className="border-border bg-surface text-text-muted grid size-7 place-items-center rounded-full border">
+          <LuChevronDown className="size-3.5" />
+        </span>
+      </div>
       <SwapRow
         label="Novo"
         startsAt={next}

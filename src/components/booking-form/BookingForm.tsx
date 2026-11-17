@@ -10,7 +10,7 @@ import { MonthCalendar } from './MonthCalendar';
 import { SlotPicker } from './SlotPicker';
 import type { BookingFormState } from './useBookingForm';
 
-const whenGrid = 'grid lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)]';
+const whenGrid = 'grid @min-[520px]:grid-cols-[300px_minmax(0,1fr)]';
 
 export const fieldGrid = 'grid grid-cols-[repeat(auto-fit,minmax(min(260px,100%),1fr))] gap-4';
 
@@ -37,6 +37,7 @@ export function WhenCard({
   return (
     <SectionCard
       title={title}
+      className="@container"
       flush
       action={hint && <span className="text-text-muted text-[0.8125rem] max-lg:basis-full">{hint}</span>}
     >
@@ -68,7 +69,7 @@ export function WhenCard({
               describedBy={booking.errors.date ? errorId : undefined}
             />
           </div>
-          <div className="border-border min-w-0 border-t p-4 lg:border-s lg:border-t-0 lg:p-5">
+          <div className="border-border min-w-0 border-t p-4 lg:p-5 @min-[520px]:border-s @min-[520px]:border-t-0">
             {booking.date ? (
               <SlotPicker
                 key={booking.date}
@@ -91,7 +92,7 @@ export function WhenCard({
             )}
           </div>
           {error && (
-            <div className="px-4 pb-4 lg:col-span-2 lg:px-5">
+            <div className="px-4 pb-4 lg:px-5 @min-[520px]:col-span-2">
               <FieldError id={errorId}>{error}</FieldError>
             </div>
           )}
@@ -153,6 +154,7 @@ export function BookingForm({
       icon={icon}
       loading={booking.submitting}
       loadingLabel="Enviando pedido"
+      data-ready={ready}
       aria-disabled={!ready || booking.submitting || undefined}
       className={cx('transition-none', className)}
     >
@@ -162,8 +164,13 @@ export function BookingForm({
   return (
     <>
       <PageHeader title={heading.title} subtitle={heading.subtitle} />
-      <form aria-label={label} noValidate onSubmit={(event) => void booking.onSubmit(event)}>
-        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-5">
+      <form
+        aria-label={label}
+        noValidate
+        onSubmit={(event) => void booking.onSubmit(event)}
+        className="@container"
+      >
+        <div className="grid items-start gap-4 lg:gap-5 @min-[900px]:grid-cols-[minmax(0,1fr)_400px]">
           <div className="flex min-w-0 flex-col gap-4 lg:gap-5">
             {children}
             {booking.banner && <FormAlert>{booking.banner}</FormAlert>}
@@ -194,7 +201,7 @@ export function BookingForm({
               </div>
               {submit(
                 shortLabel,
-                'aria-disabled:bg-surface-strong aria-disabled:text-text-muted h-[54px] w-full rounded-[15px] text-base font-bold aria-disabled:border-transparent aria-disabled:opacity-100',
+                'h-[54px] w-full rounded-[15px] text-base font-bold data-[ready=false]:border-transparent data-[ready=false]:bg-surface-strong data-[ready=false]:text-text-secondary data-[ready=false]:opacity-100',
               )}
             </div>
           )}

@@ -15,7 +15,6 @@ export const buttonVariants = {
     'border border-border-strong bg-surface text-danger-text shadow-button can-hover:border-danger can-hover:bg-danger-soft',
   'danger-soft-outline':
     'border border-[color-mix(in_oklab,var(--danger)_35%,var(--border-strong))] bg-surface text-danger-text can-hover:bg-danger-soft',
-  'danger-ghost': 'border border-transparent text-danger-text can-hover:bg-danger-soft',
   'success-outline':
     'border border-success bg-success-soft text-success-text can-hover:border-success-strong',
 };

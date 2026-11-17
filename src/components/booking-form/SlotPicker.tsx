@@ -68,7 +68,7 @@ export function SlotPicker({ date, slots, value, onPick, current, focusRef, desc
               aria-pressed={period.id === active?.id}
               onClick={() => setChosen(period.id)}
               className={cx(
-                'inline-flex h-8 min-w-0 items-center justify-center gap-1.5 rounded-[8px] px-3 text-[0.8125rem] font-semibold transition-[background-color,color,box-shadow] duration-150 @max-[15rem]:px-1',
+                'inline-flex h-8 min-w-0 items-center justify-center gap-1.5 rounded-[8px] px-3 text-[0.8125rem] font-semibold transition-[background-color,color,box-shadow] duration-150 @max-[13rem]:gap-1 @max-[13rem]:px-0.5',
                 period.id === active?.id
                   ? 'bg-surface text-text shadow-[0_1px_2px_rgb(16_42_41/0.08),0_0_0_1px_var(--border)]'
                   : 'text-text-secondary can-hover:text-text',
@@ -77,7 +77,7 @@ export function SlotPicker({ date, slots, value, onPick, current, focusRef, desc
               {period.label}
               <span
                 className={cx(
-                  'inline-grid h-[18px] min-w-[18px] place-items-center rounded-full px-[5px] text-[0.6875rem] font-semibold tabular-nums @max-[15rem]:sr-only',
+                  'inline-grid h-[18px] min-w-[18px] place-items-center rounded-full px-[5px] text-[0.6875rem] font-semibold tabular-nums @max-[11rem]:sr-only',
                   period.id === active?.id ? 'bg-role-soft text-role-text' : 'bg-surface text-text-muted',
                 )}
               >
