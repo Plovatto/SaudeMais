@@ -1,4 +1,5 @@
 import { ListRow, StatusChip } from '@components/ui';
+import { WIDE_QUERY, useMediaQuery } from '@hooks/useMediaQuery';
 import type { PatientBooking } from '@lib/api/models';
 import { formatShortDay } from '@lib/date';
 import { bookingMeta, bookingStatus, bookingTitle, isMuted } from './booking-display';
@@ -11,6 +12,8 @@ type BookingRowProps = { booking: PatientBooking; selected?: boolean } & (
 export function BookingRow(props: BookingRowProps) {
   const { booking, selected = false } = props;
   const status = bookingStatus(booking, 'patient');
+  const wide = useMediaQuery(WIDE_QUERY);
+  const chip = <StatusChip tone={status.tone}>{status.label}</StatusChip>;
   const content = {
     selected,
     leading: <DateTile startsAt={booking.startsAt} muted={isMuted(booking)} />,
@@ -20,8 +23,15 @@ export function BookingRow(props: BookingRowProps) {
         {bookingTitle(booking).title}
       </>
     ),
-    meta: bookingMeta(booking),
-    trailing: <StatusChip tone={status.tone}>{status.label}</StatusChip>,
+    meta: wide ? (
+      bookingMeta(booking)
+    ) : (
+      <>
+        {bookingMeta(booking)}
+        <span className="mt-2 flex">{chip}</span>
+      </>
+    ),
+    trailing: wide ? chip : undefined,
   };
   return props.to !== undefined ? (
     <ListRow to={props.to} {...content} />
