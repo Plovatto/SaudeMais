@@ -55,7 +55,7 @@ export function useBookingForm<TIn extends SlotValues, TOut, R>(
   const [missing, setMissing] = useState(false);
   const { control, register, getValues, setValue, setError, clearErrors, formState } =
     form as unknown as UseFormReturn<SlotValues>;
-  const date = useWatch({ control, name: 'date' });
+  const [date, startsAt] = useWatch({ control, name: ['date', 'startsAt'] });
   const availability = useQuery({
     queryKey: source.queryKey,
     queryFn: ({ signal }) => source.load(signal),
@@ -91,6 +91,19 @@ export function useBookingForm<TIn extends SlotValues, TOut, R>(
   const clearDay = () => {
     setValue('date', '');
     clearSlot();
+  };
+  const pickDate = (value: string) => {
+    setValue('date', value);
+    clearErrors('date');
+    if (
+      !days.find((day) => day.date === value)?.slots.some((slot) => slot.startsAt === getValues('startsAt'))
+    ) {
+      clearSlot();
+    }
+  };
+  const pickSlot = (value: string) => {
+    setValue('startsAt', value);
+    clearErrors('startsAt');
   };
 
   const { alert, run } = useFormSubmit(
@@ -131,12 +144,15 @@ export function useBookingForm<TIn extends SlotValues, TOut, R>(
   );
 
   const showMissing = missing && Object.keys(errors).some((key) => key !== 'notes');
-  const field = (name: keyof SlotValues) => ({
-    error: errors[name]?.message,
-    ...register(name, name === 'date' ? { onChange: clearSlot } : {}),
-  });
+  const field = (name: keyof SlotValues) => ({ error: errors[name]?.message, ...register(name) });
 
   return {
+    date,
+    startsAt,
+    pickDate,
+    pickSlot,
+    focusRef: (name: 'date' | 'startsAt') => register(name).ref,
+    errors: { date: errors.date?.message, startsAt: errors.startsAt?.message },
     clearDay,
     onSubmit,
     field,

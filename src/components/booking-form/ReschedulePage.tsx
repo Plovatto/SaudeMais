@@ -1,22 +1,24 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
-import { LuLock } from 'react-icons/lu';
+import { LuArrowDown, LuLock, LuMapPin } from 'react-icons/lu';
 import { useParams } from 'react-router';
 import { z } from 'zod';
+import { DateTile } from '@components/bookings/DateTile';
 import { RESCHEDULE_CLOSED_NOTE, rescheduleBlockedNotes } from '@components/bookings/reschedule-text';
-import { FormAlert, Input, QueryError, Skeleton, TextLink } from '@components/ui';
+import { PageHeader } from '@components/layout/PageHeader';
+import { FormAlert, InfoList, QueryError, SectionCard, Skeleton, TextLink } from '@components/ui';
 import { PATIENT_BOOKINGS_PATH } from '@constants/areas';
 import { ApiError } from '@lib/api/api-error';
 import type { PatientBooking } from '@lib/api/models';
-import { civilDateInSaoPaulo, formatDateTime } from '@lib/date';
+import { civilDateInSaoPaulo, whenText } from '@lib/date';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
 import { queryKeys } from '@lib/query-keys';
 import type { AvailableDay } from './availability';
-import { BookingForm, SlotFields } from './BookingForm';
-import { BookingPage } from './BookingPage';
+import { BookingForm, WhenCard } from './BookingForm';
 import { emptySlot, slotShape } from './slot-schema';
+import { useBookedRedirect } from './useBookedRedirect';
 import { useBookingForm } from './useBookingForm';
 
 const FIELDS = ['startsAt'] as const;
@@ -51,18 +53,24 @@ interface Reschedulable {
   startsAt: string;
 }
 
-interface LockedField {
-  label: string;
-  value: string;
-  hint?: string | undefined;
+export interface LockedDetails {
+  icon: ReactNode;
+  kindLabel: string;
+  title: string;
+  subtitle: string;
+  unitName: string;
+  unitAddress: string;
+  changeHint: string;
+  calendarHint: string;
 }
 
 interface RescheduleFormProps<B extends Reschedulable> {
   formLabel: string;
   notice?: (booking: B) => string;
   emptyNote: string;
-  stacked?: boolean;
-  locked: (booking: B) => LockedField[];
+  confirmNote: string;
+  bookedMessage: string;
+  details: (booking: B) => LockedDetails;
   availability: (booking: B) => {
     queryKey: QueryKey;
     load: (signal: AbortSignal) => Promise<AvailableDay[]>;
@@ -72,26 +80,28 @@ interface RescheduleFormProps<B extends Reschedulable> {
 
 interface ReschedulePageProps<B extends Reschedulable> extends RescheduleFormProps<B> {
   kind: PatientBooking['kind'];
-  title: string;
-  subtitle: string;
-  bookedTitle: string;
-  describe: (booking: B) => string;
   load: (id: string, signal: AbortSignal) => Promise<B>;
   actionsOf: (booking: B) => PatientBooking['actions'] | null;
 }
+
+const HEADING = {
+  title: 'Reagendar',
+  subtitle: 'Escolha uma nova data e horário. O restante continua igual.',
+};
 
 function RescheduleForm<B extends Reschedulable>({
   current,
   formLabel,
   notice,
   emptyNote,
-  stacked,
-  locked,
+  confirmNote,
+  bookedMessage,
+  details,
   availability,
   reschedule,
-  onBooked,
-}: RescheduleFormProps<B> & { current: B; onBooked: (booking: B) => void }) {
+}: RescheduleFormProps<B> & { current: B }) {
   const queryClient = useQueryClient();
+  const onBooked = useBookedRedirect<B>(() => bookedMessage);
   const [closed, setClosed] = useState<string | null>(null);
   const preselected = useRef(false);
   const close = (message: string) => {
@@ -125,6 +135,8 @@ function RescheduleForm<B extends Reschedulable>({
   });
   const { days } = booking.slots;
   const currentDay = civilDateInSaoPaulo(new Date(current.startsAt));
+  const locked = details(current);
+  const moved = booking.startsAt !== '' && booking.startsAt !== current.startsAt;
 
   useEffect(() => {
     if (preselected.current || days.length === 0) return;
@@ -132,15 +144,95 @@ function RescheduleForm<B extends Reschedulable>({
     if (days.some((day) => day.date === currentDay)) form.setValue('date', currentDay);
   }, [days, currentDay, form]);
 
-  if (closed) return <ClosedNote message={closed} alert />;
+  if (closed) {
+    return (
+      <>
+        <PageHeader {...HEADING} />
+        <ClosedNote message={closed} alert />
+      </>
+    );
+  }
 
   return (
-    <BookingForm label={formLabel} booking={booking} submitLabel="Reagendar">
-      {locked(current).map(({ label, value, hint }) => (
-        <Input key={label} label={label} value={value} hint={hint} icon={<LuLock />} readOnly />
-      ))}
-      <Input label="Horário atual" value={formatDateTime(current.startsAt)} icon={<LuLock />} readOnly />
-      <SlotFields booking={booking} current={current.startsAt} stacked={stacked} emptyNote={emptyNote} />
+    <BookingForm
+      label={formLabel}
+      heading={HEADING}
+      booking={booking}
+      submitLabel="Confirmar novo horário"
+      shortLabel="Confirmar"
+      summary={{
+        title: 'Mudança de horário',
+        line: moved ? whenText(booking.startsAt) : null,
+        sub: `Antes: ${whenText(current.startsAt)}`,
+        note: confirmNote,
+        items: [
+          {
+            key: 'before',
+            icon: <DateTile startsAt={current.startsAt} muted />,
+            boxed: false,
+            label: 'Atual',
+            value: (
+              <span className="text-text-secondary tabular-nums line-through">
+                {whenText(current.startsAt)}
+              </span>
+            ),
+          },
+          {
+            key: 'after',
+            icon: moved ? (
+              <DateTile startsAt={booking.startsAt} className="motion-safe:animate-pop" />
+            ) : (
+              <span className="bg-surface-strong text-text-muted rounded-tile grid size-[52px] place-items-center">
+                <LuArrowDown className="size-[18px]" />
+              </span>
+            ),
+            boxed: false,
+            label: 'Novo',
+            value: moved ? (
+              <span className="tabular-nums">{whenText(booking.startsAt)}</span>
+            ) : (
+              <span className="text-text-muted">Escolha outro horário</span>
+            ),
+          },
+        ],
+      }}
+    >
+      <SectionCard
+        title="Seu agendamento"
+        action={
+          <span className="bg-surface-strong text-text-secondary inline-flex h-6 items-center gap-1 rounded-full px-2.5 text-xs font-semibold">
+            <LuLock aria-hidden className="size-3" />
+            Não muda
+          </span>
+        }
+      >
+        <InfoList
+          items={[
+            {
+              key: 'what',
+              icon: locked.icon,
+              label: locked.kindLabel,
+              value: locked.title,
+              hint: locked.subtitle,
+            },
+            {
+              key: 'unit',
+              icon: <LuMapPin />,
+              label: 'Local',
+              value: locked.unitName,
+              hint: locked.unitAddress,
+            },
+          ]}
+        />
+        <p className="text-text-muted text-xs">{locked.changeHint}</p>
+      </SectionCard>
+      <WhenCard
+        booking={booking}
+        title="Nova data e horário"
+        description={locked.calendarHint}
+        current={current.startsAt}
+        emptyNote={emptyNote}
+      />
       {notice && (
         <FormAlert tone="warning" role="note">
           {notice(current)}
@@ -152,10 +244,6 @@ function RescheduleForm<B extends Reschedulable>({
 
 export function ReschedulePage<B extends Reschedulable>({
   kind,
-  title,
-  subtitle,
-  bookedTitle,
-  describe,
   load,
   actionsOf,
   ...form
@@ -169,29 +257,22 @@ export function ReschedulePage<B extends Reschedulable>({
   const blocked = actions?.rescheduleBlockedReason;
   const gone = detail.error instanceof ApiError && detail.error.code === 'NOT_FOUND';
 
+  if (detail.data && actions?.canReschedule) return <RescheduleForm {...form} current={detail.data} />;
+
   return (
-    <BookingPage<B> title={title} subtitle={subtitle} bookedTitle={bookedTitle} describe={describe}>
-      {(onBooked) => (
-        <>
-          {detail.isPending && (
-            <div aria-busy="true" className="flex flex-col gap-5">
-              <Skeleton className="h-20" />
-              <Skeleton className="h-20" />
-              <Skeleton className="h-12" />
-            </div>
-          )}
-          {gone && <ClosedNote message={GONE_MESSAGE} />}
-          {detail.isError && !gone && (
-            <QueryError error={detail.error} onRetry={() => void detail.refetch()} />
-          )}
-          {detail.data &&
-            (actions?.canReschedule ? (
-              <RescheduleForm {...form} current={detail.data} onBooked={onBooked} />
-            ) : (
-              <ClosedNote message={(blocked && rescheduleBlockedNotes[blocked]) ?? RESCHEDULE_CLOSED_NOTE} />
-            ))}
-        </>
+    <>
+      <PageHeader {...HEADING} />
+      {detail.isPending && (
+        <div aria-busy="true" className="flex flex-col gap-4">
+          <Skeleton className="rounded-card h-40" />
+          <Skeleton className="rounded-card h-72" />
+        </div>
       )}
-    </BookingPage>
+      {gone && <ClosedNote message={GONE_MESSAGE} />}
+      {detail.isError && !gone && <QueryError error={detail.error} onRetry={() => void detail.refetch()} />}
+      {detail.data && (
+        <ClosedNote message={(blocked && rescheduleBlockedNotes[blocked]) ?? RESCHEDULE_CLOSED_NOTE} />
+      )}
+    </>
   );
 }

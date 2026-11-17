@@ -6,6 +6,7 @@ export { Checkbox, type CheckboxProps } from './Checkbox';
 export { ConfirmDialog, type ConfirmDialogProps } from './ConfirmDialog';
 export { CountBadge } from './CountBadge';
 export { Dialog, type DialogProps } from './Dialog';
+export { Dropdown, type DropdownOption, type DropdownProps } from './Dropdown';
 export { EmptyState, type EmptyStateProps } from './EmptyState';
 export type { FieldProps } from './field-props';
 export { FieldError } from './FieldControl';

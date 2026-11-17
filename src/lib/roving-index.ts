@@ -17,3 +17,24 @@ export function rovingIndex(
   if (key === 'End') return last;
   return undefined;
 }
+
+export function moveFocus(
+  event: { key: string; currentTarget: HTMLElement; preventDefault: () => void },
+  selector: string,
+  orientation: keyof typeof keys,
+  { check = false } = {},
+): void {
+  const items = [...event.currentTarget.querySelectorAll<HTMLElement>(selector)].filter(
+    (item) => !item.hasAttribute('disabled'),
+  );
+  const next = rovingIndex(
+    event.key,
+    items.indexOf(document.activeElement as HTMLElement),
+    items.length,
+    orientation,
+  );
+  if (next === undefined) return;
+  event.preventDefault();
+  items[next]?.focus();
+  if (check) items[next]?.click();
+}

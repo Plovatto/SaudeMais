@@ -14,6 +14,7 @@ import {
   Tabs,
 } from '@components/ui';
 import { RESET_PAGE, useClampedPage, usePageParam } from '@hooks/usePageParam';
+import { SEARCH_DELAY_MS } from '@hooks/useDebouncedValue';
 import { useSearchParam } from '@hooks/useSearchParam';
 import { useCurrentUser } from '@lib/auth/useSession';
 import { queryKeys } from '@lib/query-keys';
@@ -38,7 +39,6 @@ const STATUS_OPTIONS = [
 type RoleTab = (typeof ROLE_TABS)[number]['value'];
 
 const TABS_ID = 'admin-users';
-const SEARCH_DELAY_MS = 300;
 
 const found = (total: number) => (total === 1 ? '1 usuário encontrado' : `${total} usuários encontrados`);
 
