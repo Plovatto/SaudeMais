@@ -1,27 +1,61 @@
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
-import { LuBell } from 'react-icons/lu';
-import { ButtonLink, CountBadge, Popover } from '@components/ui';
-import { notificationsUrl, type Role } from '@constants/areas';
+import { useEffect, useRef, useState } from 'react';
+import { LuArrowRight, LuBell, LuX } from 'react-icons/lu';
+import { Link, useLocation } from 'react-router';
+import { CountBadge, IconButton, IconLink, Popover } from '@components/ui';
+import { NOTIFICATIONS_PATH, notificationsUrl, type Role } from '@constants/areas';
 import { notificationsQuery, unreadText, useUnreadCount } from '@lib/api/notifications-api';
+import { cx } from '@lib/cx';
 import { NotificationList } from './NotificationList';
 import { ReadAllButton } from './ReadAllButton';
 
-const PREVIEW_SIZE = 5;
+const PREVIEW_SIZE = 6;
+const PER_GROUP = 3;
 const BADGE_MAX = 9;
 
-function NotificationsPreview({ role }: { role: Role }) {
+const newText = (count: number) => `${count} ${count === 1 ? 'nova' : 'novas'}`;
+
+interface PreviewProps {
+  role: Role;
+  unread: number | undefined;
+  close: () => void;
+}
+
+function NotificationsPreview({ role, unread, close }: PreviewProps) {
   const query = useQuery(notificationsQuery(role, 1, PREVIEW_SIZE));
+  const doneRef = useRef<HTMLSpanElement>(null);
   return (
     <>
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-text font-semibold">Notificações</h2>
-        <ReadAllButton role={role} />
+      <div className="border-border flex items-center gap-2 border-b py-3 ps-4 pe-2.5">
+        <h2 className="text-text text-[0.90625rem] font-semibold">Notificações</h2>
+        {!!unread && (
+          <span className="bg-role-strong text-on-role rounded-full px-[7px] py-px text-[0.65625rem] font-[650] whitespace-nowrap">
+            {newText(unread)}
+          </span>
+        )}
+        <ReadAllButton role={role} unread={unread} focusAfter={doneRef} compact />
+        {unread === 0 && (
+          <span ref={doneRef} tabIndex={-1} className="text-text-muted ms-auto px-1.5 text-xs">
+            Tudo lido
+          </span>
+        )}
+        <IconButton
+          label="Fechar notificações"
+          icon={<LuX />}
+          onClick={close}
+          className="text-text-muted size-7 lg:size-7 [&_svg]:size-4"
+        />
       </div>
-      <NotificationList query={query} role={role} placeholders={3} />
-      <ButtonLink to={notificationsUrl(role)} variant="ghost" fullWidth>
-        Ver todas
-      </ButtonLink>
+      <div className="max-h-[min(360px,60vh)] overflow-y-auto pt-0.5 pb-1.5">
+        <NotificationList query={query} role={role} variant="popover" placeholders={3} perGroup={PER_GROUP} />
+      </div>
+      <Link
+        to={notificationsUrl(role)}
+        className="border-border bg-surface-muted text-role-text can-hover:bg-surface-strong rounded-b-card flex items-center justify-center gap-1.5 border-t p-2.5 text-[0.78125rem] font-semibold transition-colors duration-150"
+      >
+        Ver todas as notificações
+        <LuArrowRight aria-hidden className="size-3.5" />
+      </Link>
     </>
   );
 }
@@ -48,27 +82,46 @@ function useIncreaseAnnouncement(count: number | undefined) {
   return announcement;
 }
 
+function BellBadge({ unread }: { unread: number }) {
+  if (unread === 0) return null;
+  return (
+    <CountBadge className="bg-danger-strong text-on-danger ring-canvas pointer-events-none end-0.5 top-[3px] h-4 min-w-4 px-1 text-[0.625rem] leading-4 ring-2">
+      {unread > BADGE_MAX ? `${BADGE_MAX}+` : unread}
+    </CountBadge>
+  );
+}
+
+const bellIcon = <LuBell className="translate-y-px" />;
+
+const caret =
+  "before:border-border before:bg-surface before:absolute before:-top-1.5 before:end-[22px] before:z-[2] before:size-3 before:rotate-45 before:rounded-tl-[3px] before:border-s before:border-t before:content-[''] lg:before:end-3.5";
+
 export function NotificationBell({ role }: { role: Role }) {
   const count = useUnreadCount(role);
   const announcement = useIncreaseAnnouncement(count);
+  const { pathname } = useLocation();
   const unread = count ?? 0;
+  const label = unread > 0 ? `Notificações, ${unreadText(unread)}` : 'Notificações';
   return (
     <>
-      <Popover
-        label={unread > 0 ? `Notificações, ${unreadText(unread)}` : 'Notificações'}
-        title="Notificações"
-        icon={<LuBell />}
-        badge={
-          unread > 0 && (
-            <CountBadge className="bg-danger-strong text-on-danger -end-0.5 -top-0.5">
-              {unread > BADGE_MAX ? `${BADGE_MAX}+` : unread}
-            </CountBadge>
-          )
-        }
-        panelClassName="flex flex-col gap-3"
-      >
-        <NotificationsPreview role={role} />
-      </Popover>
+      {pathname === NOTIFICATIONS_PATH ? (
+        <IconLink to={notificationsUrl(role)} label={label} icon={bellIcon} aria-current="page">
+          <BellBadge unread={unread} />
+        </IconLink>
+      ) : (
+        <Popover
+          label={label}
+          title="Notificações"
+          icon={bellIcon}
+          badge={<BellBadge unread={unread} />}
+          panelClassName={cx(
+            'mt-1.5 -me-1.5 w-[min(320px,calc(100vw-20px))] p-0 lg:me-0 lg:w-[360px]',
+            caret,
+          )}
+        >
+          {(close) => <NotificationsPreview role={role} unread={count} close={close} />}
+        </Popover>
+      )}
       <span role="status" className="sr-only">
         {announcement}
       </span>
