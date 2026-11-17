@@ -1,3 +1,4 @@
+import { ApiError } from '@lib/api/api-error';
 import { apiFetch, type BodyOf, type ResponseOf } from '@lib/api/api-fetch';
 import type { PasswordValues } from './profile-schemas';
 
@@ -24,8 +25,12 @@ export function endOtherSessions() {
   return apiFetch('delete', '/api/me/sessions/others');
 }
 
-export function endSession(id: string) {
-  return apiFetch('delete', '/api/me/sessions/{id}', { params: { id } });
+export async function endSession(id: string) {
+  try {
+    await apiFetch('delete', '/api/me/sessions/{id}', { params: { id } });
+  } catch (error) {
+    if (!(error instanceof ApiError && error.status === 404)) throw error;
+  }
 }
 
 export function listEmailPreferences(signal: AbortSignal) {

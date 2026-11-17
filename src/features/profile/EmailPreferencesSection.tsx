@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { Fragment } from 'react';
 import { QueryError, SectionCard, Skeleton, Switch, useToast } from '@components/ui';
 import { overline } from '@components/ui/styles';
@@ -26,6 +26,12 @@ const topics: Record<EmailPreference['topic'], { title: string; description: str
   appointment_cancellation: { title: 'Cancelamentos', description: 'Quando uma consulta for cancelada.' },
   user_registration: { title: 'Novos cadastros', description: 'Quando uma conta nova for criada.' },
 };
+
+function setPreference(queryClient: QueryClient, changed: EmailPreference) {
+  queryClient.setQueryData<EmailPreference[]>(queryKeys.emailPreferences, (items) =>
+    items?.map((item) => (item.topic === changed.topic ? changed : item)),
+  );
+}
 
 function PreferenceRow({
   preference,
@@ -68,19 +74,24 @@ export function EmailPreferencesSection({
     queryFn: ({ signal }) => listEmailPreferences(signal),
   });
   const mutation = useMutation({
+    mutationKey: queryKeys.emailPreferences,
     mutationFn: updateEmailPreference,
-    onMutate: (changed) => {
-      const previous = queryClient.getQueryData<EmailPreference[]>(queryKeys.emailPreferences);
-      queryClient.setQueryData<EmailPreference[]>(queryKeys.emailPreferences, (items) =>
-        items?.map((item) => (item.topic === changed.topic ? changed : item)),
-      );
+    onMutate: async (changed) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.emailPreferences });
+      const previous = queryClient
+        .getQueryData<EmailPreference[]>(queryKeys.emailPreferences)
+        ?.find((item) => item.topic === changed.topic);
+      setPreference(queryClient, changed);
       return previous;
     },
-    onSuccess: (items) => queryClient.setQueryData(queryKeys.emailPreferences, items),
     onError: (error, _changed, previous) => {
-      queryClient.setQueryData(queryKeys.emailPreferences, previous);
+      if (previous) setPreference(queryClient, previous);
       if (isProtectedAccount(error)) onProtected();
       else show({ message: errorMessage(error), tone: 'danger' });
+    },
+    onSettled: () => {
+      if (queryClient.isMutating({ mutationKey: queryKeys.emailPreferences }) === 1)
+        return queryClient.invalidateQueries({ queryKey: queryKeys.emailPreferences });
     },
   });
   const items = query.data;

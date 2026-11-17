@@ -7,16 +7,20 @@ const DARK_QUERY = '(prefers-color-scheme: dark)';
 
 const preferenceListeners = new Set<() => void>();
 
+let chosen: ThemePreference | undefined;
+let persisted = true;
+
 function isPreference(value: unknown): value is ThemePreference {
   return value === 'light' || value === 'dark' || value === 'system';
 }
 
 export function getThemePreference(): ThemePreference {
+  if (!persisted && chosen) return chosen;
   try {
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
     return isPreference(stored) ? stored : 'system';
   } catch {
-    return 'system';
+    return chosen ?? 'system';
   }
 }
 
@@ -32,10 +36,14 @@ export function applyTheme(theme: Theme): void {
 }
 
 export function setThemePreference(preference: ThemePreference): void {
+  chosen = preference;
   try {
     if (preference === 'system') localStorage.removeItem(THEME_STORAGE_KEY);
     else localStorage.setItem(THEME_STORAGE_KEY, preference);
-  } catch {}
+    persisted = true;
+  } catch {
+    persisted = false;
+  }
   applyTheme(resolveTheme(preference));
   for (const listener of preferenceListeners) listener();
 }

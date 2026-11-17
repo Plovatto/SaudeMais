@@ -1,5 +1,6 @@
 import { LuCheck } from 'react-icons/lu';
 import { cx } from '@lib/cx';
+import { hasLettersAndNumbers } from '@lib/validation/account-fields';
 
 const levels = [
   { label: 'Escolha uma senha forte', bar: '' },
@@ -7,8 +8,6 @@ const levels = [
   { label: 'Senha média', bar: 'bg-warning' },
   { label: 'Senha forte', bar: 'bg-success' },
 ];
-
-const hasLettersAndNumbers = (value: string) => /[A-Za-z]/.test(value) && /\d/.test(value);
 
 function scoreOf(password: string): number {
   if (!password) return 0;
@@ -20,15 +19,13 @@ function scoreOf(password: string): number {
   return Math.max(1, points);
 }
 
-export function PasswordStrength({ password, current }: { password: string; current?: string }) {
+export function PasswordStrength({ password, current }: { password: string; current: string }) {
   const score = scoreOf(password);
   const level = levels[score] ?? levels[0];
   const rules = [
     { label: 'Pelo menos 8 caracteres', ok: password.length >= 8 },
     { label: 'Letras e números', ok: hasLettersAndNumbers(password) },
-    ...(current === undefined
-      ? []
-      : [{ label: 'Diferente da senha atual', ok: password !== '' && password !== current }]),
+    { label: 'Diferente da senha atual', ok: password !== '' && password !== current },
   ];
   return (
     <div className="flex flex-col gap-3">

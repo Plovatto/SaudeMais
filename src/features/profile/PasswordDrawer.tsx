@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
+import type { RefObject } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { NewPasswordFields } from '@components/forms/NewPasswordFields';
 import { PasswordStrength } from '@components/forms/PasswordStrength';
@@ -27,7 +28,8 @@ function PasswordForm({ onClose, onProtected }: PasswordFormProps) {
     control,
     formState: { errors, isSubmitting },
   } = useForm<PasswordValues>({ resolver: zodResolver(passwordSchema), defaultValues: emptyPassword });
-  const [currentPassword, password] = useWatch({ control, name: ['currentPassword', 'password'] });
+  const values = useWatch({ control });
+  const canSubmit = passwordSchema.safeParse(values).success;
   const { alert, run } = useFormSubmit(
     setError,
     ['currentPassword', 'password', 'passwordConfirmation'],
@@ -57,8 +59,9 @@ function PasswordForm({ onClose, onProtected }: PasswordFormProps) {
           password={register('password')}
           confirmation={register('passwordConfirmation')}
           errors={{ password: errors.password?.message, confirmation: errors.passwordConfirmation?.message }}
+          showHint={false}
         />
-        <PasswordStrength password={password} current={currentPassword} />
+        <PasswordStrength password={values.password ?? ''} current={values.currentPassword ?? ''} />
         <p className="text-text-muted text-xs">
           Ao trocar a senha, as outras sessões da conta são encerradas.
         </p>
@@ -68,7 +71,7 @@ function PasswordForm({ onClose, onProtected }: PasswordFormProps) {
         <Button variant="secondary" onClick={onClose}>
           Cancelar
         </Button>
-        <Button type="submit" loading={isSubmitting}>
+        <Button type="submit" loading={isSubmitting} disabled={!canSubmit}>
           Alterar senha
         </Button>
       </DrawerFooter>
@@ -76,9 +79,13 @@ function PasswordForm({ onClose, onProtected }: PasswordFormProps) {
   );
 }
 
-export function PasswordDrawer({ open, ...props }: PasswordFormProps & { open: boolean }) {
+export function PasswordDrawer({
+  open,
+  fallbackFocus,
+  ...props
+}: PasswordFormProps & { open: boolean; fallbackFocus: RefObject<HTMLElement | null> }) {
   return (
-    <Drawer open={open} onClose={props.onClose} title="Alterar senha">
+    <Drawer open={open} onClose={props.onClose} title="Alterar senha" fallbackFocus={fallbackFocus}>
       {open && <PasswordForm {...props} />}
     </Drawer>
   );

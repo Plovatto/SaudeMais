@@ -101,7 +101,7 @@ export function SessionsSection({ locked, onProtected }: { locked: boolean; onPr
                     variant="danger-outline"
                     size="sm"
                     aria-label={`Encerrar sessão: ${device}`}
-                    disabled={locked}
+                    disabled={locked || (endOne.isPending && endOne.variables !== session.id)}
                     loading={endOne.isPending && endOne.variables === session.id}
                     onClick={() => endOne.mutate(session.id)}
                   >
