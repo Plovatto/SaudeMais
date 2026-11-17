@@ -19,7 +19,8 @@ export function PublicLayout() {
           icon={<LuSunMoon />}
           items={themeItems}
           {...(brand && {
-            triggerClassName: 'text-on-role can-hover:bg-on-role/15 focus-visible:outline-on-role',
+            triggerClassName:
+              'text-on-role can-hover:bg-on-role/15 aria-expanded:bg-on-role/15 aria-expanded:text-on-role focus-visible:outline-on-role',
           })}
         />
       </div>

@@ -1,8 +1,9 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderApp, serveApi, type MockResponse } from '@/test/render-app';
 import { ExamResultView } from '@components/exam-results/ExamResultView';
+import type { ResultItem } from '@components/exam-results/ResultVersion';
 import type { ExamResult } from '@lib/api/models';
 
 const PAGE = '/paciente/exames/b1/resultado';
@@ -72,26 +73,42 @@ const serve = (response: MockResponse) =>
 
 afterEach(() => vi.restoreAllMocks());
 
+const ranged = version({
+  items: [
+    {
+      name: 'Hemoglobina',
+      value: 13.8,
+      unit: 'g/dL',
+      referenceRange: '12,0 a 16,0',
+      flag: 'normal',
+      range: { low: 12, high: 16 },
+      about: 'Proteína que carrega o oxigênio.',
+    },
+    {
+      name: 'Leucócitos',
+      value: 3100,
+      unit: '/mm³',
+      referenceRange: '4.000 a 11.000',
+      flag: 'low',
+      range: { low: 4000, high: 11000 },
+      about: null,
+    },
+  ],
+});
+
+const items = () => within(screen.getByRole('region', { name: 'Itens do exame' })).getAllByRole('listitem');
+
 describe('exam result', { timeout: 15_000 }, () => {
-  it('shows the header and the items with their indicators', async () => {
+  it('shows the exam, when and where it was collected and the items with their indicators', async () => {
     serve({ status: 200, body: result() });
     renderApp(PAGE);
 
-    expect(await screen.findByRole('heading', { level: 2, name: 'Hemograma' })).toBeVisible();
-    expect(screen.getByRole('heading', { level: 1, name: 'Resultado do exame' })).toBeVisible();
-    expect(screen.getByText('EX-7F3K2Q')).toBeVisible();
-    expect(screen.getByText('10/01/2030, 10:00')).toBeVisible();
-    expect(screen.getByText('Unidade Central')).toBeVisible();
-    expect(screen.queryByText('Retificado')).not.toBeInTheDocument();
-
-    const table = screen.getByRole('table', { name: 'Itens do exame' });
-    expect(
-      within(table)
-        .getAllByRole('columnheader')
-        .map((cell) => cell.textContent),
-    ).toEqual(['Exame', 'Resultado', 'Referência', 'Indicador']);
-    const rows = within(table).getAllByRole('row').slice(1);
-    expect(rows.map((row) => within(row).getByRole('rowheader').textContent)).toEqual([
+    expect(await screen.findByRole('heading', { level: 1, name: 'Hemograma' })).toBeVisible();
+    expect(screen.getByText('Coletado em 10/01/2030 · Unidade Central')).toBeVisible();
+    expect(screen.getByText('Emitido em 11/01/2030')).toBeVisible();
+    expect(screen.queryByText(/Retificado/)).not.toBeInTheDocument();
+    const rows = items();
+    expect(rows.map((row) => row.querySelector('p')?.textContent)).toEqual([
       'Hemoglobina',
       'Leucócitos',
       'Glicose',
@@ -104,8 +121,108 @@ describe('exam result', { timeout: 15_000 }, () => {
       'Crítico',
     ]);
     expect(within(rows[0] as HTMLElement).getByText('13,8')).toBeVisible();
-    expect(within(rows[1] as HTMLElement).getByText('3.100')).toBeVisible();
-    expect(within(rows[3] as HTMLElement).getByText('—')).toBeVisible();
+    expect(within(rows[0] as HTMLElement).getByText('12,0 a 16,0')).toBeVisible();
+    expect(within(rows[3] as HTMLElement).getByText('—')).toBeInTheDocument();
+  });
+
+  it('sums up the items out of the reference', async () => {
+    serve({ status: 200, body: result() });
+    renderApp(PAGE);
+
+    const summary = await screen.findByRole('region', { name: 'Resumo do resultado' });
+    expect(summary).toHaveTextContent('3 de 4 itens fora da referência');
+    expect(summary).toHaveTextContent('Leucócitos baixo · Glicose alto · Potássio crítico');
+    expect(within(summary).getByRole('img')).toHaveAccessibleName('1 normal, 1 baixo, 1 alto, 1 crítico');
+  });
+
+  it('tells when every item is inside the reference', async () => {
+    serve({ status: 200, body: result({ current: version({ items: [ranged.items?.[0] as ResultItem] }) }) });
+    renderApp(PAGE);
+
+    const summary = await screen.findByRole('region', { name: 'Resumo do resultado' });
+    expect(summary).toHaveTextContent('Todos os itens dentro da referência');
+    expect(summary).toHaveTextContent('1 item analisado');
+  });
+
+  it('draws the numeric range and explains an item on demand', async () => {
+    serve({ status: 200, body: result({ current: ranged }) });
+    const { user } = renderApp(PAGE);
+
+    expect(await screen.findByRole('img', { name: 'Referência de 12,0 a 16,0, valor normal' })).toBeVisible();
+    expect(screen.getByRole('img', { name: 'Referência de 4.000 a 11.000, valor baixo' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'O que é Leucócitos?' })).not.toBeInTheDocument();
+    const about = screen.getByRole('button', { name: 'O que é Hemoglobina?' });
+    expect(about).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(about);
+
+    expect(about).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Proteína que carrega o oxigênio.')).toHaveAttribute(
+      'id',
+      about.getAttribute('aria-controls'),
+    );
+    await user.click(about);
+    expect(screen.queryByText('Proteína que carrega o oxigênio.')).not.toBeInTheDocument();
+  });
+
+  it('clamps a value far outside the range and keeps an unusual reference text', async () => {
+    serve({
+      status: 200,
+      body: result({
+        current: version({
+          items: [
+            {
+              name: 'Ferritina',
+              value: 900,
+              unit: 'ng/mL',
+              referenceRange: '15 - 150',
+              flag: 'high',
+              range: { low: 15, high: 150 },
+              about: null,
+            },
+          ],
+        }),
+      }),
+    });
+    renderApp(PAGE);
+
+    const bar = await screen.findByRole('img', { name: 'Referência de 15 a 150, valor alto' });
+    expect((bar.lastElementChild as HTMLElement).style.insetInlineStart).toBe('96%');
+  });
+
+  it('downloads the report as a PDF named after the exam code', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout'], shouldAdvanceTime: true });
+    const createObjectURL = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:laudo');
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+    const { calls } = serveApi(['patient'], {
+      '/api/patient/exam-results/b1': () => ({ status: 200, body: result() }),
+      '/api/patient/exam-results/b1/pdf': () => ({ status: 200, body: '%PDF' }),
+    });
+    const { user } = renderApp(PAGE);
+
+    await user.click(await screen.findByRole('button', { name: 'Baixar laudo em PDF' }));
+
+    await waitFor(() => expect(click).toHaveBeenCalledOnce());
+    expect((click.mock.contexts[0] as HTMLAnchorElement).download).toBe('laudo-EX-7F3K2Q.pdf');
+    expect(createObjectURL).toHaveBeenCalledOnce();
+    expect(revokeObjectURL).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(30_000);
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:laudo');
+    vi.useRealTimers();
+    expect(calls.some((call) => call.url.pathname === '/api/patient/exam-results/b1/pdf')).toBe(true);
+  });
+
+  it('warns when the PDF cannot be generated', async () => {
+    serveApi(['patient'], {
+      '/api/patient/exam-results/b1': () => ({ status: 200, body: result() }),
+      '/api/patient/exam-results/b1/pdf': () => ({ status: 500 }),
+    });
+    const { user } = renderApp(PAGE);
+
+    await user.click(await screen.findByRole('button', { name: 'Baixar laudo em PDF' }));
+
+    expect(await screen.findByText('Algo deu errado. Tente de novo em instantes.')).toBeVisible();
   });
 
   it('shows the imaging report, the amendment and the previous versions', async () => {
@@ -120,30 +237,17 @@ describe('exam result', { timeout: 15_000 }, () => {
     });
     const { user } = renderApp(PAGE);
 
-    expect(await screen.findByRole('heading', { level: 2, name: 'Ultrassom' })).toBeVisible();
-    expect(screen.getByText('Retificado')).toBeVisible();
-    expect(screen.getByText('Versão 2')).toBeVisible();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Ultrassom' })).toBeVisible();
+    expect(screen.getByRole('region', { name: 'Laudo' })).toHaveTextContent('Retificado · versão 2');
     expect(screen.getByText('Fígado de dimensões normais.')).toBeVisible();
     expect(screen.getByText('Conclusão: exame sem alterações.')).toBeVisible();
-    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Resumo do resultado' })).not.toBeInTheDocument();
     expect(screen.getByText('Fígado aumentado.')).not.toBeVisible();
 
     await user.click(screen.getByText('Versões anteriores (1)'));
 
-    expect(screen.getByRole('heading', { level: 3, name: 'Versão 1' })).toBeVisible();
+    expect(screen.getByRole('heading', { level: 2, name: 'Versão 1' })).toBeVisible();
     expect(screen.getByText('Fígado aumentado.')).toBeVisible();
-  });
-
-  it('prints the page', async () => {
-    const print = vi.spyOn(window, 'print').mockImplementation(() => undefined);
-    serve({ status: 200, body: result() });
-    const { user } = renderApp(PAGE);
-
-    await user.click(await screen.findByRole('button', { name: 'Imprimir' }));
-
-    expect(print).toHaveBeenCalledOnce();
-    expect(screen.getByText('Paciente: Ana Maria Silva')).toBeInTheDocument();
-    expect(screen.getByText(/^Impresso em \d{2}\/\d{2}\/\d{4}/)).toBeInTheDocument();
   });
 
   it.each([
@@ -158,7 +262,7 @@ describe('exam result', { timeout: 15_000 }, () => {
       'href',
       '/paciente/agendamentos?aba=realizados',
     );
-    expect(screen.queryByRole('button', { name: 'Imprimir' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Baixar laudo em PDF' })).not.toBeInTheDocument();
   });
 
   it('offers a retry when the result fails to load', async () => {
@@ -168,7 +272,7 @@ describe('exam result', { timeout: 15_000 }, () => {
     expect(await screen.findByRole('button', { name: 'Tentar de novo' })).toBeVisible();
   });
 
-  it('keeps every decimal, text values and the narrow reference inside the result cell', async () => {
+  it('keeps every decimal and text values', async () => {
     serve({
       status: 200,
       body: result({
@@ -198,15 +302,12 @@ describe('exam result', { timeout: 15_000 }, () => {
     });
     renderApp(PAGE);
 
-    const table = await screen.findByRole('table', { name: 'Itens do exame' });
-    const [tsh, urine] = within(table).getAllByRole('row').slice(1);
-    const tshResult = within(tsh as HTMLElement).getAllByRole('cell')[0] as HTMLElement;
-    expect(within(tshResult).getByText('2,34567')).toBeVisible();
-    expect(within(tshResult).getByText('Referência: 0,4 a 4,0')).toBeInTheDocument();
-    expect(within(urine as HTMLElement).getByText('Negativo')).toBeVisible();
+    expect(await screen.findByText('2,34567')).toBeVisible();
+    expect(screen.getByText('0,4 a 4,0')).toBeVisible();
+    expect(screen.getByText('Negativo')).toBeVisible();
   });
 
-  it('nests its headings under the given level', async () => {
+  it('nests the shared view headings under the given level', async () => {
     const user = userEvent.setup();
     render(
       <ExamResultView
