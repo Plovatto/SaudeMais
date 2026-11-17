@@ -22,7 +22,7 @@ test('a new patient signs up, signs in and books an appointment', async ({ page 
   await signIn(page, patient);
 
   await expect(page).toHaveURL(/\/paciente$/);
-  await openFromNav(page, 'Consultas');
+  await openFromNav(page, 'Agendar consulta');
   const form = page.getByRole('form', { name: 'Dados da consulta' });
   await form.getByRole('combobox', { name: 'Médico' }).selectOption({ label: DOCTOR });
   await form.getByRole('combobox', { name: 'Tipo de consulta' }).selectOption({ label: 'Primeira consulta' });

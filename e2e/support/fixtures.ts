@@ -39,7 +39,12 @@ export async function signIn(page: Page, { email, password }: Pick<Person, 'emai
 }
 
 export const openFromNav = (page: Page, label: string) =>
-  page.getByRole('navigation', { name: 'Navegação principal' }).getByRole('link', { name: label }).click();
+  page
+    .getByRole('navigation', { name: /^(Menu|Principal)$/ })
+    .getByRole('link', { name: label, exact: true })
+    .locator('visible=true')
+    .first()
+    .click();
 
 export const bookingCard = (page: Page, ...texts: string[]) =>
   texts.reduce((cards, text) => cards.filter({ hasText: text }), page.getByRole('listitem'));
