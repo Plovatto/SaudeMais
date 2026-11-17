@@ -187,7 +187,7 @@ describe('patient home', { timeout: 15_000 }, () => {
     renderApp('/paciente');
 
     const next = await screen.findByRole('link', {
-      name: 'Próximo compromisso: Sexta, 19 de julho, 15:30, Dr. João Silveira, Rotina, Confirmado. Ver detalhes',
+      name: /^Próximo compromisso\s*Confirmado\s*Sex, 19\/07 · 15:30\s*Dr\. João Silveira · Rotina, ver detalhes$/,
     });
     expect(next).toHaveAttribute('href', '/paciente/agendamentos?id=b1');
     expect(within(next).getByText('Confirmado')).toBeVisible();
@@ -278,9 +278,11 @@ describe('patient home', { timeout: 15_000 }, () => {
     renderApp('/paciente');
 
     const region = within(await screen.findByRole('region', { name: 'Minha saúde' }));
-    expect(region.getAllByRole('term').map((term) => term.textContent)).toEqual(['Pressão arterial', 'Peso']);
+    expect(region.getAllByRole('listitem').map((item) => item.textContent)).toEqual([
+      'Pressão arterial—Sem registro',
+      'Peso—Sem registro',
+    ]);
     expect(await region.findByText(/depois que o médico registrar suas consultas/)).toBeVisible();
-    region.getAllByRole('definition').forEach((value) => expect(value).toHaveTextContent('—Sem registro'));
   });
 
   it('shows the latest pressure and weight with when they were recorded', async () => {
@@ -298,7 +300,7 @@ describe('patient home', { timeout: 15_000 }, () => {
     const since = await region.findByText('há 3 dias');
     expect(since.tagName).toBe('TIME');
     expect(since).toHaveAttribute('datetime', pressureAt);
-    const [pressure, weight] = region.getAllByRole('definition');
+    const [pressure, weight] = region.getAllByRole('listitem');
     expect(pressure).toHaveTextContent('118/76 mmHg');
     expect(weight).toHaveTextContent('72,4 kg');
     expect(region.getByText(/^em \d{2}\/\d{2}\/\d{4}$/)).toBeVisible();
@@ -311,7 +313,7 @@ describe('patient home', { timeout: 15_000 }, () => {
 
     const region = within(await screen.findByRole('region', { name: 'Minha saúde' }));
     await region.findByText('agora');
-    const [pressure, weight] = region.getAllByRole('definition');
+    const [pressure, weight] = region.getAllByRole('listitem');
     expect(pressure).toHaveTextContent('—Sem registro');
     expect(weight).toHaveTextContent('80 kg');
   });
