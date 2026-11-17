@@ -17,11 +17,12 @@ import { isProtectedAccount } from '@lib/auth/protected-account';
 import { useSignOut } from '@lib/auth/useSignOut';
 import { formatDateTime } from '@lib/date';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
+import { plural } from '@lib/plural';
 import { queryKeys } from '@lib/query-keys';
 import { describeUserAgent, isMobileUserAgent } from '@lib/user-agent';
 import { endAllSessions, endOtherSessions, endSession, listSessions } from './profile-api';
 
-const devicesText = (count: number) => (count === 1 ? '1 aparelho' : `${count} aparelhos`);
+const devicesText = (count: number) => plural(count, 'aparelho', 'aparelhos');
 
 export function SessionsSection({ locked, onProtected }: { locked: boolean; onProtected: () => void }) {
   const signOut = useSignOut();
