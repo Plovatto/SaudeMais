@@ -1,4 +1,5 @@
 import { cx } from '@lib/cx';
+import { softTones } from '@components/ui/styles';
 import { dayTile } from '@lib/date';
 
 const sizes = {
@@ -37,7 +38,7 @@ export function DateTile({ startsAt, size = 'md', muted = false, className }: Da
         className={cx(
           'block font-bold tracking-[0.06em] uppercase',
           style.head,
-          muted ? 'bg-surface-strong text-text-secondary' : 'bg-role-soft text-role-text',
+          softTones[muted ? 'neutral' : 'info'],
         )}
       >
         {weekday}

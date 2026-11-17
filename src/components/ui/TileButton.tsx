@@ -1,5 +1,6 @@
 import type { ComponentProps, ReactNode } from 'react';
 import { cx } from '@lib/cx';
+import { softTones } from './styles';
 import { IconSlot } from './IconSlot';
 
 export interface TileButtonProps extends ComponentProps<'button'> {
@@ -29,7 +30,7 @@ export function TileButton({
       )}
       {...props}
     >
-      <IconSlot className="bg-role-soft text-role-text mb-1 size-8 justify-center rounded-full text-lg">
+      <IconSlot className={cx(softTones.info, 'mb-1 size-8 justify-center rounded-full text-lg')}>
         {icon}
       </IconSlot>
       {children} <span className="text-text-secondary text-xs font-medium">{label}</span>

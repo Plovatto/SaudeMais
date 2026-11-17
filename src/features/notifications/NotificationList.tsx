@@ -18,20 +18,13 @@ import type { Role } from '@constants/areas';
 import type { UserNotification } from '@lib/api/models';
 import { useMarkNotificationRead, type NotificationPage } from '@lib/api/notifications-api';
 import { cx } from '@lib/cx';
+import { softTones, type SoftTone } from '@components/ui/styles';
 import { civilDateInSaoPaulo, formatDateTime, formatSince, todayInSaoPaulo } from '@lib/date';
 import { notificationTarget, notificationText } from '@lib/messages/notifications.pt-BR';
 
-const tones = {
-  role: 'bg-role-soft text-role-text',
-  success: 'bg-success-soft text-success-text',
-  warning: 'bg-warning-soft text-warning-text',
-  danger: 'bg-danger-soft text-danger-text',
-  info: 'bg-info-soft text-info',
-};
-
 interface Visual {
   icon: IconType;
-  tone: keyof typeof tones;
+  tone: SoftTone;
 }
 
 const cancelled: Visual = { icon: LuX, tone: 'danger' };
@@ -43,11 +36,11 @@ const visuals: Record<UserNotification['type'], Visual> = {
   appointment_confirmed: { icon: LuCheck, tone: 'success' },
   appointment_cancelled: cancelled,
   appointment_expired: { icon: LuClock, tone: 'warning' },
-  exam_result_available: { icon: LuFileText, tone: 'info' },
-  user_registered: { icon: LuUserPlus, tone: 'info' },
+  exam_result_available: { icon: LuFileText, tone: 'accent' },
+  user_registered: { icon: LuUserPlus, tone: 'accent' },
 };
 
-const fallbackVisual: Visual = { icon: LuBell, tone: 'role' };
+const fallbackVisual: Visual = { icon: LuBell, tone: 'info' };
 
 export type NotificationVariant = 'page' | 'popover';
 
@@ -109,7 +102,7 @@ function NotificationItem({ notification, role, variant }: ItemProps) {
         className={cx(
           'relative grid shrink-0 place-items-center',
           look.icon,
-          tones[tone],
+          softTones[tone],
           variant === 'popover' && !unread && 'opacity-80 saturate-[0.4]',
         )}
       >

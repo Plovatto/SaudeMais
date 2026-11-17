@@ -1,5 +1,16 @@
 import { cx } from '@lib/cx';
 
+export const softTones = {
+  info: 'bg-role-soft text-role-text',
+  accent: 'bg-info-soft text-info',
+  success: 'bg-success-soft text-success-text',
+  warning: 'bg-warning-soft text-warning-text',
+  danger: 'bg-danger-soft text-danger-text',
+  neutral: 'bg-surface-strong text-text-secondary',
+};
+
+export type SoftTone = keyof typeof softTones;
+
 export const disabledState = 'unavailable:cursor-not-allowed unavailable:opacity-45 unavailable:shadow-none';
 
 export const buttonVariants = {
@@ -8,7 +19,7 @@ export const buttonVariants = {
   secondary:
     'border border-border-strong bg-surface text-text shadow-button can-hover:border-border-field can-hover:bg-surface-muted',
   ghost: 'border border-transparent text-role-text can-hover:bg-role-soft',
-  soft: 'border border-transparent bg-role-soft text-role-text can-hover:bg-role-soft-strong',
+  soft: cx('border border-transparent can-hover:bg-role-soft-strong', softTones.info),
   danger:
     'border border-transparent bg-danger-strong text-on-danger shadow-button can-hover:bg-danger-strong-hover',
   'danger-outline':
@@ -79,7 +90,9 @@ export const pill = {
   idle: 'border-border-strong bg-surface text-text-secondary can-hover:border-role-strong can-hover:text-role-text',
 };
 
-export const tile =
-  'inline-grid size-9 shrink-0 place-items-center rounded-field bg-role-soft text-role-text [&_svg]:size-[18px]';
+export const tile = cx(
+  softTones.info,
+  'inline-grid size-9 shrink-0 place-items-center rounded-field [&_svg]:size-[18px]',
+);
 
 export const overline = 'text-[0.6875rem] font-semibold tracking-[0.06em] text-text-muted uppercase';

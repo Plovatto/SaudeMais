@@ -2,11 +2,12 @@ import type { ReactNode } from 'react';
 import { LuCircleAlert, LuInfo, LuTriangleAlert } from 'react-icons/lu';
 import { cx } from '@lib/cx';
 import { IconSlot } from './IconSlot';
+import { softTones } from './styles';
 
 const tones = {
-  danger: { className: 'bg-danger-soft text-danger-text', icon: <LuCircleAlert /> },
-  warning: { className: 'bg-warning-soft text-warning-text', icon: <LuTriangleAlert /> },
-  info: { className: 'bg-role-soft text-role-text', icon: <LuInfo /> },
+  danger: { className: softTones.danger, icon: <LuCircleAlert /> },
+  warning: { className: softTones.warning, icon: <LuTriangleAlert /> },
+  info: { className: softTones.info, icon: <LuInfo /> },
   quiet: {
     className: 'bg-surface-muted text-text-secondary border-border border font-normal',
     icon: <LuInfo />,
