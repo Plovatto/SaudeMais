@@ -17,7 +17,7 @@ interface FieldControlProps extends FieldProps {
 
 export function FieldError({ id, children }: { id?: string | undefined; children: ReactNode }) {
   return (
-    <p id={id} className="text-danger-text flex items-center gap-1.5 text-sm font-medium">
+    <p id={id} className="text-danger-text flex items-center gap-1.5 text-[0.8125rem] font-medium">
       <LuCircleAlert aria-hidden className="shrink-0" />
       {children}
     </p>
@@ -43,7 +43,7 @@ export function FieldControl({
     <div className={cx('flex flex-col gap-1.5', className)}>
       <label
         htmlFor={control.id}
-        className={cx('text-text text-[0.9375rem] font-semibold', labelHidden && 'sr-only')}
+        className={cx('text-text text-[0.8125rem] font-semibold', labelHidden && 'sr-only')}
       >
         {label}
       </label>
@@ -54,7 +54,7 @@ export function FieldControl({
       </div>
       {error && <FieldError id={errorId}>{error}</FieldError>}
       {hint && (
-        <p id={hintId} className="text-text-secondary text-sm">
+        <p id={hintId} className="text-text-muted text-[0.78125rem]">
           {hint}
         </p>
       )}

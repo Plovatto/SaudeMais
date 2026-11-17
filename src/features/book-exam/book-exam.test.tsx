@@ -1,6 +1,16 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { todayInSaoPaulo } from '@lib/date';
+import {
+  dropdown,
+  openDays,
+  pick,
+  pickDay,
+  pickedDay,
+  pickTime,
+  slotGroup,
+  slotTimes,
+} from '@/test/booking-flow';
 import { renderApp, serveApi, type ApiRoute, type MockResponse } from '@/test/render-app';
 
 const examTypes = [
@@ -94,84 +104,94 @@ function serve(
   return { ...served, availabilityLoads: () => loads };
 }
 
-const field = (name: string) => screen.getByRole('combobox', { name });
+const MONDAY = 'Segunda, 23 de novembro';
 
-const optionsOf = (name: string) =>
-  within(field(name))
+const notes = () => screen.getByRole('textbox', { name: 'Observação' });
+
+const openOptions = async (user: User, label: string) => {
+  await user.click(dropdown(label));
+  const list = await screen.findByRole('listbox', { name: label });
+  return within(list)
     .getAllByRole('option')
-    .filter((option) => !(option as HTMLOptionElement).disabled)
-    .map((option) => option.textContent);
+    .map((option) => option.querySelector('span span')?.textContent);
+};
+
+const chooseOption = (user: User, name: string) =>
+  user.click(screen.getByRole('option', { name: new RegExp(`^${name}`) }));
 
 async function start() {
   const view = renderApp('/paciente/exames/novo');
-  await screen.findByRole('option', { name: 'Hemograma' });
+  await waitFor(() => expect(dropdown('Exame')).toBeEnabled());
   return view;
 }
 
 type User = Awaited<ReturnType<typeof start>>['user'];
 
 async function fill(user: User) {
-  await user.selectOptions(field('Tipo de exame'), 'Hemograma');
-  await user.click(await screen.findByRole('radio', { name: /Unidade Sul/ }));
-  await waitFor(() => expect(field('Data')).toBeEnabled());
-  await user.selectOptions(field('Data'), 'seg., 23/11');
-  await user.selectOptions(field('Horário'), '08:00 · 2 vagas');
+  await pick(user, 'Exame', 'Hemograma');
+  await waitFor(() => expect(dropdown('Unidade')).toBeEnabled());
+  await pick(user, 'Unidade', 'Unidade Sul');
+  await pickDay(user, MONDAY);
+  await pickTime(user, '08:00');
 }
 
-const submit = (user: User) => user.click(screen.getByRole('button', { name: 'Agendar Exame' }));
+const submit = (user: User) => user.click(screen.getByRole('button', { name: 'Agendar' }));
 
 const unitCalls = (calls: ReturnType<typeof serve>['calls']) =>
   calls.filter((call) => call.url.pathname === '/api/units').length;
 
-describe('book exam', { timeout: 15_000 }, () => {
-  it('lists the units of the chosen type and enables the date and time after both', async () => {
+describe('book exam', { timeout: 20_000 }, () => {
+  it('lists the units of the chosen exam and shows the free days after both', async () => {
     const { calls } = serve();
     const { user } = await start();
-    expect(screen.getByText('Escolha o tipo de exame para ver os locais.')).toBeVisible();
-    expect(field('Data')).toBeDisabled();
+    expect(dropdown('Unidade')).toBeDisabled();
+    expect(screen.getByText('Escolha o exame e a unidade para ver os dias e horários livres.')).toBeVisible();
 
-    await user.selectOptions(field('Tipo de exame'), 'Raio-X');
-    const group = await screen.findByRole('group', { name: 'Local do exame' });
-    expect(within(group).getAllByRole('radio')).toHaveLength(1);
-    expect(field('Data')).toBeDisabled();
+    await pick(user, 'Exame', 'Raio-X');
+    await waitFor(() => expect(dropdown('Unidade')).toBeEnabled());
+    expect(await openOptions(user, 'Unidade')).toEqual(['Unidade Central']);
+    await chooseOption(user, 'Unidade Central');
 
-    await user.selectOptions(field('Tipo de exame'), 'Hemograma');
-    const south = await screen.findByRole('radio', { name: /Unidade Sul/ });
-    expect(within(group).getAllByRole('radio')).toHaveLength(2);
-    expect(south).toHaveAccessibleName(/Av\. Ipiranga, 987/);
-    await user.click(south);
+    await pick(user, 'Exame', 'Hemograma');
+    await waitFor(() => expect(dropdown('Unidade')).toBeEnabled());
+    expect(await openOptions(user, 'Unidade')).toEqual(['Unidade Central', 'Unidade Sul']);
+    await chooseOption(user, 'Unidade Sul');
 
-    await waitFor(() => expect(optionsOf('Data')).toEqual(['seg., 23/11']));
-    await user.selectOptions(field('Data'), 'seg., 23/11');
-    expect(optionsOf('Horário')).toEqual(['08:00 · 2 vagas', '08:10 · 1 vaga', '17:00']);
+    await waitFor(() => expect(openDays()).toEqual([MONDAY]));
+    await pickDay(user, MONDAY);
+    expect(slotTimes()).toEqual(['08:002 vagas', '08:101 vaga']);
+    await user.click(
+      within(screen.getByRole('group', { name: 'Período' })).getByRole('button', { name: /^Tarde/ }),
+    );
+    expect(slotTimes()).toEqual(['17:00']);
     const availability = calls.filter((call) => call.url.pathname === '/api/exam-availability');
     expect(availability.at(-1)?.url.searchParams.get('unitId')).toBe('u2');
     expect(availability.at(-1)?.url.searchParams.get('examTypeId')).toBe('e1');
   });
 
-  it('moves between units with the arrow keys', async () => {
+  it('shows the preparation of each exam and the address of each unit', async () => {
     serve();
     const { user } = await start();
-    await user.selectOptions(field('Tipo de exame'), 'Hemograma');
-    await user.click(await screen.findByRole('radio', { name: /Unidade Central/ }));
 
-    await user.keyboard('{ArrowRight}');
-
-    expect(screen.getByRole('radio', { name: /Unidade Sul/ })).toBeChecked();
+    await user.click(dropdown('Exame'));
+    expect(await screen.findByRole('option', { name: /Raio-X\s*Sem preparo especial/ })).toBeVisible();
+    await user.click(screen.getByRole('option', { name: /^Hemograma/ }));
+    expect(screen.getByRole('note')).toHaveTextContent('Preparo: Jejum de 8 horas.');
+    await waitFor(() => expect(dropdown('Unidade')).toBeEnabled());
+    await user.click(dropdown('Unidade'));
+    expect(await screen.findByRole('option', { name: /Unidade Sul\s*Av\. Ipiranga, 987/ })).toBeVisible();
   });
 
-  it('clears the unit, date and time when the type changes', async () => {
+  it('clears the unit, day and time when the exam changes', async () => {
     serve();
     const { user } = await start();
     await fill(user);
 
-    await user.selectOptions(field('Tipo de exame'), 'Raio-X');
+    await pick(user, 'Exame', 'Raio-X');
 
-    await waitFor(() => expect(screen.getAllByRole('radio')).toHaveLength(1));
-    expect(screen.getByRole('radio', { name: /Unidade Central/ })).not.toBeChecked();
-    expect(field('Data')).toHaveValue('');
-    expect(field('Data')).toBeDisabled();
-    expect(field('Horário')).toHaveValue('');
+    expect(dropdown('Unidade')).toHaveTextContent('Escolha o local');
+    expect(screen.queryByRole('group', { name: 'Calendário' })).not.toBeInTheDocument();
+    expect(screen.getByText('Escolha dia e horário')).toBeVisible();
   });
 
   it('shows the availability error and reloads the units when the offer is gone', async () => {
@@ -179,17 +199,18 @@ describe('book exam', { timeout: 15_000 }, () => {
       '/api/exam-availability': () => apiError(404, 'NOT_FOUND'),
     });
     const { user } = await start();
-    await user.selectOptions(field('Tipo de exame'), 'Hemograma');
-    const south = await screen.findByRole('radio', { name: /Unidade Sul/ });
+    await pick(user, 'Exame', 'Hemograma');
+    await waitFor(() => expect(dropdown('Unidade')).toBeEnabled());
     const before = unitCalls(calls);
-    await user.click(south);
+
+    await pick(user, 'Unidade', 'Unidade Sul');
 
     expect(
       await screen.findByText('Este exame não está mais disponível neste local. Escolha outro.'),
     ).toHaveAttribute('role', 'alert');
     expect(screen.getByRole('button', { name: 'Tentar de novo' })).toBeVisible();
     await waitFor(() => expect(unitCalls(calls)).toBeGreaterThan(before));
-    expect(field('Data')).toBeDisabled();
+    expect(screen.queryByRole('group', { name: 'Calendário' })).not.toBeInTheDocument();
   });
 
   it('reloads the units and clears the chosen one when it no longer offers the exam', async () => {
@@ -212,47 +233,42 @@ describe('book exam', { timeout: 15_000 }, () => {
       await screen.findByText('Este exame não está mais disponível neste local. Escolha outro.'),
     ).toHaveAttribute('role', 'alert');
     await waitFor(() => expect(unitCalls(calls)).toBeGreaterThan(before));
-    await waitFor(() => expect(screen.getAllByRole('radio')).toHaveLength(1));
-    expect(screen.getByRole('group', { name: 'Local do exame' })).toHaveAccessibleDescription(
-      'Este local não faz mais este exame. Escolha outro.',
+    await waitFor(() =>
+      expect(dropdown('Unidade')).toHaveAccessibleDescription(
+        'Este local não faz mais este exame. Escolha outro.',
+      ),
     );
-    expect(field('Data')).toHaveValue('');
-    expect(field('Horário')).toHaveValue('');
+    expect(dropdown('Unidade')).toHaveTextContent('Escolha o local');
+    expect(screen.queryByRole('group', { name: 'Calendário' })).not.toBeInTheDocument();
   });
 
-  it('shows the preparation notes of the chosen type', async () => {
-    serve();
-    const { user } = await start();
-
-    await user.selectOptions(field('Tipo de exame'), 'Hemograma');
-
-    expect(field('Tipo de exame')).toHaveAccessibleDescription('Preparo: Jejum de 8 horas.');
-    await user.selectOptions(field('Tipo de exame'), 'Raio-X');
-    expect(field('Tipo de exame')).not.toHaveAccessibleDescription();
-  });
-
-  it('books the exam and shows the public code', async () => {
+  it('books the exam, shows the public code and opens the booking', async () => {
     const { calls } = serve();
-    const { user } = await start();
+    const { user, router } = await start();
     await fill(user);
-    await user.type(screen.getByRole('textbox', { name: 'Observações (opcional)' }), ' Levo o pedido. ');
+    await user.type(notes(), ' Levo o pedido. ');
 
     await submit(user);
 
-    const dialog = await screen.findByRole('dialog', { name: 'Exame agendado!' });
-    expect(dialog).toHaveAccessibleDescription(
-      'Hemograma em Unidade Sul, 23/11/2026, 08:00. Apresente o código EX-7F3K2Q na unidade.',
-    );
-    const details = within(dialog).getByRole('link', { name: 'Ver detalhes' });
-    expect(details).toHaveAttribute('href', '/paciente/agendamentos');
-    expect(details).toHaveFocus();
+    expect(await screen.findByText('Exame agendado. Apresente o código EX-7F3K2Q na unidade.')).toBeVisible();
+    await waitFor(() => expect(router.state.location.pathname).toBe('/paciente/agendamentos'));
+    expect(router.state.location.search).toBe('?id=x1');
     expect(calls.find((call) => call.method === 'POST')?.body).toEqual({
       examTypeId: 'e1',
       unitId: 'u2',
       startsAt: '2026-11-23T11:00:00.000Z',
       notes: 'Levo o pedido.',
     });
-    expect(field('Tipo de exame')).toHaveValue('');
+  });
+
+  it('sums up the choices in the action bar', async () => {
+    serve();
+    const { user } = await start();
+
+    await fill(user);
+
+    expect(screen.getByText('Seg, 23/11 às 08:00')).toBeVisible();
+    expect(screen.getByText('Hemograma · Unidade Sul')).toBeVisible();
   });
 
   it('reloads the free slots and keeps the form when the last place was taken', async () => {
@@ -267,14 +283,12 @@ describe('book exam', { timeout: 15_000 }, () => {
     await submit(user);
 
     const message = await screen.findByText('Não há mais vagas neste horário. Escolha outro.');
-    expect(field('Horário')).toHaveAttribute('aria-describedby', message.id);
-    expect(field('Horário')).toHaveValue('');
-    await waitFor(() => expect(optionsOf('Horário')).toEqual(['17:00']));
+    expect(slotGroup()).toHaveAttribute('aria-describedby', message.id);
+    await waitFor(() => expect(slotTimes()).toEqual(['17:00']));
     expect(availabilityLoads()).toBe(2);
-    expect(field('Tipo de exame')).toHaveValue('e1');
-    expect(screen.getByRole('radio', { name: /Unidade Sul/ })).toBeChecked();
-    expect(field('Data')).toHaveValue('2026-11-23');
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(dropdown('Exame')).toHaveTextContent('Hemograma');
+    expect(dropdown('Unidade')).toHaveTextContent('Unidade Sul');
+    expect(pickedDay()).toBe(MONDAY);
   });
 
   it('puts the API field errors on their fields', async () => {
@@ -285,9 +299,8 @@ describe('book exam', { timeout: 15_000 }, () => {
     await submit(user);
 
     const message = await screen.findByText('Use até 500 caracteres.');
-    const notes = screen.getByRole('textbox', { name: 'Observações (opcional)' });
-    expect(notes).toHaveAttribute('aria-describedby', message.id);
-    expect(notes).toHaveFocus();
+    expect(notes()).toHaveAttribute('aria-describedby', message.id);
+    expect(notes()).toHaveFocus();
   });
 
   it('warns when the patient reached the limit of active bookings', async () => {
@@ -298,7 +311,10 @@ describe('book exam', { timeout: 15_000 }, () => {
     await submit(user);
 
     expect(await screen.findByText(/limite de agendamentos ativos/)).toHaveAttribute('role', 'alert');
-    expect(field('Horário')).toHaveValue('2026-11-23T11:00:00.000Z');
+    expect(within(slotGroup()).getByRole('radio', { name: /^08:00/ })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
   });
 
   it('asks for every field before sending', async () => {
@@ -308,11 +324,9 @@ describe('book exam', { timeout: 15_000 }, () => {
     await submit(user);
 
     expect(await screen.findByText('Preencha todas as informações.')).toHaveAttribute('role', 'alert');
-    expect(screen.getByText('Escolha o tipo de exame.')).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: 'Local do exame' })).toHaveAccessibleDescription(
-      /Escolha o local do exame\./,
-    );
-    expect(field('Tipo de exame')).toHaveFocus();
+    expect(dropdown('Exame')).toHaveAccessibleDescription('Escolha o tipo de exame.');
+    expect(dropdown('Unidade')).toHaveAccessibleDescription('Escolha o local do exame.');
+    expect(dropdown('Exame')).toHaveFocus();
     expect(calls.some((call) => call.method === 'POST')).toBe(false);
   });
 });

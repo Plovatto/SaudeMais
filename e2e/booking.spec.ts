@@ -1,4 +1,14 @@
-import { bookingCard, expect, expectAccessible, openFromNav, signIn, test } from './support/fixtures';
+import {
+  bookingCard,
+  expect,
+  expectAccessible,
+  freeSlots,
+  openFromNav,
+  pickFirstDay,
+  pickOption,
+  signIn,
+  test,
+} from './support/fixtures';
 import { newPerson } from './support/people';
 
 const DOCTOR = 'Dr. Carlos Mendes';
@@ -24,17 +34,16 @@ test('a new patient signs up, signs in and books an appointment', async ({ page 
   await expect(page).toHaveURL(/\/paciente$/);
   await openFromNav(page, 'Agendar consulta');
   const form = page.getByRole('form', { name: 'Dados da consulta' });
-  await form.getByRole('combobox', { name: 'Médico' }).selectOption({ label: DOCTOR });
-  await form.getByRole('combobox', { name: 'Tipo de consulta' }).selectOption({ label: 'Primeira consulta' });
-  await form.getByRole('combobox', { name: 'Data' }).selectOption({ index: 1 });
-  await form.getByRole('combobox', { name: 'Horário' }).selectOption({ index: 1 });
+  await form.getByRole('searchbox', { name: 'Buscar médico' }).fill(DOCTOR);
+  await form.getByRole('radio', { name: DOCTOR }).click();
+  await pickOption(form, 'Tipo de consulta', 'Primeira consulta');
+  await pickFirstDay(form);
+  await freeSlots(form).first().click();
   await expectAccessible(page);
-  await form.getByRole('button', { name: 'Agendar Consulta' }).click();
+  await form.getByRole('button', { name: /^Agendar/ }).click();
 
-  const booked = page.getByRole('dialog', { name: 'Pedido enviado, aguardando confirmação' });
-  await expect(booked).toBeVisible();
-  await expectAccessible(page);
-  await booked.getByRole('link', { name: 'Ver detalhes' }).click();
+  await expect(page.getByText('Pedido enviado. Avisaremos quando o médico confirmar.')).toBeVisible();
+  await expect(page).toHaveURL(/\/paciente\/agendamentos\?id=/);
 
   await expect(page.getByRole('tab', { name: /Próximos/, selected: true })).toBeVisible();
   await expect(bookingCard(page, DOCTOR)).toContainText('Pendente');

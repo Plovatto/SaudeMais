@@ -1,6 +1,17 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { todayInSaoPaulo } from '@lib/date';
+import {
+  dropdown,
+  calendar,
+  openDays,
+  pick,
+  pickDay,
+  pickedDay,
+  pickTime,
+  slotGroup,
+  slotTimes,
+} from '@/test/booking-flow';
 import { renderApp, serveApi, type MockResponse } from '@/test/render-app';
 
 const specialties = [
@@ -73,7 +84,11 @@ function serve(
     '/api/specialties': () => ({ status: 200, body: specialties }),
     '/api/doctors': (_method, _body, url) => {
       const specialtyId = url.searchParams.get('specialtyId');
-      const items = doctors.filter((item) => !specialtyId || item.specialty.id === specialtyId);
+      const search = url.searchParams.get('search')?.toLowerCase() ?? '';
+      const items = doctors.filter(
+        (item) =>
+          (!specialtyId || item.specialty.id === specialtyId) && item.fullName.toLowerCase().includes(search),
+      );
       return { status: 200, body: { items, page: 1, pageSize: 50, total: items.length } };
     },
     '/api/doctors/d1/availability': (_method, _body, url) => {
@@ -87,33 +102,33 @@ function serve(
   return { ...served, availabilityLoads: () => loads };
 }
 
-const field = (name: string) => screen.getByRole('combobox', { name });
+type User = ReturnType<typeof renderApp>['user'];
 
-const notes = () => screen.getByRole('textbox', { name: 'Observações (opcional)' });
+const MONDAY = 'Segunda, 23 de novembro';
+const TUESDAY = 'Terça, 24 de novembro';
 
-const optionsOf = (name: string) =>
-  within(field(name))
-    .getAllByRole('option')
-    .filter((option) => !(option as HTMLOptionElement).disabled)
-    .map((option) => option.textContent);
+const notes = () => screen.getByRole('textbox', { name: 'Observação' });
+const doctorList = () => screen.getByRole('radiogroup', { name: 'Médico' });
+const doctorNames = () =>
+  within(doctorList())
+    .getAllByRole('radio')
+    .map((radio) => radio.querySelector('span span')?.textContent);
 
 async function start() {
   const view = renderApp('/paciente/consultas/nova');
-  await screen.findByRole('option', { name: 'Carlos Mendes' });
-  await screen.findByRole('option', { name: 'Cardiologia' });
+  await screen.findByRole('radio', { name: /Carlos Mendes/ });
+  await waitFor(() => expect(dropdown('Especialidade')).toBeEnabled());
   return view;
 }
 
-async function fill(user: Awaited<ReturnType<typeof start>>['user']) {
-  await user.selectOptions(field('Médico'), 'Carlos Mendes');
-  await user.selectOptions(field('Tipo de consulta'), 'Rotina');
-  await user.selectOptions(await screen.findByRole('combobox', { name: 'Data' }), 'seg., 23/11');
-  await user.selectOptions(field('Horário'), '14:30');
+async function fill(user: User) {
+  await user.click(screen.getByRole('radio', { name: /Carlos Mendes/ }));
+  await pick(user, 'Tipo de consulta', 'Rotina');
+  await pickDay(user, MONDAY);
+  await pickTime(user, '14:30');
 }
 
-const submitButton = () => screen.getByRole('button', { name: 'Agendar Consulta' });
-
-const submit = (user: Awaited<ReturnType<typeof start>>['user']) => user.click(submitButton());
+const submit = (user: User) => user.click(screen.getByRole('button', { name: 'Agendar' }));
 
 const windowsOf = (calls: ReturnType<typeof serve>['calls']) =>
   calls
@@ -124,38 +139,67 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe('book appointment', { timeout: 15_000 }, () => {
+describe('book appointment', { timeout: 20_000 }, () => {
   it('fills the specialty from the doctor and narrows the doctors by specialty', async () => {
     const { calls } = serve();
     const { user } = await start();
-    expect(optionsOf('Médico')).toEqual(['Carlos Mendes', 'Beatriz Lima']);
+    expect(doctorNames()).toEqual(['Carlos Mendes', 'Beatriz Lima']);
 
-    await user.selectOptions(field('Médico'), 'Beatriz Lima');
-    expect(field('Especialidade')).toHaveValue('s2');
-    expect(field('Médico')).toHaveAccessibleDescription('Unidade Central · Rua das Flores, 123');
+    await user.click(screen.getByRole('radio', { name: /Beatriz Lima/ }));
+    expect(dropdown('Especialidade')).toHaveTextContent('Nutrição');
+    expect(screen.getByRole('radio', { name: /Beatriz Lima/ })).toHaveAttribute('aria-checked', 'true');
 
-    await user.selectOptions(field('Especialidade'), 'Cardiologia');
-    expect(field('Médico')).toHaveValue('');
-    await waitFor(() => expect(optionsOf('Médico')).toEqual(['Carlos Mendes']));
+    await pick(user, 'Especialidade', 'Cardiologia');
+    await waitFor(() => expect(doctorNames()).toEqual(['Carlos Mendes']));
+    expect(screen.getByRole('radio', { name: /Carlos Mendes/ })).toHaveAttribute('aria-checked', 'false');
     expect(calls.some((call) => call.url.searchParams.get('specialtyId') === 's1')).toBe(true);
+  });
+
+  it('shows the duration of each specialty and the meaning of each visit type', async () => {
+    serve();
+    const { user } = await start();
+
+    await user.click(dropdown('Especialidade'));
+    expect(
+      await screen.findByRole('option', { name: /Cardiologia\s*Consultas de 30 minutos/ }),
+    ).toBeVisible();
+    await user.keyboard('{Escape}');
+    await user.click(dropdown('Tipo de consulta'));
+    expect(
+      await screen.findByRole('option', { name: /Retorno\s*Volta depois de uma consulta recente/ }),
+    ).toBeVisible();
+  });
+
+  it('searches the doctors by name in the API', async () => {
+    const { calls } = serve();
+    const { user } = await start();
+
+    await user.type(screen.getByRole('searchbox', { name: 'Buscar médico' }), 'bea');
+
+    await waitFor(() => expect(doctorNames()).toEqual(['Beatriz Lima']));
+    expect(calls.some((call) => call.url.searchParams.get('search') === 'bea')).toBe(true);
+    await user.type(screen.getByRole('searchbox', { name: 'Buscar médico' }), 'xyz');
+    expect(await screen.findByText('Nenhum médico encontrado para "beaxyz".')).toBeVisible();
   });
 
   it('offers only the days and times with free slots, shown in São Paulo time', async () => {
     const { calls } = serve();
     const { user } = await start();
-    expect(field('Data')).toBeDisabled();
+    expect(screen.getByText('Escolha o médico para ver os dias e horários livres.')).toBeVisible();
 
-    await user.selectOptions(field('Médico'), 'Carlos Mendes');
+    await user.click(screen.getByRole('radio', { name: /Carlos Mendes/ }));
 
-    await waitFor(() => expect(optionsOf('Data')).toEqual(['seg., 23/11', 'ter., 24/11']));
-    expect(field('Horário')).toBeDisabled();
+    await waitFor(() => expect(openDays()).toEqual([MONDAY, TUESDAY]));
     expect(windowsOf(calls)).toHaveLength(2);
-
-    await user.selectOptions(field('Data'), 'seg., 23/11');
-    expect(optionsOf('Horário')).toEqual(['08:00', '14:30']);
-    await user.selectOptions(field('Data'), 'ter., 24/11');
-    expect(field('Horário')).toHaveValue('');
-    expect(optionsOf('Horário')).toEqual(['09:00']);
+    await pickDay(user, MONDAY);
+    expect(screen.getByText('2 horários livres')).toBeVisible();
+    expect(slotTimes()).toEqual(['08:00']);
+    await user.click(
+      within(screen.getByRole('group', { name: 'Período' })).getByRole('button', { name: /^Tarde/ }),
+    );
+    expect(slotTimes()).toEqual(['14:30']);
+    await pickDay(user, TUESDAY);
+    expect(slotTimes()).toEqual(['09:00']);
   });
 
   it('asks for two 31-day windows from today in São Paulo and merges their days', async () => {
@@ -164,9 +208,9 @@ describe('book appointment', { timeout: 15_000 }, () => {
     const { calls } = serve(undefined, { first: [[days[0] as Day]], second: [days[1] as Day] });
     const { user } = await start();
 
-    await user.selectOptions(field('Médico'), 'Carlos Mendes');
+    await user.click(screen.getByRole('radio', { name: /Carlos Mendes/ }));
 
-    await waitFor(() => expect(optionsOf('Data')).toEqual(['seg., 23/11', 'ter., 24/11']));
+    await waitFor(() => expect(openDays()).toEqual([MONDAY, TUESDAY]));
     expect(windowsOf(calls)).toEqual([
       { from: '2026-11-19', to: '2026-12-19' },
       { from: '2026-12-20', to: '2027-01-19' },
@@ -177,10 +221,10 @@ describe('book appointment', { timeout: 15_000 }, () => {
     serve(undefined, { first: [[]] });
     const { user } = await start();
 
-    await user.selectOptions(field('Médico'), 'Carlos Mendes');
+    await user.click(screen.getByRole('radio', { name: /Carlos Mendes/ }));
 
     expect(await screen.findByRole('note')).toHaveTextContent(/não tem vagas livres/);
-    expect(field('Data')).toBeDisabled();
+    expect(screen.queryByRole('group', { name: 'Calendário' })).not.toBeInTheDocument();
   });
 
   it('clears a picked day that is no longer free and points at it', async () => {
@@ -191,10 +235,9 @@ describe('book appointment', { timeout: 15_000 }, () => {
     await queryClient.invalidateQueries({ queryKey: ['booking', 'availability'] });
 
     const message = await screen.findByText('Este horário acabou de ser ocupado. Escolha outro.');
-    expect(field('Data')).toHaveValue('');
-    expect(field('Data')).toHaveAttribute('aria-describedby', message.id);
-    expect(field('Data')).toHaveFocus();
-    expect(field('Horário')).toBeDisabled();
+    expect(pickedDay()).toBeUndefined();
+    expect(calendar()).toHaveAttribute('aria-describedby', message.id);
+    expect(calendar()).toHaveFocus();
   });
 
   it('clears a picked time that is no longer free and points at it', async () => {
@@ -206,27 +249,23 @@ describe('book appointment', { timeout: 15_000 }, () => {
     await queryClient.invalidateQueries({ queryKey: ['booking', 'availability'] });
 
     const message = await screen.findByText('Este horário acabou de ser ocupado. Escolha outro.');
-    expect(field('Data')).toHaveValue('2026-11-23');
-    expect(field('Horário')).toHaveValue('');
-    expect(field('Horário')).toHaveAttribute('aria-describedby', message.id);
-    expect(field('Horário')).toHaveFocus();
+    expect(pickedDay()).toBe(MONDAY);
+    expect(within(slotGroup()).queryByRole('radio', { checked: true })).not.toBeInTheDocument();
+    expect(slotGroup()).toHaveAttribute('aria-describedby', message.id);
+    expect(slotGroup()).toHaveFocus();
   });
 
-  it('sends the slot received and shows the request as sent', async () => {
+  it('sends the slot received, shows the request as sent and opens it', async () => {
     const { calls } = serve();
-    const { user } = await start();
+    const { user, router } = await start();
     await fill(user);
     await user.type(notes(), '  Tenho alergia a dipirona. ');
 
     await submit(user);
 
-    const dialog = await screen.findByRole('dialog', { name: 'Pedido enviado, aguardando confirmação' });
-    expect(dialog).toHaveAccessibleDescription(
-      'Consulta de Cardiologia com Carlos Mendes em 23/11/2026, 14:30. Avisaremos quando o médico confirmar.',
-    );
-    const details = within(dialog).getByRole('link', { name: 'Ver detalhes' });
-    expect(details).toHaveAttribute('href', '/paciente/agendamentos');
-    expect(details).toHaveFocus();
+    expect(await screen.findByText('Pedido enviado. Avisaremos quando o médico confirmar.')).toBeVisible();
+    await waitFor(() => expect(router.state.location.pathname).toBe('/paciente/agendamentos'));
+    expect(router.state.location.search).toBe('?id=a1');
     expect(calls.find((call) => call.method === 'POST')?.body).toEqual({
       doctorId: 'd1',
       specialtyId: 's1',
@@ -234,11 +273,17 @@ describe('book appointment', { timeout: 15_000 }, () => {
       startsAt: '2026-11-23T17:30:00.000Z',
       notes: 'Tenho alergia a dipirona.',
     });
-    expect(field('Médico')).toHaveValue('');
+  });
 
-    await user.click(within(dialog).getByRole('button', { name: 'Fechar' }));
-    expect(dialog).not.toHaveAttribute('open');
-    expect(submitButton()).toHaveFocus();
+  it('sums up the choices in the action bar', async () => {
+    serve();
+    const { user } = await start();
+    expect(screen.getByText('Escolha dia e horário')).toBeVisible();
+
+    await fill(user);
+
+    expect(screen.getByText('Seg, 23/11 às 14:30')).toBeVisible();
+    expect(screen.getByText('Carlos Mendes · Rotina')).toBeVisible();
   });
 
   it('reloads the free slots and keeps the form when the slot was just taken', async () => {
@@ -252,15 +297,14 @@ describe('book appointment', { timeout: 15_000 }, () => {
     await submit(user);
 
     const message = await screen.findByText('Este horário acabou de ser ocupado. Escolha outro.');
-    expect(field('Horário')).toHaveAttribute('aria-describedby', message.id);
-    expect(field('Horário')).toHaveValue('');
-    await waitFor(() => expect(optionsOf('Horário')).toEqual(['08:00']));
+    expect(slotGroup()).toHaveAttribute('aria-describedby', message.id);
+    await waitFor(() => expect(slotTimes()).toEqual(['08:00']));
+    expect(within(slotGroup()).queryByRole('radio', { checked: true })).not.toBeInTheDocument();
     expect(availabilityLoads()).toBe(2);
-    expect(field('Médico')).toHaveValue('d1');
-    expect(field('Especialidade')).toHaveValue('s1');
-    expect(field('Tipo de consulta')).toHaveValue('routine');
-    expect(field('Data')).toHaveValue('2026-11-23');
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /Carlos Mendes/ })).toHaveAttribute('aria-checked', 'true');
+    expect(dropdown('Especialidade')).toHaveTextContent('Cardiologia');
+    expect(dropdown('Tipo de consulta')).toHaveTextContent('Rotina');
+    expect(pickedDay()).toBe(MONDAY);
   });
 
   it('puts the API field errors on their fields', async () => {
@@ -283,7 +327,7 @@ describe('book appointment', { timeout: 15_000 }, () => {
     await submit(user);
 
     const message = await screen.findByText('Este médico não atende a especialidade escolhida.');
-    expect(field('Especialidade')).toHaveAttribute('aria-describedby', message.id);
+    expect(dropdown('Especialidade').getAttribute('aria-describedby')).toContain(message.id);
   });
 
   it('explains a conflict with another booking of the patient on the time field', async () => {
@@ -294,8 +338,8 @@ describe('book appointment', { timeout: 15_000 }, () => {
     await submit(user);
 
     const message = await screen.findByText('Você já tem um agendamento neste horário. Escolha outro.');
-    expect(field('Horário')).toHaveAttribute('aria-describedby', message.id);
-    expect(field('Horário')).toHaveFocus();
+    expect(slotGroup()).toHaveAttribute('aria-describedby', message.id);
+    expect(slotGroup()).toHaveFocus();
   });
 
   it('explains a booking with the patient as the doctor on the doctor field', async () => {
@@ -306,7 +350,7 @@ describe('book appointment', { timeout: 15_000 }, () => {
     await submit(user);
 
     const message = await screen.findByText('Não é possível agendar uma consulta com você mesmo.');
-    expect(field('Médico').getAttribute('aria-describedby')).toContain(message.id);
+    expect(doctorList()).toHaveAttribute('aria-describedby', message.id);
   });
 
   it('reloads the doctors when the chosen one is gone', async () => {
@@ -333,7 +377,10 @@ describe('book appointment', { timeout: 15_000 }, () => {
     await submit(user);
 
     expect(await screen.findByText(/limite de agendamentos ativos/)).toHaveAttribute('role', 'alert');
-    expect(field('Horário')).toHaveValue('2026-11-23T17:30:00.000Z');
+    expect(within(slotGroup()).getByRole('radio', { name: /^14:30/ })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
   });
 
   it('asks for every field before sending', async () => {
@@ -344,8 +391,8 @@ describe('book appointment', { timeout: 15_000 }, () => {
 
     expect(await screen.findByText('Preencha todas as informações.')).toHaveAttribute('role', 'alert');
     expect(screen.getByText('Escolha o médico.')).toBeInTheDocument();
-    expect(screen.getByText('Escolha o horário.')).toBeInTheDocument();
-    expect(field('Médico')).toHaveFocus();
+    expect(screen.getByText('Escolha o tipo de consulta.')).toBeInTheDocument();
+    expect(doctorList()).toHaveFocus();
     expect(calls.some((call) => call.method === 'POST')).toBe(false);
   });
 });

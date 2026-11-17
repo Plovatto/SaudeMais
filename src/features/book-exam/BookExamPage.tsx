@@ -1,17 +1,10 @@
-import { BookingPage } from '@components/booking-form/BookingPage';
-import { describeExam } from './booking-text';
+import { useBookedRedirect } from '@components/booking-form/useBookedRedirect';
 import type { ExamBooking } from './exam-api';
 import { ExamForm } from './ExamForm';
 
 export function BookExamPage() {
-  return (
-    <BookingPage<ExamBooking>
-      title="Agendar exame"
-      subtitle="Preencha os dados para o seu exame"
-      bookedTitle="Exame agendado!"
-      describe={describeExam}
-    >
-      {(onBooked) => <ExamForm onBooked={onBooked} />}
-    </BookingPage>
+  const onBooked = useBookedRedirect<ExamBooking>(
+    ({ publicCode }) => `Exame agendado. Apresente o código ${publicCode} na unidade.`,
   );
+  return <ExamForm onBooked={onBooked} />;
 }

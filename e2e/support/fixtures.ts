@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { test as base, expect, type BrowserContext, type Page } from '@playwright/test';
+import { test as base, expect, type BrowserContext, type Locator, type Page } from '@playwright/test';
 import { storageStateFor, type DemoRole } from './auth';
 import type { Person } from './people';
 
@@ -48,3 +48,14 @@ export const openFromNav = (page: Page, label: string) =>
 
 export const bookingCard = (page: Page, ...texts: string[]) =>
   texts.reduce((cards, text) => cards.filter({ hasText: text }), page.getByRole('listitem'));
+
+export async function pickOption(scope: Locator, label: string, option: string) {
+  await scope.getByRole('button', { name: label, exact: true }).click();
+  await scope.getByRole('listbox', { name: label }).getByRole('option', { name: option }).click();
+}
+
+export const pickFirstDay = (form: Locator) =>
+  form.getByRole('group', { name: 'Calendário' }).locator('button[aria-pressed]').first().click();
+
+export const freeSlots = (form: Locator) =>
+  form.getByRole('radiogroup', { name: 'Horários livres' }).getByRole('radio');

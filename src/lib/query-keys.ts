@@ -14,7 +14,7 @@ export const queryKeys = {
   },
   booking: {
     doctorLists: ['booking', 'doctors'] as const,
-    doctors: (specialtyId: string) => ['booking', 'doctors', specialtyId] as const,
+    doctors: (specialtyId: string, search = '') => ['booking', 'doctors', specialtyId, search] as const,
     availabilities: ['booking', 'availability'] as const,
     availability: (doctorId: string, rescheduling = '') =>
       ['booking', 'availability', doctorId, rescheduling] as const,

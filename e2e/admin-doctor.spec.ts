@@ -1,7 +1,15 @@
 import { randomInt } from 'node:crypto';
 import { api } from './support/api';
 import { admin } from './support/env';
-import { expect, expectAccessible, openFromNav, signIn, test } from './support/fixtures';
+import {
+  expect,
+  expectAccessible,
+  freeSlots,
+  openFromNav,
+  pickFirstDay,
+  signIn,
+  test,
+} from './support/fixtures';
 import { newPerson } from './support/people';
 
 const MORNINGS = { isActive: true, ranges: [{ startMin: 8 * 60, endMin: 12 * 60 }] };
@@ -41,8 +49,9 @@ test('the admin makes a user a doctor and patients can book the new free slots',
   const patientPage = await signedIn('patient');
   await patientPage.goto('paciente/consultas/nova');
   const form = patientPage.getByRole('form', { name: 'Dados da consulta' });
-  await form.getByRole('combobox', { name: 'Médico' }).selectOption({ label: person.fullName });
-  await expect(form.getByRole('combobox', { name: 'Especialidade' })).toHaveValue(/.+/);
-  await form.getByRole('combobox', { name: 'Data' }).selectOption({ index: 1 });
-  await expect(form.getByRole('combobox', { name: 'Horário' }).getByRole('option').nth(1)).toBeAttached();
+  await form.getByRole('searchbox', { name: 'Buscar médico' }).fill(person.fullName);
+  await form.getByRole('radio', { name: person.fullName }).click();
+  await expect(form.getByRole('button', { name: 'Especialidade', exact: true })).toHaveText('Dermatologia');
+  await pickFirstDay(form);
+  await expect(freeSlots(form).first()).toBeVisible();
 });

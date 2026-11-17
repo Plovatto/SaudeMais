@@ -3,7 +3,7 @@ import { cx } from '@lib/cx';
 
 export interface SectionCardProps extends Omit<ComponentProps<'section'>, 'title'> {
   title: string;
-  description?: string;
+  description?: string | undefined;
   action?: ReactNode;
   flush?: boolean;
   raised?: boolean;

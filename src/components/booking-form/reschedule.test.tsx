@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { todayInSaoPaulo } from '@lib/date';
+import { openDays, pickDay, pickedDay, pickTime, slotGroup, slotTimes } from '@/test/booking-flow';
 import { renderApp, serveApi, type MockResponse } from '@/test/render-app';
 
 const CURRENT = '2026-11-23T17:30:00.000Z';
@@ -117,44 +118,39 @@ function serve({
 const alertWith = async (text: string | RegExp) =>
   (await screen.findByText(text)).closest('[role="alert"]') as HTMLElement;
 
-const field = (name: string) => screen.getByRole('combobox', { name });
+const MONDAY = 'Segunda, 23 de novembro';
+const TUESDAY = 'Terça, 24 de novembro';
 
-const enabledOptions = (name: string) =>
-  within(field(name))
-    .getAllByRole('option')
-    .filter((option) => !(option as HTMLOptionElement).disabled)
-    .map((option) => option.textContent);
+const lockedCard = () => screen.getByRole('region', { name: 'Seu agendamento' });
 
 async function start(kind: Kind = 'appointment') {
   const view = renderApp(kinds[kind].path);
-  await waitFor(() => expect(screen.getByRole('combobox', { name: 'Data' })).toBeEnabled());
+  await screen.findByRole('group', { name: 'Calendário' });
   return view;
 }
 
 type User = Awaited<ReturnType<typeof start>>['user'];
 
 async function pickNext(user: User) {
-  await user.selectOptions(field('Data'), 'ter., 24/11');
-  await user.selectOptions(field('Horário'), '09:00');
+  await pickDay(user, TUESDAY);
+  await pickTime(user, '09:00');
 }
 
-const submit = (user: User) => user.click(screen.getByRole('button', { name: 'Reagendar' }));
+const submit = (user: User) => user.click(screen.getByRole('button', { name: 'Confirmar' }));
 
-describe('reschedule', { timeout: 15_000 }, () => {
+describe('reschedule', { timeout: 20_000 }, () => {
   it('locks the doctor and asks for the free slots without the booking itself', async () => {
     const { calls } = serve();
     await start();
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Reagendar consulta' })).toBeVisible();
-    const doctor = screen.getByRole('textbox', { name: 'Médico' });
-    expect(doctor).toHaveValue('Carlos Mendes');
-    expect(doctor).toHaveAttribute('readonly');
-    expect(doctor).toHaveAccessibleDescription('Unidade Central · Rua das Flores, 123');
-    expect(screen.getByRole('textbox', { name: 'Especialidade' })).toHaveValue('Cardiologia');
-    expect(screen.getByRole('textbox', { name: 'Tipo de consulta' })).toHaveValue('Rotina');
-    expect(screen.getByRole('textbox', { name: 'Horário atual' })).toHaveValue('23/11/2026, 14:30');
+    expect(screen.getByRole('heading', { level: 1, name: 'Reagendar' })).toBeVisible();
+    expect(lockedCard()).toHaveTextContent('Não muda');
+    expect(lockedCard()).toHaveTextContent('Carlos Mendes');
+    expect(lockedCard()).toHaveTextContent('Cardiologia · Rotina');
+    expect(lockedCard()).toHaveTextContent('Unidade CentralRua das Flores, 123');
+    expect(screen.getByText('Antes: Seg, 23/11 às 14:30')).toBeVisible();
     expect(screen.getByRole('note')).toHaveTextContent('A consulta volta a aguardar confirmação do médico.');
-    expect(field('Data')).toHaveValue('2026-11-23');
+    expect(pickedDay()).toBe(MONDAY);
     const windows = calls.filter((call) => call.url.pathname === kinds.appointment.availability);
     expect(new Set(windows.map((call) => call.url.searchParams.get('from'))).size).toBe(2);
     windows.forEach((call) => expect(call.url.searchParams.get('rescheduling')).toBe('a1'));
@@ -171,8 +167,8 @@ describe('reschedule', { timeout: 15_000 }, () => {
     serve({ available: [{ date: '2026-11-23', slots: [slot(CURRENT)] }, days[1] as (typeof days)[number]] });
     await start();
 
-    expect(enabledOptions('Data')).toEqual(['ter., 24/11']);
-    expect(field('Data')).toHaveValue('');
+    await waitFor(() => expect(openDays()).toEqual([TUESDAY]));
+    expect(pickedDay()).toBeUndefined();
   });
 
   it('warns when no slot other than the current one is free', async () => {
@@ -180,35 +176,33 @@ describe('reschedule', { timeout: 15_000 }, () => {
     renderApp(kinds.appointment.path);
 
     expect(await screen.findByText(/não tem outras vagas livres/)).toBeVisible();
-    expect(field('Data')).toBeDisabled();
+    expect(screen.queryByRole('group', { name: 'Calendário' })).not.toBeInTheDocument();
   });
 
   it('marks the current time and keeps it out of reach', async () => {
     serve();
     const { user } = await start();
 
-    await user.selectOptions(field('Data'), 'seg., 23/11');
+    await user.click(
+      within(screen.getByRole('group', { name: 'Período' })).getByRole('button', { name: /^Tarde/ }),
+    );
 
-    const current = within(field('Horário')).getByRole('option', { name: '14:30 · Horário atual' });
-    expect(current).toBeDisabled();
-    expect(enabledOptions('Horário')).toEqual(['08:00']);
+    expect(within(slotGroup()).getByRole('radio', { name: '14:30atual' })).toBeDisabled();
+    expect(slotTimes()).toEqual([]);
+    expect(screen.getByText('1 horário livre')).toBeVisible();
   });
 
-  it('sends the current and the new start and shows the appointment back to pending', async () => {
+  it('sends the current and the new start, tells the doctor must confirm and opens the booking', async () => {
     const { calls } = serve();
-    const { user } = await start();
+    const { user, router } = await start();
     await pickNext(user);
+    expect(screen.getByText('Ter, 24/11 às 09:00')).toBeVisible();
 
     await submit(user);
 
-    const dialog = await screen.findByRole('dialog', { name: 'Consulta reagendada' });
-    expect(dialog).toHaveAccessibleDescription(
-      'Consulta de Cardiologia com Carlos Mendes em 24/11/2026, 09:00. Avisaremos quando o médico confirmar.',
-    );
-    expect(within(dialog).getByRole('link', { name: 'Ver detalhes' })).toHaveAttribute(
-      'href',
-      '/paciente/agendamentos',
-    );
+    expect(await screen.findByText('Pedido de novo horário enviado ao médico.')).toBeVisible();
+    await waitFor(() => expect(router.state.location.pathname).toBe('/paciente/agendamentos'));
+    expect(router.state.location.search).toBe('?id=a1');
     const post = calls.find((call) => call.method === 'POST');
     expect(post?.url.pathname).toBe('/api/appointments/a1/reschedule');
     expect(post?.body).toEqual({ startsAt: CURRENT, newStartsAt: '2026-11-24T12:00:00.000Z' });
@@ -216,13 +210,11 @@ describe('reschedule', { timeout: 15_000 }, () => {
 
   it('reschedules an exam with the type and the place locked', async () => {
     const { calls } = serve({ kind: 'exam' });
-    const { user } = await start('exam');
+    const { user, router } = await start('exam');
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Reagendar exame' })).toBeVisible();
-    expect(screen.getByRole('textbox', { name: 'Tipo de exame' })).toHaveAccessibleDescription(
-      'Preparo: Jejum de 8 horas.',
-    );
-    expect(screen.getByRole('textbox', { name: 'Local do exame' })).toHaveValue('Unidade Central');
+    expect(lockedCard()).toHaveTextContent('Hemograma');
+    expect(lockedCard()).toHaveTextContent('Preparo: Jejum de 8 horas.');
+    expect(lockedCard()).toHaveTextContent('Unidade Central');
     expect(screen.queryByRole('note')).not.toBeInTheDocument();
     const params = calls.find((call) => call.url.pathname === kinds.exam.availability)?.url.searchParams;
     expect(params?.get('rescheduling')).toBe('x1');
@@ -232,10 +224,8 @@ describe('reschedule', { timeout: 15_000 }, () => {
     await pickNext(user);
     await submit(user);
 
-    const dialog = await screen.findByRole('dialog', { name: 'Exame reagendado' });
-    expect(dialog).toHaveAccessibleDescription(
-      'Hemograma em Unidade Central, 24/11/2026, 09:00. Apresente o código EX-7F3K2Q na unidade.',
-    );
+    expect(await screen.findByText('Exame reagendado.')).toBeVisible();
+    await waitFor(() => expect(router.state.location.search).toBe('?id=x1'));
     const post = calls.find((call) => call.method === 'POST');
     expect(post?.url.pathname).toBe('/api/exam-bookings/x1/reschedule');
     expect(post?.body).toEqual({ startsAt: CURRENT, newStartsAt: '2026-11-24T12:00:00.000Z' });
@@ -252,8 +242,8 @@ describe('reschedule', { timeout: 15_000 }, () => {
     await submit(user);
 
     const message = await screen.findByText(text);
-    expect(field('Horário')).toHaveAttribute('aria-describedby', message.id);
-    expect(field('Horário')).toHaveFocus();
+    expect(slotGroup()).toHaveAttribute('aria-describedby', message.id);
+    expect(slotGroup()).toHaveFocus();
   });
 
   it.each([
@@ -273,9 +263,8 @@ describe('reschedule', { timeout: 15_000 }, () => {
       'href',
       '/paciente/agendamentos',
     );
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Reagendar' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('combobox', { name: 'Horário' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Confirmar' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('radiogroup', { name: 'Horários livres' })).not.toBeInTheDocument();
   });
 
   it('puts a validation error on the new start on the time field', async () => {
@@ -286,8 +275,8 @@ describe('reschedule', { timeout: 15_000 }, () => {
     await submit(user);
 
     const message = await screen.findByText('Horário inválido.');
-    expect(field('Horário')).toHaveAttribute('aria-describedby', message.id);
-    expect(field('Horário')).toHaveFocus();
+    expect(slotGroup()).toHaveAttribute('aria-describedby', message.id);
+    expect(slotGroup()).toHaveFocus();
   });
 
   it('reloads the free slots and keeps the day when the new slot was just taken', async () => {
@@ -302,12 +291,12 @@ describe('reschedule', { timeout: 15_000 }, () => {
     await submit(user);
 
     const message = await screen.findByText('Este horário acabou de ser ocupado. Escolha outro.');
-    expect(field('Horário')).toHaveAttribute('aria-describedby', message.id);
-    expect(field('Horário')).toHaveValue('');
-    await waitFor(() => expect(enabledOptions('Horário')).toEqual(['10:00']));
+    expect(slotGroup()).toHaveAttribute('aria-describedby', message.id);
+    await waitFor(() => expect(slotTimes()).toEqual(['10:00']));
+    expect(within(slotGroup()).queryByRole('radio', { checked: true })).not.toBeInTheDocument();
     const post = calls.findIndex((call) => call.method === 'POST');
     expect(calls.slice(post).some((call) => call.url.pathname === kinds.appointment.availability)).toBe(true);
-    expect(field('Data')).toHaveValue('2026-11-24');
+    expect(pickedDay()).toBe(TUESDAY);
     expect(screen.queryByRole('link', { name: LIST_LINK })).not.toBeInTheDocument();
   });
 

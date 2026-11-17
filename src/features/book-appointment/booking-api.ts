@@ -6,10 +6,14 @@ const DOCTORS_PAGE_SIZE = 50;
 export type Appointment = ResponseOf<'/api/appointments', 'post'>;
 
 export const bookingApi = {
-  doctors: async (specialtyId: string, signal: AbortSignal) =>
+  doctors: async (specialtyId: string, search: string, signal: AbortSignal) =>
     (
       await apiFetch('get', '/api/doctors', {
-        query: { pageSize: DOCTORS_PAGE_SIZE, ...(specialtyId && { specialtyId }) },
+        query: {
+          pageSize: DOCTORS_PAGE_SIZE,
+          ...(specialtyId && { specialtyId }),
+          ...(search && { search }),
+        },
         signal,
       })
     ).items,
