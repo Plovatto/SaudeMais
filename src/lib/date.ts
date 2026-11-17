@@ -1,3 +1,5 @@
+import { plural } from './plural';
+
 const TIME_ZONE = 'America/Sao_Paulo';
 
 const INVALID_DATE = 'data indisponível';
@@ -157,5 +159,5 @@ export function formatMonth(iso: string): string {
 
 export function formatDuration(startsAt: string, endsAt: string): string {
   const minutes = Math.round((new Date(endsAt).getTime() - new Date(startsAt).getTime()) / 60_000);
-  return minutes === 1 ? '1 minuto' : `${minutes} minutos`;
+  return plural(minutes, 'minuto', 'minutos');
 }

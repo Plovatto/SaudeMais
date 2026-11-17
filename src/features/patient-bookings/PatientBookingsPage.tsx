@@ -25,6 +25,7 @@ import {
 import { BookingsFilter } from './BookingsFilter';
 import { listBookings, type BookingListParams } from './bookings-api';
 import { CancelDialog } from './CancelDialog';
+import { plural } from '@lib/plural';
 
 const BOOK_URL = `${areas.patient.base}/consultas/nova`;
 const TABS_ID = 'patient-bookings';
@@ -50,7 +51,7 @@ const TABS = [
 
 type TabValue = (typeof TABS)[number]['value'];
 
-const count = (total: number) => (total === 1 ? '1 agendamento' : `${total} agendamentos`);
+const count = (total: number) => plural(total, 'agendamento', 'agendamentos');
 
 function byMonth(items: PatientBooking[]) {
   const groups: { label: string; items: PatientBooking[] }[] = [];

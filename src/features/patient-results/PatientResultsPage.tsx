@@ -15,11 +15,12 @@ import { formatDateTime } from '@lib/date';
 import { NO_LINK_MESSAGE } from '@lib/messages/errors.pt-BR';
 import { queryKeys } from '@lib/query-keys';
 import { listPatientResults } from './results-api';
+import { plural } from '@lib/plural';
 
 const AGENDA = `${areas.doctor.base}/agenda`;
 const DENIED = new Set(['FORBIDDEN_NO_LINK', 'VALIDATION_ERROR']);
 
-const found = (total: number) => (total === 1 ? '1 resultado' : `${total} resultados`);
+const found = (total: number) => plural(total, 'resultado', 'resultados');
 
 const isDenied = (error: unknown) => error instanceof ApiError && DENIED.has(error.code);
 

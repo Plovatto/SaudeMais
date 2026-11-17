@@ -3,6 +3,7 @@ import { Avatar, FieldError, SearchInput, SectionCard, Skeleton } from '@compone
 import type { ResponseOf } from '@lib/api/api-fetch';
 import { cx } from '@lib/cx';
 import { moveFocus } from '@lib/roving-index';
+import { plural } from '@lib/plural';
 
 export type Doctor = ResponseOf<'/api/doctors', 'get'>['items'][number];
 
@@ -17,7 +18,7 @@ export interface DoctorPickerProps {
   focusRef?: Ref<HTMLDivElement>;
 }
 
-const countText = (count: number) => (count === 1 ? '1 disponível' : `${count} disponíveis`);
+const countText = (count: number) => plural(count, 'disponível', 'disponíveis');
 
 export function DoctorPicker({
   doctors,

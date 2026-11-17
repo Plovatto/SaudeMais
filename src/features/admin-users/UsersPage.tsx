@@ -23,6 +23,7 @@ import { userLocks } from './user-cache';
 import { userMessages } from './user-messages';
 import { UserRow } from './UserRow';
 import { usersApi, type UserListParams, type UserRoleFilter, type UserStatusFilter } from './users-api';
+import { plural } from '@lib/plural';
 
 const ROLE_TABS = [
   { value: 'todos', label: 'Todos', role: '' },
@@ -40,7 +41,7 @@ type RoleTab = (typeof ROLE_TABS)[number]['value'];
 
 const TABS_ID = 'admin-users';
 
-const found = (total: number) => (total === 1 ? '1 usuário encontrado' : `${total} usuários encontrados`);
+const found = (total: number) => plural(total, 'usuário encontrado', 'usuários encontrados');
 
 function useDebouncedSearch() {
   const [search, setSearch] = useSearchParam('busca');

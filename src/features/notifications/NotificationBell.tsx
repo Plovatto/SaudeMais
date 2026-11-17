@@ -8,12 +8,13 @@ import { notificationsQuery, unreadText, useUnreadCount } from '@lib/api/notific
 import { cx } from '@lib/cx';
 import { NotificationList } from './NotificationList';
 import { ReadAllButton } from './ReadAllButton';
+import { plural } from '@lib/plural';
 
 const PREVIEW_SIZE = 6;
 const PER_GROUP = 3;
 const BADGE_MAX = 9;
 
-const newText = (count: number) => `${count} ${count === 1 ? 'nova' : 'novas'}`;
+const newText = (count: number) => plural(count, 'nova', 'novas');
 
 interface PreviewProps {
   role: Role;

@@ -3,6 +3,7 @@ import { LuSlidersHorizontal } from 'react-icons/lu';
 import { Button, CountBadge, Dialog, RadioChips } from '@components/ui';
 import { activeCount, NO_FILTERS, statusOptions, TYPE_OPTIONS, type BookingFilters } from './booking-filters';
 import type { BookingListParams } from './bookings-api';
+import { plural } from '@lib/plural';
 
 export interface BookingsFilterProps {
   scope: BookingListParams['scope'];
@@ -10,7 +11,7 @@ export interface BookingsFilterProps {
   onApply: (filters: BookingFilters) => void;
 }
 
-const activeText = (count: number) => (count === 1 ? '1 ativo' : `${count} ativos`);
+const activeText = (count: number) => plural(count, 'ativo', 'ativos');
 
 export function BookingsFilter({ scope, filters, onApply }: BookingsFilterProps) {
   const [draft, setDraft] = useState<BookingFilters | null>(null);

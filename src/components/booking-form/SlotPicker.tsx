@@ -3,6 +3,7 @@ import { cx } from '@lib/cx';
 import { moveFocus } from '@lib/roving-index';
 import { formatLongDay, formatTime, middayOf } from '@lib/date';
 import type { Slot } from './availability';
+import { plural } from '@lib/plural';
 
 const FEW_PLACES = 3;
 
@@ -52,7 +53,7 @@ export function SlotPicker({ date, slots, value, onPick, current, focusRef, desc
       <div className="flex flex-col gap-0.5">
         <p className="text-text text-sm font-semibold">{formatLongDay(middayOf(date))}</p>
         <p className="text-text-muted text-[0.8125rem] tabular-nums">
-          {free === 1 ? '1 horário livre' : `${free} horários livres`}
+          {plural(free, 'horário livre', 'horários livres')}
         </p>
       </div>
       {groups.length > 1 && (

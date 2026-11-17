@@ -9,6 +9,7 @@ import { bookingUrl } from '@constants/areas';
 import type { PatientBooking } from '@lib/api/models';
 import { cx } from '@lib/cx';
 import { formatShortDay, formatTime } from '@lib/date';
+import { plural } from '@lib/plural';
 
 const cardClass = 'rounded-card border-border bg-surface flex flex-col gap-3.5 border px-5 pt-[18px] pb-5';
 
@@ -17,7 +18,7 @@ const nextLabel = cx(overline, 'text-[0.71875rem] font-bold');
 const waitingText = (count: number) =>
   count === 0
     ? 'Agende uma consulta ou um exame.'
-    : `${count} ${count > 1 ? 'pedidos aguardam' : 'pedido aguarda'} a confirmação do médico.`;
+    : `${plural(count, 'pedido aguarda', 'pedidos aguardam')} a confirmação do médico.`;
 
 export interface NextAppointmentProps {
   query: UseQueryResult<unknown>;

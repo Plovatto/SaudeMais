@@ -10,6 +10,7 @@ import type { DoctorAppointment } from '@lib/api/models';
 import { queryKeys } from '@lib/query-keys';
 import { AppointmentList } from './AppointmentList';
 import { doctorApi, type AgendaParams } from './doctor-api';
+import { plural } from '@lib/plural';
 
 const DOCTOR = areas.doctor.base;
 const TABS_ID = 'doctor-agenda';
@@ -52,7 +53,7 @@ const TABS = [
 
 type TabValue = (typeof TABS)[number]['value'];
 
-const found = (total: number) => (total === 1 ? '1 consulta' : `${total} consultas`);
+const found = (total: number) => plural(total, 'consulta', 'consultas');
 
 export function DoctorAgendaPage() {
   const list = useTabbedList(TABS, ({ tab }, page) => {

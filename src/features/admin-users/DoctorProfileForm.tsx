@@ -10,7 +10,7 @@ import { useActiveSpecialties, useActiveUnits } from '@hooks/useActiveCatalog';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
 import { useFormSubmit } from '@lib/useFormSubmit';
 import { ImpactDialog } from './ImpactDialog';
-import { countOf } from './user-text';
+import { plural } from '@lib/plural';
 import { ADMIN_USERS_PATH, refreshUser, syncUser } from './user-cache';
 import { userMessages } from './user-messages';
 import { doctorProfileSchema, type DoctorProfileValues } from './user-schemas';
@@ -30,7 +30,7 @@ const withCurrent = <T extends Choice>(active: T[], current: Choice | undefined)
 
 const describeRemoval = ({ futureAppointmentsAsDoctor }: DeactivationImpact) =>
   futureAppointmentsAsDoctor > 0
-    ? `${countOf(futureAppointmentsAsDoctor, 'consulta futura será cancelada', 'consultas futuras serão canceladas')}. A conta continua como paciente.`
+    ? `${plural(futureAppointmentsAsDoctor, 'consulta futura será cancelada', 'consultas futuras serão canceladas')}. A conta continua como paciente.`
     : 'Não há consultas futuras para cancelar. A conta continua como paciente.';
 
 export interface DoctorProfileFormProps {

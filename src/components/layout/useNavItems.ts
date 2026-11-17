@@ -11,6 +11,7 @@ import {
 } from '@constants/areas';
 import { unreadText, useUnreadCount } from '@lib/api/notifications-api';
 import { useNavBadges } from './useNavBadges';
+import { plural } from '@lib/plural';
 
 export interface NavItem {
   key: string;
@@ -27,7 +28,9 @@ export const countLabel = (count: number) => (count > 99 ? '99+' : String(count)
 
 export const badgeText = ({ key, badge = 0 }: NavItem) => {
   if (key === 'notificacoes') return unreadText(badge);
-  return `${badge} ${key === 'agendamentos' ? 'agendado' : 'pendente'}${badge === 1 ? '' : 's'}`;
+  return key === 'agendamentos'
+    ? plural(badge, 'agendado', 'agendados')
+    : plural(badge, 'pendente', 'pendentes');
 };
 
 export const ariaCurrent = ({ active }: Pick<NavItem, 'active'>) => (active === 'section' ? 'true' : active);

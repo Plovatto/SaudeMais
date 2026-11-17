@@ -1,3 +1,4 @@
+import { pluralWord } from '@lib/plural';
 import { queryOptions, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import type { Role } from '@constants/areas';
@@ -23,7 +24,7 @@ export const useUnreadCount = (role: Role): number | undefined =>
     refetchIntervalInBackground: false,
   }).data;
 
-export const unreadNoun = (count: number) => (count === 1 ? 'não lida' : 'não lidas');
+export const unreadNoun = (count: number) => pluralWord(count, 'não lida', 'não lidas');
 
 export const unreadText = (count: number) => `${count} ${unreadNoun(count)}`;
 

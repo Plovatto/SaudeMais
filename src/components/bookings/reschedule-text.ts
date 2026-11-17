@@ -1,4 +1,5 @@
 import type { PatientBooking } from '@lib/api/models';
+import { plural } from '@lib/plural';
 
 type RescheduleBlock = NonNullable<PatientBooking['actions']['rescheduleBlockedReason']>;
 
@@ -10,4 +11,4 @@ export const rescheduleBlockedNotes: Partial<Record<RescheduleBlock, string>> = 
 export const RESCHEDULE_CLOSED_NOTE = 'Este agendamento não pode mais ser reagendado.';
 
 export const reschedulesLeftText = (left: number) =>
-  left === 1 ? '1 reagendamento restante' : `${left} reagendamentos restantes`;
+  plural(left, 'reagendamento restante', 'reagendamentos restantes');
