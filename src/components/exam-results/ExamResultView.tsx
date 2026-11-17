@@ -1,9 +1,8 @@
 import { useId } from 'react';
-import { LuFilePen } from 'react-icons/lu';
 import { Note } from '@components/bookings/BookingDetails';
-import { StatusChip } from '@components/ui';
 import type { ExamResult } from '@lib/api/models';
 import { formatDateTime } from '@lib/date';
+import { AmendedChip } from './ResultMeta';
 import { PreviousVersions } from './PreviousVersions';
 import { ResultVersion, type HeadingLevel } from './ResultVersion';
 
@@ -28,9 +27,7 @@ export function ExamResultView({
           </Heading>
           {current.status === 'amended' && (
             <span className="text-text-secondary flex items-center gap-2 text-sm">
-              <StatusChip tone="info" icon={<LuFilePen />}>
-                Retificado
-              </StatusChip>
+              <AmendedChip />
               Versão {current.version}
             </span>
           )}

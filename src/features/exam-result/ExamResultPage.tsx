@@ -1,9 +1,11 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
-import { LuDownload, LuFilePen, LuFileText, LuFileX } from 'react-icons/lu';
+import { LuDownload, LuFileText, LuFileX } from 'react-icons/lu';
 import { useParams } from 'react-router';
 import { PreviousVersions } from '@components/exam-results/PreviousVersions';
+import { ResultMeta } from '@components/exam-results/ResultMeta';
 import { ReportText } from '@components/exam-results/ResultVersion';
+import { PageColumn } from '@components/layout/PageColumn';
 import { PageHeader } from '@components/layout/PageHeader';
 import {
   Button,
@@ -13,13 +15,12 @@ import {
   QueryError,
   SectionCard,
   Skeleton,
-  StatusChip,
   useToast,
 } from '@components/ui';
 import { PATIENT_PAST_PATH } from '@constants/areas';
 import { ApiError } from '@lib/api/api-error';
 import { apiDownload, apiFetch } from '@lib/api/api-fetch';
-import { civilDateInSaoPaulo, formatDate } from '@lib/date';
+import { formatCivilDate } from '@lib/date';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
 import { queryKeys } from '@lib/query-keys';
 import { saveFile } from '@lib/save-file';
@@ -63,7 +64,7 @@ export function ExamResultPage() {
 
   if (!data) {
     return (
-      <div className="mx-auto w-full max-w-[856px]">
+      <PageColumn>
         <PageHeader title="Resultado do exame" back backFallback={PATIENT_PAST_PATH} />
         {result.isPending && (
           <div aria-busy="true" className="flex flex-col gap-4">
@@ -86,25 +87,16 @@ export function ExamResultPage() {
         {result.isError && !missing && (
           <QueryError error={result.error} onRetry={() => void result.refetch()} />
         )}
-      </div>
+      </PageColumn>
     );
   }
 
   const { booking, current, previous } = data;
-  const collected = formatDate(civilDateInSaoPaulo(new Date(booking.startsAt)));
-  const meta = (
-    <span className="text-text-muted flex flex-wrap items-center gap-2 text-xs">
-      {current.status === 'amended' && (
-        <StatusChip tone="info" icon={<LuFilePen />}>
-          Retificado · versão {current.version}
-        </StatusChip>
-      )}
-      Emitido em {formatDate(civilDateInSaoPaulo(new Date(current.issuedAt)))}
-    </span>
-  );
+  const collected = formatCivilDate(booking.startsAt);
+  const meta = <ResultMeta version={current} />;
 
   return (
-    <div className="mx-auto w-full max-w-[856px]">
+    <PageColumn>
       <PageHeader
         title={booking.examType.name}
         subtitle={`Coletado em ${collected} · ${booking.unit.name}`}
@@ -141,6 +133,6 @@ export function ExamResultPage() {
         )}
         {previous.length > 0 && <PreviousVersions versions={previous} headingLevel={2} />}
       </div>
-    </div>
+    </PageColumn>
   );
 }
