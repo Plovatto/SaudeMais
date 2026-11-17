@@ -19,6 +19,7 @@ import {
   FormAlert,
   IconButton,
   InfoList,
+  SheetMore,
   StatusChip,
   type InfoItem,
 } from '@components/ui';
@@ -166,7 +167,7 @@ export function BookingDetail({ booking, titleId, onCancel, onClose }: BookingDe
             {note}
           </FormAlert>
         ))}
-        <div className="border-border flex flex-col gap-2 border-t pt-4">
+        <SheetMore className="border-border flex flex-col gap-2 border-t pt-4">
           <p id={tipsId} className={overline}>
             {tips.title}
           </p>
@@ -180,7 +181,7 @@ export function BookingDetail({ booking, titleId, onCancel, onClose }: BookingDe
               </li>
             ))}
           </ul>
-        </div>
+        </SheetMore>
       </div>
       {(actions.canCancel || actions.canReschedule || booking.hasResult) && (
         <footer className="border-border bg-surface-muted rounded-b-card flex flex-wrap items-center gap-3 border-t px-4 py-3 lg:px-5">
