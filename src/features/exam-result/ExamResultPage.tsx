@@ -1,43 +1,74 @@
-import { useQuery } from '@tanstack/react-query';
-import { LuFileX, LuPrinter } from 'react-icons/lu';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
+import { LuDownload, LuFilePen, LuFileText, LuFileX } from 'react-icons/lu';
 import { useParams } from 'react-router';
-import { ExamResultView } from '@components/exam-results/ExamResultView';
+import { PreviousVersions } from '@components/exam-results/PreviousVersions';
+import { ReportText } from '@components/exam-results/ResultVersion';
 import { PageHeader } from '@components/layout/PageHeader';
-import { APP_NAME } from '@components/layout/route-handle';
-import { Button, ButtonLink, Card, EmptyState, QueryError, Skeleton } from '@components/ui';
+import {
+  Button,
+  ButtonLink,
+  EmptyState,
+  FormAlert,
+  QueryError,
+  SectionCard,
+  Skeleton,
+  StatusChip,
+  useToast,
+} from '@components/ui';
 import { PATIENT_PAST_PATH } from '@constants/areas';
 import { ApiError } from '@lib/api/api-error';
-import { apiFetch } from '@lib/api/api-fetch';
-import { useCurrentUser } from '@lib/auth/useSession';
-import { formatDateTime } from '@lib/date';
+import { apiDownload, apiFetch } from '@lib/api/api-fetch';
+import { civilDateInSaoPaulo, formatDate } from '@lib/date';
+import { errorMessage } from '@lib/messages/errors.pt-BR';
 import { queryKeys } from '@lib/query-keys';
+import { saveFile } from '@lib/save-file';
+import { ResultItems } from './ResultItems';
+import { ResultSummary } from './ResultSummary';
 
 const GONE_CODES = new Set(['NOT_FOUND', 'VALIDATION_ERROR']);
 
+const DOWNLOAD_LABEL = 'Baixar laudo em PDF';
+
+const PDF_TIMEOUT_MS = 60_000;
+
 export function ExamResultPage() {
   const bookingId = useParams().id ?? '';
+  const { show } = useToast();
   const result = useQuery({
     queryKey: queryKeys.patient.examResult(bookingId),
     queryFn: ({ signal }) =>
       apiFetch('get', '/api/patient/exam-results/{bookingId}', { params: { bookingId }, signal }),
   });
+  const leaving = useRef(new AbortController());
+  useEffect(() => {
+    const controller = new AbortController();
+    leaving.current = controller;
+    return () => controller.abort();
+  }, []);
+  const download = useMutation({
+    mutationFn: () =>
+      apiDownload('/api/patient/exam-results/{bookingId}/pdf', {
+        params: { bookingId },
+        signal: leaving.current.signal,
+        timeoutMs: PDF_TIMEOUT_MS,
+      }),
+    onSuccess: (file) => saveFile(file, `laudo-${result.data?.booking.publicCode ?? bookingId}.pdf`),
+    onError: (error) => {
+      if (!leaving.current.signal.aborted) show({ tone: 'danger', message: errorMessage(error) });
+    },
+  });
   const missing = result.error instanceof ApiError && GONE_CODES.has(result.error.code);
-  const { fullName } = useCurrentUser();
+  const data = result.data;
 
-  return (
-    <>
-      <div className="mb-4 hidden text-sm print:block">
-        <p className="font-semibold">{APP_NAME}</p>
-        <p>Paciente: {fullName}</p>
-        <p>Impresso em {formatDateTime(new Date().toISOString())}</p>
-      </div>
-      <PageHeader title="Resultado do exame" back backFallback={PATIENT_PAST_PATH} />
-      <Card className="flex flex-col gap-6 print:border-0 print:p-0">
+  if (!data) {
+    return (
+      <div className="mx-auto w-full max-w-[856px]">
+        <PageHeader title="Resultado do exame" back backFallback={PATIENT_PAST_PATH} />
         {result.isPending && (
           <div aria-busy="true" className="flex flex-col gap-4">
-            <Skeleton className="h-7 w-48" />
-            <Skeleton className="h-28" />
-            <Skeleton className="h-48" />
+            <Skeleton className="rounded-card h-24" />
+            <Skeleton className="rounded-card h-80" />
           </div>
         )}
         {missing && (
@@ -55,20 +86,61 @@ export function ExamResultPage() {
         {result.isError && !missing && (
           <QueryError error={result.error} onRetry={() => void result.refetch()} />
         )}
-        {result.data && (
+      </div>
+    );
+  }
+
+  const { booking, current, previous } = data;
+  const collected = formatDate(civilDateInSaoPaulo(new Date(booking.startsAt)));
+  const meta = (
+    <span className="text-text-muted flex flex-wrap items-center gap-2 text-xs">
+      {current.status === 'amended' && (
+        <StatusChip tone="info" icon={<LuFilePen />}>
+          Retificado · versão {current.version}
+        </StatusChip>
+      )}
+      Emitido em {formatDate(civilDateInSaoPaulo(new Date(current.issuedAt)))}
+    </span>
+  );
+
+  return (
+    <div className="mx-auto w-full max-w-[856px]">
+      <PageHeader
+        title={booking.examType.name}
+        subtitle={`Coletado em ${collected} · ${booking.unit.name}`}
+        back
+        backFallback={PATIENT_PAST_PATH}
+        action={
+          <Button
+            variant="secondary"
+            icon={<LuDownload />}
+            loading={download.isPending}
+            loadingLabel="Gerando PDF"
+            onClick={() => download.mutate()}
+          >
+            {download.isPending ? 'Gerando PDF…' : DOWNLOAD_LABEL}
+          </Button>
+        }
+      />
+      <div className="flex flex-col gap-6">
+        {current.items ? (
           <>
-            <ExamResultView result={result.data} />
-            <Button
-              variant="secondary"
-              icon={<LuPrinter />}
-              onClick={() => window.print()}
-              className="self-start print:hidden"
-            >
-              Imprimir
-            </Button>
+            <ResultSummary items={current.items} />
+            <ResultItems items={current.items} meta={meta} />
+            <div className="-mt-3">
+              <FormAlert tone="quiet" role="note" icon={<LuFileText />}>
+                Os indicadores comparam cada resultado com a faixa de referência do laboratório. Converse com
+                seu médico sobre o que eles significam para você.
+              </FormAlert>
+            </div>
           </>
+        ) : (
+          <SectionCard title="Laudo" action={meta} className="motion-safe:animate-rise">
+            <ReportText report={current.report ?? ''} />
+          </SectionCard>
         )}
-      </Card>
-    </>
+        {previous.length > 0 && <PreviousVersions versions={previous} headingLevel={2} />}
+      </div>
+    </div>
   );
 }

@@ -1,16 +1,13 @@
 import type { ExamResult } from '@lib/api/models';
 import { cx } from '@lib/cx';
-import { formatMeasurement } from '@lib/number';
 import { FlagChip } from './FlagChip';
+import { formatResultValue } from './result-flags';
 
 export type Version = ExamResult['current'];
 
 export type ResultItem = NonNullable<Version['items']>[number];
 
 export type HeadingLevel = 2 | 3 | 4 | 5;
-
-const formatValue = (value: ResultItem['value']) =>
-  typeof value === 'number' ? formatMeasurement(value) : value;
 
 const paragraphs = (report: string) =>
   report
@@ -29,6 +26,18 @@ const columns = [
   { label: 'Indicador' },
 ];
 
+export function ReportText({ report }: { report: string }) {
+  return (
+    <div className="text-text flex flex-col gap-3 text-sm leading-relaxed">
+      {paragraphs(report).map((paragraph, index) => (
+        <p key={index} className="break-words whitespace-pre-line">
+          {paragraph}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 export function ResultVersion({
   version: { items, report },
   label,
@@ -39,19 +48,12 @@ export function ResultVersion({
   headingLevel: HeadingLevel;
 }) {
   if (!items) {
-    const text = paragraphs(report ?? '');
-    if (text.length === 0) return null;
+    if (paragraphs(report ?? '').length === 0) return null;
     const Heading = `h${headingLevel}` as const;
     return (
       <section className="flex flex-col gap-2">
         <Heading className="text-text text-sm font-semibold">Laudo</Heading>
-        <div className="text-text flex flex-col gap-3 text-sm leading-relaxed">
-          {text.map((paragraph, index) => (
-            <p key={index} className="break-words whitespace-pre-line">
-              {paragraph}
-            </p>
-          ))}
-        </div>
+        <ReportText report={report ?? ''} />
       </section>
     );
   }
@@ -74,7 +76,7 @@ export function ResultVersion({
               {item.name}
             </th>
             <td className={cell}>
-              <span className="font-semibold tabular-nums">{formatValue(item.value)}</span>
+              <span className="font-semibold tabular-nums">{formatResultValue(item.value)}</span>
               {item.unit && <span className="text-text-secondary"> {item.unit}</span>}
               {item.referenceRange && (
                 <span className="text-text-secondary block text-xs lg:hidden print:hidden">
