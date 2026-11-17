@@ -185,7 +185,7 @@ export function Dropdown({
           initialFocus={initialRef}
         >
           <div className="flex flex-col gap-1 px-3 pt-3 pb-4">
-            <p aria-hidden className="text-text px-3 pt-1 pb-2.5 text-[1.0625rem] font-[650]">
+            <p aria-hidden className="text-text px-3 pt-1 pb-2.5 text-[1.0625rem] font-bold">
               {field.label}
             </p>
             {open && list}

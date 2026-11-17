@@ -140,10 +140,7 @@ export function BookingDetail({ booking, titleId, onCancel, onClose, tips = fals
         <div className="flex items-center gap-4">
           <DateTile startsAt={booking.startsAt} size="lg" muted={muted} />
           <div className="flex min-w-0 flex-col gap-1">
-            <h2
-              id={titleId}
-              className="text-text text-[1.375rem] leading-tight font-[650] tracking-[-0.02em]"
-            >
+            <h2 id={titleId} className="text-text text-[1.375rem] leading-tight font-bold tracking-[-0.02em]">
               {title}
             </h2>
             <p className="text-text-secondary text-[0.8125rem]">

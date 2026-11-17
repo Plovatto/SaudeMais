@@ -184,7 +184,7 @@ export function BookingForm({
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <p
                   className={cx(
-                    'truncate text-[1.09375rem] font-[650] tabular-nums',
+                    'truncate text-[1.09375rem] font-bold tabular-nums',
                     summary.line ? 'text-text' : 'text-text-muted',
                   )}
                 >
@@ -194,7 +194,7 @@ export function BookingForm({
               </div>
               {submit(
                 shortLabel,
-                'aria-disabled:bg-surface-strong aria-disabled:text-text-muted h-[54px] w-full rounded-[15px] text-base font-[650] aria-disabled:border-transparent aria-disabled:opacity-100',
+                'aria-disabled:bg-surface-strong aria-disabled:text-text-muted h-[54px] w-full rounded-[15px] text-base font-bold aria-disabled:border-transparent aria-disabled:opacity-100',
               )}
             </div>
           )}
