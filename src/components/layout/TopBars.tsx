@@ -17,11 +17,7 @@ function useCrumb(area: Area): { label: string; to: string } | undefined {
 function Who({ area }: { area: Area }) {
   const user = useCurrentUser();
   return (
-    <Link
-      to={profileUrl(area.role)}
-      aria-label={`${area.label}, ${user.fullName}. Meu perfil`}
-      className="flex min-w-0 flex-1 items-center gap-3 lg:hidden"
-    >
+    <Link to={profileUrl(area.role)} className="flex min-w-0 flex-1 items-center gap-3 lg:hidden">
       <span
         className={cx(
           'grid size-11 shrink-0 place-items-center rounded-[13px] text-white',
@@ -36,7 +32,11 @@ function Who({ area }: { area: Area }) {
         <span className="text-text-secondary text-[1.0625rem] leading-tight font-bold tracking-[-0.01em]">
           {area.label}
         </span>
-        <span className="text-text-muted truncate text-[0.78125rem]">{user.fullName}</span>
+        <span className="text-text-muted truncate text-[0.78125rem]">
+          <span className="sr-only">, </span>
+          {user.fullName}
+          <span className="sr-only">, meu perfil</span>
+        </span>
       </span>
     </Link>
   );
