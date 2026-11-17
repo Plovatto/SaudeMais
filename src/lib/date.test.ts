@@ -98,10 +98,13 @@ describe.each([
     expect(formatRelative('2026-11-12T15:00:00.000Z', now)).toBe('12/11/2026, 12:00');
   });
 
-  it('tells since when with a neutral phrase that ends in the civil date after a week', () => {
+  it('tells since when in days, then weeks, months and years', () => {
     const now = new Date('2026-11-20T15:00:00.000Z');
     expect(formatSince('2026-11-17T15:00:00.000Z', now)).toBe('há 3 dias');
-    expect(formatSince('2026-11-13T02:30:00.000Z', now)).toBe('em 12/11/2026');
+    expect(formatSince('2026-11-13T02:30:00.000Z', now)).toBe('há 1 semana');
+    expect(formatSince('2026-10-30T15:00:00.000Z', now)).toBe('há 3 semanas');
+    expect(formatSince('2026-09-01T15:00:00.000Z', now)).toBe('há 2 meses');
+    expect(formatSince('2024-11-01T15:00:00.000Z', now)).toBe('há 2 anos');
     expect(formatSince('not-a-date', now)).toBe('data indisponível');
   });
 });

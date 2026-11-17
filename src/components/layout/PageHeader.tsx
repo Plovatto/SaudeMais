@@ -27,7 +27,8 @@ export function PageHeader({
   return (
     <header
       className={cx(
-        'mb-4 flex flex-wrap items-start gap-x-1.5 gap-y-2.5 lg:mb-6 lg:items-end lg:gap-x-4 lg:gap-y-3',
+        'mb-4 flex flex-wrap items-start gap-y-5 py-1 lg:mb-6 lg:items-end lg:gap-4',
+        target ? 'gap-x-1.5' : 'gap-x-2.5',
         className,
       )}
     >
@@ -43,12 +44,16 @@ export function PageHeader({
       <div className="min-w-0 flex-1 basis-0 lg:basis-60">
         <PageTitle>{title}</PageTitle>
         {subtitle && (
-          <p className="text-text-muted mt-0.5 line-clamp-1 text-[0.8125rem] lg:mt-1 lg:line-clamp-none lg:text-sm">
+          <p className="text-text-muted mt-0.5 line-clamp-1 text-[0.8125rem] lg:mt-1 lg:line-clamp-none lg:text-sm lg:leading-normal">
             {subtitle}
           </p>
         )}
       </div>
-      {action && <div className="flex shrink-0 gap-2 max-lg:basis-full max-lg:[&>*]:flex-1">{action}</div>}
+      {action && (
+        <div className="flex shrink-0 gap-2 max-lg:basis-full [&_svg]:size-[18px] max-lg:[&>*]:min-h-[50px] max-lg:[&>*]:flex-1 max-lg:[&>*]:rounded-[14px] max-lg:[&>*]:text-[0.9375rem]">
+          {action}
+        </div>
+      )}
     </header>
   );
 }

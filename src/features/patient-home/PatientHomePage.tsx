@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { cx } from '@lib/cx';
 import { PageTitle } from '@components/layout/PageTitle';
 import { LastNotification } from '@components/notifications/LastNotification';
 import { HealthSummary } from './HealthSummary';
@@ -28,7 +29,7 @@ export function PatientHomePage() {
       <PageTitle className="sr-only">Início</PageTitle>
       {notification && <LastNotification notification={notification} role="patient" />}
       <div className="@container">
-        <div className="grid items-start gap-4 lg:gap-5 @min-[880px]:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="grid items-start gap-4 lg:gap-5 @min-[880px]:grid-cols-[minmax(0,1fr)_360px] @min-[880px]:items-stretch">
           <div className="flex min-w-0 flex-col gap-4 lg:gap-5">
             <div className={STAGGER[0]}>
               <NextAppointment
@@ -48,7 +49,7 @@ export function PatientHomePage() {
             <div className={STAGGER[3]}>
               <HealthSummary metrics={query.data?.metrics} />
             </div>
-            <div className={STAGGER[4]}>
+            <div className={cx(STAGGER[4], 'flex flex-1 flex-col *:flex-1')}>
               <RecentResults />
             </div>
           </div>

@@ -303,7 +303,7 @@ describe('patient home', { timeout: 15_000 }, () => {
     const [pressure, weight] = region.getAllByRole('listitem');
     expect(pressure).toHaveTextContent('118/76 mmHg');
     expect(weight).toHaveTextContent('72,4 kg');
-    expect(region.getByText(/^em \d{2}\/\d{2}\/\d{4}$/)).toBeVisible();
+    expect(region.getByText('há 1 semana')).toBeVisible();
     expect(region.queryByText(/depois que o médico registrar suas consultas/)).not.toBeInTheDocument();
   });
 

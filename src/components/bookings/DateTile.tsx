@@ -3,11 +3,15 @@ import { dayTile } from '@lib/date';
 
 const sizes = {
   md: {
-    box: 'w-[52px] rounded-tile',
-    head: 'py-0.5 text-[0.65625rem]',
-    day: 'pt-1.5 pb-[7px] text-[1.1875rem]',
+    box: 'size-[52px] rounded-tile',
+    head: 'pt-[3px] pb-0.5 text-[0.65625rem]/normal',
+    day: 'text-[1.1875rem]/none',
   },
-  lg: { box: 'w-[68px] rounded-[14px]', head: 'py-1 text-[0.71875rem]', day: 'pt-2 pb-2.5 text-[1.75rem]' },
+  lg: {
+    box: 'size-[68px] rounded-[14px]',
+    head: 'pt-[5px] pb-1 text-[0.71875rem]/normal',
+    day: 'text-[1.75rem]/none',
+  },
 };
 
 export interface DateTileProps {
@@ -24,7 +28,7 @@ export function DateTile({ startsAt, size = 'md', muted = false, className }: Da
     <span
       aria-hidden
       className={cx(
-        'border-border bg-surface shrink-0 overflow-hidden border text-center',
+        'border-border bg-surface flex shrink-0 flex-col overflow-hidden border text-center',
         style.box,
         className,
       )}
@@ -39,7 +43,10 @@ export function DateTile({ startsAt, size = 'md', muted = false, className }: Da
         {weekday}
       </span>
       <span
-        className={cx('text-text block leading-none font-bold tracking-[-0.02em] tabular-nums', style.day)}
+        className={cx(
+          'text-text grid flex-1 place-items-center font-bold tracking-[-0.02em] tabular-nums',
+          style.day,
+        )}
       >
         {day}
       </span>

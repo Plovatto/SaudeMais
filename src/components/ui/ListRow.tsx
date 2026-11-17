@@ -51,8 +51,8 @@ export function ListRow({
     <>
       {leading}
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="text-text truncate text-sm font-semibold">{title}</span>
-        <span className="text-text-secondary truncate text-[0.8125rem] tabular-nums">{meta}</span>
+        <span className="text-text text-sm/[1.35] font-semibold break-words">{title}</span>
+        <span className="text-text-secondary text-[0.8125rem] break-words tabular-nums">{meta}</span>
       </span>
       {trailing}
       <Chevron />

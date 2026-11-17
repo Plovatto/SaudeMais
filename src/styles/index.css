@@ -297,6 +297,7 @@
   html {
     background-color: var(--canvas);
     color: var(--text);
+    font-feature-settings: 'cv11';
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

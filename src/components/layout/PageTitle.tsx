@@ -9,7 +9,7 @@ export function PageTitle({ children, className }: { children: ReactNode; classN
       id={PAGE_TITLE_ID}
       tabIndex={-1}
       className={cx(
-        'text-text text-[1.3125rem] leading-[1.2] font-[650] tracking-[-0.02em] text-balance focus-visible:outline-none lg:text-[1.625rem]',
+        'text-text text-[1.3125rem] leading-[1.2] font-bold tracking-[-0.02em] text-balance focus-visible:outline-none lg:text-[1.625rem]',
         className,
       )}
     >

@@ -80,13 +80,14 @@ export function formatDate(date: string, { year = true } = {}): string {
 }
 
 const relativeTime = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto', style: 'short' });
+const relativeSpan = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'always' });
 
 const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
 const RELATIVE_DAYS = 7;
 
-function relativeOr(iso: string, now: Date, older: (date: Date) => string): string {
+function relativeOr(iso: string, now: Date, older: (date: Date, days: number) => string): string {
   const date = new Date(iso);
   const elapsed = now.getTime() - date.getTime();
   if (Number.isNaN(elapsed)) return INVALID_DATE;
@@ -95,14 +96,24 @@ function relativeOr(iso: string, now: Date, older: (date: Date) => string): stri
   if (elapsed < DAY_MS) return relativeTime.format(-Math.floor(elapsed / HOUR_MS), 'hour');
   const days =
     (utcDay(todayInSaoPaulo(now)).getTime() - utcDay(civilDateInSaoPaulo(date)).getTime()) / DAY_MS;
-  return days > RELATIVE_DAYS ? older(date) : relativeTime.format(-days, 'day');
+  return days > RELATIVE_DAYS ? older(date, days) : relativeTime.format(-days, 'day');
 }
 
 export const formatRelative = (iso: string, now = new Date()) =>
   relativeOr(iso, now, (date) => dateTime.format(date));
 
+const DAYS_PER_WEEK = 7;
+const DAYS_PER_MONTH = 30;
+const DAYS_PER_YEAR = 365;
+
+function spanSince(days: number): string {
+  if (days < DAYS_PER_MONTH) return relativeSpan.format(-Math.floor(days / DAYS_PER_WEEK), 'week');
+  if (days < DAYS_PER_YEAR) return relativeSpan.format(-Math.floor(days / DAYS_PER_MONTH), 'month');
+  return relativeSpan.format(-Math.floor(days / DAYS_PER_YEAR), 'year');
+}
+
 export const formatSince = (iso: string, now = new Date()) =>
-  relativeOr(iso, now, (date) => `em ${formatDate(civilDateInSaoPaulo(date))}`);
+  relativeOr(iso, now, (_date, days) => spanSince(days));
 
 const zonedParts = new Intl.DateTimeFormat('pt-BR', {
   timeZone: TIME_ZONE,
