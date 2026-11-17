@@ -4,21 +4,25 @@ import { cx } from '@lib/cx';
 import { setThemePreference, THEME_OPTIONS, type Theme, type ThemePreference } from '@lib/theme';
 import { useThemePreference } from '@lib/useTheme';
 
-const mockBackground = { light: 'bg-surface-strong', dark: 'bg-canvas' };
+const mockColors = {
+  light: { background: 'bg-surface-strong', line: 'bg-surface' },
+  dark: { background: 'bg-canvas', line: 'bg-surface-muted' },
+};
 
 function Mock({ theme, className }: { theme: Theme; className?: string }) {
   return (
     <span
       data-theme={theme}
       className={cx(
-        mockBackground[theme],
+        mockColors[theme].background,
         'border-border absolute inset-0 flex flex-col gap-[5px] rounded-[9px] border p-[9px]',
         className,
       )}
     >
       <i className="bg-role-strong block h-[7px] w-[38%] rounded" />
-      <b className="bg-surface-muted block h-[11px] rounded" />
-      <b className="bg-surface-muted block h-[11px] rounded" />
+      {[0, 1].map((line) => (
+        <b key={line} className={cx(mockColors[theme].line, 'block h-[11px] rounded')} />
+      ))}
     </span>
   );
 }
