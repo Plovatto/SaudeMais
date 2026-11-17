@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
+import type { RefObject } from 'react';
 import { useForm } from 'react-hook-form';
 import { LuCake, LuLock } from 'react-icons/lu';
 import { PersonalDataFields } from '@components/forms/PersonalDataFields';
@@ -17,6 +18,13 @@ import {
   profileValues,
   type ProfileValues,
 } from './profile-schemas';
+
+const INCOMPLETE_BIRTH_DATE = 'Complete a data de nascimento ou deixe o campo em branco.';
+
+function hasIncompleteBirthDate(form: HTMLFormElement): boolean {
+  const field = form.elements.namedItem('birthDate');
+  return field instanceof HTMLInputElement && field.validity.badInput;
+}
 
 interface EditProfileFormProps {
   user: CurrentUser;
@@ -41,7 +49,7 @@ function EditProfileForm({ user, role, withBirthDate, onClose, onProtected }: Ed
     handleProtectedAccount(onProtected, onClose),
   );
 
-  const onSubmit = handleSubmit((values) =>
+  const submit = handleSubmit((values) =>
     run(async () => {
       const updated = await updateProfile(profileBody(values, withBirthDate));
       queryClient.setQueryData(queryKeys.session, updated);
@@ -51,7 +59,18 @@ function EditProfileForm({ user, role, withBirthDate, onClose, onProtected }: Ed
   );
 
   return (
-    <form noValidate onSubmit={(event) => void onSubmit(event)} className="flex flex-1 flex-col">
+    <form
+      noValidate
+      onSubmit={(event) => {
+        if (hasIncompleteBirthDate(event.currentTarget)) {
+          event.preventDefault();
+          setError('birthDate', { message: INCOMPLETE_BIRTH_DATE }, { shouldFocus: true });
+          return;
+        }
+        void submit(event);
+      }}
+      className="flex flex-1 flex-col"
+    >
       <DrawerBody>
         <div className="flex items-center gap-3">
           <Avatar name={user.fullName} seed={user.id} size="lg" />
@@ -103,11 +122,12 @@ function EditProfileForm({ user, role, withBirthDate, onClose, onProtected }: Ed
 
 export interface EditProfileDrawerProps extends EditProfileFormProps {
   open: boolean;
+  fallbackFocus: RefObject<HTMLElement | null>;
 }
 
-export function EditProfileDrawer({ open, ...props }: EditProfileDrawerProps) {
+export function EditProfileDrawer({ open, fallbackFocus, ...props }: EditProfileDrawerProps) {
   return (
-    <Drawer open={open} onClose={props.onClose} title="Editar perfil">
+    <Drawer open={open} onClose={props.onClose} title="Editar perfil" fallbackFocus={fallbackFocus}>
       {open && <EditProfileForm {...props} />}
     </Drawer>
   );

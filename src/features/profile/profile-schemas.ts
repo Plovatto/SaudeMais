@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { todayInSaoPaulo } from '@lib/date';
 import {
   confirmationMatches,
+  hasLettersAndNumbers,
   newPasswordFields,
   personalDataBody,
   personalDataSchema,
@@ -17,7 +18,15 @@ export const passwordSchema = z
       .max(128, 'A senha pode ter até 128 caracteres.'),
     ...newPasswordFields,
   })
-  .refine(...confirmationMatches);
+  .refine(...confirmationMatches)
+  .refine((data) => hasLettersAndNumbers(data.password), {
+    path: ['password'],
+    message: 'A senha precisa ter letras e números.',
+  })
+  .refine((data) => data.password !== data.currentPassword, {
+    path: ['password'],
+    message: 'A nova senha precisa ser diferente da atual.',
+  });
 
 export type PasswordValues = z.infer<typeof passwordSchema>;
 

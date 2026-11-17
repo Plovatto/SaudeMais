@@ -1,6 +1,6 @@
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Dialog } from './Dialog';
@@ -37,6 +37,33 @@ async function openDialog() {
   return { user, onClose, dialog: screen.getByRole('dialog', { name: 'Exame agendado!' }) };
 }
 
+function DisabledOpenerHarness() {
+  const [open, setOpen] = useState(false);
+  const fallback = useRef<HTMLParagraphElement>(null);
+  return (
+    <>
+      <p ref={fallback} tabIndex={-1}>
+        Aviso
+      </p>
+      <button type="button" onClick={() => setOpen(true)}>
+        Agendar
+      </button>
+      <Dialog open={open} onClose={() => setOpen(false)} title="Exame agendado!" fallbackFocus={fallback}>
+        <button
+          type="button"
+          onClick={() => {
+            const opener = screen.getByRole('button', { name: 'Agendar', hidden: true });
+            opener.toggleAttribute('disabled', true);
+            setOpen(false);
+          }}
+        >
+          Concluir
+        </button>
+      </Dialog>
+    </>
+  );
+}
+
 describe('Dialog', () => {
   it('opens as a labelled and described modal', async () => {
     const { dialog } = await openDialog();
@@ -59,6 +86,16 @@ describe('Dialog', () => {
     expect(onClose).toHaveBeenCalledOnce();
     expect(dialog).not.toHaveAttribute('open');
     expect(screen.getByRole('button', { name: 'Agendar' })).toHaveFocus();
+  });
+
+  it('moves focus to the fallback when the opener became disabled', async () => {
+    const user = userEvent.setup();
+    render(<DisabledOpenerHarness />);
+    await user.click(screen.getByRole('button', { name: 'Agendar' }));
+
+    await user.click(screen.getByRole('button', { name: 'Concluir' }));
+
+    expect(screen.getByText('Aviso')).toHaveFocus();
   });
 
   it('closes when the backdrop is clicked, but not when clicking its content', async () => {

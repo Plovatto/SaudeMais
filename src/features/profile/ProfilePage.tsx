@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { LuArrowUpDown, LuLogOut } from 'react-icons/lu';
 import { Link } from 'react-router';
 import { PageHeader } from '@components/layout/PageHeader';
@@ -32,6 +32,8 @@ export function ProfilePage() {
   const signOut = useSignOut();
   const [locked, setLocked] = useState(isDemoEmail(user.email));
   const [panel, setPanel] = useState<Panel>(null);
+  const [leaving, setLeaving] = useState(false);
+  const demoNote = useRef<HTMLDivElement>(null);
   const lock = () => setLocked(true);
   const close = () => setPanel(null);
   const withBirthDate = role === 'patient';
@@ -44,7 +46,6 @@ export function ProfilePage() {
         {user.roles.length > 1 && (
           <Link
             to="/perfis"
-            aria-label={`Trocar perfil. Atual: ${Area.label}`}
             className="rounded-card border-border bg-surface shadow-field can-hover:border-border-strong flex items-center gap-3 border px-3.5 py-3 transition-colors duration-150"
           >
             <span
@@ -56,9 +57,9 @@ export function ProfilePage() {
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="text-text-muted text-[0.6875rem] font-medium tracking-[0.02em]">
                 Perfil atual
-              </span>
+              </span>{' '}
               <b className="text-text text-[0.9375rem] font-[650]">{Area.label}</b>
-            </span>
+            </span>{' '}
             <span className="text-role-text inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold">
               Trocar
               <LuArrowUpDown aria-hidden />
@@ -66,10 +67,12 @@ export function ProfilePage() {
           </Link>
         )}
         {locked && (
-          <FormAlert tone="warning" role="note">
-            Esta é uma conta de demonstração, compartilhada com outros visitantes. Os dados e a senha não
-            podem ser alterados.
-          </FormAlert>
+          <div ref={demoNote} tabIndex={-1} className="outline-none">
+            <FormAlert tone="warning" role="note">
+              Esta é uma conta de demonstração, compartilhada com outros visitantes. Os dados e a senha não
+              podem ser alterados.
+            </FormAlert>
+          </div>
         )}
         <div className={STAGGER[0]}>
           <ProfileHero user={user} role={role} locked={locked} onEdit={() => setPanel('edit')} />
@@ -112,8 +115,14 @@ export function ProfilePage() {
         withBirthDate={withBirthDate}
         onClose={close}
         onProtected={lock}
+        fallbackFocus={demoNote}
       />
-      <PasswordDrawer open={panel === 'password'} onClose={close} onProtected={lock} />
+      <PasswordDrawer
+        open={panel === 'password'}
+        onClose={close}
+        onProtected={lock}
+        fallbackFocus={demoNote}
+      />
       <Dialog
         open={panel === 'logout'}
         onClose={close}
@@ -123,10 +132,18 @@ export function ProfilePage() {
         centered
       >
         <div className="grid w-full grid-cols-2 gap-3">
-          <Button variant="secondary" onClick={close}>
+          <Button variant="secondary" disabled={leaving} onClick={close}>
             Continuar aqui
           </Button>
-          <Button onClick={() => void signOut()}>Sair</Button>
+          <Button
+            loading={leaving}
+            onClick={() => {
+              setLeaving(true);
+              void signOut();
+            }}
+          >
+            Sair
+          </Button>
         </div>
       </Dialog>
     </>
