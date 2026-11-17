@@ -132,7 +132,7 @@ describe('exam result', { timeout: 15_000 }, () => {
     const summary = await screen.findByRole('region', { name: 'Resumo do resultado' });
     expect(summary).toHaveTextContent('3 de 4 itens fora da referência');
     expect(summary).toHaveTextContent('Leucócitos baixo · Glicose alto · Potássio crítico');
-    expect(within(summary).getByRole('img')).toHaveAccessibleName('1 normais, 1 baixo, 1 alto, 1 crítico');
+    expect(within(summary).getByRole('img')).toHaveAccessibleName('1 normal, 1 baixo, 1 alto, 1 crítico');
   });
 
   it('tells when every item is inside the reference', async () => {
@@ -148,8 +148,8 @@ describe('exam result', { timeout: 15_000 }, () => {
     serve({ status: 200, body: result({ current: ranged }) });
     const { user } = renderApp(PAGE);
 
-    expect(await screen.findByRole('img', { name: '13,8 g/dL, referência de 12,0 a 16,0' })).toBeVisible();
-    expect(screen.getByRole('img', { name: '3.100 /mm³, referência de 4.000 a 11.000' })).toBeVisible();
+    expect(await screen.findByRole('img', { name: 'Referência de 12,0 a 16,0, valor normal' })).toBeVisible();
+    expect(screen.getByRole('img', { name: 'Referência de 4.000 a 11.000, valor baixo' })).toBeVisible();
     expect(screen.queryByRole('button', { name: 'O que é Leucócitos?' })).not.toBeInTheDocument();
     const about = screen.getByRole('button', { name: 'O que é Hemoglobina?' });
     expect(about).toHaveAttribute('aria-expanded', 'false');
@@ -165,9 +165,35 @@ describe('exam result', { timeout: 15_000 }, () => {
     expect(screen.queryByText('Proteína que carrega o oxigênio.')).not.toBeInTheDocument();
   });
 
+  it('clamps a value far outside the range and keeps an unusual reference text', async () => {
+    serve({
+      status: 200,
+      body: result({
+        current: version({
+          items: [
+            {
+              name: 'Ferritina',
+              value: 900,
+              unit: 'ng/mL',
+              referenceRange: '15 - 150',
+              flag: 'high',
+              range: { low: 15, high: 150 },
+              about: null,
+            },
+          ],
+        }),
+      }),
+    });
+    renderApp(PAGE);
+
+    const bar = await screen.findByRole('img', { name: 'Referência de 15 a 150, valor alto' });
+    expect((bar.lastElementChild as HTMLElement).style.insetInlineStart).toBe('96%');
+  });
+
   it('downloads the report as a PDF named after the exam code', async () => {
-    const createObjectURL = vi.fn(() => 'blob:laudo');
-    vi.stubGlobal('URL', Object.assign(URL, { createObjectURL, revokeObjectURL: vi.fn() }));
+    vi.useFakeTimers({ toFake: ['setTimeout'], shouldAdvanceTime: true });
+    const createObjectURL = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:laudo');
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
     const { calls } = serveApi(['patient'], {
       '/api/patient/exam-results/b1': () => ({ status: 200, body: result() }),
@@ -180,6 +206,10 @@ describe('exam result', { timeout: 15_000 }, () => {
     await waitFor(() => expect(click).toHaveBeenCalledOnce());
     expect((click.mock.contexts[0] as HTMLAnchorElement).download).toBe('laudo-EX-7F3K2Q.pdf');
     expect(createObjectURL).toHaveBeenCalledOnce();
+    expect(revokeObjectURL).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(30_000);
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:laudo');
+    vi.useRealTimers();
     expect(calls.some((call) => call.url.pathname === '/api/patient/exam-results/b1/pdf')).toBe(true);
   });
 
@@ -192,7 +222,7 @@ describe('exam result', { timeout: 15_000 }, () => {
 
     await user.click(await screen.findByRole('button', { name: 'Baixar laudo em PDF' }));
 
-    await waitFor(() => expect(screen.getAllByRole('alert').some((region) => region.textContent)).toBe(true));
+    expect(await screen.findByText('Algo deu errado. Tente de novo em instantes.')).toBeVisible();
   });
 
   it('shows the imaging report, the amendment and the previous versions', async () => {
@@ -216,7 +246,7 @@ describe('exam result', { timeout: 15_000 }, () => {
 
     await user.click(screen.getByText('Versões anteriores (1)'));
 
-    expect(screen.getByRole('heading', { level: 3, name: 'Versão 1' })).toBeVisible();
+    expect(screen.getByRole('heading', { level: 2, name: 'Versão 1' })).toBeVisible();
     expect(screen.getByText('Fígado aumentado.')).toBeVisible();
   });
 

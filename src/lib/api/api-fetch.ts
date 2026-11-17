@@ -126,9 +126,11 @@ export async function apiFetch<P extends keyof paths, M extends MethodOf<P>>(
   return (await readBody(response, timeout, options.signal)) as ResponseOf<P, M>;
 }
 
-export async function apiDownload<P extends keyof paths>(
+type GetPath = { [P in keyof paths]: 'get' extends MethodOf<P> ? P : never }[keyof paths];
+
+export async function apiDownload<P extends GetPath>(
   path: P,
-  { params, query, ...options }: ApiFetchOptions<never, PathParamsOf<P, MethodOf<P>>> = {},
+  { params, query, ...options }: ApiFetchOptions<never, PathParamsOf<P, MethodOf<P> & 'get'>> = {},
 ): Promise<Blob> {
   const url = urlOf(path, params as Record<string, string> | undefined, query);
   const { response, timeout } = await send('get', url, '*/*', options);

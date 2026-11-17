@@ -1,6 +1,7 @@
 import { useId, useState, type ReactNode } from 'react';
 import { LuFileText } from 'react-icons/lu';
 import { FlagChip } from '@components/exam-results/FlagChip';
+import { flags, formatResultValue } from '@components/exam-results/result-flags';
 import type { ResultItem } from '@components/exam-results/ResultVersion';
 import { cx } from '@lib/cx';
 import { formatMeasurement } from '@lib/number';
@@ -9,26 +10,26 @@ import { flagDot } from './flag-colors';
 const NORMAL_START = 25;
 const NORMAL_SPAN = 50;
 
-const valueText = (item: ResultItem) =>
-  typeof item.value === 'number' ? formatMeasurement(item.value) : item.value;
+const COLUMNS = 'sm:grid-cols-[minmax(0,1.2fr)_120px_minmax(160px,1fr)_96px]';
 
 const position = (value: number, low: number, high: number) =>
   Math.max(4, Math.min(96, NORMAL_START + (NORMAL_SPAN * (value - low)) / (high - low)));
 
 function RangeBar({ item }: { item: ResultItem }) {
-  const { range, value, unit } = item;
+  const { range, value } = item;
   if (!range || typeof value !== 'number' || range.high <= range.low) {
     return (
       <span className="text-text-secondary text-[0.8125rem] tabular-nums">{item.referenceRange ?? '—'}</span>
     );
   }
-  const [low = formatMeasurement(range.low), high = formatMeasurement(range.high)] =
-    item.referenceRange?.split(/\s+a\s+/) ?? [];
+  const parts = item.referenceRange?.split(/\s+a\s+/) ?? [];
+  const [low, high] =
+    parts.length === 2 ? parts : [formatMeasurement(range.low), formatMeasurement(range.high)];
   return (
     <div>
       <div
         role="img"
-        aria-label={`${valueText(item)}${unit ? ` ${unit}` : ''}, referência de ${low} a ${high}`}
+        aria-label={`Referência de ${low} a ${high}, valor ${flags[item.flag].label.toLowerCase()}`}
         className="relative h-2.5 rounded-full bg-[linear-gradient(to_right,var(--surface-strong)_0_calc(25%-3px),transparent_calc(25%-3px)_calc(75%+3px),var(--surface-strong)_calc(75%+3px))]"
       >
         <span className="absolute inset-y-0 start-1/4 end-1/4 rounded-full bg-[color-mix(in_oklab,var(--success-text)_22%,var(--surface))]" />
@@ -49,13 +50,13 @@ function RangeBar({ item }: { item: ResultItem }) {
 }
 
 const row =
-  'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2.5 px-4 py-3.5 [grid-template-areas:"name_flag"_"value_value"_"range_range"] sm:grid-cols-[minmax(0,1.2fr)_120px_minmax(160px,1fr)_96px] sm:gap-5 sm:px-5 sm:py-4 sm:[grid-template-areas:"name_value_range_flag"]';
+  'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2.5 px-4 py-3.5 [grid-template-areas:"name_flag"_"value_value"_"range_range"] sm:gap-5 sm:px-5 sm:py-4 sm:[grid-template-areas:"name_value_range_flag"]';
 
 function ItemRow({ item }: { item: ResultItem }) {
   const [open, setOpen] = useState(false);
   const aboutId = useId();
   return (
-    <li className={cx(row, 'transition-colors duration-200', open && 'bg-role-soft/25')}>
+    <li className={cx(row, COLUMNS, 'transition-colors duration-200', open && 'bg-role-soft/25')}>
       <p className="text-text flex items-center gap-2 text-sm font-semibold [grid-area:name]">
         {item.name}
         {item.about && (
@@ -77,7 +78,7 @@ function ItemRow({ item }: { item: ResultItem }) {
         )}
       </p>
       <p className="text-text text-sm font-[650] tabular-nums [grid-area:value] max-sm:-mt-1.5">
-        {valueText(item)}
+        {formatResultValue(item.value)}
         {item.unit && <span className="text-text-muted text-xs font-medium"> {item.unit}</span>}
       </p>
       <div className={cx('[grid-area:range]', !item.range && !item.referenceRange && 'max-sm:hidden')}>
@@ -114,14 +115,17 @@ export function ResultItems({ items, meta }: { items: ResultItem[]; meta: ReactN
       </header>
       <div
         aria-hidden
-        className="bg-surface-muted border-border text-text-muted hidden grid-cols-[minmax(0,1.2fr)_120px_minmax(160px,1fr)_96px] gap-5 border-y px-5 py-2.5 text-xs font-semibold sm:grid"
+        className={cx(
+          'bg-surface-muted border-border text-text-muted hidden gap-5 border-y px-5 py-2.5 text-xs font-semibold sm:grid',
+          COLUMNS,
+        )}
       >
         <span>Exame</span>
         <span>Resultado</span>
         <span>Faixa de referência</span>
         <span className="text-end">Situação</span>
       </div>
-      <ul className="divide-border max-sm:border-border divide-y max-sm:border-t">
+      <ul role="list" className="divide-border max-sm:border-border divide-y max-sm:border-t">
         {items.map((item, index) => (
           <ItemRow key={`${index}-${item.name}`} item={item} />
         ))}

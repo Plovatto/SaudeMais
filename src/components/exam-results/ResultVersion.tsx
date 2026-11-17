@@ -1,16 +1,13 @@
 import type { ExamResult } from '@lib/api/models';
 import { cx } from '@lib/cx';
-import { formatMeasurement } from '@lib/number';
 import { FlagChip } from './FlagChip';
+import { formatResultValue } from './result-flags';
 
 export type Version = ExamResult['current'];
 
 export type ResultItem = NonNullable<Version['items']>[number];
 
 export type HeadingLevel = 2 | 3 | 4 | 5;
-
-const formatValue = (value: ResultItem['value']) =>
-  typeof value === 'number' ? formatMeasurement(value) : value;
 
 const paragraphs = (report: string) =>
   report
@@ -79,7 +76,7 @@ export function ResultVersion({
               {item.name}
             </th>
             <td className={cell}>
-              <span className="font-semibold tabular-nums">{formatValue(item.value)}</span>
+              <span className="font-semibold tabular-nums">{formatResultValue(item.value)}</span>
               {item.unit && <span className="text-text-secondary"> {item.unit}</span>}
               {item.referenceRange && (
                 <span className="text-text-secondary block text-xs lg:hidden print:hidden">

@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
 import { LuDownload, LuFilePen, LuFileText, LuFileX } from 'react-icons/lu';
 import { useParams } from 'react-router';
 import { PreviousVersions } from '@components/exam-results/PreviousVersions';
@@ -29,6 +30,8 @@ const GONE_CODES = new Set(['NOT_FOUND', 'VALIDATION_ERROR']);
 
 const DOWNLOAD_LABEL = 'Baixar laudo em PDF';
 
+const PDF_TIMEOUT_MS = 60_000;
+
 export function ExamResultPage() {
   const bookingId = useParams().id ?? '';
   const { show } = useToast();
@@ -37,10 +40,23 @@ export function ExamResultPage() {
     queryFn: ({ signal }) =>
       apiFetch('get', '/api/patient/exam-results/{bookingId}', { params: { bookingId }, signal }),
   });
+  const leaving = useRef(new AbortController());
+  useEffect(() => {
+    const controller = new AbortController();
+    leaving.current = controller;
+    return () => controller.abort();
+  }, []);
   const download = useMutation({
-    mutationFn: () => apiDownload('/api/patient/exam-results/{bookingId}/pdf', { params: { bookingId } }),
+    mutationFn: () =>
+      apiDownload('/api/patient/exam-results/{bookingId}/pdf', {
+        params: { bookingId },
+        signal: leaving.current.signal,
+        timeoutMs: PDF_TIMEOUT_MS,
+      }),
     onSuccess: (file) => saveFile(file, `laudo-${result.data?.booking.publicCode ?? bookingId}.pdf`),
-    onError: (error) => show({ tone: 'danger', message: errorMessage(error) }),
+    onError: (error) => {
+      if (!leaving.current.signal.aborted) show({ tone: 'danger', message: errorMessage(error) });
+    },
   });
   const missing = result.error instanceof ApiError && GONE_CODES.has(result.error.code);
   const data = result.data;
@@ -121,7 +137,7 @@ export function ExamResultPage() {
             <ReportText report={current.report ?? ''} />
           </SectionCard>
         )}
-        {previous.length > 0 && <PreviousVersions versions={previous} headingLevel={3} />}
+        {previous.length > 0 && <PreviousVersions versions={previous} headingLevel={2} />}
       </div>
     </div>
   );
