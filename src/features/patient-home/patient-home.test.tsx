@@ -144,15 +144,15 @@ describe('patient home', { timeout: 15_000 }, () => {
     ).toBe(true);
   });
 
-  it('still opens the target when a demo account cannot mark it as read', async () => {
+  it('still opens the target when marking as read fails', async () => {
     serveApi(['patient'], {
       '/api/patient/home': () => ({
         status: 200,
         body: homeBody({ lastNotification: notification({ type: 'appointment_expired' }) }),
       }),
       '/api/notifications/n1/read': () => ({
-        status: 403,
-        body: { code: 'PROTECTED_ACCOUNT', message: 'Conta de demonstração.' },
+        status: 500,
+        body: { code: 'INTERNAL_ERROR', message: 'Falha ao marcar.' },
       }),
     });
     const { user, router } = renderApp('/paciente');
@@ -161,7 +161,7 @@ describe('patient home', { timeout: 15_000 }, () => {
 
     await waitFor(() => expect(router.state.location.search).toBe('?aba=realizados'));
     expect(router.state.location.pathname).toBe('/paciente/agendamentos');
-    expect(screen.queryByText('Conta de demonstração.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Falha ao marcar.')).not.toBeInTheDocument();
   });
 
   it('does not mark an already read notification again', async () => {

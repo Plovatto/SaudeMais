@@ -9,7 +9,7 @@ import { mockFetch, renderApp, serveApi, type ApiCall, type MockResponse } from 
 const FUTURE = '2030-07-19T18:30:00.000Z';
 const HOUR_MS = 3_600_000;
 const POLL_MS = 120_000;
-const DEMO = { status: 403, body: { code: 'PROTECTED_ACCOUNT', message: 'Conta de demonstração.' } };
+const FAILURE = { status: 500, body: { code: 'INTERNAL_ERROR', message: 'Falha ao marcar.' } };
 
 const notification = (id: string, overrides: Partial<UserNotification> = {}): UserNotification => ({
   id,
@@ -246,15 +246,15 @@ describe('notifications', { timeout: 15_000 }, () => {
     expect(await bell('Notificações')).toBeInTheDocument();
   });
 
-  it('still opens the target when a demo account cannot mark it as read', async () => {
-    serve({ count: 1, items: [notification('n1', { type: 'appointment_expired' })], read: DEMO });
+  it('still opens the target when marking as read fails', async () => {
+    serve({ count: 1, items: [notification('n1', { type: 'appointment_expired' })], read: FAILURE });
     const { user, router } = renderApp('/paciente/exames/e1/resultado');
 
     const popover = await openPopover(user);
     await user.click(await popover.findByRole('link', { name: /Pedido não confirmado/ }));
 
     await waitFor(() => expect(router.state.location.search).toBe('?aba=realizados'));
-    expect(screen.queryByText('Conta de demonstração.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Falha ao marcar.')).not.toBeInTheDocument();
   });
 
   it('ends an expired session when marking a notice as read', async () => {
