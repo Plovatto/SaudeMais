@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, type ReactNode, type RefObject } from 'react';
+import { LuCircleX } from 'react-icons/lu';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button, Dialog, FormAlert, Textarea, useToast } from '@components/ui';
@@ -80,8 +81,8 @@ function CancelForm({ target, reason: mode, cancel, warning, refresh, onClose }:
         />
       )}
       {alert && <FormAlert>{alert}</FormAlert>}
-      <div className="flex flex-wrap justify-end gap-3">
-        <Button variant="secondary" onClick={onClose}>
+      <div className="border-border bg-surface-muted -mx-6 -mb-6 grid grid-cols-2 gap-2.5 border-t px-6 py-3.5 sm:flex sm:justify-end">
+        <Button variant="secondary" onClick={onClose} className={stale ? 'col-span-2' : undefined}>
           Voltar
         </Button>
         {!stale && (
@@ -98,6 +99,7 @@ interface CancelBookingDialogProps {
   target: CancelTarget | null;
   title: string;
   summary: string | undefined;
+  details?: ReactNode;
   reason?: ReasonMode;
   cancel: Cancel;
   warning?: ReactNode;
@@ -110,6 +112,7 @@ export function CancelBookingDialog({
   target,
   title,
   summary,
+  details,
   reason = 'optional',
   cancel,
   warning,
@@ -123,8 +126,11 @@ export function CancelBookingDialog({
       onClose={onClose}
       title={title}
       description={summary}
+      icon={<LuCircleX />}
+      tone="danger"
       fallbackFocus={fallbackFocus}
     >
+      {target && details}
       {target && (
         <CancelForm
           key={target.id}

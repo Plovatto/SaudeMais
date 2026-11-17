@@ -1,17 +1,20 @@
-import { useEffect, useRef, useState } from 'react';
-import { LuCalendarCheck, LuCalendarX, LuClock, LuFilterX, LuPlus, LuSyringe } from 'react-icons/lu';
-import { UPCOMING_EMPTY } from '@components/bookings/booking-display';
+import { useEffect, useId, useRef, useState } from 'react';
+import { LuCalendarX, LuFilterX, LuPlus } from 'react-icons/lu';
+import { BookingRow } from '@components/bookings/BookingRow';
 import { PagedResults } from '@components/bookings/PagedResults';
 import { PageHeader } from '@components/layout/PageHeader';
-import { Button, ButtonLink, EmptyState, TabPanel, Tabs } from '@components/ui';
-import { areas } from '@constants/areas';
+import { Button, ButtonLink, Dialog, EmptyState, TabPanel, Tabs } from '@components/ui';
+import { overline } from '@components/ui/styles';
+import { areas, BOOKING_PARAM } from '@constants/areas';
+import { DESKTOP_QUERY, useMediaQuery } from '@hooks/useMediaQuery';
 import { RESET_PAGE } from '@hooks/usePageParam';
 import { useSearchParam, useSetSearchParams } from '@hooks/useSearchParam';
 import { useTabbedList } from '@hooks/useTabbedList';
 import type { PatientBooking } from '@lib/api/models';
 import { cx } from '@lib/cx';
+import { formatMonth } from '@lib/date';
 import { queryKeys } from '@lib/query-keys';
-import { BookingCard } from './BookingCard';
+import { BookingDetail } from './BookingDetail';
 import {
   activeCount,
   filterQuery,
@@ -23,24 +26,22 @@ import { BookingsFilter } from './BookingsFilter';
 import { listBookings, type BookingListParams } from './bookings-api';
 import { CancelDialog } from './CancelDialog';
 
-const PATIENT = areas.patient.base;
+const BOOK_URL = `${areas.patient.base}/consultas/nova`;
 const TABS_ID = 'patient-bookings';
 
 const TABS = [
   {
     value: 'agendados',
-    label: 'Agendados',
+    label: 'Próximos',
     scope: 'upcoming',
-    icon: <LuCalendarCheck />,
-    empty: UPCOMING_EMPTY,
+    empty: { title: 'Nada por aqui', description: 'Seus próximos agendamentos aparecem nesta lista.' },
   },
   {
     value: 'realizados',
-    label: 'Realizados',
+    label: 'Histórico',
     scope: 'past',
-    icon: <LuClock />,
     empty: {
-      title: 'Nenhum agendamento realizado',
+      title: 'Nenhum agendamento no histórico',
       description: 'Consultas e exames passados ou cancelados aparecem aqui.',
     },
   },
@@ -50,25 +51,24 @@ type TabValue = (typeof TABS)[number]['value'];
 
 const count = (total: number) => (total === 1 ? '1 agendamento' : `${total} agendamentos`);
 
-function Shortcuts({ className }: { className?: string }) {
-  return (
-    <nav aria-label="Novo agendamento" className={cx('grid grid-cols-2 gap-3 lg:max-w-md', className)}>
-      <ButtonLink to={`${PATIENT}/consultas/nova`} size="lg" className="px-3 text-base">
-        <LuPlus aria-hidden />
-        Nova Consulta
-      </ButtonLink>
-      <ButtonLink to={`${PATIENT}/exames/novo`} variant="secondary" size="lg" className="px-3 text-base">
-        <LuSyringe aria-hidden />
-        Novo Exame
-      </ButtonLink>
-    </nav>
-  );
+function byMonth(items: PatientBooking[]) {
+  const groups: { label: string; items: PatientBooking[] }[] = [];
+  for (const booking of items) {
+    const label = formatMonth(booking.startsAt);
+    const last = groups.at(-1);
+    if (last?.label === label) last.items.push(booking);
+    else groups.push({ label, items: [booking] });
+  }
+  return groups;
 }
 
 export function PatientBookingsPage() {
   const [tipo] = useSearchParam('tipo');
   const [status] = useSearchParam('status');
+  const [selectedId, setSelectedId] = useSearchParam(BOOKING_PARAM);
   const setParams = useSetSearchParams();
+  const desktop = useMediaQuery(DESKTOP_QUERY);
+  const detailId = useId();
   const raw = { tipo, status };
   const list = useTabbedList(TABS, ({ scope }, page) => {
     const params: BookingListParams = { scope, page, ...filterQuery(scope, raw) };
@@ -88,6 +88,10 @@ export function PatientBookingsPage() {
     applyFilters(NO_FILTERS);
     results.current?.focus();
   };
+  const chosen = list.items?.find((booking) => booking.id === selectedId);
+  const selected = chosen ?? (desktop ? list.items?.[0] : undefined);
+  const select = (booking: PatientBooking) => setSelectedId(booking.id);
+  const closeSheet = () => setSelectedId('');
 
   useEffect(() => {
     if (valid.tipo !== tipo || valid.status !== status) {
@@ -97,64 +101,128 @@ export function PatientBookingsPage() {
 
   return (
     <>
-      <PageHeader title="Minhas consultas e exames" back backFallback={PATIENT} />
-      <div className="flex flex-col gap-5">
-        <div className="flex gap-3 lg:max-w-lg">
-          <Tabs<TabValue>
-            id={TABS_ID}
-            label="Agendamentos"
-            variant="tile"
-            items={TABS.map(({ value, label, scope, icon }) => ({
-              value,
-              label,
-              icon,
-              count: counts ? counts[scope] : '–',
-            }))}
-            value={list.tab.value}
-            onValueChange={list.selectTab}
-            className="min-w-0 flex-1"
-          />
-          <BookingsFilter scope={list.tab.scope} filters={valid} onApply={applyFilters} />
-        </div>
-        <TabPanel tabsId={TABS_ID} value={list.tab.value} className="flex flex-col gap-4">
+      <PageHeader
+        title="Meus agendamentos"
+        subtitle="Suas consultas e exames em um só lugar."
+        action={
+          <ButtonLink to={BOOK_URL} className="max-lg:hidden">
+            <LuPlus aria-hidden />
+            Agendar consulta
+          </ButtonLink>
+        }
+      />
+      <div className="flex items-end gap-3">
+        <Tabs<TabValue>
+          id={TABS_ID}
+          label="Agendamentos"
+          variant="line"
+          items={TABS.map(({ value, label, scope }) => ({
+            value,
+            label,
+            count: counts ? counts[scope] : '–',
+          }))}
+          value={list.tab.value}
+          onValueChange={list.selectTab}
+          className="min-w-0 flex-1"
+        />
+        <BookingsFilter scope={list.tab.scope} filters={valid} onApply={applyFilters} />
+      </div>
+      <TabPanel
+        tabsId={TABS_ID}
+        value={list.tab.value}
+        className="mt-4 grid items-start gap-5 focus-visible:outline-none lg:grid-cols-[minmax(0,1fr)_360px]"
+      >
+        <div className="flex min-w-0 flex-col gap-3">
           <PagedResults<PatientBooking>
+            bare
             list={list}
             found={found}
             resultsRef={results}
             empty={
-              filtered ? (
-                <EmptyState
-                  icon={<LuFilterX />}
-                  title="Nenhum agendamento com esses filtros"
-                  description="Altere ou limpe os filtros para ver outros agendamentos."
-                  action={
-                    <Button variant="secondary" onClick={clearFilters}>
-                      Limpar filtros
-                    </Button>
-                  }
-                />
-              ) : (
-                <EmptyState
-                  icon={<LuCalendarX />}
-                  {...list.tab.empty}
-                  action={<Shortcuts className="grid-cols-1 sm:grid-cols-2" />}
-                />
-              )
+              <section
+                aria-label="Lista de agendamentos"
+                className="rounded-card border-border bg-surface shadow-card border"
+              >
+                {filtered ? (
+                  <EmptyState
+                    icon={<LuFilterX />}
+                    title="Nenhum agendamento com esses filtros"
+                    description="Altere ou limpe os filtros para ver outros agendamentos."
+                    action={
+                      <Button variant="secondary" onClick={clearFilters}>
+                        Limpar filtros
+                      </Button>
+                    }
+                  />
+                ) : (
+                  <EmptyState
+                    icon={<LuCalendarX />}
+                    {...list.tab.empty}
+                    action={<ButtonLink to={BOOK_URL}>Agendar consulta</ButtonLink>}
+                  />
+                )}
+              </section>
             }
-            footer={<Shortcuts />}
           >
             {(items) => (
-              <ul className="grid items-start gap-3 lg:grid-cols-2">
-                {items.map((booking) => (
-                  <li key={booking.id}>
-                    <BookingCard booking={booking} onCancel={setCancelling} />
-                  </li>
+              <section
+                aria-label="Lista de agendamentos"
+                className="rounded-card border-border bg-surface shadow-card overflow-hidden border"
+              >
+                {byMonth(items).map((group) => (
+                  <div key={group.label}>
+                    <p
+                      className={cx(
+                        overline,
+                        'border-border bg-surface-muted border-b px-4 py-2.5 not-first:border-t lg:px-5',
+                      )}
+                    >
+                      {group.label}
+                    </p>
+                    <ul className="divide-border divide-y">
+                      {group.items.map((booking) => (
+                        <li key={booking.id}>
+                          <BookingRow
+                            booking={booking}
+                            selected={desktop && booking.id === selected?.id}
+                            onSelect={() => select(booking)}
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 ))}
-              </ul>
+              </section>
             )}
           </PagedResults>
-        </TabPanel>
-      </div>
+        </div>
+        {desktop && selected && (
+          <aside
+            key={selected.id}
+            className="rounded-card border-border bg-surface shadow-raised motion-safe:animate-pop sticky top-4 border"
+          >
+            <BookingDetail booking={selected} titleId={detailId} onCancel={setCancelling} />
+          </aside>
+        )}
+      </TabPanel>
+      {!desktop && (
+        <Dialog
+          open={selected !== undefined}
+          onClose={closeSheet}
+          title={selected ? 'Detalhes do agendamento' : ''}
+          placement="sheet"
+          bare
+        >
+          {selected && (
+            <BookingDetail
+              booking={selected}
+              titleId={detailId}
+              onCancel={setCancelling}
+              onClose={closeSheet}
+            />
+          )}
+        </Dialog>
+      )}
       <CancelDialog booking={cancelling} onClose={() => setCancelling(null)} fallbackFocus={results} />
     </>
   );

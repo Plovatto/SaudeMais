@@ -60,8 +60,3 @@ export function bookingTitle({ kind, doctor, specialty, examType, visitType }: P
 
 export const bookingMeta = (booking: PatientBooking) =>
   [formatTime(booking.startsAt), bookingTitle(booking).kindLabel, booking.unit.name].join(' · ');
-
-export const UPCOMING_EMPTY = {
-  title: 'Nenhum agendamento futuro',
-  description: 'Agende uma consulta ou um exame para acompanhar por aqui.',
-};

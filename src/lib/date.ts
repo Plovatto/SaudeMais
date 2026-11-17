@@ -129,3 +129,15 @@ export function formatLongDay(iso: string): string {
   const part = partsOf(zonedParts, new Date(iso));
   return `${capitalize(part('weekday').replace('-feira', ''))}, ${part('day')} de ${part('month')}`;
 }
+
+const monthYear = new Intl.DateTimeFormat('pt-BR', { timeZone: TIME_ZONE, month: 'long', year: 'numeric' });
+
+export function formatMonth(iso: string): string {
+  const part = partsOf(monthYear, new Date(iso));
+  return `${capitalize(part('month'))} de ${part('year')}`;
+}
+
+export function formatDuration(startsAt: string, endsAt: string): string {
+  const minutes = Math.round((new Date(endsAt).getTime() - new Date(startsAt).getTime()) / 60_000);
+  return minutes === 1 ? '1 minuto' : `${minutes} minutos`;
+}

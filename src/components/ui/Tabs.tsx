@@ -17,7 +17,7 @@ export interface TabsProps<T extends string> {
   items: readonly TabItem<T>[];
   value: T;
   onValueChange: (value: T) => void;
-  variant?: 'pill' | 'tile';
+  variant?: 'pill' | 'tile' | 'line';
   className?: string;
 }
 
@@ -45,7 +45,16 @@ export function Tabs<T extends string>({
   };
 
   return (
-    <div role="tablist" aria-label={label} onKeyDown={onKeyDown} className={cx('flex gap-3', className)}>
+    <div
+      role="tablist"
+      aria-label={label}
+      onKeyDown={onKeyDown}
+      className={cx(
+        'flex',
+        variant === 'line' ? 'border-border gap-1 overflow-x-auto border-b' : 'gap-3',
+        className,
+      )}
+    >
       {items.map((item) => {
         const selected = item.value === value;
         const tab = {
@@ -56,6 +65,33 @@ export function Tabs<T extends string>({
           tabIndex: selected ? 0 : -1,
           onClick: () => onValueChange(item.value),
         } as const;
+        if (variant === 'line') {
+          return (
+            <button
+              key={item.value}
+              type="button"
+              {...tab}
+              className={cx(
+                '-mb-px inline-flex min-h-11 items-center gap-2 border-b-2 px-3 text-sm font-semibold whitespace-nowrap transition-colors duration-150',
+                selected
+                  ? 'border-role-strong text-role-text'
+                  : 'text-text-secondary can-hover:text-text border-transparent',
+              )}
+            >
+              {item.label}
+              {item.count !== undefined && (
+                <span
+                  className={cx(
+                    'grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[0.71875rem] font-bold tabular-nums transition-colors duration-150',
+                    selected ? 'bg-role-strong text-on-role' : 'bg-surface-strong text-text-secondary',
+                  )}
+                >
+                  {item.count}
+                </span>
+              )}
+            </button>
+          );
+        }
         return variant === 'tile' ? (
           <TileButton
             key={item.value}

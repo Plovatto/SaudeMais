@@ -1,16 +1,32 @@
 import { useQueryClient } from '@tanstack/react-query';
 import type { RefObject } from 'react';
+import { bookingTitle } from '@components/bookings/booking-display';
 import { CancelBookingDialog } from '@components/bookings/CancelBookingDialog';
+import { DateTile } from '@components/bookings/DateTile';
 import { FormAlert } from '@components/ui';
 import { cancelAppointment, cancelExam } from '@lib/api/cancel-api';
 import type { PatientBooking } from '@lib/api/models';
+import { formatShortDay, formatTime } from '@lib/date';
 import { queryKeys } from '@lib/query-keys';
-import { bookingSummary } from './booking-text';
 
 export interface CancelDialogProps {
   booking: PatientBooking | null;
   onClose: () => void;
   fallbackFocus: RefObject<HTMLElement | null>;
+}
+
+function Summary({ booking }: { booking: PatientBooking }) {
+  return (
+    <div className="border-border bg-surface-muted rounded-tile flex items-center gap-3 border p-3 text-start">
+      <DateTile startsAt={booking.startsAt} />
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <p className="text-text truncate text-sm font-semibold">{bookingTitle(booking).title}</p>
+        <p className="text-text-secondary text-[0.8125rem] tabular-nums">
+          {`${formatShortDay(booking.startsAt)} às ${formatTime(booking.startsAt)} · ${booking.unit.name}`}
+        </p>
+      </div>
+    </div>
+  );
 }
 
 export function CancelDialog({ booking, onClose, fallbackFocus }: CancelDialogProps) {
@@ -25,8 +41,9 @@ export function CancelDialog({ booking, onClose, fallbackFocus }: CancelDialogPr
   return (
     <CancelBookingDialog
       target={booking}
-      title={exam ? 'Cancelar exame?' : 'Cancelar consulta?'}
-      summary={booking ? bookingSummary(booking) : undefined}
+      title={exam ? 'Cancelar o exame?' : 'Cancelar a consulta?'}
+      summary="O horário fica livre para outra pessoa. Você pode agendar de novo quando quiser."
+      details={booking && <Summary booking={booking} />}
       reason={exam ? 'none' : 'optional'}
       cancel={exam ? cancelExam : cancelAppointment}
       warning={
