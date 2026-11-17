@@ -135,7 +135,11 @@ function NotificationItem({ notification, role, variant }: ItemProps) {
         <time
           dateTime={notification.createdAt}
           title={formatDateTime(notification.createdAt)}
-          className={cx('text-text-muted block whitespace-nowrap', look.time)}
+          className={cx(
+            'block whitespace-nowrap',
+            unread ? 'text-text-secondary' : 'text-text-muted',
+            look.time,
+          )}
         >
           {formatSince(notification.createdAt)}
         </time>

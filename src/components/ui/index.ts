@@ -11,7 +11,7 @@ export { EmptyState, type EmptyStateProps } from './EmptyState';
 export type { FieldProps } from './field-props';
 export { FieldError } from './FieldControl';
 export { FormAlert } from './FormAlert';
-export { IconButton, type IconButtonProps } from './IconButton';
+export { IconButton, IconLink, type IconButtonProps, type IconLinkProps } from './IconButton';
 export { IconSlot, type IconSlotProps } from './IconSlot';
 export { InfoList, type InfoItem } from './InfoList';
 export { Input, type InputProps } from './Input';

@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRef } from 'react';
 import { PageHeader } from '@components/layout/PageHeader';
 import { useAreaRole } from '@components/layout/route-handle';
-import { Card, Pagination } from '@components/ui';
+import { Card, Pagination, Skeleton } from '@components/ui';
 import { areas, type Role } from '@constants/areas';
 import { useClampedPage, usePageParam } from '@hooks/usePageParam';
 import { notificationsQuery, unreadCountQuery, unreadNoun } from '@lib/api/notifications-api';
@@ -18,12 +18,14 @@ const subtitles: Record<Role, string> = {
 };
 
 function UnreadSummary({ role }: { role: Role }) {
-  const unread = useQuery(unreadCountQuery(role)).data ?? 0;
+  const unread = useQuery(unreadCountQuery(role)).data;
   const summaryRef = useRef<HTMLParagraphElement>(null);
   return (
     <div className="border-border flex min-h-14 items-center gap-3 border-b px-4 py-2.5 lg:px-5">
       <p ref={summaryRef} tabIndex={-1} className="text-text-secondary min-w-0 flex-1 text-[0.8125rem]">
-        {unread > 0 ? (
+        {unread === undefined ? (
+          <Skeleton className="h-4 w-20" />
+        ) : unread > 0 ? (
           <>
             <b className="text-role-text font-bold">{unread}</b> {unreadNoun(unread)}
           </>

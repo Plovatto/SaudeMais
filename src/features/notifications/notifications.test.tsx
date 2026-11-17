@@ -169,7 +169,7 @@ describe('notifications', { timeout: 15_000 }, () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const { calls } = serve({ count: 1 });
     renderApp('/notificacoes?perfil=paciente');
-    await screen.findByRole('button', { name: 'Marcar como lidas' });
+    await screen.findByRole('button', { name: 'Marcar todas como lidas' });
     await bellLink('Notificações, 1 não lida');
     await act(() => vi.advanceTimersByTimeAsync(1_000));
     const initial = countCalls(calls).length;
@@ -223,7 +223,7 @@ describe('notifications', { timeout: 15_000 }, () => {
     expect(await bell()).toHaveFocus();
   });
 
-  it('shows an empty state and disables mark all without unread notices', async () => {
+  it('shows an empty state and hides mark all without unread notices', async () => {
     serve();
     const { user } = renderApp('/paciente/exames/e1/resultado');
 
@@ -377,7 +377,7 @@ describe('notifications', { timeout: 15_000 }, () => {
     expect(await bellLink('Notificações, 1 não lida')).toHaveAttribute('aria-current', 'page');
     expect(page.getByText('não lida')).toBeVisible();
 
-    await user.click(page.getByRole('button', { name: 'Marcar como lidas' }));
+    await user.click(page.getByRole('button', { name: 'Marcar todas como lidas' }));
 
     await waitFor(() => expect(page.getByText('Tudo lido')).toHaveFocus());
     expect(callsTo(calls, '/api/notifications/read-all', 'POST')).toHaveLength(1);
@@ -399,5 +399,53 @@ describe('notifications', { timeout: 15_000 }, () => {
     await user.click(popover.getByRole('button', { name: 'Fechar notificações' }));
     expect(screen.queryByRole('dialog', { name: 'Notificações' })).not.toBeInTheDocument();
     expect(await bell()).toHaveFocus();
+  });
+  it('shows neither "Tudo lido" nor mark all while the counter is unknown', async () => {
+    serveApi(['patient'], {
+      '/api/notifications/unread-count': () => ({
+        status: 500,
+        body: { code: 'INTERNAL', message: 'Falhou.' },
+      }),
+      '/api/notifications': () => ({
+        status: 200,
+        body: { items: [notification('n1')], page: 1, pageSize: 20, total: 1 },
+      }),
+    });
+    const { user } = renderApp('/paciente/exames/e1/resultado');
+
+    const popover = await openPopover(user);
+    await popover.findByRole('link', { name: /Consulta confirmada!/ });
+    expect(popover.queryByText('Tudo lido')).not.toBeInTheDocument();
+    expect(popover.queryByRole('button', { name: 'Marcar todas como lidas' })).not.toBeInTheDocument();
+  });
+
+  it('shows the full mark all label on the page', async () => {
+    serve({ count: 1, items: [notification('n1')] });
+    renderApp('/notificacoes?perfil=paciente');
+
+    const page = within(await region('Paciente'));
+    expect(await page.findByRole('button', { name: 'Marcar todas como lidas' })).toHaveTextContent(
+      'Marcar todas como lidas',
+    );
+    expect(page.queryByText('Tudo lido')).not.toBeInTheDocument();
+  });
+
+  it('does not steal the focus later when marking all failed', async () => {
+    const { state } = serve({
+      count: 2,
+      items: [notification('n1')],
+      readAll: { status: 500, body: { code: 'INTERNAL', message: 'Falhou.' } },
+    });
+    const { user, queryClient } = renderApp('/notificacoes?perfil=paciente');
+
+    const page = within(await region('Paciente'));
+    await user.click(await page.findByRole('button', { name: 'Marcar todas como lidas' }));
+    await waitFor(() => expect(page.getByRole('button', { name: 'Marcar todas como lidas' })).toBeEnabled());
+    await user.click(document.body);
+
+    state.count = 0;
+    await act(() => queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all }));
+
+    expect(await page.findByText('Tudo lido')).not.toHaveFocus();
   });
 });

@@ -2,8 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { LuArrowRight, LuBell, LuX } from 'react-icons/lu';
 import { Link, useLocation } from 'react-router';
-import { CountBadge, IconButton, IconSlot, Popover } from '@components/ui';
-import { iconButton } from '@components/ui/styles';
+import { CountBadge, IconButton, IconLink, Popover } from '@components/ui';
 import { NOTIFICATIONS_PATH, notificationsUrl, type Role } from '@constants/areas';
 import { notificationsQuery, unreadText, useUnreadCount } from '@lib/api/notifications-api';
 import { cx } from '@lib/cx';
@@ -18,7 +17,7 @@ const newText = (count: number) => `${count} ${count === 1 ? 'nova' : 'novas'}`;
 
 interface PreviewProps {
   role: Role;
-  unread: number;
+  unread: number | undefined;
   close: () => void;
 }
 
@@ -29,7 +28,7 @@ function NotificationsPreview({ role, unread, close }: PreviewProps) {
     <>
       <div className="border-border flex items-center gap-2 border-b py-3 ps-4 pe-2.5">
         <h2 className="text-text text-[0.90625rem] font-semibold">Notificações</h2>
-        {unread > 0 && (
+        {!!unread && (
           <span className="bg-role-strong text-on-role rounded-full px-[7px] py-px text-[0.65625rem] font-[650] whitespace-nowrap">
             {newText(unread)}
           </span>
@@ -106,10 +105,9 @@ export function NotificationBell({ role }: { role: Role }) {
   return (
     <>
       {pathname === NOTIFICATIONS_PATH ? (
-        <Link to={notificationsUrl(role)} aria-label={label} aria-current="page" className={iconButton}>
-          <IconSlot className="text-xl">{bellIcon}</IconSlot>
+        <IconLink to={notificationsUrl(role)} label={label} icon={bellIcon} aria-current="page">
           <BellBadge unread={unread} />
-        </Link>
+        </IconLink>
       ) : (
         <Popover
           label={label}
@@ -121,7 +119,7 @@ export function NotificationBell({ role }: { role: Role }) {
             caret,
           )}
         >
-          {(close) => <NotificationsPreview role={role} unread={unread} close={close} />}
+          {(close) => <NotificationsPreview role={role} unread={count} close={close} />}
         </Popover>
       )}
       <span role="status" className="sr-only">
