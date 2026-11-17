@@ -29,6 +29,18 @@ const columns = [
   { label: 'Indicador' },
 ];
 
+export function ReportText({ report }: { report: string }) {
+  return (
+    <div className="text-text flex flex-col gap-3 text-sm leading-relaxed">
+      {paragraphs(report).map((paragraph, index) => (
+        <p key={index} className="break-words whitespace-pre-line">
+          {paragraph}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 export function ResultVersion({
   version: { items, report },
   label,
@@ -39,19 +51,12 @@ export function ResultVersion({
   headingLevel: HeadingLevel;
 }) {
   if (!items) {
-    const text = paragraphs(report ?? '');
-    if (text.length === 0) return null;
+    if (paragraphs(report ?? '').length === 0) return null;
     const Heading = `h${headingLevel}` as const;
     return (
       <section className="flex flex-col gap-2">
         <Heading className="text-text text-sm font-semibold">Laudo</Heading>
-        <div className="text-text flex flex-col gap-3 text-sm leading-relaxed">
-          {text.map((paragraph, index) => (
-            <p key={index} className="break-words whitespace-pre-line">
-              {paragraph}
-            </p>
-          ))}
-        </div>
+        <ReportText report={report ?? ''} />
       </section>
     );
   }

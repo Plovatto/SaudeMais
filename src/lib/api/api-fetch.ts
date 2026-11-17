@@ -79,20 +79,18 @@ function urlOf(
   return `${env.apiUrl}${resolved}${suffix ? `?${suffix}` : ''}`;
 }
 
-export async function apiFetch<P extends keyof paths, M extends MethodOf<P>>(
-  method: M,
-  path: P,
+async function send(
+  method: Method,
+  url: string,
+  accept: string,
   {
     body,
-    params,
-    query,
     signal,
     timeoutMs = DEFAULT_TIMEOUT_MS,
     ...options
-  }: ApiFetchOptions<BodyOf<P, M>, PathParamsOf<P, M>> = {},
-): Promise<ResponseOf<P, M>> {
-  const url = urlOf(path, params as Record<string, string> | undefined, query);
-  const headers = new Headers({ Accept: 'application/json' });
+  }: Omit<ApiFetchOptions<unknown>, 'params' | 'query'>,
+) {
+  const headers = new Headers({ Accept: accept });
   if (body !== undefined) headers.set('Content-Type', 'application/json');
   const token = 'token' in options ? (options.token ?? null) : tokenProvider();
   if (token) headers.set('Authorization', `Bearer ${token}`);
@@ -110,11 +108,33 @@ export async function apiFetch<P extends keyof paths, M extends MethodOf<P>>(
     throw connectionError(timeout, signal, error);
   }
 
-  const data = await readBody(response, timeout, signal);
   if (!response.ok) {
-    const error = toApiError(response.status, data);
+    const error = toApiError(response.status, await readBody(response, timeout, signal));
     error.token = token;
     throw error;
   }
-  return data as ResponseOf<P, M>;
+  return { response, timeout };
+}
+
+export async function apiFetch<P extends keyof paths, M extends MethodOf<P>>(
+  method: M,
+  path: P,
+  { params, query, ...options }: ApiFetchOptions<BodyOf<P, M>, PathParamsOf<P, M>> = {},
+): Promise<ResponseOf<P, M>> {
+  const url = urlOf(path, params as Record<string, string> | undefined, query);
+  const { response, timeout } = await send(method, url, 'application/json', options);
+  return (await readBody(response, timeout, options.signal)) as ResponseOf<P, M>;
+}
+
+export async function apiDownload<P extends keyof paths>(
+  path: P,
+  { params, query, ...options }: ApiFetchOptions<never, PathParamsOf<P, MethodOf<P>>> = {},
+): Promise<Blob> {
+  const url = urlOf(path, params as Record<string, string> | undefined, query);
+  const { response, timeout } = await send('get', url, '*/*', options);
+  try {
+    return await response.blob();
+  } catch (error) {
+    throw connectionError(timeout, options.signal, error);
+  }
 }
