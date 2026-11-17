@@ -12,9 +12,9 @@ function SideLink({ item }: { item: NavItem }) {
       to={item.to}
       aria-current={ariaCurrent(item)}
       className={cx(
-        'group relative flex min-h-[42px] items-center gap-3 rounded-[11px] px-3 text-sm transition-colors duration-150',
+        'group flex min-h-[42px] items-center gap-3 rounded-[11px] px-3 text-sm transition-colors duration-150',
         item.active
-          ? 'before:bg-role motion-safe:before:animate-fade bg-white/13 font-semibold text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.08),0_4px_14px_-6px_rgb(0_0_0/0.4)] before:absolute before:-start-4 before:top-[9px] before:bottom-[9px] before:w-[3px] before:rounded-e-[3px] before:shadow-[0_0_12px_var(--role)]'
+          ? 'bg-white/13 font-semibold text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.08),0_4px_14px_-6px_rgb(0_0_0/0.4)]'
           : 'can-hover:bg-white/7 can-hover:text-white font-medium text-white/75',
       )}
     >
@@ -77,7 +77,7 @@ export function Sidebar({ area, menu, account }: { area: Area; menu: NavItem[]; 
         to={profileUrl(area.role)}
         className="can-hover:rounded-tile can-hover:bg-white/7 rounded-b-tile mt-auto flex items-center gap-2.5 border-t border-white/10 p-2 pt-3.5 transition-colors duration-150"
       >
-        <Avatar name={user.fullName} seed={user.id} className="shadow-[0_0_0_2px_rgb(255_255_255/0.18)]" />
+        <Avatar name={user.fullName} role={area.role} className="shadow-[0_0_0_2px_rgb(255_255_255/0.18)]" />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[0.8125rem] leading-snug font-semibold">{user.fullName}</span>
           <span className="block truncate text-xs text-white/60">{user.email}</span>
