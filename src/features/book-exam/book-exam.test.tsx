@@ -261,6 +261,21 @@ describe('book exam', { timeout: 20_000 }, () => {
     });
   });
 
+  it('moves and checks the time with the arrow keys from a single tab stop', async () => {
+    serve();
+    const { user } = await start();
+    await fill(user);
+    const first = within(slotGroup()).getByRole('radio', { name: /^08:00/ });
+    const second = within(slotGroup()).getByRole('radio', { name: /^08:10/ });
+    expect([first.tabIndex, second.tabIndex]).toEqual([0, -1]);
+
+    await user.keyboard('{ArrowRight}');
+
+    expect(second).toHaveFocus();
+    expect(second).toHaveAttribute('aria-checked', 'true');
+    expect(second.tabIndex).toBe(0);
+  });
+
   it('sums up the choices in the action bar', async () => {
     serve();
     const { user } = await start();

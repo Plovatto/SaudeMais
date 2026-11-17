@@ -2,6 +2,7 @@ import { LuFlaskConical } from 'react-icons/lu';
 import { ReschedulePage } from '@components/booking-form/ReschedulePage';
 import { queryKeys } from '@lib/query-keys';
 import { examApi, type ExamBooking } from './exam-api';
+import { preparationText } from './preparation';
 
 export function RescheduleExamPage() {
   return (
@@ -17,9 +18,7 @@ export function RescheduleExamPage() {
         icon: <LuFlaskConical />,
         kindLabel: 'Exame',
         title: examType.name,
-        subtitle: examType.preparationNotes
-          ? `Preparo: ${examType.preparationNotes}`
-          : 'Sem preparo especial',
+        subtitle: preparationText(examType.preparationNotes),
         unitName: unit.name,
         unitAddress: unit.address,
         changeHint: 'Para trocar o exame ou a unidade, cancele e faça um novo agendamento.',

@@ -2,13 +2,12 @@ import { useState, type Ref } from 'react';
 import { LuChevronLeft, LuChevronRight } from 'react-icons/lu';
 import { IconButton } from '@components/ui';
 import { cx } from '@lib/cx';
-import { addDays, formatLongDay, formatMonth, todayInSaoPaulo } from '@lib/date';
+import { addDays, formatLongDay, formatMonth, middayOf, todayInSaoPaulo } from '@lib/date';
 
 const WEEKDAYS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 const WEEKDAY_NAMES = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
 
 const monthOf = (date: string) => date.slice(0, 7);
-const noonOf = (date: string) => `${date}T15:00:00.000Z`;
 const weekdayOf = (date: string) => new Date(`${date}T00:00:00.000Z`).getUTCDay();
 
 function shiftMonth(month: string, step: number): string {
@@ -38,6 +37,11 @@ export function MonthCalendar({ available, selected, onSelect, focusRef, describ
   const first = monthOf(available[0] ?? today);
   const last = monthOf(available.at(-1) ?? today);
   const [shown, setShown] = useState(monthOf(selected || available[0] || today));
+  const [followed, setFollowed] = useState(selected);
+  if (selected !== followed) {
+    setFollowed(selected);
+    if (selected) setShown(monthOf(selected));
+  }
   const month = shown < first ? first : shown > last ? last : shown;
 
   return (
@@ -51,7 +55,7 @@ export function MonthCalendar({ available, selected, onSelect, focusRef, describ
     >
       <div className="flex items-center gap-2">
         <p aria-live="polite" className="text-text flex-1 text-sm font-semibold">
-          {formatMonth(noonOf(`${month}-01`))}
+          {formatMonth(middayOf(`${month}-01`))}
         </p>
         <IconButton
           label="Mês anterior"
@@ -89,7 +93,7 @@ export function MonthCalendar({ available, selected, onSelect, focusRef, describ
               disabled={!bookable}
               aria-pressed={bookable ? isSelected : undefined}
               aria-current={date === today ? 'date' : undefined}
-              aria-label={`${formatLongDay(noonOf(date))}${bookable ? '' : ', sem horários'}`}
+              aria-label={`${formatLongDay(middayOf(date))}${bookable ? '' : ', sem horários'}`}
               onClick={() => onSelect(date)}
               className={cx(
                 'rounded-field relative h-10 text-[0.8125rem] font-medium tabular-nums transition-[background-color,color,scale] duration-150 lg:h-9',

@@ -1,3 +1,5 @@
+export const SEARCH_DELAY_MS = 300;
+
 import { useEffect, useState } from 'react';
 
 export function useDebouncedValue<T>(value: T, delay: number): T {

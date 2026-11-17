@@ -156,6 +156,21 @@ describe('reschedule', { timeout: 20_000 }, () => {
     windows.forEach((call) => expect(call.url.searchParams.get('rescheduling')).toBe('a1'));
   });
 
+  it('opens the calendar on the month of the current day', async () => {
+    const current = '2026-12-02T17:30:00.000Z';
+    serve({
+      detail: () => ({ status: 200, body: { ...appointment, startsAt: current } }),
+      available: [
+        { date: '2026-11-30', slots: [slot('2026-11-30T12:00:00.000Z')] },
+        { date: '2026-12-02', slots: [slot('2026-12-02T12:00:00.000Z'), slot(current)] },
+      ],
+    });
+    await start();
+
+    await waitFor(() => expect(pickedDay()).toBe('Quarta, 2 de dezembro'));
+    expect(within(screen.getByRole('group', { name: 'Calendário' })).getByText(/dezembro/i)).toBeVisible();
+  });
+
   it('tells that a pending appointment keeps waiting for the doctor', async () => {
     serve({ detail: () => ({ status: 200, body: { ...appointment, status: 'pending' } }) });
     await start();

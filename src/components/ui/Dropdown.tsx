@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ReactNode, type Ref } from 'react';
+import { useEffect, useId, useRef, type ReactNode, type Ref, type RefObject } from 'react';
 import { LuCheck, LuChevronDown } from 'react-icons/lu';
 import { DESKTOP_QUERY, useMediaQuery } from '@hooks/useMediaQuery';
 import { cx } from '@lib/cx';
@@ -32,32 +32,33 @@ function OptionList({
   options,
   value,
   onPick,
+  initialRef,
 }: {
   id: string;
   label: string;
   options: readonly DropdownOption[];
   value: string;
   onPick: (value: string) => void;
+  initialRef: RefObject<HTMLButtonElement | null>;
 }) {
-  const listRef = useRef<HTMLDivElement>(null);
+  const hasSelected = options.some((option) => option.value === value);
   useEffect(() => {
-    const list = listRef.current;
-    (list?.querySelector<HTMLElement>('[aria-selected="true"]') ?? list?.querySelector('button'))?.focus();
-  }, []);
+    initialRef.current?.focus();
+  }, [initialRef]);
   return (
     <div
-      ref={listRef}
       id={id}
       role="listbox"
       aria-label={label}
       onKeyDown={(event) => moveFocus(event, '[role="option"]', 'vertical')}
       className="flex flex-col gap-0.5"
     >
-      {options.map((option) => {
+      {options.map((option, index) => {
         const selected = option.value === value;
         return (
           <button
             key={option.value}
+            ref={selected || (!hasSelected && index === 0) ? initialRef : undefined}
             type="button"
             role="option"
             aria-selected={selected}
@@ -102,12 +103,22 @@ export function Dropdown({
   const desktop = useMediaQuery(DESKTOP_QUERY);
   const { open, setOpen, dismiss, rootRef, contentId, triggerProps } = useFloating();
   const listId = useId();
+  const initialRef = useRef<HTMLButtonElement>(null);
   const chosen = options.find((option) => option.value === value);
   const pick = (next: string) => {
     onChange(next);
     dismiss('escape');
   };
-  const list = <OptionList id={listId} label={field.label} options={options} value={value} onPick={pick} />;
+  const list = (
+    <OptionList
+      id={listId}
+      label={field.label}
+      options={options}
+      value={value}
+      onPick={pick}
+      initialRef={initialRef}
+    />
+  );
 
   return (
     <div ref={rootRef} className="relative">
@@ -125,6 +136,7 @@ export function Dropdown({
             }}
             type="button"
             disabled={disabled}
+            aria-labelledby={`${control.id}-label ${control.id}-value`}
             aria-haspopup="listbox"
             aria-expanded={open}
             aria-controls={open ? (desktop ? contentId : listId) : undefined}
@@ -137,6 +149,7 @@ export function Dropdown({
               </IconSlot>
             )}
             <span
+              id={`${control.id}-value`}
               className={cx(
                 'min-w-0 flex-1 truncate text-sm font-semibold',
                 !chosen && 'text-text-muted font-normal',
@@ -163,7 +176,14 @@ export function Dropdown({
         </div>
       )}
       {!desktop && (
-        <Dialog open={open} onClose={() => setOpen(false)} title={field.label} placement="sheet" bare>
+        <Dialog
+          open={open}
+          onClose={() => setOpen(false)}
+          title={field.label}
+          placement="sheet"
+          bare
+          initialFocus={initialRef}
+        >
           <div className="flex flex-col gap-1 px-3 pt-3 pb-4">
             <p aria-hidden className="text-text px-3 pt-1 pb-2.5 text-[1.0625rem] font-[650]">
               {field.label}

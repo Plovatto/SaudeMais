@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { LuCheck, LuEllipsisVertical } from 'react-icons/lu';
 import { cx } from '@lib/cx';
-import { rovingIndex } from '@lib/roving-index';
+import { moveFocus } from '@lib/roving-index';
 import { IconButton } from './IconButton';
 import { IconSlot } from './IconSlot';
 import { floatingPanel } from './styles';
@@ -68,14 +68,6 @@ export function Menu({
     openAt(event.key === 'ArrowDown' ? 0 : items.length - 1);
   };
 
-  const onMenuKeyDown = (event: KeyboardEvent<HTMLUListElement>) => {
-    const current = itemRefs.current.findIndex((button) => button === document.activeElement);
-    const next = rovingIndex(event.key, current, items.length, 'vertical');
-    if (next === undefined) return;
-    event.preventDefault();
-    itemRefs.current[next]?.focus();
-  };
-
   return (
     <div ref={rootRef} className={cx('relative inline-flex', className)}>
       <IconButton
@@ -92,7 +84,7 @@ export function Menu({
           id={contentId}
           role="menu"
           aria-label={label}
-          onKeyDown={onMenuKeyDown}
+          onKeyDown={(event) => moveFocus(event, 'button', 'vertical')}
           className={cx(floatingPanel(align), 'mt-1 min-w-56 py-1.5')}
         >
           {groupItems(items).map((segment, segmentIndex) => {

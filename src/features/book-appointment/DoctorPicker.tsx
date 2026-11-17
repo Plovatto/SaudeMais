@@ -11,6 +11,7 @@ export interface DoctorPickerProps {
   value: string;
   onPick: (doctor: Doctor) => void;
   search: string;
+  searched: string;
   onSearch: (search: string) => void;
   error?: string | undefined;
   focusRef?: Ref<HTMLDivElement>;
@@ -23,11 +24,13 @@ export function DoctorPicker({
   value,
   onPick,
   search,
+  searched,
   onSearch,
   error,
   focusRef,
 }: DoctorPickerProps) {
   const errorId = useId();
+  const hasChecked = doctors?.some((doctor) => doctor.id === value) ?? false;
   return (
     <SectionCard
       title="Médico"
@@ -42,6 +45,9 @@ export function DoctorPicker({
           placeholder="Buscar pelo nome"
           value={search}
           onChange={(event) => onSearch(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') event.preventDefault();
+          }}
         />
       </div>
       <div
@@ -61,12 +67,10 @@ export function DoctorPicker({
           </div>
         ) : doctors.length === 0 ? (
           <p className="text-text-muted px-4 py-6 text-center text-[0.8125rem] lg:px-5">
-            {search.trim()
-              ? `Nenhum médico encontrado para "${search.trim()}".`
-              : 'Nenhum médico disponível.'}
+            {searched ? `Nenhum médico encontrado para "${searched}".` : 'Nenhum médico disponível.'}
           </p>
         ) : (
-          doctors.map((doctor) => {
+          doctors.map((doctor, index) => {
             const selected = doctor.id === value;
             return (
               <button
@@ -74,6 +78,7 @@ export function DoctorPicker({
                 type="button"
                 role="radio"
                 aria-checked={selected}
+                tabIndex={selected || (!hasChecked && index === 0) ? 0 : -1}
                 onClick={() => onPick(doctor)}
                 className={cx(
                   'border-border flex w-full items-center gap-3 border-b px-4 py-3 text-start transition-colors duration-150 last:border-b-0 lg:px-5',

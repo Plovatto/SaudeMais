@@ -6,7 +6,7 @@ import { DateTile } from '@components/bookings/DateTile';
 import { FormAlert } from '@components/ui';
 import { cancelAppointment, cancelExam } from '@lib/api/cancel-api';
 import type { PatientBooking } from '@lib/api/models';
-import { formatShortDay, formatTime } from '@lib/date';
+import { whenText } from '@lib/date';
 import { queryKeys } from '@lib/query-keys';
 
 export interface CancelDialogProps {
@@ -22,7 +22,7 @@ function Summary({ booking }: { booking: PatientBooking }) {
       <div className="flex min-w-0 flex-col gap-0.5">
         <p className="text-text truncate text-sm font-semibold">{bookingTitle(booking).title}</p>
         <p className="text-text-secondary text-[0.8125rem] tabular-nums">
-          {`${formatShortDay(booking.startsAt)} às ${formatTime(booking.startsAt)} · ${booking.unit.name}`}
+          {`${whenText(booking.startsAt)} · ${booking.unit.name}`}
         </p>
       </div>
     </div>

@@ -50,7 +50,7 @@ export const bookingCard = (page: Page, ...texts: string[]) =>
   texts.reduce((cards, text) => cards.filter({ hasText: text }), page.getByRole('listitem'));
 
 export async function pickOption(scope: Locator, label: string, option: string) {
-  await scope.getByRole('button', { name: label, exact: true }).click();
+  await scope.getByRole('button', { name: new RegExp(`^${label} `) }).click();
   await scope.getByRole('listbox', { name: label }).getByRole('option', { name: option }).click();
 }
 

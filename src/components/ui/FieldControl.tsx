@@ -42,6 +42,7 @@ export function FieldControl({
   return (
     <div className={cx('flex flex-col gap-1.5', className)}>
       <label
+        id={`${control.id}-label`}
         htmlFor={control.id}
         className={cx('text-text text-[0.8125rem] font-semibold', labelHidden && 'sr-only')}
       >

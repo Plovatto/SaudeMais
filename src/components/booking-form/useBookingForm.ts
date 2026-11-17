@@ -144,10 +144,7 @@ export function useBookingForm<TIn extends SlotValues, TOut, R>(
   );
 
   const showMissing = missing && Object.keys(errors).some((key) => key !== 'notes');
-  const field = (name: keyof SlotValues) => ({
-    error: errors[name]?.message,
-    ...register(name, name === 'date' ? { onChange: clearSlot } : {}),
-  });
+  const field = (name: keyof SlotValues) => ({ error: errors[name]?.message, ...register(name) });
 
   return {
     date,

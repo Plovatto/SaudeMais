@@ -51,7 +51,7 @@ test('the admin makes a user a doctor and patients can book the new free slots',
   const form = patientPage.getByRole('form', { name: 'Dados da consulta' });
   await form.getByRole('searchbox', { name: 'Buscar médico' }).fill(person.fullName);
   await form.getByRole('radio', { name: person.fullName }).click();
-  await expect(form.getByRole('button', { name: 'Especialidade', exact: true })).toHaveText('Dermatologia');
+  await expect(form.getByRole('button', { name: /^Especialidade / })).toHaveText('Dermatologia');
   await pickFirstDay(form);
   await expect(freeSlots(form).first()).toBeVisible();
 });

@@ -98,7 +98,7 @@ export function PatientBookingsPage() {
   const select = (booking: PatientBooking) => setSelectedId(booking.id);
   const closeSheet = () => setSelectedId('');
 
-  const settled = list.items !== undefined && !list.query.isPlaceholderData;
+  const settled = list.items !== undefined && !list.query.isPlaceholderData && !list.query.isFetching;
   useEffect(() => {
     if (settled && selectedId && !chosen) setSelectedId('', { replace: true });
   }, [settled, selectedId, chosen, setSelectedId]);

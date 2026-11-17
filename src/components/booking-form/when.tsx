@@ -1,8 +1,6 @@
 import { LuCalendar } from 'react-icons/lu';
 import type { InfoItem } from '@components/ui';
-import { formatShortDay, formatTime } from '@lib/date';
-
-export const whenText = (startsAt: string) => `${formatShortDay(startsAt)} às ${formatTime(startsAt)}`;
+import { whenText } from '@lib/date';
 
 export const whenItem = (startsAt: string): InfoItem => ({
   key: 'when',

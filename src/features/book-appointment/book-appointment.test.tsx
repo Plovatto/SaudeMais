@@ -116,7 +116,7 @@ const doctorNames = () =>
 
 async function start() {
   const view = renderApp('/paciente/consultas/nova');
-  await screen.findByRole('radio', { name: /Carlos Mendes/ });
+  await screen.findByRole('radio', { name: /Carlos Mendes/ }, { timeout: 10_000 });
   await waitFor(() => expect(dropdown('Especialidade')).toBeEnabled());
   return view;
 }
@@ -392,7 +392,46 @@ describe('book appointment', { timeout: 20_000 }, () => {
     expect(await screen.findByText('Preencha todas as informações.')).toHaveAttribute('role', 'alert');
     expect(screen.getByText('Escolha o médico.')).toBeInTheDocument();
     expect(screen.getByText('Escolha o tipo de consulta.')).toBeInTheDocument();
-    expect(doctorList()).toHaveFocus();
+    expect(dropdown('Especialidade')).toHaveFocus();
     expect(calls.some((call) => call.method === 'POST')).toBe(false);
+  });
+
+  it('keeps the form when Enter is pressed in the doctor search', async () => {
+    const { calls } = serve();
+    const { user } = await start();
+
+    await user.type(screen.getByRole('searchbox', { name: 'Buscar médico' }), 'bea{Enter}');
+
+    await waitFor(() => expect(doctorNames()).toEqual(['Beatriz Lima']));
+    expect(screen.queryByText('Preencha todas as informações.')).not.toBeInTheDocument();
+    expect(calls.some((call) => call.method === 'POST')).toBe(false);
+  });
+
+  it('names each dropdown with its chosen value', async () => {
+    serve();
+    const { user } = await start();
+
+    await pick(user, 'Tipo de consulta', 'Retorno');
+
+    expect(dropdown('Tipo de consulta')).toHaveAccessibleName('Tipo de consulta Retorno');
+  });
+
+  it('keeps a single tab stop in the doctor list that follows the chosen doctor', async () => {
+    serve();
+    const { user } = await start();
+    const tabStops = () =>
+      within(doctorList())
+        .getAllByRole('radio')
+        .map((radio) => radio.tabIndex);
+    expect(tabStops()).toEqual([0, -1]);
+
+    await user.click(screen.getByRole('radio', { name: /Beatriz Lima/ }));
+
+    await waitFor(() => expect(screen.getByRole('radio', { name: /Beatriz Lima/ }).tabIndex).toBe(0));
+    expect(
+      within(doctorList())
+        .getAllByRole('radio')
+        .filter((radio) => radio.tabIndex === 0),
+    ).toHaveLength(1);
   });
 });

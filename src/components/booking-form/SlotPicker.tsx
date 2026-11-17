@@ -1,7 +1,7 @@
 import { useState, type Ref } from 'react';
 import { cx } from '@lib/cx';
 import { moveFocus } from '@lib/roving-index';
-import { formatLongDay, formatTime } from '@lib/date';
+import { formatLongDay, formatTime, middayOf } from '@lib/date';
 import type { Slot } from './availability';
 
 const FEW_PLACES = 3;
@@ -44,11 +44,13 @@ export function SlotPicker({ date, slots, value, onPick, current, focusRef, desc
   const preferred = chosen ?? (value ? periodOf(value) : groups[0]?.id);
   const active = groups.find((period) => period.id === preferred) ?? groups[0];
   const free = slots.filter((slot) => slot.startsAt !== current).length;
+  const hasChecked = active?.slots.some((slot) => slot.startsAt === value) ?? false;
+  const firstFree = active?.slots.find((slot) => slot.startsAt !== current)?.startsAt;
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-0.5">
-        <p className="text-text text-sm font-semibold">{formatLongDay(`${date}T15:00:00.000Z`)}</p>
+        <p className="text-text text-sm font-semibold">{formatLongDay(middayOf(date))}</p>
         <p className="text-text-muted text-[0.8125rem] tabular-nums">
           {free === 1 ? '1 horário livre' : `${free} horários livres`}
         </p>
@@ -84,7 +86,7 @@ export function SlotPicker({ date, slots, value, onPick, current, focusRef, desc
         role="radiogroup"
         aria-label="Horários livres"
         aria-describedby={describedBy}
-        onKeyDown={(event) => moveFocus(event, '[role="radio"]', 'horizontal')}
+        onKeyDown={(event) => moveFocus(event, '[role="radio"]', 'horizontal', { check: true })}
         className="grid grid-cols-[repeat(auto-fill,minmax(84px,1fr))] gap-2 focus-visible:outline-none"
       >
         {active?.slots.map((slot) => {
@@ -97,6 +99,7 @@ export function SlotPicker({ date, slots, value, onPick, current, focusRef, desc
               type="button"
               role="radio"
               aria-checked={selected}
+              tabIndex={selected || (!hasChecked && slot.startsAt === firstFree) ? 0 : -1}
               disabled={isCurrent}
               onClick={() => onPick(slot.startsAt)}
               className={cx(

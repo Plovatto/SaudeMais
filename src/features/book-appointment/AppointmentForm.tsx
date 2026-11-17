@@ -4,21 +4,20 @@ import { useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { LuMapPin, LuNotebookText, LuStethoscope } from 'react-icons/lu';
 import { BookingForm, NotesCard, WhenCard } from '@components/booking-form/BookingForm';
-import { whenItem, whenText } from '@components/booking-form/when';
+import { whenItem } from '@components/booking-form/when';
 import { toBody } from '@components/booking-form/slot-schema';
 import { useBookingForm } from '@components/booking-form/useBookingForm';
 import { Avatar, Dropdown, QueryError, SectionCard } from '@components/ui';
 import { VISIT_TYPES, visitTypeHints, visitTypeLabels } from '@constants/visit-types';
 import { useActiveSpecialties } from '@hooks/useActiveCatalog';
-import { useDebouncedValue } from '@hooks/useDebouncedValue';
+import { SEARCH_DELAY_MS, useDebouncedValue } from '@hooks/useDebouncedValue';
+import { whenText } from '@lib/date';
 import { queryKeys } from '@lib/query-keys';
 import { bookingApi, type Appointment } from './booking-api';
 import { bookingSchema, emptyBooking } from './booking-schema';
 import { DoctorPicker, type Doctor } from './DoctorPicker';
 
 const FIELDS = ['doctorId', 'specialtyId', 'visitType', 'startsAt', 'notes'] as const;
-
-const SEARCH_DELAY_MS = 300;
 
 const fieldByCode = {
   SPECIALTY_MISMATCH: 'specialtyId',
@@ -36,13 +35,7 @@ const VISIT_OPTIONS = VISIT_TYPES.map((value) => ({
 export function AppointmentForm({ onBooked }: { onBooked: (appointment: Appointment) => void }) {
   const queryClient = useQueryClient();
   const form = useForm({ resolver: zodResolver(bookingSchema), defaultValues: emptyBooking });
-  const {
-    control,
-    register,
-    setValue,
-    clearErrors,
-    formState: { errors },
-  } = form;
+  const { control, setValue, clearErrors } = form;
   const [doctorId, specialtyId, visitType] = useWatch({
     control,
     name: ['doctorId', 'specialtyId', 'visitType'],
@@ -179,14 +172,21 @@ export function AppointmentForm({ onBooked }: { onBooked: (appointment: Appointm
           />
         </div>
       </SectionCard>
-      <DoctorPicker
-        doctors={doctors.data}
-        value={doctorId}
-        onPick={pickDoctor}
-        search={search}
-        onSearch={setSearch}
-        error={errors.doctorId?.message}
-        focusRef={register('doctorId').ref}
+      <Controller
+        control={control}
+        name="doctorId"
+        render={({ field, fieldState }) => (
+          <DoctorPicker
+            doctors={doctors.data}
+            value={field.value}
+            onPick={pickDoctor}
+            search={search}
+            searched={settledSearch}
+            onSearch={setSearch}
+            error={fieldState.error?.message}
+            focusRef={field.ref}
+          />
+        )}
       />
       <WhenCard
         booking={booking}

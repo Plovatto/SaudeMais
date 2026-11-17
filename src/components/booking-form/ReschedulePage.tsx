@@ -12,7 +12,7 @@ import { FormAlert, InfoList, QueryError, SectionCard, Skeleton, TextLink } from
 import { PATIENT_BOOKINGS_PATH } from '@constants/areas';
 import { ApiError } from '@lib/api/api-error';
 import type { PatientBooking } from '@lib/api/models';
-import { civilDateInSaoPaulo } from '@lib/date';
+import { civilDateInSaoPaulo, whenText } from '@lib/date';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
 import { queryKeys } from '@lib/query-keys';
 import type { AvailableDay } from './availability';
@@ -20,7 +20,6 @@ import { BookingForm, WhenCard } from './BookingForm';
 import { emptySlot, slotShape } from './slot-schema';
 import { useBookedRedirect } from './useBookedRedirect';
 import { useBookingForm } from './useBookingForm';
-import { whenText } from './when';
 
 const FIELDS = ['startsAt'] as const;
 

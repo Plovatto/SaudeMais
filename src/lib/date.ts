@@ -125,6 +125,10 @@ export function formatShortDay(iso: string): string {
   return `${capitalize(part('weekday').replace('.', ''))}, ${part('day')}/${part('month')}`;
 }
 
+export const whenText = (iso: string) => `${formatShortDay(iso)} às ${formatTime(iso)}`;
+
+export const middayOf = (date: string) => `${date}T15:00:00.000Z`;
+
 export function formatLongDay(iso: string): string {
   const part = partsOf(zonedParts, new Date(iso));
   return `${capitalize(part('weekday').replace('-feira', ''))}, ${part('day')} de ${part('month')}`;

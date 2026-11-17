@@ -4,14 +4,16 @@ import { useEffect, useEffectEvent } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { LuClock, LuFlaskConical, LuMapPin } from 'react-icons/lu';
 import { BookingForm, NotesCard, WhenCard } from '@components/booking-form/BookingForm';
-import { whenItem, whenText } from '@components/booking-form/when';
+import { whenItem } from '@components/booking-form/when';
 import { toBody } from '@components/booking-form/slot-schema';
 import { useBookingForm } from '@components/booking-form/useBookingForm';
 import { Dropdown, FormAlert, QueryError, SectionCard } from '@components/ui';
 import { useActiveExamTypes, useActiveUnits } from '@hooks/useActiveCatalog';
+import { whenText } from '@lib/date';
 import { queryKeys } from '@lib/query-keys';
 import { examApi, type ExamBooking } from './exam-api';
 import { emptyExam, examSchema } from './exam-schema';
+import { NO_PREPARATION } from './preparation';
 
 const FIELDS = ['examTypeId', 'unitId', 'startsAt', 'notes'] as const;
 
@@ -20,8 +22,6 @@ const UNIT_GONE_MESSAGE = 'Este local não faz mais este exame. Escolha outro.';
 const examMessages = {
   NOT_FOUND: 'Este exame não está mais disponível neste local. Escolha outro.',
 } as const;
-
-const NO_PREPARATION = 'Sem preparo especial';
 
 function unitsPlaceholder(examTypeId: string, units: ReturnType<typeof useActiveUnits>) {
   if (!examTypeId) return 'Escolha o exame primeiro';
