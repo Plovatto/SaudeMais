@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { describeUserAgent } from './user-agent';
+import { describeUserAgent, isMobileUserAgent } from './user-agent';
 
 describe('describeUserAgent', () => {
   it.each([
@@ -40,5 +40,17 @@ describe('describeUserAgent', () => {
     [null, 'Dispositivo desconhecido'],
   ])('describes %s', (userAgent, expected) => {
     expect(describeUserAgent(userAgent)).toBe(expected);
+  });
+});
+
+describe('isMobileUserAgent', () => {
+  it.each([
+    ['Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 Safari/604.1', true],
+    ['Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/140.0 Mobile Safari/537.36', true],
+    ['Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140.0 Safari/537.36', false],
+    ['Mozilla/5.0 (Macintosh; Intel Mac OS X 15_0) Gecko/20100101 Firefox/140.0', false],
+    [null, false],
+  ])('classifies %s', (userAgent, mobile) => {
+    expect(isMobileUserAgent(userAgent)).toBe(mobile);
   });
 });
