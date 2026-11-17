@@ -69,6 +69,7 @@ export function useSheetDrag(dialogRef: RefObject<HTMLDialogElement | null>, act
     dialog.style.transform = '';
     dialog.dataset.sheet = full ? 'full' : 'min';
     dialog.style.height = `${full ? limits.current.max : limits.current.min}px`;
+    dialog.querySelector(GRAB_SELECTOR)?.setAttribute('aria-valuenow', full ? '100' : '0');
   };
 
   const onPointerDown = (event: PointerEvent<HTMLElement>) => {

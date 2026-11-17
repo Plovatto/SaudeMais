@@ -94,6 +94,7 @@ describe('draggable sheet', () => {
     const { dialog, grab, onClose } = renderSheet();
     grab.focus();
     await user.keyboard('{ArrowUp}');
+    expect(grab).toHaveAttribute('aria-valuenow', '100');
     expect(dialog).toHaveAttribute('data-sheet', 'full');
     expect(dialog.style.height).toBe(`${NATURAL}px`);
     await user.keyboard('{ArrowDown}');

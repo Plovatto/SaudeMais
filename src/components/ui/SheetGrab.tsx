@@ -6,6 +6,9 @@ export function SheetGrab(props: ComponentProps<'div'>) {
       role="separator"
       aria-orientation="horizontal"
       aria-label="Arraste para ajustar a altura"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={0}
       tabIndex={0}
       className="bg-surface group/grab sticky top-0 z-10 flex h-[30px] flex-none cursor-grab touch-none items-center justify-center rounded-xl focus-visible:-outline-offset-4 in-data-dragging:cursor-grabbing"
       {...props}
