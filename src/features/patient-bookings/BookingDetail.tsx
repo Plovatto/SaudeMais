@@ -1,14 +1,5 @@
 import { useId } from 'react';
-import {
-  LuCalendarSync,
-  LuClock,
-  LuFileText,
-  LuHash,
-  LuMapPin,
-  LuNotebookPen,
-  LuPhone,
-  LuX,
-} from 'react-icons/lu';
+import { LuCalendar, LuClock, LuFileText, LuHash, LuMapPin, LuPhone, LuX } from 'react-icons/lu';
 import { CancellationNote, PhoneLink } from '@components/bookings/BookingDetails';
 import { bookingStatus, bookingTitle, hasStarted, isMuted } from '@components/bookings/booking-display';
 import { DateTile } from '@components/bookings/DateTile';
@@ -89,7 +80,7 @@ function detailItems(booking: PatientBooking): InfoItem[] {
       label: 'Telefone',
       labelHidden: true,
       boxed: false,
-      value: <PhoneLink phone={unit.phone} />,
+      value: <PhoneLink phone={unit.phone} plain />,
     },
   ];
   if (publicCode) {
@@ -105,10 +96,13 @@ function detailItems(booking: PatientBooking): InfoItem[] {
   if (notes) {
     items.push({
       key: 'notes',
-      icon: <LuNotebookPen />,
+      icon: <LuFileText />,
       label: 'Observações',
+      labelHidden: true,
       boxed: false,
-      value: <span className="font-normal whitespace-pre-line">{notes}</span>,
+      value: (
+        <span className="text-text-secondary text-[0.8125rem] font-normal whitespace-pre-line">{notes}</span>
+      ),
     });
   }
   return items;
@@ -119,16 +113,18 @@ export interface BookingDetailProps {
   titleId: string;
   onCancel: (booking: PatientBooking) => void;
   onClose?: () => void;
+  tips?: boolean;
 }
 
-export function BookingDetail({ booking, titleId, onCancel, onClose }: BookingDetailProps) {
+const footerButton = 'h-[46px] min-w-0 flex-1 basis-0 rounded-[12px] text-[0.9375rem]';
+
+export function BookingDetail({ booking, titleId, onCancel, onClose, tips = false }: BookingDetailProps) {
   const leftId = useId();
   const tipsId = useId();
   const status = bookingStatus(booking, 'patient');
   const { title, subtitle } = bookingTitle(booking);
   const { actions, cancellation } = booking;
   const muted = isMuted(booking);
-  const tips = tipsFor(booking);
   const blocked = [
     actions.cancelBlockedReason && blockedNotes[actions.cancelBlockedReason],
     actions.rescheduleBlockedReason && rescheduleBlockedNotes[actions.rescheduleBlockedReason],
@@ -145,10 +141,7 @@ export function BookingDetail({ booking, titleId, onCancel, onClose }: BookingDe
         <div className="flex items-center gap-4">
           <DateTile startsAt={booking.startsAt} size="lg" muted={muted} />
           <div className="flex min-w-0 flex-col gap-1">
-            <h2
-              id={titleId}
-              className="text-text text-[1.375rem] leading-tight font-[650] tracking-[-0.02em]"
-            >
+            <h2 id={titleId} className="text-text text-[1.375rem] leading-tight font-bold tracking-[-0.02em]">
               {title}
             </h2>
             <p className="text-text-secondary text-[0.8125rem]">
@@ -167,49 +160,54 @@ export function BookingDetail({ booking, titleId, onCancel, onClose }: BookingDe
             {note}
           </FormAlert>
         ))}
-        <SheetMore className="border-border flex flex-col gap-2 border-t pt-4">
-          <p id={tipsId} className={overline}>
-            {tips.title}
-          </p>
-          <ul aria-labelledby={tipsId} className="text-text-secondary flex flex-col gap-1.5 text-[0.8125rem]">
-            {tips.items.map((tip) => (
-              <li
-                key={tip}
-                className="before:bg-role flex gap-2 before:mt-[7px] before:size-1.5 before:shrink-0 before:rounded-full"
-              >
-                {tip}
-              </li>
-            ))}
-          </ul>
-        </SheetMore>
+        {tips && <Tips id={tipsId} {...tipsFor(booking)} />}
       </div>
       {(actions.canCancel || actions.canReschedule || booking.hasResult) && (
-        <footer className="border-border bg-surface-muted rounded-b-card flex flex-wrap items-center gap-3 border-t px-4 py-3 lg:px-5">
+        <footer className="border-border bg-surface-muted rounded-b-card flex flex-wrap gap-x-2.5 gap-y-2 border-t px-4 pt-[22px] pb-4 lg:px-5">
           {actions.canCancel && (
-            <Button variant="danger-ghost" onClick={() => onCancel(booking)}>
+            <Button variant="danger-soft-outline" onClick={() => onCancel(booking)} className={footerButton}>
               Cancelar
             </Button>
           )}
-          <span className="flex-1" />
           {actions.canReschedule && (
-            <ButtonLink to={rescheduleUrl(booking)} aria-describedby={leftId}>
-              <LuCalendarSync aria-hidden />
+            <ButtonLink to={rescheduleUrl(booking)} aria-describedby={leftId} className={footerButton}>
+              <LuCalendar aria-hidden />
               Reagendar
             </ButtonLink>
           )}
           {booking.hasResult && (
-            <ButtonLink to={examResultUrl(booking.id)}>
+            <ButtonLink to={examResultUrl(booking.id)} className={footerButton}>
               <LuFileText aria-hidden />
               Ver resultado
             </ButtonLink>
           )}
           {actions.canReschedule && (
-            <p id={leftId} className="text-text-muted basis-full text-end text-xs">
+            <p id={leftId} className="text-text-muted basis-full text-center text-xs">
               {reschedulesLeftText(actions.reschedulesLeft)}
             </p>
           )}
         </footer>
       )}
     </article>
+  );
+}
+
+function Tips({ id, title, items }: { id: string; title: string; items: string[] }) {
+  return (
+    <SheetMore className="border-border flex flex-col gap-3 border-t pt-5">
+      <p id={id} className={overline}>
+        {title}
+      </p>
+      <ul aria-labelledby={id} className="text-text-secondary flex flex-col gap-3 text-sm leading-[1.45]">
+        {items.map((tip) => (
+          <li
+            key={tip}
+            className="before:bg-role flex gap-3 before:mt-2 before:size-1.5 before:shrink-0 before:rounded-full"
+          >
+            {tip}
+          </li>
+        ))}
+      </ul>
+    </SheetMore>
   );
 }

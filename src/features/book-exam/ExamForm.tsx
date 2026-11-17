@@ -3,11 +3,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useEffectEvent } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { LuClock, LuFlaskConical, LuMapPin } from 'react-icons/lu';
-import { BookingForm, NotesCard, WhenCard } from '@components/booking-form/BookingForm';
+import { BookingForm, fieldGrid, NotesCard, WhenCard } from '@components/booking-form/BookingForm';
 import { whenItem } from '@components/booking-form/when';
 import { toBody } from '@components/booking-form/slot-schema';
 import { useBookingForm } from '@components/booking-form/useBookingForm';
-import { Dropdown, FormAlert, QueryError, SectionCard } from '@components/ui';
+import { Dropdown, FormAlert, InfoList, QueryError, SectionCard } from '@components/ui';
 import { useActiveExamTypes, useActiveUnits } from '@hooks/useActiveCatalog';
 import { whenText } from '@lib/date';
 import { queryKeys } from '@lib/query-keys';
@@ -78,17 +78,27 @@ export function ExamForm({ onBooked }: { onBooked: (exam: ExamBooking) => void }
         line: booking.startsAt ? whenText(booking.startsAt) : null,
         sub: [examType?.name, unit?.name].filter(Boolean).join(' · ') || 'Escolha o exame',
         note: 'O exame já fica confirmado.',
-        items: [
-          {
-            key: 'exam',
-            icon: <LuFlaskConical />,
-            label: examType ? kind : 'Exame',
-            value: examType?.name ?? '—',
-            hint: examType && (examType.preparationNotes ?? NO_PREPARATION),
-          },
-          { key: 'unit', icon: <LuMapPin />, label: 'Local', value: unit?.name ?? '—', hint: unit?.address },
-          whenItem(booking.startsAt),
-        ],
+        details: (
+          <InfoList
+            items={[
+              {
+                key: 'exam',
+                icon: <LuFlaskConical />,
+                label: examType ? kind : 'Exame',
+                value: examType?.name ?? '—',
+                hint: examType && (examType.preparationNotes ?? NO_PREPARATION),
+              },
+              {
+                key: 'unit',
+                icon: <LuMapPin />,
+                label: 'Local',
+                value: unit?.name ?? '—',
+                hint: unit?.address,
+              },
+              whenItem(booking.startsAt),
+            ]}
+          />
+        ),
       }}
     >
       {catalogError && (
@@ -101,7 +111,7 @@ export function ExamForm({ onBooked }: { onBooked: (exam: ExamBooking) => void }
         />
       )}
       <SectionCard title="Exame">
-        <div className="grid gap-4 @min-[560px]:grid-cols-2">
+        <div className={fieldGrid}>
           <Controller
             control={control}
             name="examTypeId"
@@ -154,7 +164,7 @@ export function ExamForm({ onBooked }: { onBooked: (exam: ExamBooking) => void }
         </div>
         {examType && (
           <FormAlert tone="info" role="note" icon={<LuClock />}>
-            <span>
+            <span className="font-normal">
               <strong className="font-semibold">Preparo:</strong>{' '}
               {examType.preparationNotes ?? NO_PREPARATION.toLowerCase()}. Leve um documento com foto e o
               pedido médico.

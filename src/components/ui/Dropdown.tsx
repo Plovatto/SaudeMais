@@ -151,7 +151,7 @@ export function Dropdown({
             <span
               id={`${control.id}-value`}
               className={cx(
-                'min-w-0 flex-1 truncate text-sm font-semibold',
+                'min-w-0 flex-1 truncate text-[0.9375rem] font-semibold lg:text-sm',
                 !chosen && 'text-text-muted font-normal',
               )}
             >
@@ -185,7 +185,7 @@ export function Dropdown({
           initialFocus={initialRef}
         >
           <div className="flex flex-col gap-1 px-3 pt-3 pb-4">
-            <p aria-hidden className="text-text px-3 pt-1 pb-2.5 text-[1.0625rem] font-[650]">
+            <p aria-hidden className="text-text px-3 pt-1 pb-2.5 text-[1.0625rem] font-bold">
               {field.label}
             </p>
             {open && list}

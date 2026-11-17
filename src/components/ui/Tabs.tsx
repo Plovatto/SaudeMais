@@ -80,7 +80,7 @@ export function Tabs<T extends string>({
                 <CountBadge
                   inline
                   className={cx(
-                    'transition-colors duration-150',
+                    'text-[0.71875rem] transition-colors duration-150',
                     selected ? 'bg-role-strong text-on-role' : 'bg-surface-strong text-text-secondary',
                   )}
                 >

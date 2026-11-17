@@ -48,7 +48,7 @@ export function SlotPicker({ date, slots, value, onPick, current, focusRef, desc
   const firstFree = active?.slots.find((slot) => slot.startsAt !== current)?.startsAt;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="@container flex flex-col gap-4">
       <div className="flex flex-col gap-0.5">
         <p className="text-text text-sm font-semibold">{formatLongDay(middayOf(date))}</p>
         <p className="text-text-muted text-[0.8125rem] tabular-nums">
@@ -59,7 +59,7 @@ export function SlotPicker({ date, slots, value, onPick, current, focusRef, desc
         <div
           role="group"
           aria-label="Período"
-          className="bg-surface-strong rounded-field flex gap-0.5 self-start p-[3px]"
+          className="bg-surface-strong rounded-field grid auto-cols-fr grid-flow-col gap-0.5 p-[3px]"
         >
           {groups.map((period) => (
             <button
@@ -68,14 +68,21 @@ export function SlotPicker({ date, slots, value, onPick, current, focusRef, desc
               aria-pressed={period.id === active?.id}
               onClick={() => setChosen(period.id)}
               className={cx(
-                'inline-flex h-8 items-center gap-1.5 rounded-[8px] px-3 text-[0.8125rem] font-semibold transition-[background-color,color,box-shadow] duration-150',
+                'inline-flex h-8 min-w-0 items-center justify-center gap-1.5 rounded-[8px] px-3 text-[0.8125rem] font-semibold transition-[background-color,color,box-shadow] duration-150 @max-[13rem]:gap-1 @max-[13rem]:px-0.5',
                 period.id === active?.id
                   ? 'bg-surface text-text shadow-[0_1px_2px_rgb(16_42_41/0.08),0_0_0_1px_var(--border)]'
                   : 'text-text-secondary can-hover:text-text',
               )}
             >
               {period.label}
-              <span className="text-text-muted text-xs tabular-nums">{period.slots.length}</span>
+              <span
+                className={cx(
+                  'inline-grid h-[18px] min-w-[18px] place-items-center rounded-full px-[5px] text-[0.6875rem] font-semibold tabular-nums @max-[11rem]:sr-only',
+                  period.id === active?.id ? 'bg-role-soft text-role-text' : 'bg-surface text-text-muted',
+                )}
+              >
+                {period.slots.length}
+              </span>
             </button>
           ))}
         </div>
@@ -87,7 +94,7 @@ export function SlotPicker({ date, slots, value, onPick, current, focusRef, desc
         aria-label="Horários livres"
         aria-describedby={describedBy}
         onKeyDown={(event) => moveFocus(event, '[role="radio"]', 'horizontal', { check: true })}
-        className="grid grid-cols-[repeat(auto-fill,minmax(84px,1fr))] gap-2 focus-visible:outline-none"
+        className="grid grid-cols-3 gap-2 focus-visible:outline-none"
       >
         {active?.slots.map((slot) => {
           const selected = slot.startsAt === value;
@@ -103,19 +110,15 @@ export function SlotPicker({ date, slots, value, onPick, current, focusRef, desc
               disabled={isCurrent}
               onClick={() => onPick(slot.startsAt)}
               className={cx(
-                'rounded-field pressable:scale-95 flex min-h-11 flex-col items-center justify-center border px-1 text-sm font-semibold tabular-nums transition-[background-color,border-color,color,scale] duration-150 lg:min-h-10',
+                'rounded-field pressable:scale-95 h-11 border px-1 text-[0.9375rem] font-semibold tabular-nums transition-[background-color,border-color,color,scale] duration-150',
                 selected
                   ? 'border-role-strong bg-role-strong text-on-role'
                   : 'border-border-strong bg-surface text-text can-hover:border-role-strong can-hover:text-role-text',
-                isCurrent && 'bg-surface-muted text-text-muted cursor-not-allowed line-through',
+                isCurrent && 'border-border bg-surface-muted text-text-muted cursor-not-allowed line-through',
               )}
             >
               {formatTime(slot.startsAt)}
-              {(isCurrent || places) && (
-                <span className="text-[0.6875rem] font-medium no-underline opacity-80">
-                  {isCurrent ? 'atual' : places}
-                </span>
-              )}
+              {(isCurrent || places) && <span className="sr-only">, {isCurrent ? 'atual' : places}</span>}
             </button>
           );
         })}

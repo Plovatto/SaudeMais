@@ -202,7 +202,7 @@ describe('reschedule', { timeout: 20_000 }, () => {
       within(screen.getByRole('group', { name: 'Período' })).getByRole('button', { name: /^Tarde/ }),
     );
 
-    expect(within(slotGroup()).getByRole('radio', { name: '14:30atual' })).toBeDisabled();
+    expect(within(slotGroup()).getByRole('radio', { name: '14:30, atual' })).toBeDisabled();
     expect(slotTimes()).toEqual([]);
     expect(screen.getByText('1 horário livre')).toBeVisible();
   });
@@ -210,8 +210,10 @@ describe('reschedule', { timeout: 20_000 }, () => {
   it('sends the current and the new start, tells the doctor must confirm and opens the booking', async () => {
     const { calls } = serve();
     const { user, router } = await start();
+    expect(screen.getByRole('button', { name: 'Confirmar' })).toHaveAttribute('aria-disabled', 'true');
     await pickNext(user);
     expect(screen.getByText('Ter, 24/11 às 09:00')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Confirmar' })).not.toHaveAttribute('aria-disabled');
 
     await submit(user);
 

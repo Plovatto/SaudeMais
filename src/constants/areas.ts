@@ -25,6 +25,7 @@ export type NavBadge = 'patient-upcoming' | 'doctor-pending';
 export interface AreaPage {
   path: string;
   title: string;
+  crumb?: string;
   parent?: string;
   flow?: boolean;
   nav?: { label: string; short?: string; icon: IconType; badge?: NavBadge };
@@ -82,8 +83,20 @@ export const areas: Record<Role, Area> = {
         nav: { label: 'Agendar exame', icon: LuFlaskConical },
       },
       profilePage,
-      { path: 'consultas/:id/reagendar', title: 'Reagendar consulta', parent: 'agendamentos', flow: true },
-      { path: 'exames/:id/reagendar', title: 'Reagendar exame', parent: 'agendamentos', flow: true },
+      {
+        path: 'consultas/:id/reagendar',
+        title: 'Reagendar consulta',
+        crumb: 'Reagendar',
+        parent: 'agendamentos',
+        flow: true,
+      },
+      {
+        path: 'exames/:id/reagendar',
+        title: 'Reagendar exame',
+        crumb: 'Reagendar',
+        parent: 'agendamentos',
+        flow: true,
+      },
       { path: 'exames/:id/resultado', title: 'Resultado do exame', parent: 'agendamentos' },
     ],
     tabs: ['', 'agendamentos'],

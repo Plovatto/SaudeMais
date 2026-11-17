@@ -1,30 +1,25 @@
 import { useId, type ReactNode } from 'react';
 import { LuCalendar, LuCheck } from 'react-icons/lu';
 import { PageHeader } from '@components/layout/PageHeader';
-import {
-  Button,
-  FieldError,
-  FormAlert,
-  InfoList,
-  QueryError,
-  SectionCard,
-  Skeleton,
-  Textarea,
-  type InfoItem,
-} from '@components/ui';
+import { Button, FieldError, FormAlert, QueryError, SectionCard, Skeleton, Textarea } from '@components/ui';
 import { tile } from '@components/ui/styles';
+import { cx } from '@lib/cx';
 import { DESKTOP_QUERY, useMediaQuery } from '@hooks/useMediaQuery';
 import { FREE_TEXT_MAX } from '@lib/validation/text';
 import { MonthCalendar } from './MonthCalendar';
 import { SlotPicker } from './SlotPicker';
 import type { BookingFormState } from './useBookingForm';
 
+const whenGrid = 'grid @min-[520px]:grid-cols-[300px_minmax(0,1fr)]';
+
+export const fieldGrid = 'grid grid-cols-[repeat(auto-fit,minmax(min(260px,100%),1fr))] gap-4';
+
 interface WhenCardProps {
   booking: BookingFormState;
   emptyNote: string;
   waitingNote?: string | undefined;
   title?: string;
-  description?: string | undefined;
+  hint?: string | undefined;
   current?: string | undefined;
 }
 
@@ -33,18 +28,23 @@ export function WhenCard({
   emptyNote,
   waitingNote,
   title = 'Data e horário',
-  description,
+  hint,
   current,
 }: WhenCardProps) {
   const { days, slots, loading, failure, retry, empty, messages } = booking.slots;
   const error = booking.errors.date ?? booking.errors.startsAt;
   const errorId = useId();
   return (
-    <SectionCard title={title} description={description} flush>
+    <SectionCard
+      title={title}
+      className="@container"
+      flush
+      action={hint && <span className="text-text-muted text-[0.8125rem] max-lg:basis-full">{hint}</span>}
+    >
       {waitingNote && days.length === 0 && !loading && !failure && !empty ? (
         <p className="text-text-muted px-4 py-6 text-center text-[0.8125rem] lg:px-5">{waitingNote}</p>
       ) : loading ? (
-        <div className="grid gap-4 p-4 md:grid-cols-2 lg:p-5">
+        <div className={cx(whenGrid, 'gap-4 p-4 lg:p-5')}>
           <Skeleton className="h-64" />
           <Skeleton className="h-64" />
         </div>
@@ -59,8 +59,8 @@ export function WhenCard({
           </FormAlert>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2">
-          <div className="p-4 lg:p-5">
+        <div className={whenGrid}>
+          <div className="min-w-0 p-4 lg:p-5">
             <MonthCalendar
               available={days.map((day) => day.date)}
               selected={booking.date}
@@ -69,7 +69,7 @@ export function WhenCard({
               describedBy={booking.errors.date ? errorId : undefined}
             />
           </div>
-          <div className="border-border border-t p-4 md:border-s md:border-t-0 lg:p-5">
+          <div className="border-border min-w-0 border-t p-4 lg:p-5 @min-[520px]:border-s @min-[520px]:border-t-0">
             {booking.date ? (
               <SlotPicker
                 key={booking.date}
@@ -92,7 +92,7 @@ export function WhenCard({
             )}
           </div>
           {error && (
-            <div className="px-4 pb-4 md:col-span-2 lg:px-5">
+            <div className="px-4 pb-4 lg:px-5 @min-[520px]:col-span-2">
               <FieldError id={errorId}>{error}</FieldError>
             </div>
           )}
@@ -119,7 +119,7 @@ export function NotesCard({ booking, placeholder }: { booking: BookingFormState;
 
 export interface BookingSummary {
   title: string;
-  items: InfoItem[];
+  details: ReactNode;
   line: string | null;
   sub: string;
   note: string;
@@ -132,6 +132,7 @@ interface BookingFormProps {
   submitLabel: string;
   shortLabel: string;
   summary: BookingSummary;
+  ready?: boolean;
   children: ReactNode;
 }
 
@@ -142,17 +143,20 @@ export function BookingForm({
   submitLabel,
   shortLabel,
   summary,
+  ready = booking.startsAt !== '',
   children,
 }: BookingFormProps) {
   const desktop = useMediaQuery(DESKTOP_QUERY);
-  const submit = (text: string, className?: string) => (
+  const submit = (text: string, className: string, icon?: ReactNode) => (
     <Button
       type="submit"
       size="lg"
-      icon={<LuCheck />}
+      icon={icon}
       loading={booking.submitting}
       loadingLabel="Enviando pedido"
-      className={className}
+      data-ready={ready}
+      aria-disabled={!ready || booking.submitting || undefined}
+      className={cx('transition-none', className)}
     >
       {text}
     </Button>
@@ -166,37 +170,39 @@ export function BookingForm({
         onSubmit={(event) => void booking.onSubmit(event)}
         className="@container"
       >
-        <div className="grid items-start gap-4 lg:gap-5 @min-[880px]:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="grid items-start gap-4 lg:gap-5 @min-[900px]:grid-cols-[minmax(0,1fr)_400px]">
           <div className="flex min-w-0 flex-col gap-4 lg:gap-5">
             {children}
             {booking.banner && <FormAlert>{booking.banner}</FormAlert>}
           </div>
           {desktop ? (
             <SectionCard title={summary.title} raised className="motion-safe:animate-rise sticky top-4">
-              <InfoList items={summary.items} />
+              {summary.details}
               <div className="border-border rounded-b-card bg-surface-muted -mx-5 -mb-5 flex flex-col gap-2.5 border-t px-5 pt-4 pb-[18px]">
-                {submit(submitLabel, 'w-full')}
+                {submit(submitLabel, 'w-full', <LuCheck />)}
                 <p className="text-text-muted text-center text-xs">{summary.note}</p>
               </div>
             </SectionCard>
           ) : (
             <div className="border-border bg-surface motion-safe:animate-sheet fixed inset-x-0 bottom-0 z-30 flex flex-wrap items-center gap-x-3.5 gap-y-5 rounded-t-[26px] border-t px-5 pt-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] shadow-[0_-2px_6px_rgb(16_42_41/0.06),0_-22px_44px_-16px_rgb(16_42_41/0.4)] print:hidden">
-              <span aria-hidden className={tile}>
+              <span aria-hidden className={cx(tile, 'size-12 rounded-[14px] [&_svg]:size-[22px]')}>
                 <LuCalendar />
               </span>
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <p
-                  className={
-                    summary.line
-                      ? 'text-text text-sm font-semibold tabular-nums'
-                      : 'text-text-muted text-sm font-semibold'
-                  }
+                  className={cx(
+                    'truncate text-[1.09375rem] font-bold tabular-nums',
+                    summary.line ? 'text-text' : 'text-text-muted',
+                  )}
                 >
                   {summary.line ?? 'Escolha dia e horário'}
                 </p>
-                <p className="text-text-secondary truncate text-xs">{summary.sub}</p>
+                <p className="text-text-secondary truncate text-[0.84375rem]">{summary.sub}</p>
               </div>
-              {submit(shortLabel, 'h-14 w-full rounded-[15px] text-base')}
+              {submit(
+                shortLabel,
+                'h-[54px] w-full rounded-[15px] text-base font-bold data-[ready=false]:border-transparent data-[ready=false]:bg-surface-strong data-[ready=false]:text-text-secondary data-[ready=false]:opacity-100',
+              )}
             </div>
           )}
         </div>

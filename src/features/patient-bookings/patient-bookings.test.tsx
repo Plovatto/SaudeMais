@@ -205,6 +205,9 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     expect(detail.getByRole('link', { name: '(11) 3333-4444' })).toHaveAttribute('href', 'tel:+551133334444');
     expect(detail.getByText('Consulta de rotina')).toBeVisible();
     expect(detail.getByText('Antes de ir')).toBeVisible();
+    expect(detail.getByText('Antes de ir').parentElement).toHaveClass(
+      'in-data-[grow=true]:in-data-[sheet=min]:hidden',
+    );
 
     await user.click(detail.getByRole('button', { name: 'Fechar' }));
 
@@ -261,6 +264,7 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     expect(first).not.toHaveAttribute('aria-haspopup');
     expect(await screen.findByRole('heading', { name: 'Dr. João Silveira' })).toBeVisible();
     expect(screen.queryByRole('dialog', { name: SHEET })).not.toBeInTheDocument();
+    expect(screen.queryByText('Antes de ir')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /Ultrassom/ }));
 

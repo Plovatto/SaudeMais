@@ -93,6 +93,14 @@ describe('role areas', () => {
     expect(crumbs.getByText('Resultado do exame')).toHaveAttribute('aria-current', 'page');
   });
 
+  it('shortens the reschedule crumb but keeps the full page title', async () => {
+    renderAt('/paciente/consultas/1/reagendar');
+
+    const crumbs = await navigation('Você está em');
+    expect(crumbs.getByText('Reagendar')).toHaveAttribute('aria-current', 'page');
+    await waitFor(() => expect(document.title).toBe('Reagendar consulta · Saúde+'));
+  });
+
   it('skips straight to the main content', async () => {
     renderAt('/paciente');
 

@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
-import { LuArrowDown, LuLock, LuMapPin } from 'react-icons/lu';
+import { LuChevronDown, LuLock, LuMapPin, LuTriangleAlert } from 'react-icons/lu';
 import { useParams } from 'react-router';
 import { z } from 'zod';
 import { DateTile } from '@components/bookings/DateTile';
@@ -12,7 +12,8 @@ import { FormAlert, InfoList, QueryError, SectionCard, Skeleton, TextLink } from
 import { PATIENT_BOOKINGS_PATH } from '@constants/areas';
 import { ApiError } from '@lib/api/api-error';
 import type { PatientBooking } from '@lib/api/models';
-import { civilDateInSaoPaulo, whenText } from '@lib/date';
+import { cx } from '@lib/cx';
+import { civilDateInSaoPaulo, middayOf, whenText } from '@lib/date';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
 import { queryKeys } from '@lib/query-keys';
 import type { AvailableDay } from './availability';
@@ -45,6 +46,67 @@ function ClosedNote({ message, alert = false }: { message: string; alert?: boole
         </TextLink>
       </span>
     </FormAlert>
+  );
+}
+
+const swapRow =
+  'grid grid-cols-[auto_minmax(0,1fr)] content-center items-center gap-x-3 gap-y-0.5 rounded-[14px] border p-3';
+
+function SwapRow({
+  label,
+  startsAt,
+  text,
+  className,
+  tileClassName = '',
+  textClassName,
+  muted = false,
+}: {
+  label: string;
+  startsAt: string;
+  text: string;
+  className: string;
+  tileClassName?: string;
+  textClassName: string;
+  muted?: boolean;
+}) {
+  return (
+    <div className={cx(swapRow, className)}>
+      <dt className="text-text-muted col-start-2 row-start-1 self-end text-xs">{label}</dt>
+      <dd aria-hidden className="col-start-1 row-span-2 row-start-1 flex">
+        <DateTile key={startsAt} startsAt={startsAt} muted={muted} className={tileClassName} />
+      </dd>
+      <dd className={cx('col-start-2 self-start text-sm font-semibold tabular-nums', textClassName)}>
+        {text}
+      </dd>
+    </div>
+  );
+}
+
+function TimeSwap({ current, next, moved }: { current: string; next: string; moved: boolean }) {
+  return (
+    <dl className="flex flex-col gap-1.5">
+      <SwapRow
+        label="Atual"
+        startsAt={current}
+        text={whenText(current)}
+        muted
+        className="border-border bg-surface-muted"
+        textClassName="text-text-muted line-through"
+      />
+      <div aria-hidden className="relative z-10 -my-3.5 grid place-items-center">
+        <span className="border-border bg-surface text-text-muted grid size-7 place-items-center rounded-full border">
+          <LuChevronDown className="size-3.5" />
+        </span>
+      </div>
+      <SwapRow
+        label="Novo"
+        startsAt={next}
+        text={moved ? whenText(next) : 'Escolha outro horário'}
+        className="border-role-soft-strong bg-[color-mix(in_oklab,var(--role-soft)_45%,var(--surface))]"
+        tileClassName={moved ? 'motion-safe:animate-pop' : ''}
+        textClassName={moved ? 'text-text' : 'text-text-muted'}
+      />
+    </dl>
   );
 }
 
@@ -158,6 +220,7 @@ function RescheduleForm<B extends Reschedulable>({
       label={formLabel}
       heading={HEADING}
       booking={booking}
+      ready={moved}
       submitLabel="Confirmar novo horário"
       shortLabel="Confirmar"
       summary={{
@@ -165,36 +228,13 @@ function RescheduleForm<B extends Reschedulable>({
         line: moved ? whenText(booking.startsAt) : null,
         sub: `Antes: ${whenText(current.startsAt)}`,
         note: confirmNote,
-        items: [
-          {
-            key: 'before',
-            icon: <DateTile startsAt={current.startsAt} muted />,
-            boxed: false,
-            label: 'Atual',
-            value: (
-              <span className="text-text-secondary tabular-nums line-through">
-                {whenText(current.startsAt)}
-              </span>
-            ),
-          },
-          {
-            key: 'after',
-            icon: moved ? (
-              <DateTile startsAt={booking.startsAt} className="motion-safe:animate-pop" />
-            ) : (
-              <span className="bg-surface-strong text-text-muted rounded-tile grid size-[52px] place-items-center">
-                <LuArrowDown className="size-[18px]" />
-              </span>
-            ),
-            boxed: false,
-            label: 'Novo',
-            value: moved ? (
-              <span className="tabular-nums">{whenText(booking.startsAt)}</span>
-            ) : (
-              <span className="text-text-muted">Escolha outro horário</span>
-            ),
-          },
-        ],
+        details: (
+          <TimeSwap
+            current={current.startsAt}
+            next={moved ? booking.startsAt : booking.date ? middayOf(booking.date) : current.startsAt}
+            moved={moved}
+          />
+        ),
       }}
     >
       <SectionCard
@@ -229,14 +269,15 @@ function RescheduleForm<B extends Reschedulable>({
       <WhenCard
         booking={booking}
         title="Nova data e horário"
-        description={locked.calendarHint}
+        hint={locked.calendarHint}
         current={current.startsAt}
         emptyNote={emptyNote}
       />
       {notice && (
-        <FormAlert tone="warning" role="note">
+        <p role="note" className="text-warning-text flex items-start gap-2 px-1 text-[0.8125rem]">
+          <LuTriangleAlert aria-hidden className="mt-0.5 size-3.5 shrink-0" />
           {notice(current)}
-        </FormAlert>
+        </p>
       )}
     </BookingForm>
   );
