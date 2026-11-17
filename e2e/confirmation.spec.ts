@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { formatDateTime } from '../src/lib/date';
+import { formatDateTime, formatShortDay, formatTime } from '../src/lib/date';
 import { api } from './support/api';
 import { tokenFor } from './support/auth';
 import { bookingCard, expect, expectAccessible, test } from './support/fixtures';
@@ -45,5 +45,7 @@ test('the doctor confirms a request and the patient is notified', async ({ signe
   await expectAccessible(patientPage);
 
   await patientPage.goto('paciente/agendamentos?tipo=consulta&status=confirmado');
-  await expect(bookingCard(patientPage, DOCTOR_NAME, when)).toContainText('Confirmado');
+  await expect(
+    bookingCard(patientPage, DOCTOR_NAME, formatShortDay(startsAt), formatTime(startsAt)),
+  ).toContainText('Confirmado');
 });
