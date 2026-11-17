@@ -10,6 +10,7 @@ import {
   formatLongDay,
   formatMonth,
   formatRelative,
+  formatAgo,
   formatSince,
   formatShortDay,
   formatTime,
@@ -103,6 +104,22 @@ describe.each([
     expect(formatSince('2026-11-17T15:00:00.000Z', now)).toBe('há 3 dias');
     expect(formatSince('2026-11-13T02:30:00.000Z', now)).toBe('em 12/11/2026');
     expect(formatSince('not-a-date', now)).toBe('data indisponível');
+  });
+
+  it('counts how long ago in weeks, months and years and switches unit at the week, month and year boundaries', () => {
+    const now = new Date('2026-11-20T15:00:00.000Z');
+    const ago = (days: number) => new Date(now.getTime() - days * 86_400_000).toISOString();
+    expect(formatAgo(ago(7), now)).toBe('há 7 dias');
+    expect(formatAgo(ago(8), now)).toBe('há 1 semana');
+    expect(formatAgo(ago(29), now)).toBe('há 4 semanas');
+    expect(formatAgo(ago(30), now)).toBe('há 1 mês');
+    expect(formatAgo(ago(364), now)).toBe('há 12 meses');
+    expect(formatAgo(ago(365), now)).toBe('há 1 ano');
+  });
+
+  it('treats a future date as just now', () => {
+    const now = new Date('2026-11-20T15:00:00.000Z');
+    expect(formatAgo('2026-11-21T15:00:00.000Z', now)).toBe('agora');
   });
 });
 

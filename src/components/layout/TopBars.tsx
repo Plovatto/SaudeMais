@@ -70,7 +70,7 @@ export function TopBar({ area }: { area: Area }) {
     <header className="max-lg:border-border max-lg:bg-surface/88 dark:max-lg:bg-surface/92 sticky top-0 z-20 flex min-h-[68px] items-center gap-3 px-4 pt-[env(safe-area-inset-top)] max-lg:border-b max-lg:ps-[max(1rem,env(safe-area-inset-left))] max-lg:pe-[max(1rem,env(safe-area-inset-right))] max-lg:shadow-[0_8px_20px_-16px_rgb(16_42_41/0.35)] max-lg:backdrop-blur-[14px] lg:static lg:min-h-16 lg:px-8 lg:pt-0 print:hidden">
       <Who area={area} />
       <Crumbs area={area} />
-      <div className="flex items-center gap-1">
+      <div className="-me-0.5 flex items-center gap-2 lg:me-0 lg:gap-1">
         <ThemeToggle />
         <NotificationBell key={area.role} role={area.role} />
       </div>

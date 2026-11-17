@@ -39,6 +39,8 @@ export const personalDataBody = ({ fullName, phone }: PersonalDataValues) => ({
   phone: phone === '' ? null : phone,
 });
 
+export const hasLettersAndNumbers = (value: string) => /[A-Za-z]/.test(value) && /[0-9]/.test(value);
+
 export const newPasswordFields = {
   password: z
     .string()

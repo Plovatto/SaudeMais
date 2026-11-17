@@ -23,7 +23,9 @@ export const useUnreadCount = (role: Role): number | undefined =>
     refetchIntervalInBackground: false,
   }).data;
 
-export const unreadText = (count: number) => (count === 1 ? '1 não lida' : `${count} não lidas`);
+export const unreadNoun = (count: number) => (count === 1 ? 'não lida' : 'não lidas');
+
+export const unreadText = (count: number) => `${count} ${unreadNoun(count)}`;
 
 export type NotificationPage = ResponseOf<'/api/notifications', 'get'>;
 

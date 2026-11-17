@@ -138,7 +138,7 @@ describe('account', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Meu perfil' })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/medico/perfil');
 
-    await user.click(screen.getByRole('link', { name: 'Trocar perfil' }));
+    await user.click(screen.getByRole('link', { name: 'Perfil atual Médico Trocar' }));
     expect(await screen.findByRole('heading', { level: 1, name: 'Escolha seu perfil' })).toBeInTheDocument();
   });
 
@@ -147,14 +147,15 @@ describe('account', () => {
 
     await screen.findByRole('heading', { level: 1, name: 'Meu perfil' });
 
-    expect(screen.queryByRole('link', { name: 'Trocar perfil' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^Perfil atual/ })).not.toBeInTheDocument();
   });
 
   it('leaves the account from the profile page', async () => {
     mockApi({ status: 204 });
     const { user, router } = renderAt('/admin/perfil');
 
-    await user.click(await screen.findByRole('button', { name: 'Sair' }));
+    await user.click(await screen.findByRole('button', { name: 'Sair da conta' }));
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Sair' }));
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/login'));
   });

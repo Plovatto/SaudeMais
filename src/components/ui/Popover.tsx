@@ -10,7 +10,7 @@ export interface PopoverProps {
   badge?: ReactNode;
   title: string;
   align?: 'start' | 'end';
-  children: ReactNode;
+  children: ReactNode | ((close: () => void) => ReactNode);
   className?: string;
   panelClassName?: string;
 }
@@ -60,7 +60,7 @@ export function Popover({
             panelClassName,
           )}
         >
-          {children}
+          {typeof children === 'function' ? children(() => dismiss('escape')) : children}
         </div>
       )}
     </div>

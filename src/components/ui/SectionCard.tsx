@@ -32,14 +32,14 @@ export function SectionCard({
     >
       <header className="flex min-h-14 flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3.5 lg:px-5">
         <div className="flex min-w-0 flex-1 basis-40 flex-col gap-0.5">
-          <h2 id={titleId} className="text-text text-[0.9375rem] font-semibold tracking-[-0.01em]">
+          <h2 id={titleId} className="text-text text-[0.9375rem]/[1.35] font-semibold tracking-[-0.01em]">
             {title}
           </h2>
           {description && <p className="text-text-muted text-[0.8125rem]">{description}</p>}
         </div>
         {action}
       </header>
-      <div className={flush ? 'border-border border-t' : 'flex flex-col gap-4 px-4 pb-5 lg:px-5'}>
+      <div className={flush ? 'border-border border-t' : 'flex flex-col gap-4 px-4 pt-1 pb-5 lg:px-5'}>
         {children}
       </div>
     </section>
