@@ -99,3 +99,39 @@ export const formatRelative = (iso: string, now = new Date()) =>
 
 export const formatSince = (iso: string, now = new Date()) =>
   relativeOr(iso, now, (date) => `em ${formatDate(civilDateInSaoPaulo(date))}`);
+
+const zonedParts = new Intl.DateTimeFormat('pt-BR', {
+  timeZone: TIME_ZONE,
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+});
+
+const zonedShort = new Intl.DateTimeFormat('pt-BR', {
+  timeZone: TIME_ZONE,
+  weekday: 'short',
+  day: '2-digit',
+  month: '2-digit',
+});
+
+const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
+function partsOf(format: Intl.DateTimeFormat, iso: string) {
+  const parts = format.formatToParts(new Date(iso));
+  return (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? '';
+}
+
+export function dayTile(iso: string): { weekday: string; day: string } {
+  const part = partsOf(zonedShort, iso);
+  return { weekday: part('weekday').replace('.', ''), day: part('day') };
+}
+
+export function formatShortDay(iso: string): string {
+  const part = partsOf(zonedShort, iso);
+  return `${capitalize(part('weekday').replace('.', ''))}, ${part('day')}/${part('month')}`;
+}
+
+export function formatLongDay(iso: string): string {
+  const part = partsOf(zonedParts, iso);
+  return `${capitalize(part('weekday').replace('-feira', ''))}, ${part('day')} de ${part('month')}`;
+}

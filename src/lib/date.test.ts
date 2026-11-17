@@ -1,12 +1,15 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import {
   addDays,
+  dayTile,
   civilDateInSaoPaulo,
   formatDateTime,
   formatDate,
   formatDay,
+  formatLongDay,
   formatRelative,
   formatSince,
+  formatShortDay,
   formatTime,
   todayInSaoPaulo,
 } from './date';
@@ -98,5 +101,15 @@ describe.each([
     expect(formatSince('2026-11-17T15:00:00.000Z', now)).toBe('há 3 dias');
     expect(formatSince('2026-11-13T02:30:00.000Z', now)).toBe('em 12/11/2026');
     expect(formatSince('not-a-date', now)).toBe('data indisponível');
+  });
+});
+
+describe('day labels in São Paulo', () => {
+  const lateNight = '2026-11-24T01:30:00.000Z';
+
+  it('reads the tile, short and long day in the clinic time zone', () => {
+    expect(dayTile(lateNight)).toEqual({ weekday: 'seg', day: '23' });
+    expect(formatShortDay(lateNight)).toBe('Seg, 23/11');
+    expect(formatLongDay(lateNight)).toBe('Segunda, 23 de novembro');
   });
 });

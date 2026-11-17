@@ -26,7 +26,15 @@ const result = (id: string, name: string): ExamResult => ({
     issuedAt: '2026-11-11T11:00:00.000Z',
     receivedAt: '2026-11-11T11:05:00.000Z',
     items: [
-      { name: 'Hemoglobina', value: 13.8, unit: 'g/dL', referenceRange: '12,0 a 16,0', flag: 'normal' },
+      {
+        name: 'Hemoglobina',
+        value: 13.8,
+        unit: 'g/dL',
+        referenceRange: '12,0 a 16,0',
+        flag: 'normal',
+        range: null,
+        about: null,
+      },
     ],
     report: null,
   },

@@ -213,3 +213,8 @@ export function parentUrl(pathname: string): string | undefined {
   const area = Object.values(areas).find(({ base }) => pathname === base || pathname.startsWith(`${base}/`));
   return area && parentLink(area, pathname)?.to;
 }
+
+export const BOOKING_PARAM = 'id';
+
+export const bookingUrl = (bookingId: string, past = false) =>
+  `${PATIENT_BOOKINGS_PATH}?${past ? 'aba=realizados&' : ''}${BOOKING_PARAM}=${bookingId}`;

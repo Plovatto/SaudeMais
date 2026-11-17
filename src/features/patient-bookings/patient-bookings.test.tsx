@@ -137,7 +137,7 @@ describe('patient bookings', { timeout: 15_000 }, () => {
 
     const links = await screen.findAllByRole('link', { name: /^Ver resultado/ });
     expect(links).toHaveLength(1);
-    expect(links[0]).toHaveAccessibleName('Ver resultado: Lab. Central, Ultrassom, 10/01/2020, 10:00');
+    expect(links[0]).toHaveAccessibleName('Ver resultado: Ultrassom, Lab. Central, 10/01/2020, 10:00');
 
     await user.click(links[0] as HTMLElement);
 
@@ -195,7 +195,7 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     expect(link).toHaveAttribute('href', '/paciente/consultas/b1/reagendar');
     expect(appointment.header).not.toContainElement(link);
     expect(link).toHaveAccessibleDescription('2 reagendamentos restantes');
-    const examCard = await card(/Lab\. Central/);
+    const examCard = await card(/Ultrassom/);
     await user.click(examCard.header);
     expect(examCard.scope.getByRole('link', { name: /^Reagendar/ })).toHaveAttribute(
       'href',
@@ -221,7 +221,7 @@ describe('patient bookings', { timeout: 15_000 }, () => {
       /não pode mais ser reagendado, só cancelado/,
     );
     expect(appointment.scope.getByRole('button', { name: /^Cancelar/ })).toBeVisible();
-    const examCard = await card(/Lab\. Central/);
+    const examCard = await card(/Ultrassom/);
     await user.click(examCard.header);
     expect(examCard.scope.queryByRole('link', { name: /^Reagendar/ })).not.toBeInTheDocument();
     expect(examCard.scope.getByRole('note')).toHaveTextContent(/já usou todos os reagendamentos/);
@@ -248,8 +248,8 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     expect(doctor.scope.getByText('Cancelamento tardio')).toBeVisible();
     expect(doctor.scope.queryByRole('button', { name: /^Cancelar/ })).not.toBeInTheDocument();
 
-    const examCard = await card(/Lab\. Central/);
-    expect(within(examCard.header).getByText('Exame · Ultrassom')).toBeVisible();
+    const examCard = await card(/Ultrassom/);
+    expect(within(examCard.header).getByText('Exame')).toBeVisible();
     await user.click(examCard.header);
     expect(examCard.scope.getByText('EX-123')).toBeVisible();
     expect(examCard.scope.queryByRole('note')).not.toBeInTheDocument();
@@ -280,7 +280,7 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     const { calls } = serve({ upcoming: [exam('b1')] }, () => ({ status: 200, body: {} }));
     const { user } = renderApp('/paciente/agendamentos');
 
-    const { header, scope } = await card(/Lab\. Central/);
+    const { header, scope } = await card(/Ultrassom/);
     await user.click(header);
     await user.click(scope.getByRole('button', { name: /^Cancelar/ }));
     const dialog = screen.getByRole('dialog', { name: 'Cancelar exame?' });
@@ -299,7 +299,7 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     });
     const { user } = renderApp('/paciente/agendamentos');
 
-    const { header, scope } = await card(/Lab\. Central/);
+    const { header, scope } = await card(/Ultrassom/);
     await user.click(header);
     await user.click(scope.getByRole('button', { name: /^Cancelar/ }));
 

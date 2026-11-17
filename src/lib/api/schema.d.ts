@@ -740,6 +740,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/email-preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ver os avisos por e-mail
+         * @description Lista os avisos por e-mail dos perfis da conta, cada um com o perfil a que pertence e se está ligado. Sem escolha gravada, o aviso vem ligado. Os e-mails saem junto com os avisos do app e o lembrete sai até 24 horas antes de consultas e exames confirmados. Contas de demonstração e desativadas não recebem e-mail. Limite: 120 requisições de perfil por minuto por IP.
+         */
+        get: operations["listEmailPreferences"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Ligar ou desligar avisos por e-mail
+         * @description Grava a escolha de cada aviso enviado e devolve a lista completa. Avisos não enviados ficam como estavam. Só aceita avisos dos perfis da conta. Limite: 120 requisições de perfil por minuto por IP.
+         */
+        patch: operations["updateEmailPreferences"];
+        trace?: never;
+    };
     "/api/exam-availability": {
         parameters: {
             query?: never;
@@ -834,6 +858,46 @@ export interface paths {
          * @description Troca o horário de um exame confirmado que ainda não começou, na mesma linha e em uma única transação: o exame continua confirmado e com o mesmo código, `reschedule_count` aumenta e o evento `rescheduled` guarda o horário anterior e o novo. O exame mantém o lugar (raia) atual se ele estiver livre no novo horário; senão, ocupa o menor lugar livre, até a capacidade da oferta. O lugar antigo só fica livre se o novo for garantido. Só o paciente dele reagenda. Envie em `startsAt` o início que a tela mostrava (se mudou, a resposta é `INVALID_STATE`) e em `newStartsAt` o início de uma vaga devolvida por `GET /api/exam-availability?rescheduling={id}`, em que o próprio exame não ocupa lugar. Dentro da janela da política (`examLateWindowHours`) o exame não pode ser reagendado (`RESCHEDULE_WINDOW_CLOSED`), só cancelado, e cada exame aceita até `maxReschedules` reagendamentos (`RESCHEDULE_LIMIT`). Erros sobre a nova vaga vêm em `fields.newStartsAt`. Responde o detalhe atualizado; para os demais usuários, responde como inexistente. Limite: 60 requisições por minuto por IP.
          */
         post: operations["rescheduleExamBooking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patient/exam-results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar os resultados de exame
+         * @description Resultados de exame do paciente logado, do exame mais recente para o mais antigo, cada um com o tipo de exame, as datas e um resumo da versão atual: quantos itens há e quais estão fora da referência (indicador diferente de `normal`). Exame de imagem vem com `summary` nulo. Para os itens, o laudo e as versões anteriores, use `GET /api/patient/exam-results/{bookingId}`. Cada resultado devolvido fica na auditoria como `exam_result.read`, só com o exame e a versão atual, nunca com o conteúdo. Limite: 120 requisições por minuto por IP.
+         */
+        get: operations["listPatientExamResults"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patient/exam-results/{bookingId}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Baixar o laudo em PDF
+         * @description Gera o laudo em PDF da versão atual do exame `bookingId` do paciente logado: unidade, nome do paciente, código do exame, datas e os itens com valor, referência e indicador, ou o laudo do exame de imagem. Responde como anexo (`Content-Disposition: attachment; filename=laudo-<código>.pdf`). Exame de outra pessoa, consulta ou exame sem resultado respondem 404. Cada laudo gerado fica na auditoria como `exam_result.read`, como na leitura. Limite: 20 laudos por minuto por IP.
+         */
+        get: operations["downloadPatientExamResultPdf"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1193,7 +1257,7 @@ export interface paths {
         };
         /**
          * Ver os próprios dados
-         * @description Devolve os dados e os perfis da conta dona do token. Limite: 120 leituras de perfil por minuto por IP.
+         * @description Devolve os dados e os perfis da conta dona do token, com a data de nascimento e a data da última troca de senha. Limite: 120 leituras de perfil por minuto por IP.
          */
         get: operations["getProfile"];
         put?: never;
@@ -1202,8 +1266,8 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Alterar nome ou telefone
-         * @description Altera só os campos enviados. O e-mail não pode ser alterado nesta versão. Limite: 120 requisições de perfil por minuto por IP.
+         * Alterar nome, telefone ou nascimento
+         * @description Altera só os campos enviados. A data de nascimento não pode ser no futuro (fuso de São Paulo) nem antes de 1900. O e-mail não pode ser alterado nesta versão. Limite: 120 requisições de perfil por minuto por IP.
          */
         patch: operations["updateProfile"];
         trace?: never;
@@ -1247,6 +1311,46 @@ export interface paths {
          * @description Encerra todas as sessões da conta, inclusive a atual. Na conta de demonstração, encerra só a sessão de quem pediu.
          */
         delete: operations["logoutEverywhere"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/sessions/others": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Encerrar as outras sessões
+         * @description Encerra todas as sessões da conta menos a atual. Na conta de demonstração, compartilhada entre visitantes, não encerra nada. Limite: 60 requisições de sessão por minuto por IP.
+         */
+        delete: operations["endOtherSessions"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/sessions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Encerrar uma sessão
+         * @description Encerra uma sessão da própria conta, como a de um aparelho que a pessoa não reconhece. A sessão atual não pode ser encerrada por aqui: use o logout. Sessão de outra conta responde 404, sem revelar se existe. Na conta de demonstração a rota é bloqueada. Limite: 60 requisições de sessão por minuto por IP.
+         */
+        delete: operations["endSession"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1640,6 +1744,11 @@ export interface components {
              * @example (11) 98765-4321
              */
             phone?: null | "" | string;
+            /**
+             * @description Data de nascimento (AAAA-MM-DD), de 1900-01-01 até hoje no fuso de São Paulo. Envie `null` para remover.
+             * @example 1986-03-12
+             */
+            birthDate?: null | "" | string;
         };
         ChangePasswordRequest: {
             /** @example senha-segura-123 */
@@ -1690,6 +1799,19 @@ export interface components {
              *     ]
              */
             roles: ("patient" | "doctor" | "admin")[];
+        };
+        Profile: components["schemas"]["User"] & {
+            /**
+             * Format: date
+             * @description Data de nascimento, se informada.
+             * @example 1986-03-12
+             */
+            birthDate: string | null;
+            /**
+             * Format: date-time
+             * @description Última troca de senha; nula se a senha nunca foi trocada.
+             */
+            passwordChangedAt: string | null;
         };
         LoginResponse: {
             /** @description Token de sessão, enviado depois como `Authorization: Bearer <token>`. */
@@ -2605,6 +2727,41 @@ export interface components {
                 startsAt: string;
             }[];
         };
+        EmailPreference: {
+            /**
+             * @description Assunto do aviso: `booking_reminder` (lembrete 24 horas antes), `booking_decision` (confirmação, cancelamento ou pedido não confirmado), `exam_result` (resultado disponível), `appointment_request` (pedido novo ou reagendado), `appointment_cancellation` (consulta cancelada pelo paciente ou pela administração) e `user_registration` (conta nova).
+             * @example booking_reminder
+             * @enum {string}
+             */
+            topic: "booking_reminder" | "booking_decision" | "exam_result" | "appointment_request" | "appointment_cancellation" | "user_registration";
+            /**
+             * @description Perfil a que o aviso pertence.
+             * @example patient
+             * @enum {string}
+             */
+            role: "patient" | "doctor" | "admin";
+            /** @description Se o e-mail é enviado. Sem escolha gravada, vale `true`. */
+            enabled: boolean;
+        };
+        UpdateEmailPreferencesRequest: {
+            /**
+             * @example [
+             *       {
+             *         "topic": "booking_reminder",
+             *         "enabled": false
+             *       }
+             *     ]
+             */
+            preferences: {
+                /**
+                 * @description Assunto do aviso: `booking_reminder` (lembrete 24 horas antes), `booking_decision` (confirmação, cancelamento ou pedido não confirmado), `exam_result` (resultado disponível), `appointment_request` (pedido novo ou reagendado), `appointment_cancellation` (consulta cancelada pelo paciente ou pela administração) e `user_registration` (conta nova).
+                 * @example booking_reminder
+                 * @enum {string}
+                 */
+                topic: "booking_reminder" | "booking_decision" | "exam_result" | "appointment_request" | "appointment_cancellation" | "user_registration";
+                enabled: boolean;
+            }[];
+        };
         ExamAvailability: {
             /** @description Só os dias do período com ao menos uma vaga livre, em ordem. */
             days: {
@@ -2966,6 +3123,22 @@ export interface components {
                      * @enum {string}
                      */
                     flag: "normal" | "low" | "high" | "critical";
+                    /**
+                     * @description Faixa numérica lida de `referenceRange`; nula quando a referência não é um intervalo "mínimo a máximo".
+                     * @example {
+                     *       "low": 12,
+                     *       "high": 16
+                     *     }
+                     */
+                    range: {
+                        low: number;
+                        high: number;
+                    } | null;
+                    /**
+                     * @description Explicação em linguagem simples do que o item mede; nula quando o item não está no glossário.
+                     * @example Proteína dentro dos glóbulos vermelhos que carrega o oxigênio. Quando está baixa, pode indicar anemia.
+                     */
+                    about: string | null;
                 }[] | null;
                 /**
                  * @description Laudo do exame de imagem; nulo em exame laboratorial.
@@ -3016,6 +3189,22 @@ export interface components {
                      * @enum {string}
                      */
                     flag: "normal" | "low" | "high" | "critical";
+                    /**
+                     * @description Faixa numérica lida de `referenceRange`; nula quando a referência não é um intervalo "mínimo a máximo".
+                     * @example {
+                     *       "low": 12,
+                     *       "high": 16
+                     *     }
+                     */
+                    range: {
+                        low: number;
+                        high: number;
+                    } | null;
+                    /**
+                     * @description Explicação em linguagem simples do que o item mede; nula quando o item não está no glossário.
+                     * @example Proteína dentro dos glóbulos vermelhos que carrega o oxigênio. Quando está baixa, pode indicar anemia.
+                     */
+                    about: string | null;
                 }[] | null;
                 /**
                  * @description Laudo do exame de imagem; nulo em exame laboratorial.
@@ -3026,6 +3215,58 @@ export interface components {
         };
         ExamResultPage: {
             items: components["schemas"]["ExamResult"][];
+            page: number;
+            pageSize: number;
+            total: number;
+        };
+        ExamResultSummary: {
+            /** Format: uuid */
+            bookingId: string;
+            examType: {
+                /** Format: uuid */
+                id: string;
+                /** @example Hemograma */
+                name: string;
+                /**
+                 * @description `lab` para exames laboratoriais, `imaging` para imagem.
+                 * @enum {string}
+                 */
+                kind: "lab" | "imaging";
+            };
+            /**
+             * Format: date-time
+             * @description Início do exame.
+             * @example 2026-11-04T11:00:00.000Z
+             */
+            startsAt: string;
+            /**
+             * Format: date-time
+             * @description Emissão da versão atual no laboratório.
+             */
+            issuedAt: string;
+            /** @description Se a versão atual é uma retificação. */
+            amended: boolean;
+            /** @description Contagem dos itens da versão atual; nula em exame de imagem. */
+            summary: {
+                /** @example 8 */
+                items: number;
+                /**
+                 * @description Itens com indicador diferente de `normal`.
+                 * @example 2
+                 */
+                outOfRange: number;
+                /**
+                 * @description Nomes dos itens fora da referência, na ordem do laudo.
+                 * @example [
+                 *       "Hematócrito",
+                 *       "Leucócitos"
+                 *     ]
+                 */
+                flagged: string[];
+            } | null;
+        };
+        ExamResultSummaryPage: {
+            items: components["schemas"]["ExamResultSummary"][];
             page: number;
             pageSize: number;
             total: number;
@@ -8321,6 +8562,188 @@ export interface operations {
             };
         };
     };
+    listEmailPreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Avisos por e-mail da conta. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailPreference"][];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateEmailPreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UpdateEmailPreferencesRequest"];
+            };
+        };
+        responses: {
+            /** @description Avisos por e-mail atualizados. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailPreference"][];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conta de demonstração (`PROTECTED_ACCOUNT`); não pode ser alterada. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Esta é uma conta de demonstração e não pode ser alterada.",
+                     *       "code": "PROTECTED_ACCOUNT"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Aviso de um perfil que a conta não tem (`TOPIC_NOT_AVAILABLE`). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "TOPIC_NOT_AVAILABLE",
+                     *       "message": "Este aviso não pertence a nenhum perfil da sua conta."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     getExamAvailability: {
         parameters: {
             query: {
@@ -8968,6 +9391,224 @@ export interface operations {
                      *       "fields": {
                      *         "newStartsAt": "Escolha um horário diferente do atual."
                      *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listPatientExamResults: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Página de resultados do paciente. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamResultSummaryPage"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    downloadPatientExamResultPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Laudo em PDF. */
+            200: {
+                headers: {
+                    /** @description Sempre `attachment`, com o nome `laudo-<código do exame>.pdf`. */
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Resultado não encontrado.",
+                     *       "code": "NOT_FOUND"
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];
@@ -10855,7 +11496,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["User"];
+                    "application/json": components["schemas"]["Profile"];
                 };
             };
             /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
@@ -10924,7 +11565,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["User"];
+                    "application/json": components["schemas"]["Profile"];
                 };
             };
             /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
@@ -11231,6 +11872,197 @@ export interface operations {
                      * @example {
                      *       "message": "Sua sessão expirou. Entre novamente.",
                      *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    endOtherSessions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Outras sessões encerradas. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    endSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sessão encerrada. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conta de demonstração (`PROTECTED_ACCOUNT`); não pode ser alterada. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Esta é uma conta de demonstração e não pode ser alterada.",
+                     *       "code": "PROTECTED_ACCOUNT"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sessão não encontrada.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description É a sessão em uso (`CURRENT_SESSION`). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "CURRENT_SESSION",
+                     *       "message": "Esta é a sessão em uso. Para encerrá-la, saia da conta."
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];

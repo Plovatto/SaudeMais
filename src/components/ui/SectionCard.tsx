@@ -1,28 +1,47 @@
 import { useId, type ComponentProps, type ReactNode } from 'react';
-import { Card } from './Card';
+import { cx } from '@lib/cx';
 
 export interface SectionCardProps extends Omit<ComponentProps<'section'>, 'title'> {
   title: string;
   description?: string;
   action?: ReactNode;
+  flush?: boolean;
+  raised?: boolean;
 }
 
-export function SectionCard({ title, description, action, children, ...props }: SectionCardProps) {
+export function SectionCard({
+  title,
+  description,
+  action,
+  flush = false,
+  raised = false,
+  className,
+  children,
+  ...props
+}: SectionCardProps) {
   const titleId = useId();
   return (
-    <section aria-labelledby={titleId} {...props}>
-      <Card className="flex flex-col gap-5">
-        <header className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-col gap-1">
-            <h2 id={titleId} className="text-text text-[0.9375rem] font-semibold tracking-[-0.01em]">
-              {title}
-            </h2>
-            {description && <p className="text-text-muted text-[0.8125rem]">{description}</p>}
-          </div>
-          {action}
-        </header>
+    <section
+      aria-labelledby={titleId}
+      className={cx(
+        'rounded-card border-border bg-surface min-w-0 border',
+        raised ? 'shadow-raised' : 'shadow-card',
+        className,
+      )}
+      {...props}
+    >
+      <header className="flex min-h-14 flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3.5 lg:px-5">
+        <div className="flex min-w-0 flex-1 basis-40 flex-col gap-0.5">
+          <h2 id={titleId} className="text-text text-[0.9375rem] font-semibold tracking-[-0.01em]">
+            {title}
+          </h2>
+          {description && <p className="text-text-muted text-[0.8125rem]">{description}</p>}
+        </div>
+        {action}
+      </header>
+      <div className={flush ? 'border-border border-t' : 'flex flex-col gap-4 px-4 pb-5 lg:px-5'}>
         {children}
-      </Card>
+      </div>
     </section>
   );
 }

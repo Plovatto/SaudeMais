@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { PatientBooking, UserNotification } from '@lib/api/models';
 import { renderApp, serveApi, type MockResponse } from '@/test/render-app';
-import type { PatientHome } from './patient-home-api';
+import type { PatientHome, ResultSummary } from './patient-home-api';
 
 const FUTURE = '2030-07-19T18:30:00.000Z';
 const HOUR_MS = 3_600_000;
@@ -56,13 +56,29 @@ const homeBody = ({
   metrics,
 });
 
-const serve = (respond: () => MockResponse) => serveApi(['patient'], { '/api/patient/home': respond });
+const result = (bookingId: string, name: string, summary: ResultSummary['summary']): ResultSummary => ({
+  bookingId,
+  examType: { id: `t-${bookingId}`, name, kind: summary ? 'lab' : 'imaging' },
+  startsAt: '2026-11-04T11:00:00.000Z',
+  issuedAt: '2026-11-06T19:20:00.000Z',
+  amended: false,
+  summary,
+});
 
-const serveHome = (home?: Partial<Home>) => serve(() => ({ status: 200, body: homeBody(home) }));
+const resultsBody = (items: ResultSummary[] = []) => ({ items, page: 1, pageSize: 3, total: items.length });
+
+const serve = (respond: () => MockResponse, results: ResultSummary[] = []) =>
+  serveApi(['patient'], {
+    '/api/patient/home': respond,
+    '/api/patient/exam-results': () => ({ status: 200, body: resultsBody(results) }),
+  });
+
+const serveHome = (home?: Partial<Home>, results?: ResultSummary[]) =>
+  serve(() => ({ status: 200, body: homeBody(home) }), results);
 
 const banner = async () => within(await screen.findByRole('region', { name: 'Última notificação' }));
 
-const upcoming = async () => within(await screen.findByRole('region', { name: 'Próximos agendamentos' }));
+const later = async () => within(await screen.findByRole('region', { name: 'Depois disso' }));
 
 describe('patient home', { timeout: 15_000 }, () => {
   it('shows the last notification with its relative time', async () => {
@@ -162,18 +178,51 @@ describe('patient home', { timeout: 15_000 }, () => {
     serveHome({ upcoming: [booking('b1')] });
     renderApp('/paciente');
 
-    const region = await upcoming();
-    expect(await region.findByText('Dr. João Silveira')).toBeVisible();
+    expect(await screen.findByRole('link', { name: /^Próximo compromisso/ })).toBeVisible();
     expect(screen.queryByRole('region', { name: 'Última notificação' })).not.toBeInTheDocument();
   });
 
-  it('lists the upcoming bookings with a link to all of them', async () => {
+  it('highlights the next confirmed booking and links to its details', async () => {
+    serveHome({ upcoming: [booking('b0', { status: 'pending' }), booking('b1')] });
+    renderApp('/paciente');
+
+    const next = await screen.findByRole('link', {
+      name: 'Próximo compromisso: Sex, 19/07 · 15:30, Dr. João Silveira. Ver detalhes',
+    });
+    expect(next).toHaveAttribute('href', '/paciente/agendamentos?id=b1');
+    expect(within(next).getByText('Confirmado')).toBeVisible();
+    expect(within(next).getByText('Dr. João Silveira · Rotina')).toBeVisible();
+  });
+
+  it.each([
+    [
+      'one pending request',
+      [booking('b1', { status: 'pending' })],
+      '1 pedido aguarda a confirmação do médico.',
+    ],
+    [
+      'two pending requests',
+      [booking('b1', { status: 'pending' }), booking('b2', { status: 'pending' })],
+      '2 pedidos aguardam a confirmação do médico.',
+    ],
+    ['nothing booked', [], 'Agende uma consulta ou um exame.'],
+  ])('explains the next booking with %s', async (_case, items, text) => {
+    serveHome({ upcoming: items });
+    renderApp('/paciente');
+
+    const region = within(await screen.findByRole('region', { name: 'Próximo compromisso' }));
+    expect(region.getByText('Nenhum compromisso confirmado')).toBeVisible();
+    expect(region.getByText(text)).toBeVisible();
+  });
+
+  it('lists what comes after the next booking with a link to everything', async () => {
     serveHome({
       upcoming: [
         booking('b1'),
         booking('b2', {
           kind: 'exam',
           status: 'pending',
+          visitType: null,
           doctor: null,
           specialty: null,
           examType: { id: 'e1', name: 'Ultrassom' },
@@ -181,41 +230,31 @@ describe('patient home', { timeout: 15_000 }, () => {
         }),
       ],
     });
-    const { user, router } = renderApp('/paciente');
-
-    const region = await upcoming();
-    const [first, second] = (await region.findAllByRole('listitem')).map((item) => within(item));
-    expect(first?.getByText('Dr. João Silveira')).toBeVisible();
-    expect(first?.getByText('Cardiologia')).toBeVisible();
-    expect(first?.getByText('19/07/2030, 15:30')).toBeVisible();
-    expect(first?.getByText('Confirmado')).toBeVisible();
-    expect(second?.getByText('Exame · Ultrassom')).toBeVisible();
-    expect(second?.getByText('Pendente')).toBeVisible();
-
-    await user.click(region.getByRole('link', { name: 'Ver todos os agendamentos' }));
-    await waitFor(() => expect(router.state.location.pathname).toBe('/paciente/agendamentos'));
-  });
-
-  it('shows an empty state without upcoming bookings', async () => {
-    serveHome();
     renderApp('/paciente');
 
-    const region = await upcoming();
-    expect(await region.findByText('Nenhum agendamento futuro')).toBeVisible();
-    expect(region.getByText('Agende uma consulta ou um exame para acompanhar por aqui.')).toBeVisible();
-    expect(region.queryByRole('list')).not.toBeInTheDocument();
-    expect(region.getByRole('link', { name: 'Ver todos os agendamentos' })).toBeVisible();
+    const region = await later();
+    const row = await region.findByRole('link', { name: /Ultrassom/ });
+    expect(row).toHaveAttribute('href', '/paciente/agendamentos?id=b2');
+    expect(within(row).getByText('15:30 · Exame · Lab. Central')).toBeVisible();
+    expect(within(row).getByText('Pendente')).toBeVisible();
+    expect(region.getByRole('link', { name: 'Ver todos' })).toHaveAttribute('href', '/paciente/agendamentos');
+  });
+
+  it('says when nothing else is booked', async () => {
+    serveHome({ upcoming: [booking('b1')] });
+    renderApp('/paciente');
+
+    expect(await (await later()).findByText('Nada mais agendado.')).toBeVisible();
   });
 
   it('marks the list as busy while it loads', async () => {
     const { fetchMock } = serveHome();
-    fetchMock.mockImplementationOnce(() => new Promise<Response>(() => undefined));
+    fetchMock.mockImplementation(() => new Promise<Response>(() => undefined));
     renderApp('/paciente', { signedInAs: ['patient'] });
 
-    const region = await screen.findByRole('region', { name: 'Próximos agendamentos' });
+    const region = await screen.findByRole('region', { name: 'Depois disso' });
     expect(region).toHaveAttribute('aria-busy', 'true');
     expect(within(region).queryByRole('list')).not.toBeInTheDocument();
-    expect(screen.queryByRole('region', { name: 'Última notificação' })).not.toBeInTheDocument();
   });
 
   it('shows the error and loads again on retry', async () => {
@@ -225,13 +264,13 @@ describe('patient home', { timeout: 15_000 }, () => {
     );
     const { user } = renderApp('/paciente');
 
-    const region = await upcoming();
-    const retry = await region.findByRole('button', { name: 'Tentar de novo' });
-    expect(region.getByRole('alert')).toHaveTextContent(/\S/);
+    const retry = await screen.findByRole('button', { name: 'Tentar de novo' });
+    expect(within(retry.parentElement as HTMLElement).getByRole('alert')).toHaveTextContent(/\S/);
+    expect((await later()).getByText('Não foi possível carregar os agendamentos.')).toBeVisible();
     available = true;
     await user.click(retry);
 
-    expect(await region.findByText('Dr. João Silveira')).toBeVisible();
+    expect(await screen.findByRole('link', { name: /^Próximo compromisso/ })).toBeVisible();
   });
 
   it('shows the health measures as not recorded yet', async () => {
@@ -239,10 +278,7 @@ describe('patient home', { timeout: 15_000 }, () => {
     renderApp('/paciente');
 
     const region = within(await screen.findByRole('region', { name: 'Minha saúde' }));
-    expect(region.getAllByRole('term').map((term) => term.textContent)).toEqual([
-      'Pressão arterial',
-      'Peso atual',
-    ]);
+    expect(region.getAllByRole('term').map((term) => term.textContent)).toEqual(['Pressão arterial', 'Peso']);
     expect(await region.findByText(/depois que o médico registrar suas consultas/)).toBeVisible();
     region.getAllByRole('definition').forEach((value) => expect(value).toHaveTextContent('—Sem registro'));
   });
@@ -263,28 +299,54 @@ describe('patient home', { timeout: 15_000 }, () => {
     expect(since.tagName).toBe('TIME');
     expect(since).toHaveAttribute('datetime', pressureAt);
     const [pressure, weight] = region.getAllByRole('definition');
-    expect(pressure).toHaveTextContent('118/76 mmHghá 3 dias');
-    expect(weight).toHaveTextContent(/^72,4 kgem \d{2}\/\d{2}\/\d{4}$/);
+    expect(pressure).toHaveTextContent('118/76 mmHg');
+    expect(weight).toHaveTextContent('72,4 kg');
+    expect(region.getByText(/^em \d{2}\/\d{2}\/\d{4}$/)).toBeVisible();
     expect(region.queryByText(/depois que o médico registrar suas consultas/)).not.toBeInTheDocument();
   });
 
   it('keeps a measure without a record when only the other one exists', async () => {
-    serveHome({
-      metrics: { bloodPressure: null, weight: { kg: 80, recordedAt: new Date().toISOString() } },
-    });
+    serveHome({ metrics: { bloodPressure: null, weight: { kg: 80, recordedAt: new Date().toISOString() } } });
     renderApp('/paciente');
 
     const region = within(await screen.findByRole('region', { name: 'Minha saúde' }));
     await region.findByText('agora');
     const [pressure, weight] = region.getAllByRole('definition');
     expect(pressure).toHaveTextContent('—Sem registro');
-    expect(weight).toHaveTextContent('80 kgagora');
-    expect(region.queryByText(/depois que o médico registrar suas consultas/)).not.toBeInTheDocument();
+    expect(weight).toHaveTextContent('80 kg');
+  });
+
+  it('lists the recent results with how many items are out of range', async () => {
+    serveHome({}, [
+      result('r1', 'Hemograma', { items: 8, outOfRange: 2, flagged: ['Hematócrito', 'Leucócitos'] }),
+      result('r2', 'Glicemia', { items: 1, outOfRange: 1, flagged: ['Glicose'] }),
+      result('r3', 'Colesterol', { items: 4, outOfRange: 0, flagged: [] }),
+      result('r4', 'Raio-X', null),
+    ]);
+    renderApp('/paciente');
+
+    const region = within(await screen.findByRole('region', { name: 'Resultados recentes' }));
+    const links = await region.findAllByRole('link');
+    expect(links.map((link) => link.textContent)).toEqual([
+      'Hemograma04/11 · 2 itens fora da referência',
+      'Glicemia04/11 · 1 item fora da referência',
+      'Colesterol04/11 · dentro da referência',
+      'Raio-X04/11 · laudo disponível',
+    ]);
+    expect(links[0]).toHaveAttribute('href', '/paciente/exames/r1/resultado');
+  });
+
+  it('says when no result is ready yet', async () => {
+    serveHome();
+    renderApp('/paciente');
+
+    const region = within(await screen.findByRole('region', { name: 'Resultados recentes' }));
+    expect(await region.findByText('Os resultados aparecem aqui quando ficarem prontos.')).toBeVisible();
   });
 
   it.each([
-    ['Agendar Consulta', '/paciente/consultas/nova'],
-    ['Agendar Exame', '/paciente/exames/novo'],
+    [/^Agendar consulta/, '/paciente/consultas/nova'],
+    [/^Agendar exame/, '/paciente/exames/novo'],
   ])('links %s to %s', async (name, path) => {
     serveHome();
     renderApp('/paciente');

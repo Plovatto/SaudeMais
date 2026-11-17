@@ -801,6 +801,25 @@
             ],
             "description": "Telefone com DDD. Números brasileiros sem código do país ganham `+55`; é gravado em E.164. Envie `null` para remover.",
             "example": "(11) 98765-4321"
+          },
+          "birthDate": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  ""
+                ]
+              },
+              {
+                "type": "string",
+                "format": "date"
+              }
+            ],
+            "description": "Data de nascimento (AAAA-MM-DD), de 1900-01-01 até hoje no fuso de São Paulo. Envie `null` para remover.",
+            "example": "1986-03-12"
           }
         },
         "additionalProperties": false
@@ -941,6 +960,39 @@
           "email",
           "phone",
           "roles"
+        ]
+      },
+      "Profile": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/User"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "birthDate": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date",
+                "description": "Data de nascimento, se informada.",
+                "example": "1986-03-12"
+              },
+              "passwordChangedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "Última troca de senha; nula se a senha nunca foi trocada."
+              }
+            },
+            "required": [
+              "birthDate",
+              "passwordChangedAt"
+            ]
+          }
         ]
       },
       "LoginResponse": {
@@ -3039,6 +3091,89 @@
           }
         ]
       },
+      "EmailPreference": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string",
+            "enum": [
+              "booking_reminder",
+              "booking_decision",
+              "exam_result",
+              "appointment_request",
+              "appointment_cancellation",
+              "user_registration"
+            ],
+            "description": "Assunto do aviso: `booking_reminder` (lembrete 24 horas antes), `booking_decision` (confirmação, cancelamento ou pedido não confirmado), `exam_result` (resultado disponível), `appointment_request` (pedido novo ou reagendado), `appointment_cancellation` (consulta cancelada pelo paciente ou pela administração) e `user_registration` (conta nova).",
+            "example": "booking_reminder"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "patient",
+              "doctor",
+              "admin"
+            ],
+            "description": "Perfil a que o aviso pertence.",
+            "example": "patient"
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Se o e-mail é enviado. Sem escolha gravada, vale `true`."
+          }
+        },
+        "required": [
+          "topic",
+          "role",
+          "enabled"
+        ]
+      },
+      "UpdateEmailPreferencesRequest": {
+        "type": "object",
+        "properties": {
+          "preferences": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "topic": {
+                  "type": "string",
+                  "enum": [
+                    "booking_reminder",
+                    "booking_decision",
+                    "exam_result",
+                    "appointment_request",
+                    "appointment_cancellation",
+                    "user_registration"
+                  ],
+                  "description": "Assunto do aviso: `booking_reminder` (lembrete 24 horas antes), `booking_decision` (confirmação, cancelamento ou pedido não confirmado), `exam_result` (resultado disponível), `appointment_request` (pedido novo ou reagendado), `appointment_cancellation` (consulta cancelada pelo paciente ou pela administração) e `user_registration` (conta nova).",
+                  "example": "booking_reminder"
+                },
+                "enabled": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "topic",
+                "enabled"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 6,
+            "example": [
+              {
+                "topic": "booking_reminder",
+                "enabled": false
+              }
+            ]
+          }
+        },
+        "required": [
+          "preferences"
+        ],
+        "additionalProperties": false
+      },
       "ExamAvailability": {
         "type": "object",
         "properties": {
@@ -3820,12 +3955,45 @@
                         "critical"
                       ],
                       "description": "Indicador do valor em relação à faixa de referência."
+                    },
+                    "range": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "low": {
+                          "type": "number"
+                        },
+                        "high": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "low",
+                        "high"
+                      ],
+                      "description": "Faixa numérica lida de `referenceRange`; nula quando a referência não é um intervalo \"mínimo a máximo\".",
+                      "example": {
+                        "low": 12,
+                        "high": 16
+                      }
+                    },
+                    "about": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Explicação em linguagem simples do que o item mede; nula quando o item não está no glossário.",
+                      "example": "Proteína dentro dos glóbulos vermelhos que carrega o oxigênio. Quando está baixa, pode indicar anemia."
                     }
                   },
                   "required": [
                     "name",
                     "value",
-                    "flag"
+                    "flag",
+                    "range",
+                    "about"
                   ],
                   "additionalProperties": false
                 },
@@ -3931,12 +4099,45 @@
                           "critical"
                         ],
                         "description": "Indicador do valor em relação à faixa de referência."
+                      },
+                      "range": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "properties": {
+                          "low": {
+                            "type": "number"
+                          },
+                          "high": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "low",
+                          "high"
+                        ],
+                        "description": "Faixa numérica lida de `referenceRange`; nula quando a referência não é um intervalo \"mínimo a máximo\".",
+                        "example": {
+                          "low": 12,
+                          "high": 16
+                        }
+                      },
+                      "about": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "Explicação em linguagem simples do que o item mede; nula quando o item não está no glossário.",
+                        "example": "Proteína dentro dos glóbulos vermelhos que carrega o oxigênio. Quando está baixa, pode indicar anemia."
                       }
                     },
                     "required": [
                       "name",
                       "value",
-                      "flag"
+                      "flag",
+                      "range",
+                      "about"
                     ],
                     "additionalProperties": false
                   },
@@ -3976,6 +4177,127 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ExamResult"
+            }
+          },
+          "page": {
+            "type": "integer"
+          },
+          "pageSize": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ]
+      },
+      "ExamResultSummary": {
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "examType": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string",
+                "maxLength": 80,
+                "example": "Hemograma"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "lab",
+                  "imaging"
+                ],
+                "description": "`lab` para exames laboratoriais, `imaging` para imagem."
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "kind"
+            ]
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Início do exame.",
+            "example": "2026-11-04T11:00:00.000Z"
+          },
+          "issuedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Emissão da versão atual no laboratório."
+          },
+          "amended": {
+            "type": "boolean",
+            "description": "Se a versão atual é uma retificação."
+          },
+          "summary": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "example": 8
+              },
+              "outOfRange": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Itens com indicador diferente de `normal`.",
+                "example": 2
+              },
+              "flagged": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Nomes dos itens fora da referência, na ordem do laudo.",
+                "example": [
+                  "Hematócrito",
+                  "Leucócitos"
+                ]
+              }
+            },
+            "required": [
+              "items",
+              "outOfRange",
+              "flagged"
+            ],
+            "description": "Contagem dos itens da versão atual; nula em exame de imagem."
+          }
+        },
+        "required": [
+          "bookingId",
+          "examType",
+          "startsAt",
+          "issuedAt",
+          "amended",
+          "summary"
+        ]
+      },
+      "ExamResultSummaryPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExamResultSummary"
             }
           },
           "page": {
@@ -10237,6 +10559,202 @@
         }
       }
     },
+    "/api/me/email-preferences": {
+      "get": {
+        "operationId": "listEmailPreferences",
+        "summary": "Ver os avisos por e-mail",
+        "description": "Lista os avisos por e-mail dos perfis da conta, cada um com o perfil a que pertence e se está ligado. Sem escolha gravada, o aviso vem ligado. Os e-mails saem junto com os avisos do app e o lembrete sai até 24 horas antes de consultas e exames confirmados. Contas de demonstração e desativadas não recebem e-mail. Limite: 120 requisições de perfil por minuto por IP.",
+        "tags": [
+          "Perfil"
+        ],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Avisos por e-mail da conta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EmailPreference"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada (`UNAUTHENTICATED`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Sua sessão expirou. Entre novamente.",
+                  "code": "UNAUTHENTICATED"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateEmailPreferences",
+        "summary": "Ligar ou desligar avisos por e-mail",
+        "description": "Grava a escolha de cada aviso enviado e devolve a lista completa. Avisos não enviados ficam como estavam. Só aceita avisos dos perfis da conta. Limite: 120 requisições de perfil por minuto por IP.",
+        "tags": [
+          "Perfil"
+        ],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEmailPreferencesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Avisos por e-mail atualizados.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EmailPreference"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Dados inválidos.",
+                  "code": "VALIDATION_ERROR",
+                  "fields": {
+                    "email": "Informe um e-mail válido."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada (`UNAUTHENTICATED`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Sua sessão expirou. Entre novamente.",
+                  "code": "UNAUTHENTICATED"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Conta de demonstração (`PROTECTED_ACCOUNT`); não pode ser alterada.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Esta é uma conta de demonstração e não pode ser alterada.",
+                  "code": "PROTECTED_ACCOUNT"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Aviso de um perfil que a conta não tem (`TOPIC_NOT_AVAILABLE`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOPIC_NOT_AVAILABLE",
+                  "message": "Este aviso não pertence a nenhum perfil da sua conta."
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/exam-availability": {
       "get": {
         "operationId": "getExamAvailability",
@@ -10973,6 +11491,264 @@
                   "fields": {
                     "newStartsAt": "Escolha um horário diferente do atual."
                   }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patient/exam-results": {
+      "get": {
+        "operationId": "listPatientExamResults",
+        "summary": "Listar os resultados de exame",
+        "description": "Resultados de exame do paciente logado, do exame mais recente para o mais antigo, cada um com o tipo de exame, as datas e um resumo da versão atual: quantos itens há e quais estão fora da referência (indicador diferente de `normal`). Exame de imagem vem com `summary` nulo. Para os itens, o laudo e as versões anteriores, use `GET /api/patient/exam-results/{bookingId}`. Cada resultado devolvido fica na auditoria como `exam_result.read`, só com o exame e a versão atual, nunca com o conteúdo. Limite: 120 requisições por minuto por IP.",
+        "tags": [
+          "Paciente"
+        ],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            },
+            "required": false,
+            "name": "pageSize",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Página de resultados do paciente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamResultSummaryPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Dados inválidos.",
+                  "code": "VALIDATION_ERROR",
+                  "fields": {
+                    "email": "Informe um e-mail válido."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada (`UNAUTHENTICATED`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Sua sessão expirou. Entre novamente.",
+                  "code": "UNAUTHENTICATED"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A conta não tem o perfil exigido (`FORBIDDEN`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Você não tem acesso a esta área.",
+                  "code": "FORBIDDEN"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patient/exam-results/{bookingId}/pdf": {
+      "get": {
+        "operationId": "downloadPatientExamResultPdf",
+        "tags": [
+          "Paciente"
+        ],
+        "summary": "Baixar o laudo em PDF",
+        "description": "Gera o laudo em PDF da versão atual do exame `bookingId` do paciente logado: unidade, nome do paciente, código do exame, datas e os itens com valor, referência e indicador, ou o laudo do exame de imagem. Responde como anexo (`Content-Disposition: attachment; filename=laudo-<código>.pdf`). Exame de outra pessoa, consulta ou exame sem resultado respondem 404. Cada laudo gerado fica na auditoria como `exam_result.read`, como na leitura. Limite: 20 laudos por minuto por IP.",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Laudo em PDF.",
+            "headers": {
+              "Content-Disposition": {
+                "description": "Sempre `attachment`, com o nome `laudo-<código do exame>.pdf`.",
+                "schema": {
+                  "type": "string",
+                  "example": "attachment; filename=laudo-EX-7F3K2Q.pdf"
+                }
+              }
+            },
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Dados inválidos.",
+                  "code": "VALIDATION_ERROR",
+                  "fields": {
+                    "email": "Informe um e-mail válido."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada (`UNAUTHENTICATED`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Sua sessão expirou. Entre novamente.",
+                  "code": "UNAUTHENTICATED"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A conta não tem o perfil exigido (`FORBIDDEN`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Você não tem acesso a esta área.",
+                  "code": "FORBIDDEN"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Registro inexistente (`NOT_FOUND`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Resultado não encontrado.",
+                  "code": "NOT_FOUND"
                 },
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
@@ -13101,7 +13877,7 @@
           "Perfil"
         ],
         "summary": "Ver os próprios dados",
-        "description": "Devolve os dados e os perfis da conta dona do token. Limite: 120 leituras de perfil por minuto por IP.",
+        "description": "Devolve os dados e os perfis da conta dona do token, com a data de nascimento e a data da última troca de senha. Limite: 120 leituras de perfil por minuto por IP.",
         "security": [
           {
             "sessionAuth": []
@@ -13113,7 +13889,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/User"
+                  "$ref": "#/components/schemas/Profile"
                 }
               }
             }
@@ -13167,8 +13943,8 @@
         "tags": [
           "Perfil"
         ],
-        "summary": "Alterar nome ou telefone",
-        "description": "Altera só os campos enviados. O e-mail não pode ser alterado nesta versão. Limite: 120 requisições de perfil por minuto por IP.",
+        "summary": "Alterar nome, telefone ou nascimento",
+        "description": "Altera só os campos enviados. A data de nascimento não pode ser no futuro (fuso de São Paulo) nem antes de 1900. O e-mail não pode ser alterado nesta versão. Limite: 120 requisições de perfil por minuto por IP.",
         "security": [
           {
             "sessionAuth": []
@@ -13189,7 +13965,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/User"
+                  "$ref": "#/components/schemas/Profile"
                 }
               }
             }
@@ -13497,6 +14273,200 @@
                 "example": {
                   "message": "Sua sessão expirou. Entre novamente.",
                   "code": "UNAUTHENTICATED"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/sessions/others": {
+      "delete": {
+        "operationId": "endOtherSessions",
+        "tags": [
+          "Perfil"
+        ],
+        "summary": "Encerrar as outras sessões",
+        "description": "Encerra todas as sessões da conta menos a atual. Na conta de demonstração, compartilhada entre visitantes, não encerra nada. Limite: 60 requisições de sessão por minuto por IP.",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Outras sessões encerradas."
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada (`UNAUTHENTICATED`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Sua sessão expirou. Entre novamente.",
+                  "code": "UNAUTHENTICATED"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/sessions/{id}": {
+      "delete": {
+        "operationId": "endSession",
+        "tags": [
+          "Perfil"
+        ],
+        "summary": "Encerrar uma sessão",
+        "description": "Encerra uma sessão da própria conta, como a de um aparelho que a pessoa não reconhece. A sessão atual não pode ser encerrada por aqui: use o logout. Sessão de outra conta responde 404, sem revelar se existe. Na conta de demonstração a rota é bloqueada. Limite: 60 requisições de sessão por minuto por IP.",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sessão encerrada."
+          },
+          "400": {
+            "description": "Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Dados inválidos.",
+                  "code": "VALIDATION_ERROR",
+                  "fields": {
+                    "email": "Informe um e-mail válido."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada (`UNAUTHENTICATED`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Sua sessão expirou. Entre novamente.",
+                  "code": "UNAUTHENTICATED"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Conta de demonstração (`PROTECTED_ACCOUNT`); não pode ser alterada.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Esta é uma conta de demonstração e não pode ser alterada.",
+                  "code": "PROTECTED_ACCOUNT"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Registro inexistente (`NOT_FOUND`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Sessão não encontrada.",
+                  "code": "NOT_FOUND"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "É a sessão em uso (`CURRENT_SESSION`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "CURRENT_SESSION",
+                  "message": "Esta é a sessão em uso. Para encerrá-la, saia da conta."
                 },
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
