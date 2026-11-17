@@ -1,3 +1,4 @@
+import type { Role } from '@constants/areas';
 import { cx } from '@lib/cx';
 import { hueOf, initials } from '@lib/initials';
 
@@ -10,6 +11,8 @@ const hues = [
   'bg-[#e3f3e6] text-[#23703a] dark:bg-[#16341f] dark:text-[#7fd598]',
 ];
 
+const roleHues: Record<Role, number> = { patient: 0, doctor: 1, admin: 3 };
+
 const sizes = {
   sm: 'size-7 text-[0.6875rem]',
   md: 'size-9 text-[0.8125rem]',
@@ -20,19 +23,20 @@ const sizes = {
 export interface AvatarProps {
   name: string;
   seed?: string;
+  role?: Role;
   size?: keyof typeof sizes;
   square?: boolean;
   className?: string;
 }
 
-export function Avatar({ name, seed = name, size = 'md', square = false, className }: AvatarProps) {
+export function Avatar({ name, seed = name, role, size = 'md', square = false, className }: AvatarProps) {
   return (
     <span
       aria-hidden
       className={cx(
-        'inline-grid shrink-0 place-items-center font-[650] tracking-[0.01em]',
+        'inline-grid shrink-0 place-items-center font-bold tracking-[0.01em]',
         square ? 'rounded-field' : 'rounded-full',
-        hues[hueOf(seed)],
+        hues[role ? roleHues[role] : hueOf(seed)],
         sizes[size],
         className,
       )}

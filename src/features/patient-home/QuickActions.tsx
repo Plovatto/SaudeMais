@@ -45,12 +45,12 @@ export function QuickActions() {
               <Icon aria-hidden className="size-[22px]" />
             </span>
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span className="text-[0.96875rem] font-[650] tracking-[-0.01em] @min-[560px]:text-[1.0625rem]">
+              <span className="text-[0.96875rem] font-bold tracking-[-0.01em] @min-[560px]:text-[1.0625rem]">
                 {title}
               </span>
               <span
                 className={cx(
-                  'text-xs @min-[560px]:text-[0.8125rem]',
+                  'text-xs/normal @min-[560px]:text-[0.8125rem]',
                   primary ? 'text-on-role' : 'text-text-secondary',
                 )}
               >
