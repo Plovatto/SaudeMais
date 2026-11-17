@@ -43,9 +43,11 @@ function Toast({ toast, onDismiss }: { toast: ToastItem; onDismiss: (id: number)
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
       }}
-      className="rounded-tile bg-text text-surface shadow-card pointer-events-auto flex w-full max-w-sm items-center gap-3 py-1 ps-4 pe-1 text-sm font-medium"
+      className="bg-text text-surface shadow-overlay motion-safe:animate-rise pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-[14px] py-1 ps-3 pe-1 text-[0.8125rem] font-medium"
     >
-      <IconSlot className="text-lg">{tones[toast.tone].icon}</IconSlot>
+      <IconSlot className="bg-surface/12 size-8 justify-center rounded-[9px] text-base">
+        {tones[toast.tone].icon}
+      </IconSlot>
       <p className="flex-1 py-2">
         <span className="sr-only">{tones[toast.tone].prefix}</span>
         {toast.message}

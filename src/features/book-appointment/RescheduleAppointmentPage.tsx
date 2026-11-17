@@ -1,4 +1,3 @@
-import { LuCalendarSync } from 'react-icons/lu';
 import { ReschedulePage } from '@components/booking-form/ReschedulePage';
 import { visitTypeLabels } from '@constants/visit-types';
 import { queryKeys } from '@lib/query-keys';
@@ -11,7 +10,6 @@ export function RescheduleAppointmentPage() {
       kind="appointment"
       title="Reagendar consulta"
       subtitle="Escolha a nova data e o novo horário"
-      icon={<LuCalendarSync />}
       bookedTitle="Consulta reagendada"
       describe={describeAppointment}
       load={bookingApi.detail}

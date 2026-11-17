@@ -1,21 +1,28 @@
 import { cx } from '@lib/cx';
 
-export const disabledState = 'unavailable:cursor-not-allowed unavailable:opacity-50';
+export const disabledState = 'unavailable:cursor-not-allowed unavailable:opacity-45 unavailable:shadow-none';
 
 export const buttonVariants = {
-  primary: 'bg-role-strong text-on-role shadow-button can-hover:bg-role-strong-hover',
-  secondary: 'border border-role-strong bg-surface text-role-text can-hover:bg-role-soft',
-  ghost: 'text-role-text can-hover:bg-role-soft',
-  danger: 'bg-danger-strong text-on-danger shadow-button can-hover:bg-danger-strong-hover',
-  'danger-outline': 'border border-danger bg-surface text-danger-text can-hover:bg-danger-soft',
-  'success-outline': 'border border-success bg-success-soft/50 text-success-text can-hover:bg-success-soft',
+  primary:
+    'border border-transparent bg-role-strong text-on-role shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(16_42_41/0.12),0_4px_12px_-4px_var(--role-soft-strong)] can-hover:bg-role-strong-hover',
+  secondary:
+    'border border-border-strong bg-surface text-text shadow-button can-hover:border-border-field can-hover:bg-surface-muted',
+  ghost: 'border border-transparent text-role-text can-hover:bg-role-soft',
+  soft: 'border border-transparent bg-role-soft text-role-text can-hover:bg-role-soft-strong',
+  danger:
+    'border border-transparent bg-danger-strong text-on-danger shadow-button can-hover:bg-danger-strong-hover',
+  'danger-outline':
+    'border border-border-strong bg-surface text-danger-text shadow-button can-hover:border-danger can-hover:bg-danger-soft',
+  'danger-ghost': 'border border-transparent text-danger-text can-hover:bg-danger-soft',
+  'success-outline': 'border border-success bg-success-soft text-success-text can-hover:bg-success-soft',
 };
 
 export type ButtonVariant = keyof typeof buttonVariants;
 
 export const buttonSizes = {
-  md: 'min-h-11 px-4 text-[0.9375rem] font-semibold',
-  lg: 'min-h-[50px] px-6 text-lg font-bold',
+  sm: 'min-h-9 rounded-lg px-3 text-[0.8125rem] font-semibold lg:min-h-8',
+  md: 'min-h-11 rounded-field px-4 text-sm font-semibold lg:min-h-10',
+  lg: 'min-h-[50px] rounded-tile px-6 text-[0.9375rem] font-semibold lg:min-h-12',
 };
 
 export interface ButtonStyle {
@@ -26,7 +33,7 @@ export interface ButtonStyle {
 
 export function buttonClass({ variant = 'primary', size = 'md', fullWidth = false }: ButtonStyle): string {
   return cx(
-    'inline-flex items-center justify-center gap-2 rounded-field transition-[background-color,translate] select-none pressable:translate-y-px',
+    'inline-flex items-center justify-center gap-2 whitespace-nowrap transition-[background-color,border-color,box-shadow,translate] duration-150 select-none pressable:translate-y-px',
     disabledState,
     buttonVariants[variant],
     buttonSizes[size],
@@ -35,29 +42,36 @@ export function buttonClass({ variant = 'primary', size = 'md', fullWidth = fals
 }
 
 export const squareButton = cx(
-  'inline-flex size-11 shrink-0 items-center justify-center rounded-field transition-colors',
+  'relative inline-flex size-10 shrink-0 items-center justify-center rounded-field transition-colors duration-150',
   disabledState,
 );
 
 export const controlInput =
-  'min-w-0 flex-1 bg-transparent py-3 text-base outline-none focus-visible:outline-none disabled:cursor-not-allowed';
+  'min-w-0 flex-1 bg-transparent py-2.5 text-[0.9375rem] outline-none focus-visible:outline-none disabled:cursor-not-allowed lg:text-sm';
 
 export function controlBox(invalid: boolean): string {
   return cx(
-    'flex min-h-12 items-center gap-2.5 rounded-field border bg-surface-muted px-3.5 text-text transition-colors has-[:is(input,select,textarea):focus-visible]:outline-2 has-[:is(input,select,textarea):focus-visible]:outline-offset-2 has-[:is(input,select,textarea):focus-visible]:outline-focus has-[:is(input,select,textarea):disabled]:cursor-not-allowed has-[:is(input,select,textarea):disabled]:opacity-60',
-    invalid ? 'border-danger' : 'border-border-field can-hover:border-text-secondary',
+    'flex min-h-[50px] items-center gap-2.5 rounded-tile border bg-surface px-3 text-text shadow-field transition-[border-color,box-shadow] duration-150 lg:min-h-[42px] has-[:is(input,select,textarea):focus-visible]:border-role-strong has-[:is(input,select,textarea):focus-visible]:shadow-[0_0_0_3px_var(--role-soft-strong)] has-[:is(input,select,textarea):disabled]:cursor-not-allowed has-[:is(input,select,textarea):disabled]:bg-surface-muted has-[:is(input,select,textarea):disabled]:shadow-none has-[:is(input,select,textarea):disabled]:opacity-60',
+    invalid
+      ? 'border-danger shadow-[0_0_0_3px_var(--danger-soft)]'
+      : 'border-border-strong can-hover:border-border-field',
   );
 }
 
 export function floatingPanel(align: 'start' | 'end'): string {
   return cx(
-    'absolute top-full z-40 rounded-tile border border-border bg-surface text-text shadow-card',
-    align === 'end' ? 'end-0' : 'start-0',
+    'absolute top-full z-40 origin-top rounded-card border border-border bg-surface text-text shadow-overlay motion-safe:animate-drop',
+    align === 'end' ? 'end-0 origin-top-right' : 'start-0 origin-top-left',
   );
 }
 
 export const pill = {
-  base: 'min-h-11 rounded-full border px-4 text-sm font-semibold transition-colors',
+  base: 'min-h-11 rounded-full border px-4 text-sm font-semibold transition-colors duration-150 lg:min-h-9',
   selected: 'border-role-strong bg-role-strong text-on-role',
-  idle: 'border-border bg-surface text-role-text can-hover:bg-role-soft',
+  idle: 'border-border-strong bg-surface text-text-secondary can-hover:border-role-strong can-hover:text-role-text',
 };
+
+export const tile =
+  'inline-grid size-9 shrink-0 place-items-center rounded-field bg-role-soft text-role-text [&_svg]:size-[18px]';
+
+export const overline = 'text-[0.6875rem] font-semibold tracking-[0.06em] text-text-muted uppercase';

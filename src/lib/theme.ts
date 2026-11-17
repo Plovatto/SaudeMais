@@ -45,3 +45,13 @@ export function followSystemTheme(): () => void {
   query.addEventListener('change', onChange);
   return () => query.removeEventListener('change', onChange);
 }
+
+export function currentTheme(): Theme {
+  return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+}
+
+export function subscribeTheme(onChange: () => void): () => void {
+  const observer = new MutationObserver(onChange);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  return () => observer.disconnect();
+}

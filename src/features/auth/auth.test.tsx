@@ -290,7 +290,7 @@ describe('legal pages', () => {
   it('goes back to the sign-up when opened directly', async () => {
     const { router, user } = renderAt('/termos');
 
-    await user.click(await screen.findByRole('button', { name: 'Voltar' }));
+    await user.click(await screen.findByRole('link', { name: 'Voltar' }));
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/cadastro'));
   });

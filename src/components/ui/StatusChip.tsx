@@ -3,11 +3,11 @@ import { cx } from '@lib/cx';
 import { IconSlot } from './IconSlot';
 
 const tones = {
-  success: 'border-success text-success-text',
-  warning: 'border-warning text-warning-text',
-  danger: 'border-danger text-danger-text',
-  info: 'border-role text-role-text',
-  neutral: 'border-border-field text-text-secondary',
+  success: 'bg-success-soft text-success-text',
+  warning: 'bg-warning-soft text-warning-text',
+  danger: 'bg-danger-soft text-danger-text',
+  info: 'bg-role-soft text-role-text',
+  neutral: 'bg-surface-strong text-text-secondary',
 };
 
 export interface StatusChipProps {
@@ -21,7 +21,8 @@ export function StatusChip({ tone, icon, children, className }: StatusChipProps)
   return (
     <span
       className={cx(
-        'bg-surface inline-flex min-h-6 items-center gap-1 rounded-full border px-2.5 text-xs font-semibold whitespace-nowrap',
+        'inline-flex min-h-6 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold whitespace-nowrap',
+        !icon && 'ps-2 before:size-1.5 before:shrink-0 before:rounded-full before:bg-current',
         tones[tone],
         className,
       )}
