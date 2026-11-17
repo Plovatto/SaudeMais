@@ -1,8 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { NewPasswordFields } from '@components/forms/NewPasswordFields';
-import { Button, FormAlert, PasswordInput, useToast, SectionCard } from '@components/ui';
+import { PasswordStrength } from '@components/forms/PasswordStrength';
+import { Button, Drawer, DrawerBody, DrawerFooter, FormAlert, PasswordInput, useToast } from '@components/ui';
 import { handleProtectedAccount } from '@lib/auth/protected-account';
 import { queryKeys } from '@lib/query-keys';
 import { useFormSubmit } from '@lib/useFormSubmit';
@@ -11,38 +12,44 @@ import { passwordSchema, type PasswordValues } from './profile-schemas';
 
 const emptyPassword: PasswordValues = { currentPassword: '', password: '', passwordConfirmation: '' };
 
-export function PasswordForm({ locked, onProtected }: { locked: boolean; onProtected: () => void }) {
+interface PasswordFormProps {
+  onClose: () => void;
+  onProtected: () => void;
+}
+
+function PasswordForm({ onClose, onProtected }: PasswordFormProps) {
   const queryClient = useQueryClient();
   const { show } = useToast();
   const {
     register,
     handleSubmit,
     setError,
-    reset,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<PasswordValues>({ resolver: zodResolver(passwordSchema), defaultValues: emptyPassword });
+  const [currentPassword, password] = useWatch({ control, name: ['currentPassword', 'password'] });
   const { alert, run } = useFormSubmit(
     setError,
     ['currentPassword', 'password', 'passwordConfirmation'],
-    handleProtectedAccount(onProtected, () => reset(emptyPassword)),
+    handleProtectedAccount(onProtected, onClose),
   );
 
   const onSubmit = handleSubmit((values) =>
     run(async () => {
       await changePassword(values);
-      reset(emptyPassword);
+      onClose();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.session });
       await queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
       show({ message: 'Senha alterada. As outras sessões foram encerradas.', tone: 'success' });
     }),
   );
 
   return (
-    <SectionCard title="Senha" description="Ao trocar a senha, as outras sessões da conta são encerradas.">
-      <form noValidate onSubmit={(event) => void onSubmit(event)} className="flex flex-col gap-5">
+    <form noValidate onSubmit={(event) => void onSubmit(event)} className="flex flex-1 flex-col">
+      <DrawerBody>
         <PasswordInput
           label="Senha atual"
           autoComplete="current-password"
-          disabled={locked}
           error={errors.currentPassword?.message}
           {...register('currentPassword')}
         />
@@ -50,13 +57,29 @@ export function PasswordForm({ locked, onProtected }: { locked: boolean; onProte
           password={register('password')}
           confirmation={register('passwordConfirmation')}
           errors={{ password: errors.password?.message, confirmation: errors.passwordConfirmation?.message }}
-          disabled={locked}
         />
+        <PasswordStrength password={password} current={currentPassword} />
+        <p className="text-text-muted text-xs">
+          Ao trocar a senha, as outras sessões da conta são encerradas.
+        </p>
         {alert && <FormAlert>{alert}</FormAlert>}
-        <Button type="submit" loading={isSubmitting} disabled={locked} className="self-start">
-          Trocar senha
+      </DrawerBody>
+      <DrawerFooter>
+        <Button variant="secondary" onClick={onClose}>
+          Cancelar
         </Button>
-      </form>
-    </SectionCard>
+        <Button type="submit" loading={isSubmitting}>
+          Alterar senha
+        </Button>
+      </DrawerFooter>
+    </form>
+  );
+}
+
+export function PasswordDrawer({ open, ...props }: PasswordFormProps & { open: boolean }) {
+  return (
+    <Drawer open={open} onClose={props.onClose} title="Alterar senha">
+      {open && <PasswordForm {...props} />}
+    </Drawer>
   );
 }

@@ -1,5 +1,13 @@
 import { z } from 'zod';
-import { confirmationMatches, newPasswordFields } from '@lib/validation/account-fields';
+import { todayInSaoPaulo } from '@lib/date';
+import {
+  confirmationMatches,
+  newPasswordFields,
+  personalDataBody,
+  personalDataSchema,
+  personalDataValues,
+} from '@lib/validation/account-fields';
+import type { ProfileBody } from './profile-api';
 
 export const passwordSchema = z
   .object({
@@ -12,3 +20,36 @@ export const passwordSchema = z
   .refine(...confirmationMatches);
 
 export type PasswordValues = z.infer<typeof passwordSchema>;
+
+const EARLIEST_BIRTH_DATE = '1900-01-01';
+
+export const birthDateLimits = () => ({ min: EARLIEST_BIRTH_DATE, max: todayInSaoPaulo() });
+
+export const profileSchema = personalDataSchema.extend({
+  birthDate: z
+    .string()
+    .refine(
+      (value) =>
+        value === '' ||
+        (/^\d{4}-\d{2}-\d{2}$/.test(value) && value >= EARLIEST_BIRTH_DATE && value <= todayInSaoPaulo()),
+      'Informe uma data de nascimento entre 1900 e hoje.',
+    ),
+});
+
+export type ProfileValues = z.infer<typeof profileSchema>;
+
+interface ProfileData {
+  fullName: string;
+  phone: string | null;
+  birthDate: string | null;
+}
+
+export const profileValues = (user: ProfileData): ProfileValues => ({
+  ...personalDataValues(user),
+  birthDate: user.birthDate ?? '',
+});
+
+export const profileBody = (values: ProfileValues, withBirthDate: boolean): ProfileBody => ({
+  ...personalDataBody(values),
+  ...(withBirthDate && { birthDate: values.birthDate || null }),
+});

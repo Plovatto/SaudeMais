@@ -25,3 +25,6 @@ export function describeUserAgent(userAgent: string | null): string {
   if (browser && system) return `${browser} no ${system}`;
   return browser ?? system ?? 'Dispositivo desconhecido';
 }
+
+export const isMobileUserAgent = (userAgent: string | null) =>
+  userAgent !== null && /iPhone|iPad|iPod|Android|Mobile/.test(userAgent);

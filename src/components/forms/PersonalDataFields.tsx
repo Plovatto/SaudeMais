@@ -1,0 +1,38 @@
+import type { UseFormRegisterReturn } from 'react-hook-form';
+import { LuPhone, LuUser } from 'react-icons/lu';
+import { Input } from '@components/ui';
+
+export interface PersonalDataFieldsProps {
+  fullName: UseFormRegisterReturn;
+  phone: UseFormRegisterReturn;
+  errors: { fullName?: string | undefined; phone?: string | undefined };
+  locked: boolean;
+  ownAccount: boolean;
+}
+
+export function PersonalDataFields({ fullName, phone, errors, locked, ownAccount }: PersonalDataFieldsProps) {
+  return (
+    <>
+      <Input
+        label="Nome completo"
+        autoComplete={ownAccount ? 'name' : 'off'}
+        icon={<LuUser />}
+        disabled={locked}
+        error={errors.fullName}
+        {...fullName}
+      />
+      <Input
+        label="Telefone"
+        type="tel"
+        autoComplete={ownAccount ? 'tel' : 'off'}
+        inputMode="tel"
+        placeholder="(99) 99999-9999"
+        hint="Opcional, com DDD. Deixe em branco para remover."
+        icon={<LuPhone />}
+        disabled={locked}
+        error={errors.phone}
+        {...phone}
+      />
+    </>
+  );
+}

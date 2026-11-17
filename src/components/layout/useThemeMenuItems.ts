@@ -1,7 +1,8 @@
-import { createElement, useState } from 'react';
+import { createElement } from 'react';
 import { LuMonitor, LuMoon, LuSun } from 'react-icons/lu';
 import type { MenuItem } from '@components/ui';
-import { getThemePreference, setThemePreference, type ThemePreference } from '@lib/theme';
+import { setThemePreference, type ThemePreference } from '@lib/theme';
+import { useThemePreference } from '@lib/useTheme';
 
 const options = [
   { value: 'light', label: 'Tema claro', icon: LuSun },
@@ -10,15 +11,12 @@ const options = [
 ] as const satisfies readonly { value: ThemePreference; label: string; icon: unknown }[];
 
 export function useThemeMenuItems(): MenuItem[] {
-  const [preference, setPreference] = useState(getThemePreference);
+  const preference = useThemePreference();
   return options.map(({ value, label, icon }) => ({
     label,
     icon: createElement(icon),
     checked: preference === value,
     group: 'Tema',
-    onSelect: () => {
-      setThemePreference(value);
-      setPreference(value);
-    },
+    onSelect: () => setThemePreference(value),
   }));
 }
