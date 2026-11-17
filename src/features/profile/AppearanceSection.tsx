@@ -5,8 +5,8 @@ import { setThemePreference, THEME_OPTIONS, type Theme, type ThemePreference } f
 import { useThemePreference } from '@lib/useTheme';
 
 const mockColors = {
-  light: { background: 'bg-surface-strong', line: 'bg-surface' },
-  dark: { background: 'bg-canvas', line: 'bg-surface-muted' },
+  light: { background: 'bg-surface-strong', bar: 'bg-role-strong', line: 'bg-surface' },
+  dark: { background: 'bg-canvas', bar: 'bg-role', line: 'bg-surface-muted' },
 };
 
 function Mock({ theme, className }: { theme: Theme; className?: string }) {
@@ -19,7 +19,7 @@ function Mock({ theme, className }: { theme: Theme; className?: string }) {
         className,
       )}
     >
-      <i className="bg-role-strong block h-[7px] w-[38%] rounded" />
+      <i className={cx(mockColors[theme].bar, 'block h-[7px] w-[38%] rounded')} />
       {[0, 1].map((line) => (
         <b key={line} className={cx(mockColors[theme].line, 'block h-[11px] rounded')} />
       ))}
