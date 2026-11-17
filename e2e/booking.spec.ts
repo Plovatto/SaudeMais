@@ -36,7 +36,7 @@ test('a new patient signs up, signs in and books an appointment', async ({ page 
   await expectAccessible(page);
   await booked.getByRole('link', { name: 'Ver detalhes' }).click();
 
-  await expect(page.getByRole('tab', { name: /Agendados/, selected: true })).toBeVisible();
+  await expect(page.getByRole('tab', { name: /Próximos/, selected: true })).toBeVisible();
   await expect(bookingCard(page, DOCTOR)).toContainText('Pendente');
   await expectAccessible(page);
 });

@@ -18,6 +18,7 @@ export interface PagedResultsProps<Item> {
   empty: ReactNode;
   children: (items: Item[]) => ReactNode;
   footer?: ReactNode;
+  bare?: boolean;
 }
 
 export function PagedResults<Item>({
@@ -27,6 +28,7 @@ export function PagedResults<Item>({
   empty,
   children,
   footer,
+  bare = false,
 }: PagedResultsProps<Item>) {
   const total = items && query.data ? query.data.total : 0;
 
@@ -48,10 +50,10 @@ export function PagedResults<Item>({
         </div>
       )}
       {query.isError && <QueryError error={query.error} onRetry={() => void query.refetch()} />}
-      {items?.length === 0 && <Card>{empty}</Card>}
+      {items?.length === 0 && (bare ? empty : <Card>{empty}</Card>)}
       {items && items.length > 0 && (
         <>
-          <Card className="p-4 sm:p-6">{children(items)}</Card>
+          {bare ? children(items) : <Card className="p-4 sm:p-6">{children(items)}</Card>}
           <Pagination page={page} totalPages={lastPage} onPageChange={(next) => setPage(next)} />
           {footer}
         </>

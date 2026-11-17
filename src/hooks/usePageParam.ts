@@ -3,6 +3,11 @@ import { useSearchParam } from './useSearchParam';
 
 export const RESET_PAGE = { replace: true, reset: ['pagina'] } as const;
 
+export const resetPageAnd = (keys: readonly string[]) => ({
+  ...RESET_PAGE,
+  reset: [...RESET_PAGE.reset, ...keys],
+});
+
 export interface PageMeta {
   total: number;
   pageSize: number;

@@ -40,6 +40,9 @@ export function statusDisplay(key: StatusKey, viewer: Role): StatusDisplay {
 
 export const hasStarted = (startsAt: string, now = Date.now()) => new Date(startsAt).getTime() <= now;
 
+export const isMuted = (booking: Pick<PatientBooking, 'startsAt' | 'status'>) =>
+  hasStarted(booking.startsAt) || booking.status === 'cancelled';
+
 export function bookingStatus(
   { status, startsAt }: { status: BookingStatus; startsAt: string },
   viewer: Role,
@@ -60,8 +63,3 @@ export function bookingTitle({ kind, doctor, specialty, examType, visitType }: P
 
 export const bookingMeta = (booking: PatientBooking) =>
   [formatTime(booking.startsAt), bookingTitle(booking).kindLabel, booking.unit.name].join(' · ');
-
-export const UPCOMING_EMPTY = {
-  title: 'Nenhum agendamento futuro',
-  description: 'Agende uma consulta ou um exame para acompanhar por aqui.',
-};

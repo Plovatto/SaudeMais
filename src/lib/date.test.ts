@@ -6,7 +6,9 @@ import {
   formatDateTime,
   formatDate,
   formatDay,
+  formatDuration,
   formatLongDay,
+  formatMonth,
   formatRelative,
   formatSince,
   formatShortDay,
@@ -121,5 +123,13 @@ describe('day labels in São Paulo', () => {
     expect(dayTile(instant)).toEqual(tile);
     expect(formatShortDay(instant)).toBe(short);
     expect(formatLongDay(instant)).toBe(long);
+  });
+});
+
+describe('month and duration', () => {
+  it('names the month of a booking in São Paulo and the length in minutes', () => {
+    expect(formatMonth('2026-12-01T01:00:00.000Z')).toBe('Novembro de 2026');
+    expect(formatDuration('2026-11-23T13:00:00.000Z', '2026-11-23T13:30:00.000Z')).toBe('30 minutos');
+    expect(formatDuration('2026-11-23T13:00:00.000Z', '2026-11-23T13:01:00.000Z')).toBe('1 minuto');
   });
 });

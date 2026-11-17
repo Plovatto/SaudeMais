@@ -1,6 +1,8 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { stubMatchMedia } from '@/test/match-media';
 import { renderApp, serveApi, type ApiCall, type MockResponse } from '@/test/render-app';
+import { DESKTOP_QUERY } from '@hooks/useMediaQuery';
 import type { PatientBooking } from '@lib/api/models';
 
 const FUTURE = '2030-01-10T13:00:00.000Z';
@@ -87,16 +89,20 @@ const serve = (lists: Lists, cancel?: () => MockResponse, total?: number) =>
 
 const listCalls = (calls: ApiCall[]) => calls.filter((call) => call.url.pathname === LIST);
 
-const card = async (name: RegExp) => {
-  const header = await screen.findByRole('button', { name });
-  return { header, scope: within(header.closest('li') as HTMLElement) };
+const SHEET = 'Detalhes do agendamento';
+
+type User = ReturnType<typeof renderApp>['user'];
+
+const openDetail = async (user: User, name: RegExp, index = 0) => {
+  const rows = await screen.findAllByRole('button', { name });
+  await user.click(rows[index] as HTMLElement);
+  return within(await screen.findByRole('dialog', { name: SHEET }));
 };
 
-const openCancel = async (user: ReturnType<typeof renderApp>['user']) => {
-  const { header, scope } = await card(/Dr\. João Silveira/);
-  await user.click(header);
-  await user.click(scope.getByRole('button', { name: /^Cancelar/ }));
-  return screen.getByRole('dialog', { name: 'Cancelar consulta?' });
+const openCancel = async (user: User, name = /Dr\. João Silveira/, title = 'Cancelar a consulta?') => {
+  const detail = await openDetail(user, name);
+  await user.click(detail.getByRole('button', { name: 'Cancelar' }));
+  return screen.getByRole('dialog', { name: title });
 };
 
 describe('patient bookings', { timeout: 15_000 }, () => {
@@ -107,18 +113,18 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     });
     const { user, router } = renderApp('/paciente/agendamentos');
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Minhas consultas e exames' })).toBeVisible();
-    const upcoming = await screen.findByRole('tab', { name: /^1 Agendados$/ });
+    expect(await screen.findByRole('heading', { level: 1, name: 'Meus agendamentos' })).toBeVisible();
+    const upcoming = await screen.findByRole('tab', { name: /^Próximos/ });
     expect(upcoming).toHaveAttribute('aria-selected', 'true');
     expect(await screen.findByText('Confirmado')).toBeVisible();
     expect(listCalls(calls)[0]?.url.searchParams.get('scope')).toBe('upcoming');
 
-    await user.click(screen.getByRole('tab', { name: /^1 Realizados$/ }));
+    await user.click(screen.getByRole('tab', { name: /^Histórico/ }));
 
     expect(router.state.location.search).toBe('?aba=realizados');
     expect(screen.queryByText('Confirmado')).not.toBeInTheDocument();
     expect(await screen.findByText('Concluída')).toBeVisible();
-    expect(screen.getByRole('tab', { name: /^1 Realizados$/ })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /^Histórico/ })).toHaveAttribute('aria-selected', 'true');
     expect(listCalls(calls).at(-1)?.url.searchParams.get('scope')).toBe('past');
   });
 
@@ -126,8 +132,24 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     serve({ past: [booking('b2', { status: 'completed', startsAt: PAST, actions: closed })] });
     renderApp('/paciente/agendamentos?aba=realizados');
 
-    expect(await screen.findByRole('tab', { name: /Realizados/ })).toHaveAttribute('aria-selected', 'true');
+    expect(await screen.findByRole('tab', { name: /^Histórico/ })).toHaveAttribute('aria-selected', 'true');
     expect(await screen.findByText('Concluída')).toBeVisible();
+  });
+
+  it('groups the bookings by month and names each row with its day', async () => {
+    serve({
+      upcoming: [
+        booking('b1'),
+        exam('b2', { startsAt: '2030-02-05T12:00:00.000Z', endsAt: '2030-02-05T12:15:00.000Z' }),
+      ],
+    });
+    renderApp('/paciente/agendamentos');
+
+    const list = within(await screen.findByRole('region', { name: 'Lista de agendamentos' }));
+    expect(list.getByText('Janeiro de 2030')).toBeVisible();
+    expect(list.getByText('Fevereiro de 2030')).toBeVisible();
+    expect(list.getAllByRole('button')[0]).toHaveAccessibleName(/Qui, 10\/01,\s*Dr\. João Silveira/);
+    expect(list.getByText('09:00 · Exame · Lab. Central')).toBeVisible();
   });
 
   it('links to the result only for an exam that has one', async () => {
@@ -135,11 +157,13 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     serve({ past: [exam('b1', { ...done, hasResult: true }), exam('b2', done)] });
     const { user, router } = renderApp('/paciente/agendamentos?aba=realizados');
 
-    const links = await screen.findAllByRole('link', { name: /^Ver resultado/ });
-    expect(links).toHaveLength(1);
-    expect(links[0]).toHaveAccessibleName('Ver resultado: Ultrassom, Lab. Central, 10/01/2020, 10:00');
+    let detail = await openDetail(user, /Ultrassom/, 1);
+    expect(detail.queryByRole('link', { name: 'Ver resultado' })).not.toBeInTheDocument();
+    await user.click(detail.getByRole('button', { name: 'Fechar' }));
 
-    await user.click(links[0] as HTMLElement);
+    detail = await openDetail(user, /Ultrassom/, 0);
+    expect(detail.getByText('Sobre o resultado')).toBeVisible();
+    await user.click(detail.getByRole('link', { name: 'Ver resultado' }));
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/paciente/exames/b1/resultado'));
   });
@@ -157,51 +181,111 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     serve({ past: statuses.map(([overrides], index) => booking(`s${index}`, overrides)) });
     renderApp('/paciente/agendamentos?aba=realizados');
 
-    const headers = await screen.findAllByRole('button', { name: /Dr\. João Silveira/ });
-    headers.forEach((header, index) =>
-      expect(within(header).getByText(statuses[index]?.[1] ?? '')).toBeVisible(),
-    );
+    const rows = await screen.findAllByRole('button', { name: /Dr\. João Silveira/ });
+    rows.forEach((row, index) => expect(within(row).getByText(statuses[index]?.[1] ?? '')).toBeVisible());
   });
 
-  it('expands and collapses a booking card', async () => {
+  it('opens the details in a sheet on small screens and closes it', async () => {
     serve({ upcoming: [booking('b1', { notes: 'Consulta de rotina' })] });
-    const { user } = renderApp('/paciente/agendamentos');
+    const { user, router } = renderApp('/paciente/agendamentos');
 
-    const { header, scope } = await card(/Dr\. João Silveira/);
-    expect(header).toHaveAttribute('aria-expanded', 'false');
-    expect(scope.getByText('Rua das Flores, 123')).not.toBeVisible();
-    expect(header.closest('h2')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: SHEET })).not.toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Dr\. João Silveira/ })).toHaveAttribute(
+      'aria-haspopup',
+      'dialog',
+    );
+    const detail = await openDetail(user, /Dr\. João Silveira/);
 
-    await user.click(header);
+    expect(router.state.location.search).toBe('?id=b1');
+    expect(detail.getByRole('heading', { name: 'Dr. João Silveira' })).toBeVisible();
+    expect(detail.getByText('Consulta · Cardiologia · Rotina')).toBeVisible();
+    expect(detail.getByText('Quinta, 10 de janeiro · 10:00')).toBeVisible();
+    expect(detail.getByText('30 minutos')).toBeVisible();
+    expect(detail.getByText('Rua das Flores, 123')).toBeVisible();
+    expect(detail.getByRole('link', { name: '(11) 3333-4444' })).toHaveAttribute('href', 'tel:+551133334444');
+    expect(detail.getByText('Consulta de rotina')).toBeVisible();
+    expect(detail.getByText('Antes de ir')).toBeVisible();
 
-    expect(header).toHaveAttribute('aria-expanded', 'true');
-    expect(scope.getByText('Rua das Flores, 123')).toBeVisible();
-    expect(scope.getByRole('link', { name: '(11) 3333-4444' })).toHaveAttribute('href', 'tel:+551133334444');
-    expect(scope.getByText('Consulta de rotina')).toBeVisible();
-    expect(header).not.toContainElement(scope.getByRole('button', { name: /^Cancelar/ }));
+    await user.click(detail.getByRole('button', { name: 'Fechar' }));
 
-    await user.click(header);
+    expect(router.state.location.search).toBe('');
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: SHEET })).not.toBeInTheDocument());
+  });
 
-    expect(header).toHaveAttribute('aria-expanded', 'false');
-    expect(scope.getByText('Rua das Flores, 123')).not.toBeVisible();
+  it('opens the booking of the address directly', async () => {
+    serve({ upcoming: [booking('b1'), exam('b2')] });
+    renderApp('/paciente/agendamentos?id=b2');
+
+    const detail = within(await screen.findByRole('dialog', { name: SHEET }));
+    expect(detail.getByRole('heading', { name: 'Ultrassom' })).toBeVisible();
+    expect(detail.getByText('EX-123')).toBeVisible();
+  });
+
+  it('forgets a booking of the address that is not in the list', async () => {
+    serve({ upcoming: [booking('b1')] });
+    const { router } = renderApp('/paciente/agendamentos?id=b9');
+
+    await screen.findByRole('button', { name: /Dr\. João Silveira/ });
+    await waitFor(() => expect(router.state.location.search).toBe(''));
+    expect(router.state.historyAction).toBe('REPLACE');
+    expect(screen.queryByRole('dialog', { name: SHEET })).not.toBeInTheDocument();
+  });
+
+  it('does not reopen a cancelled booking on another tab', async () => {
+    const lists: Lists = { upcoming: [booking('b1')], past: [] };
+    serve(lists, () => {
+      lists.past = [booking('b1', { status: 'cancelled', actions: closed })];
+      lists.upcoming = [];
+      return { status: 200, body: {} };
+    });
+    const { user, router } = renderApp('/paciente/agendamentos');
+
+    const dialog = await openCancel(user);
+    await user.click(within(dialog).getByRole('button', { name: 'Cancelar agendamento' }));
+    await screen.findByText('Nada por aqui');
+    await waitFor(() => expect(router.state.location.search).toBe(''));
+    await user.click(screen.getByRole('tab', { name: /^Histórico/ }));
+
+    expect((await screen.findAllByText('Cancelada')).length).toBeGreaterThan(0);
+    expect(router.state.location.search).toBe('?aba=realizados');
+    expect(screen.queryByRole('dialog', { name: SHEET })).not.toBeInTheDocument();
+  });
+
+  it('shows the details beside the list on large screens', async () => {
+    stubMatchMedia((query) => query === DESKTOP_QUERY);
+    serve({ upcoming: [booking('b1'), exam('b2')] });
+    const { user, router } = renderApp('/paciente/agendamentos');
+
+    const first = await screen.findByRole('button', { name: /Dr\. João Silveira/ });
+    expect(first).toHaveAttribute('aria-current', 'true');
+    expect(first).not.toHaveAttribute('aria-haspopup');
+    expect(await screen.findByRole('heading', { name: 'Dr. João Silveira' })).toBeVisible();
+    expect(screen.queryByRole('dialog', { name: SHEET })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Ultrassom/ }));
+
+    expect(router.state.location.search).toBe('?id=b2');
+    expect(await screen.findByRole('heading', { name: 'Ultrassom' })).toBeVisible();
+    expect(screen.getByRole('button', { name: /Ultrassom/ })).toHaveAttribute('aria-current', 'true');
+    expect(first).not.toHaveAttribute('aria-current');
   });
 
   it('links to the reschedule page and tells how many reschedules are left', async () => {
     serve({ upcoming: [booking('b1'), exam('b2', { actions: actions({ reschedulesLeft: 1 }) })] });
     const { user } = renderApp('/paciente/agendamentos');
-    const appointment = await card(/Dr\. João Silveira/);
-    await user.click(appointment.header);
-    const link = appointment.scope.getByRole('link', { name: /^Reagendar: Dr\. João Silveira/ });
+
+    let detail = await openDetail(user, /Dr\. João Silveira/);
+    const link = detail.getByRole('link', { name: 'Reagendar' });
     expect(link).toHaveAttribute('href', '/paciente/consultas/b1/reagendar');
-    expect(appointment.header).not.toContainElement(link);
     expect(link).toHaveAccessibleDescription('2 reagendamentos restantes');
-    const examCard = await card(/Ultrassom/);
-    await user.click(examCard.header);
-    expect(examCard.scope.getByRole('link', { name: /^Reagendar/ })).toHaveAttribute(
+    await user.click(detail.getByRole('button', { name: 'Fechar' }));
+
+    detail = await openDetail(user, /Ultrassom/);
+    expect(detail.getByRole('link', { name: 'Reagendar' })).toHaveAttribute(
       'href',
       '/paciente/exames/b2/reagendar',
     );
-    expect(examCard.scope.getByText('1 reagendamento restante')).toBeVisible();
+    expect(detail.getByText('1 reagendamento restante')).toBeVisible();
   });
 
   it('explains why a booking can no longer be rescheduled', async () => {
@@ -214,18 +298,17 @@ describe('patient bookings', { timeout: 15_000 }, () => {
       ],
     });
     const { user } = renderApp('/paciente/agendamentos');
-    const appointment = await card(/Dr\. João Silveira/);
-    await user.click(appointment.header);
-    expect(appointment.scope.queryByRole('link', { name: /^Reagendar/ })).not.toBeInTheDocument();
-    expect(appointment.scope.getByRole('note')).toHaveTextContent(
-      /não pode mais ser reagendado, só cancelado/,
-    );
-    expect(appointment.scope.getByRole('button', { name: /^Cancelar/ })).toBeVisible();
-    const examCard = await card(/Ultrassom/);
-    await user.click(examCard.header);
-    expect(examCard.scope.queryByRole('link', { name: /^Reagendar/ })).not.toBeInTheDocument();
-    expect(examCard.scope.getByRole('note')).toHaveTextContent(/já usou todos os reagendamentos/);
-    expect(examCard.scope.queryByText(/reagendamentos? restantes?/)).not.toBeInTheDocument();
+
+    let detail = await openDetail(user, /Dr\. João Silveira/);
+    expect(detail.queryByRole('link', { name: 'Reagendar' })).not.toBeInTheDocument();
+    expect(detail.getByRole('note')).toHaveTextContent(/não pode mais ser reagendado, só cancelado/);
+    expect(detail.getByRole('button', { name: 'Cancelar' })).toBeVisible();
+    await user.click(detail.getByRole('button', { name: 'Fechar' }));
+
+    detail = await openDetail(user, /Ultrassom/);
+    expect(detail.queryByRole('link', { name: 'Reagendar' })).not.toBeInTheDocument();
+    expect(detail.getByRole('note')).toHaveTextContent(/já usou todos os reagendamentos/);
+    expect(detail.queryByText(/reagendamentos? restantes?/)).not.toBeInTheDocument();
   });
 
   it('shows who cancelled, the reason and the late flag', async () => {
@@ -241,19 +324,18 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     });
     const { user } = renderApp('/paciente/agendamentos?aba=realizados');
 
-    const doctor = await card(/Dr\. João Silveira/);
-    await user.click(doctor.header);
-    expect(doctor.scope.getByText(/^Cancelada pelo médico em/)).toBeVisible();
-    expect(doctor.scope.getByText('Motivo: Imprevisto.')).toBeVisible();
-    expect(doctor.scope.getByText('Cancelamento tardio')).toBeVisible();
-    expect(doctor.scope.queryByRole('button', { name: /^Cancelar/ })).not.toBeInTheDocument();
+    let detail = await openDetail(user, /Dr\. João Silveira/);
+    expect(detail.getByText(/^Cancelada pelo médico em/)).toBeVisible();
+    expect(detail.getByText('Motivo: Imprevisto.')).toBeVisible();
+    expect(detail.getByText('Cancelamento tardio')).toBeVisible();
+    expect(detail.getByText('Sobre este agendamento')).toBeVisible();
+    expect(detail.queryByRole('button', { name: 'Cancelar' })).not.toBeInTheDocument();
+    await user.click(detail.getByRole('button', { name: 'Fechar' }));
 
-    const examCard = await card(/Ultrassom/);
-    expect(within(examCard.header).getByText('Exame')).toBeVisible();
-    await user.click(examCard.header);
-    expect(examCard.scope.getByText('EX-123')).toBeVisible();
-    expect(examCard.scope.queryByRole('note')).not.toBeInTheDocument();
-    expect(examCard.scope.queryByRole('button', { name: /^Cancelar/ })).not.toBeInTheDocument();
+    detail = await openDetail(user, /Ultrassom/);
+    expect(detail.getByText('EX-123')).toBeVisible();
+    expect(detail.queryByRole('note')).not.toBeInTheDocument();
+    expect(detail.queryByRole('button', { name: 'Cancelar' })).not.toBeInTheDocument();
   });
 
   it('cancels a booking with an optional reason and refreshes the list', async () => {
@@ -261,7 +343,8 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     const { user } = renderApp('/paciente/agendamentos');
 
     const dialog = await openCancel(user);
-    expect(within(dialog).getByText(/^Consulta de Cardiologia com Dr\. João Silveira em/)).toBeVisible();
+    expect(within(dialog).getByText(/O horário fica livre para outra pessoa/)).toBeVisible();
+    expect(within(dialog).getByText('Qui, 10/01 às 10:00 · Hospital Central')).toBeVisible();
     expect(within(dialog).queryByText(/registrado como tardio/)).not.toBeInTheDocument();
     await user.type(within(dialog).getByRole('textbox', { name: 'Motivo (opcional)' }), 'Imprevisto');
     const before = listCalls(calls).length;
@@ -280,10 +363,7 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     const { calls } = serve({ upcoming: [exam('b1')] }, () => ({ status: 200, body: {} }));
     const { user } = renderApp('/paciente/agendamentos');
 
-    const { header, scope } = await card(/Ultrassom/);
-    await user.click(header);
-    await user.click(scope.getByRole('button', { name: /^Cancelar/ }));
-    const dialog = screen.getByRole('dialog', { name: 'Cancelar exame?' });
+    const dialog = await openCancel(user, /Ultrassom/, 'Cancelar o exame?');
     expect(within(dialog).queryByRole('textbox')).not.toBeInTheDocument();
     await user.click(within(dialog).getByRole('button', { name: 'Cancelar agendamento' }));
 
@@ -294,28 +374,20 @@ describe('patient bookings', { timeout: 15_000 }, () => {
   });
 
   it('warns before a late exam cancellation', async () => {
-    serve({
-      upcoming: [exam('b1', { actions: late })],
-    });
+    serve({ upcoming: [exam('b1', { actions: late })] });
     const { user } = renderApp('/paciente/agendamentos');
 
-    const { header, scope } = await card(/Ultrassom/);
-    await user.click(header);
-    await user.click(scope.getByRole('button', { name: /^Cancelar/ }));
-
-    const dialog = screen.getByRole('dialog', { name: 'Cancelar exame?' });
+    const dialog = await openCancel(user, /Ultrassom/, 'Cancelar o exame?');
     expect(within(dialog).getByRole('note')).toHaveTextContent(
       'Este cancelamento ficará registrado como tardio.',
     );
   });
 
   it('warns before a late cancellation and sends no empty reason', async () => {
-    const { calls } = serve(
-      {
-        upcoming: [booking('b1', { actions: late })],
-      },
-      () => ({ status: 200, body: {} }),
-    );
+    const { calls } = serve({ upcoming: [booking('b1', { actions: late })] }, () => ({
+      status: 200,
+      body: {},
+    }));
     const { user } = renderApp('/paciente/agendamentos');
 
     const dialog = await openCancel(user);
@@ -364,7 +436,7 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     expect(within(dialog).queryByRole('button', { name: 'Cancelar agendamento' })).not.toBeInTheDocument();
   });
 
-  it('moves focus to the results line when the cancelled card leaves the list', async () => {
+  it('moves focus to the results line when the cancelled booking leaves the list', async () => {
     const lists: Lists = { upcoming: [booking('b1')] };
     serve(lists, () => {
       lists.upcoming = [];
@@ -375,7 +447,7 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     const dialog = await openCancel(user);
     await user.click(within(dialog).getByRole('button', { name: 'Cancelar agendamento' }));
 
-    expect(await screen.findByText('Nenhum agendamento futuro')).toBeVisible();
+    expect(await screen.findByText('Nada por aqui')).toBeVisible();
     await waitFor(() => expect(dialog).not.toBeVisible());
     await waitFor(() => expect(document.activeElement).toHaveAttribute('aria-live', 'polite'));
     expect(document.activeElement).toBeEmptyDOMElement();
@@ -399,25 +471,24 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     expect(router.state.location.search).toBe('?pagina=2');
     await waitFor(() => expect(listCalls(calls).at(-1)?.url.searchParams.get('page')).toBe('2'));
 
-    await user.click(screen.getByRole('tab', { name: /Realizados/ }));
+    await user.click(screen.getByRole('tab', { name: /^Histórico/ }));
     expect(router.state.location.search).toBe('?aba=realizados');
   });
 
-  it('shows an empty state with booking shortcuts on each tab', async () => {
+  it('shows an empty state with a way to book on each tab', async () => {
     serve({});
     const { user } = renderApp('/paciente/agendamentos');
 
-    expect(await screen.findByText('Nenhum agendamento futuro')).toBeVisible();
-    expect(screen.getByRole('link', { name: 'Nova Consulta' })).toHaveAttribute(
+    const list = within(await screen.findByRole('region', { name: 'Lista de agendamentos' }));
+    expect(await list.findByText('Nada por aqui')).toBeVisible();
+    expect(list.getByRole('link', { name: 'Agendar consulta' })).toHaveAttribute(
       'href',
       '/paciente/consultas/nova',
     );
-    expect(screen.getByRole('link', { name: 'Novo Exame' })).toHaveAttribute('href', '/paciente/exames/novo');
 
-    await user.click(screen.getByRole('tab', { name: /Realizados/ }));
+    await user.click(screen.getByRole('tab', { name: /^Histórico/ }));
 
-    expect(await screen.findByText('Nenhum agendamento realizado')).toBeVisible();
-    expect(screen.getByRole('link', { name: 'Nova Consulta' })).toBeVisible();
+    expect(await screen.findByText('Nenhum agendamento no histórico')).toBeVisible();
   });
 
   describe('filter', () => {
@@ -461,7 +532,7 @@ describe('patient bookings', { timeout: 15_000 }, () => {
       });
       expect(await screen.findByText('1 agendamento com esses filtros')).toBeVisible();
       expect(screen.queryByRole('button', { name: /Dr\. João Silveira/ })).not.toBeInTheDocument();
-      expect(screen.getByRole('tab', { name: /^2 Agendados$/ })).toBeVisible();
+      expect(screen.getByRole('tab', { name: /^Próximos/ })).toBeVisible();
     });
 
     it('clears the filters from the sheet and resets the page', async () => {
@@ -515,7 +586,7 @@ describe('patient bookings', { timeout: 15_000 }, () => {
       expect(radioLabels(dialog, 'Status')).toEqual(['Todos', 'Pendente', 'Confirmado']);
       await user.click(within(dialog).getByRole('button', { name: 'Fechar' }));
 
-      await user.click(screen.getByRole('tab', { name: /Realizados/ }));
+      await user.click(screen.getByRole('tab', { name: /^Histórico/ }));
       dialog = await openFilter(user);
       expect(radioLabels(dialog, 'Status')).toEqual([
         'Todos',
@@ -552,7 +623,7 @@ describe('patient bookings', { timeout: 15_000 }, () => {
       const { user, router } = renderApp('/paciente/agendamentos?tipo=exame&status=pendente');
 
       await screen.findByRole('button', { name: 'Filtrar, filtros: 2 ativos' });
-      await user.click(screen.getByRole('tab', { name: /Realizados/ }));
+      await user.click(screen.getByRole('tab', { name: /^Histórico/ }));
 
       await waitFor(() => expect(router.state.location.search).toBe('?tipo=exame&aba=realizados'));
       expect(router.state.historyAction).toBe('REPLACE');
@@ -568,8 +639,10 @@ describe('patient bookings', { timeout: 15_000 }, () => {
       const { user, router } = renderApp('/paciente/agendamentos?tipo=exame');
 
       expect(await screen.findByText('Nenhum agendamento com esses filtros')).toBeVisible();
-      expect(screen.getByRole('tab', { name: /^1 Agendados$/ })).toBeVisible();
-      expect(screen.queryByRole('link', { name: 'Nova Consulta' })).not.toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /^Próximos/ })).toBeVisible();
+      expect(
+        within(screen.getByRole('region', { name: 'Lista de agendamentos' })).queryByRole('link'),
+      ).not.toBeInTheDocument();
       await user.click(screen.getByRole('button', { name: 'Limpar filtros' }));
 
       expect(router.state.location.search).toBe('');

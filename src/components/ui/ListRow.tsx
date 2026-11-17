@@ -69,7 +69,7 @@ export function ListRow({
   return (
     <button
       type="button"
-      aria-pressed={selected}
+      aria-current={selected ? 'true' : undefined}
       {...buttonProps}
       className={cx(rowClass(selected), className)}
     >

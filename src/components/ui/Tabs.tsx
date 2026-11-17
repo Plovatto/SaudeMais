@@ -1,6 +1,7 @@
 import type { KeyboardEvent, ReactNode } from 'react';
 import { cx } from '@lib/cx';
 import { rovingIndex } from '@lib/roving-index';
+import { CountBadge } from './CountBadge';
 import { pill } from './styles';
 import { TileButton } from './TileButton';
 
@@ -17,7 +18,7 @@ export interface TabsProps<T extends string> {
   items: readonly TabItem<T>[];
   value: T;
   onValueChange: (value: T) => void;
-  variant?: 'pill' | 'tile';
+  variant?: 'pill' | 'tile' | 'line';
   className?: string;
 }
 
@@ -45,7 +46,12 @@ export function Tabs<T extends string>({
   };
 
   return (
-    <div role="tablist" aria-label={label} onKeyDown={onKeyDown} className={cx('flex gap-3', className)}>
+    <div
+      role="tablist"
+      aria-label={label}
+      onKeyDown={onKeyDown}
+      className={cx('flex', variant === 'line' ? 'border-border gap-1 border-b' : 'gap-3', className)}
+    >
       {items.map((item) => {
         const selected = item.value === value;
         const tab = {
@@ -56,6 +62,34 @@ export function Tabs<T extends string>({
           tabIndex: selected ? 0 : -1,
           onClick: () => onValueChange(item.value),
         } as const;
+        if (variant === 'line') {
+          return (
+            <button
+              key={item.value}
+              type="button"
+              {...tab}
+              className={cx(
+                '-mb-px inline-flex min-h-11 items-center gap-2 border-b-2 px-3 text-sm font-semibold whitespace-nowrap transition-colors duration-150',
+                selected
+                  ? 'border-role-strong text-role-text'
+                  : 'text-text-secondary can-hover:text-text border-transparent',
+              )}
+            >
+              {item.label}
+              {item.count !== undefined && (
+                <CountBadge
+                  inline
+                  className={cx(
+                    'transition-colors duration-150',
+                    selected ? 'bg-role-strong text-on-role' : 'bg-surface-strong text-text-secondary',
+                  )}
+                >
+                  {item.count}
+                </CountBadge>
+              )}
+            </button>
+          );
+        }
         return variant === 'tile' ? (
           <TileButton
             key={item.value}

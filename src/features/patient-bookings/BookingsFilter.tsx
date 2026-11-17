@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { LuSlidersHorizontal } from 'react-icons/lu';
-import { Button, CountBadge, Dialog, RadioChips, TileButton } from '@components/ui';
+import { Button, CountBadge, Dialog, RadioChips } from '@components/ui';
 import { activeCount, NO_FILTERS, statusOptions, TYPE_OPTIONS, type BookingFilters } from './booking-filters';
 import type { BookingListParams } from './bookings-api';
 
@@ -23,21 +23,22 @@ export function BookingsFilter({ scope, filters, onApply }: BookingsFilterProps)
 
   return (
     <>
-      <TileButton
+      <Button
+        variant="secondary"
+        size="sm"
         aria-haspopup="dialog"
         aria-label={`Filtrar, ${label.toLowerCase()}${count > 0 ? `: ${activeText(count)}` : ''}`}
         onClick={() => setDraft(filters)}
         icon={<LuSlidersHorizontal />}
-        label={label}
-        badge={
-          count > 0 && (
-            <CountBadge className="bg-role-strong text-on-role end-1.5 top-1.5">{count}</CountBadge>
-          )
-        }
-        className="w-20 shrink-0 px-1"
+        className="mb-1.5 shrink-0"
       >
-        <span className="text-sm font-semibold">Filtrar</span>
-      </TileButton>
+        Filtrar
+        {count > 0 && (
+          <CountBadge inline className="bg-role-strong text-on-role">
+            {count}
+          </CountBadge>
+        )}
+      </Button>
       <Dialog
         open={draft !== null}
         onClose={() => setDraft(null)}

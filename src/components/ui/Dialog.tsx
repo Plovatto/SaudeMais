@@ -10,6 +10,8 @@ export interface DialogProps {
   title: string;
   description?: ReactNode;
   icon?: ReactNode;
+  tone?: 'role' | 'danger';
+  bare?: boolean;
   centered?: boolean;
   placement?: 'center' | 'side' | 'sheet';
   closeLabel?: string;
@@ -25,6 +27,8 @@ export function Dialog({
   title,
   description,
   icon,
+  tone = 'role',
+  bare = false,
   centered = false,
   placement = 'center',
   closeLabel = 'Fechar',
@@ -96,28 +100,46 @@ export function Dialog({
           'max-sm:rounded-t-sheet max-sm:motion-safe:animate-sheet max-sm:mb-0 max-sm:w-full max-sm:max-w-none max-sm:rounded-b-none max-sm:border-x-0 max-sm:border-b-0 max-sm:pb-[env(safe-area-inset-bottom)] sm:max-w-md',
       )}
     >
-      <div className={cx('relative flex flex-col gap-4 p-6 pt-8', centered && 'items-center text-center')}>
-        {dismissible && (
-          <IconButton
-            label={closeLabel}
-            icon={<LuX />}
-            onClick={() => ref.current?.close()}
-            className="absolute end-2 top-2"
-          />
-        )}
-        {icon && <IconSlot badge="strong">{icon}</IconSlot>}
-        <div className="flex flex-col gap-1">
-          <h2 id={titleId} className="text-lg font-semibold">
+      {bare ? (
+        <>
+          <h2 id={titleId} className="sr-only">
             {title}
           </h2>
-          {description && (
-            <div id={descriptionId} className="text-text-secondary text-sm">
-              {description}
-            </div>
+          {children}
+        </>
+      ) : (
+        <div className={cx('relative flex flex-col gap-4 p-6 pt-8', centered && 'items-center text-center')}>
+          {dismissible && (
+            <IconButton
+              label={closeLabel}
+              icon={<LuX />}
+              onClick={() => ref.current?.close()}
+              className="absolute end-2 top-2"
+            />
           )}
+          {icon && (
+            <IconSlot
+              className={cx(
+                'size-12 justify-center rounded-full text-[22px]',
+                tone === 'danger' ? 'bg-danger-soft text-danger-text' : 'bg-role-soft text-role-text',
+              )}
+            >
+              {icon}
+            </IconSlot>
+          )}
+          <div className="flex flex-col gap-1">
+            <h2 id={titleId} className="text-lg font-semibold">
+              {title}
+            </h2>
+            {description && (
+              <div id={descriptionId} className="text-text-secondary text-sm">
+                {description}
+              </div>
+            )}
+          </div>
+          {children}
         </div>
-        {children}
-      </div>
+      )}
     </dialog>
   );
 }

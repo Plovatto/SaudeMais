@@ -12,6 +12,7 @@ export { FieldError } from './FieldControl';
 export { FormAlert } from './FormAlert';
 export { IconButton, type IconButtonProps } from './IconButton';
 export { IconSlot, type IconSlotProps } from './IconSlot';
+export { InfoList, type InfoItem } from './InfoList';
 export { Input, type InputProps } from './Input';
 export { Chevron, ListPlaceholder, ListRow } from './ListRow';
 export { MeterList, type MeterItem, type MeterListProps } from './MeterList';
