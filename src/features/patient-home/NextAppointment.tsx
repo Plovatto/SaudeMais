@@ -1,14 +1,14 @@
 import type { UseQueryResult } from '@tanstack/react-query';
-import { LuCalendar, LuChevronRight } from 'react-icons/lu';
+import { LuCalendar } from 'react-icons/lu';
 import { Link } from 'react-router';
 import { bookingStatus, bookingTitle } from '@components/bookings/booking-display';
 import { DateTile } from '@components/bookings/DateTile';
-import { IconSlot, QueryError, Skeleton, StatusChip } from '@components/ui';
+import { Chevron, IconSlot, QueryError, Skeleton, StatusChip } from '@components/ui';
 import { overline } from '@components/ui/styles';
 import { bookingUrl } from '@constants/areas';
 import type { PatientBooking } from '@lib/api/models';
 import { cx } from '@lib/cx';
-import { formatShortDay, formatTime } from '@lib/date';
+import { formatLongDay, formatShortDay, formatTime } from '@lib/date';
 
 const cardClass =
   'rounded-card border-border bg-surface flex flex-col gap-3.5 border px-4 pt-[18px] pb-5 lg:px-5';
@@ -26,7 +26,8 @@ export interface NextAppointmentProps {
 
 export function NextAppointment({ query, next, waiting }: NextAppointmentProps) {
   if (query.isPending) return <Skeleton className="rounded-card h-[132px]" />;
-  if (query.isError) return <QueryError error={query.error} onRetry={() => void query.refetch()} />;
+  if (query.isError && !query.data)
+    return <QueryError error={query.error} onRetry={() => void query.refetch()} />;
   if (!next) {
     return (
       <section aria-label="Próximo compromisso" className={cx(cardClass, 'shadow-card')}>
@@ -51,7 +52,7 @@ export function NextAppointment({ query, next, waiting }: NextAppointmentProps) 
   return (
     <Link
       to={bookingUrl(next.id)}
-      aria-label={`Próximo compromisso: ${when}, ${title}. Ver detalhes`}
+      aria-label={`Próximo compromisso: ${formatLongDay(next.startsAt)}, ${formatTime(next.startsAt)}, ${title}, ${kindLabel}, ${status.label}. Ver detalhes`}
       className={cx(
         cardClass,
         'shadow-raised group can-hover:border-role-soft-strong transition-[border-color,box-shadow] duration-150',
@@ -71,10 +72,7 @@ export function NextAppointment({ query, next, waiting }: NextAppointmentProps) 
             {title} · {kindLabel}
           </span>
         </span>
-        <LuChevronRight
-          aria-hidden
-          className="text-text-muted size-4 shrink-0 transition-transform duration-150 group-hover:translate-x-0.5"
-        />
+        <Chevron />
       </span>
     </Link>
   );

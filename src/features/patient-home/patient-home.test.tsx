@@ -187,7 +187,7 @@ describe('patient home', { timeout: 15_000 }, () => {
     renderApp('/paciente');
 
     const next = await screen.findByRole('link', {
-      name: 'Próximo compromisso: Sex, 19/07 · 15:30, Dr. João Silveira. Ver detalhes',
+      name: 'Próximo compromisso: Sexta, 19 de julho, 15:30, Dr. João Silveira, Rotina, Confirmado. Ver detalhes',
     });
     expect(next).toHaveAttribute('href', '/paciente/agendamentos?id=b1');
     expect(within(next).getByText('Confirmado')).toBeVisible();
@@ -265,7 +265,7 @@ describe('patient home', { timeout: 15_000 }, () => {
     const { user } = renderApp('/paciente');
 
     const retry = await screen.findByRole('button', { name: 'Tentar de novo' });
-    expect(within(retry.parentElement as HTMLElement).getByRole('alert')).toHaveTextContent(/\S/);
+    expect(screen.getAllByRole('alert').some((alert) => /\S/.test(alert.textContent ?? ''))).toBe(true);
     expect((await later()).getByText('Não foi possível carregar os agendamentos.')).toBeVisible();
     available = true;
     await user.click(retry);
@@ -334,6 +334,28 @@ describe('patient home', { timeout: 15_000 }, () => {
       'Raio-X04/11 · laudo disponível',
     ]);
     expect(links[0]).toHaveAttribute('href', '/paciente/exames/r1/resultado');
+  });
+
+  it('shows the results error and loads them again on retry', async () => {
+    let available = false;
+    serveApi(['patient'], {
+      '/api/patient/home': () => ({ status: 200, body: homeBody() }),
+      '/api/patient/exam-results': () =>
+        available
+          ? {
+              status: 200,
+              body: resultsBody([result('r1', 'Hemograma', { items: 1, outOfRange: 0, flagged: [] })]),
+            }
+          : { status: 400 },
+    });
+    const { user } = renderApp('/paciente');
+
+    const region = within(await screen.findByRole('region', { name: 'Resultados recentes' }));
+    const retry = await region.findByRole('button', { name: 'Tentar de novo' });
+    available = true;
+    await user.click(retry);
+
+    expect(await region.findByRole('link', { name: /Hemograma/ })).toBeVisible();
   });
 
   it('says when no result is ready yet', async () => {

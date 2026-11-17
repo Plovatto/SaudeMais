@@ -1,15 +1,14 @@
 import { BookingRow } from '@components/bookings/BookingRow';
-import { ButtonLink, SectionCard, Skeleton } from '@components/ui';
+import { ButtonLink, ListPlaceholder, SectionCard } from '@components/ui';
 import { bookingUrl, PATIENT_BOOKINGS_PATH } from '@constants/areas';
 import type { PatientBooking } from '@lib/api/models';
 
 export interface LaterBookingsProps {
-  items: PatientBooking[];
+  items: PatientBooking[] | undefined;
   pending: boolean;
-  failed: boolean;
 }
 
-export function LaterBookings({ items, pending, failed }: LaterBookingsProps) {
+export function LaterBookings({ items, pending }: LaterBookingsProps) {
   return (
     <SectionCard
       title="Depois disso"
@@ -21,16 +20,7 @@ export function LaterBookings({ items, pending, failed }: LaterBookingsProps) {
         </ButtonLink>
       }
     >
-      {pending ? (
-        <div className="flex flex-col gap-3 p-4 lg:p-5">
-          <Skeleton className="h-14" />
-          <Skeleton className="h-14" />
-        </div>
-      ) : failed || items.length === 0 ? (
-        <p className="text-text-muted px-4 py-6 text-center text-[0.8125rem] lg:px-5">
-          {failed ? 'Não foi possível carregar os agendamentos.' : 'Nada mais agendado.'}
-        </p>
-      ) : (
+      {items?.length ? (
         <ul className="divide-border divide-y">
           {items.map((booking) => (
             <li key={booking.id}>
@@ -38,6 +28,11 @@ export function LaterBookings({ items, pending, failed }: LaterBookingsProps) {
             </li>
           ))}
         </ul>
+      ) : (
+        <ListPlaceholder
+          pending={pending}
+          message={items ? 'Nada mais agendado.' : 'Não foi possível carregar os agendamentos.'}
+        />
       )}
     </SectionCard>
   );

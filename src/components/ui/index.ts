@@ -13,6 +13,7 @@ export { FormAlert } from './FormAlert';
 export { IconButton, type IconButtonProps } from './IconButton';
 export { IconSlot, type IconSlotProps } from './IconSlot';
 export { Input, type InputProps } from './Input';
+export { Chevron, ListPlaceholder, ListRow } from './ListRow';
 export { MeterList, type MeterItem, type MeterListProps } from './MeterList';
 export { Menu, type MenuItem, type MenuProps } from './Menu';
 export { Pagination, type PaginationProps } from './Pagination';

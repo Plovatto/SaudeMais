@@ -27,28 +27,30 @@ export function PatientHomePage() {
     <div className="flex flex-col gap-4 lg:gap-5">
       <PageTitle className="sr-only">Início</PageTitle>
       {notification && <LastNotification notification={notification} role="patient" />}
-      <div className="grid items-start gap-4 min-[1100px]:grid-cols-[minmax(0,1fr)_360px] lg:gap-5">
-        <div className="flex min-w-0 flex-col gap-4 lg:gap-5">
-          <div className={STAGGER[0]}>
-            <NextAppointment
-              query={query}
-              next={next}
-              waiting={upcoming.filter((booking) => booking.status === 'pending').length}
-            />
+      <div className="@container">
+        <div className="grid items-start gap-4 lg:gap-5 @min-[880px]:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="flex min-w-0 flex-col gap-4 lg:gap-5">
+            <div className={STAGGER[0]}>
+              <NextAppointment
+                query={query}
+                next={next}
+                waiting={upcoming.filter((booking) => booking.status === 'pending').length}
+              />
+            </div>
+            <div className={STAGGER[1]}>
+              <QuickActions />
+            </div>
+            <div className={STAGGER[2]}>
+              <LaterBookings items={query.data ? later : undefined} pending={query.isPending} />
+            </div>
           </div>
-          <div className={STAGGER[1]}>
-            <QuickActions />
-          </div>
-          <div className={STAGGER[2]}>
-            <LaterBookings items={later} pending={query.isPending} failed={query.isError} />
-          </div>
-        </div>
-        <div className="flex min-w-0 flex-col gap-4 lg:gap-5">
-          <div className={STAGGER[3]}>
-            <HealthSummary metrics={query.data?.metrics} />
-          </div>
-          <div className={STAGGER[4]}>
-            <RecentResults />
+          <div className="flex min-w-0 flex-col gap-4 lg:gap-5">
+            <div className={STAGGER[3]}>
+              <HealthSummary metrics={query.data?.metrics} />
+            </div>
+            <div className={STAGGER[4]}>
+              <RecentResults />
+            </div>
           </div>
         </div>
       </div>

@@ -112,4 +112,14 @@ describe('day labels in São Paulo', () => {
     expect(formatShortDay(lateNight)).toBe('Seg, 23/11');
     expect(formatLongDay(lateNight)).toBe('Segunda, 23 de novembro');
   });
+
+  it.each([
+    ['2026-11-07T15:00:00.000Z', { weekday: 'sáb', day: '07' }, 'Sáb, 07/11', 'Sábado, 7 de novembro'],
+    ['2026-11-08T02:59:00.000Z', { weekday: 'sáb', day: '07' }, 'Sáb, 07/11', 'Sábado, 7 de novembro'],
+    ['2026-11-08T03:00:00.000Z', { weekday: 'dom', day: '08' }, 'Dom, 08/11', 'Domingo, 8 de novembro'],
+  ])('keeps %s on the São Paulo day', (instant, tile, short, long) => {
+    expect(dayTile(instant)).toEqual(tile);
+    expect(formatShortDay(instant)).toBe(short);
+    expect(formatLongDay(instant)).toBe(long);
+  });
 });

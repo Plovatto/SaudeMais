@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { LuChevronRight, LuFileText } from 'react-icons/lu';
-import { Link } from 'react-router';
-import { QueryError, SectionCard, Skeleton } from '@components/ui';
+import { LuFileText } from 'react-icons/lu';
+import { ListPlaceholder, ListRow, QueryError, SectionCard } from '@components/ui';
 import { tile } from '@components/ui/styles';
 import { examResultUrl } from '@constants/areas';
 import { civilDateInSaoPaulo, formatDate } from '@lib/date';
@@ -20,48 +19,32 @@ export function RecentResults() {
   const items = query.data?.items;
   return (
     <SectionCard title="Resultados recentes" flush aria-busy={query.isPending}>
-      {query.isPending && (
-        <div className="flex flex-col gap-3 p-4 lg:p-5">
-          <Skeleton className="h-12" />
-          <Skeleton className="h-12" />
-        </div>
-      )}
-      {query.isError && (
+      {query.isError && !items ? (
         <div className="p-4 lg:p-5">
           <QueryError error={query.error} onRetry={() => void query.refetch()} />
         </div>
-      )}
-      {items?.length === 0 && (
-        <p className="text-text-muted px-4 py-6 text-center text-[0.8125rem] lg:px-5">
-          Os resultados aparecem aqui quando ficarem prontos.
-        </p>
-      )}
-      {items && items.length > 0 && (
+      ) : items?.length ? (
         <ul className="divide-border divide-y">
           {items.map((result) => (
             <li key={result.bookingId}>
-              <Link
+              <ListRow
                 to={examResultUrl(result.bookingId)}
-                className="group can-hover:bg-surface-muted flex items-center gap-3.5 px-4 py-3.5 transition-colors duration-150 lg:px-5"
-              >
-                <span aria-hidden className={tile}>
-                  <LuFileText />
-                </span>
-                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="text-text truncate text-sm font-semibold">{result.examType.name}</span>
-                  <span className="text-text-secondary text-[0.8125rem]">
-                    {formatDate(civilDateInSaoPaulo(new Date(result.startsAt)), { year: false })} ·{' '}
-                    {summaryText(result)}
+                leading={
+                  <span aria-hidden className={tile}>
+                    <LuFileText />
                   </span>
-                </span>
-                <LuChevronRight
-                  aria-hidden
-                  className="text-text-muted size-4 shrink-0 transition-transform duration-150 group-hover:translate-x-0.5"
-                />
-              </Link>
+                }
+                title={result.examType.name}
+                meta={`${formatDate(civilDateInSaoPaulo(new Date(result.startsAt)), { year: false })} · ${summaryText(result)}`}
+              />
             </li>
           ))}
         </ul>
+      ) : (
+        <ListPlaceholder
+          pending={query.isPending}
+          message="Os resultados aparecem aqui quando ficarem prontos."
+        />
       )}
     </SectionCard>
   );
