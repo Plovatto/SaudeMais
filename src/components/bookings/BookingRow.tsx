@@ -11,6 +11,7 @@ type BookingRowProps = { booking: PatientBooking; selected?: boolean } & (
 export function BookingRow(props: BookingRowProps) {
   const { booking, selected = false } = props;
   const status = bookingStatus(booking, 'patient');
+  const chip = <StatusChip tone={status.tone}>{status.label}</StatusChip>;
   const content = {
     selected,
     leading: <DateTile startsAt={booking.startsAt} muted={isMuted(booking)} />,
@@ -20,8 +21,12 @@ export function BookingRow(props: BookingRowProps) {
         {bookingTitle(booking).title}
       </>
     ),
-    meta: bookingMeta(booking),
-    trailing: <StatusChip tone={status.tone}>{status.label}</StatusChip>,
+    meta: (
+      <>
+        {bookingMeta(booking)}
+        <span className="mt-2 flex">{chip}</span>
+      </>
+    ),
   };
   return props.to !== undefined ? (
     <ListRow to={props.to} {...content} />
