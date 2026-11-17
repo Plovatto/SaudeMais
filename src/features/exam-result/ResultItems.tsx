@@ -5,7 +5,6 @@ import { flags, formatResultValue } from '@components/exam-results/result-flags'
 import type { ResultItem } from '@components/exam-results/ResultVersion';
 import { cx } from '@lib/cx';
 import { formatMeasurement } from '@lib/number';
-import { flagDot } from './flag-colors';
 
 const NORMAL_START = 25;
 const NORMAL_SPAN = 50;
@@ -37,7 +36,7 @@ function RangeBar({ item }: { item: ResultItem }) {
           style={{ insetInlineStart: `${position(value, range.low, range.high)}%` }}
           className={cx(
             'border-surface motion-safe:animate-pop absolute top-1/2 -ms-[9px] -mt-[9px] size-[18px] rounded-full border-[3px] shadow-[0_1px_4px_rgb(16_42_41/0.3)]',
-            flagDot[item.flag],
+            flags[item.flag].dot,
           )}
         />
       </div>

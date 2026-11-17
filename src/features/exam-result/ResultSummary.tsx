@@ -1,7 +1,6 @@
 import { FLAG_ORDER, flagCount, flags } from '@components/exam-results/result-flags';
 import type { ResultItem } from '@components/exam-results/ResultVersion';
 import { cx } from '@lib/cx';
-import { flagDot } from './flag-colors';
 
 export function ResultSummary({ items }: { items: ResultItem[] }) {
   const off = items.filter((item) => item.flag !== 'normal');
@@ -40,7 +39,7 @@ export function ResultSummary({ items }: { items: ResultItem[] }) {
               key={`${index}-${item.name}`}
               className={cx(
                 'motion-safe:animate-fade h-1.5 min-w-1 flex-1 rounded-full sm:max-w-[34px]',
-                flagDot[item.flag],
+                flags[item.flag].dot,
               )}
             />
           ))}
@@ -48,7 +47,7 @@ export function ResultSummary({ items }: { items: ResultItem[] }) {
         <div aria-hidden className="text-text-secondary flex gap-3.5 text-xs tabular-nums">
           {legend.map(({ flag, text }) => (
             <span key={flag} className="inline-flex items-center gap-[5px]">
-              <i className={cx('size-2 rounded-full', flagDot[flag])} />
+              <i className={cx('size-2 rounded-full', flags[flag].dot)} />
               {text}
             </span>
           ))}
