@@ -7,6 +7,10 @@ const tones = {
   danger: { className: 'bg-danger-soft text-danger-text', icon: <LuCircleAlert /> },
   warning: { className: 'bg-warning-soft text-warning-text', icon: <LuTriangleAlert /> },
   info: { className: 'bg-role-soft text-role-text', icon: <LuInfo /> },
+  quiet: {
+    className: 'bg-surface-muted text-text-secondary border-border border font-normal',
+    icon: <LuInfo />,
+  },
 };
 
 export interface FormAlertProps {
