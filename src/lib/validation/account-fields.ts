@@ -41,11 +41,17 @@ export const personalDataBody = ({ fullName, phone }: PersonalDataValues) => ({
 
 export const hasLettersAndNumbers = (value: string) => /[A-Za-z]/.test(value) && /[0-9]/.test(value);
 
+export const PASSWORD_MIN = 8;
+
+export const PASSWORD_MAX = 128;
+
+export const PASSWORD_MAX_MESSAGE = `A senha pode ter até ${PASSWORD_MAX} caracteres.`;
+
 export const newPasswordFields = {
   password: z
     .string()
-    .min(8, 'A senha precisa ter pelo menos 8 caracteres.')
-    .max(128, 'A senha pode ter até 128 caracteres.'),
+    .min(PASSWORD_MIN, `A senha precisa ter pelo menos ${PASSWORD_MIN} caracteres.`)
+    .max(PASSWORD_MAX, PASSWORD_MAX_MESSAGE),
   passwordConfirmation: z.string().min(1, 'Confirme a senha.'),
 };
 
