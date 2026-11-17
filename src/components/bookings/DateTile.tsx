@@ -3,12 +3,12 @@ import { dayTile } from '@lib/date';
 
 const sizes = {
   md: {
-    box: 'size-[52px] rounded-tile',
+    box: 'min-h-[52px] min-w-[52px] rounded-tile',
     head: 'pt-[3px] pb-0.5 text-[0.65625rem]/normal',
     day: 'text-[1.1875rem]/none',
   },
   lg: {
-    box: 'size-[68px] rounded-[14px]',
+    box: 'min-h-[68px] min-w-[68px] rounded-[14px]',
     head: 'pt-[5px] pb-1 text-[0.71875rem]/normal',
     day: 'text-[1.75rem]/none',
   },

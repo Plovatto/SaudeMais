@@ -107,6 +107,22 @@ describe.each([
     expect(formatSince('2024-11-01T15:00:00.000Z', now)).toBe('há 2 anos');
     expect(formatSince('not-a-date', now)).toBe('data indisponível');
   });
+
+  it('switches unit at the week, month and year boundaries', () => {
+    const now = new Date('2026-11-20T15:00:00.000Z');
+    const ago = (days: number) => new Date(now.getTime() - days * 86_400_000).toISOString();
+    expect(formatSince(ago(7), now)).toBe('há 7 dias');
+    expect(formatSince(ago(8), now)).toBe('há 1 semana');
+    expect(formatSince(ago(29), now)).toBe('há 4 semanas');
+    expect(formatSince(ago(30), now)).toBe('há 1 mês');
+    expect(formatSince(ago(364), now)).toBe('há 12 meses');
+    expect(formatSince(ago(365), now)).toBe('há 1 ano');
+  });
+
+  it('treats a future date as just now', () => {
+    const now = new Date('2026-11-20T15:00:00.000Z');
+    expect(formatSince('2026-11-21T15:00:00.000Z', now)).toBe('agora');
+  });
 });
 
 describe('day labels in São Paulo', () => {

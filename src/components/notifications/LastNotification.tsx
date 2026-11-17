@@ -34,11 +34,11 @@ export function LastNotification({ notification, role }: LastNotificationProps) 
           </span>
         }
         title={
-          <span className="flex min-w-0 items-center gap-1.5">
-            <span className="truncate">{title}</span>
+          <span className="flex min-w-0 flex-wrap items-center gap-x-2">
+            <span>{title}</span>
             {unread && (
               <>
-                <span aria-hidden className="bg-role-strong size-1.5 shrink-0 rounded-full" />
+                <span aria-hidden className="bg-role-strong size-2 shrink-0 rounded-full" />
                 <span className="sr-only"> (não lida)</span>
               </>
             )}

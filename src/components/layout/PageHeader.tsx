@@ -50,7 +50,7 @@ export function PageHeader({
         )}
       </div>
       {action && (
-        <div className="flex shrink-0 gap-2 max-lg:basis-full [&_svg]:size-[18px] max-lg:[&>*]:min-h-[50px] max-lg:[&>*]:flex-1 max-lg:[&>*]:rounded-[14px] max-lg:[&>*]:text-[0.9375rem]">
+        <div className="flex shrink-0 gap-2 max-lg:basis-full max-lg:not-has-[>:not(.max-lg:hidden)]:hidden max-lg:[&_svg]:size-[18px] max-lg:[&>*]:min-h-[50px] max-lg:[&>*]:flex-1 max-lg:[&>*]:rounded-[14px] max-lg:[&>*]:text-[0.9375rem]">
           {action}
         </div>
       )}

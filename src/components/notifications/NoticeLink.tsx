@@ -8,12 +8,11 @@ export interface NoticeLinkProps {
   to: string;
   title: ReactNode;
   body: string;
-  meta?: ReactNode;
   marker?: ReactNode;
   onClick?: () => void;
 }
 
-export function NoticeLink({ label, to, title, body, meta, marker, onClick }: NoticeLinkProps) {
+export function NoticeLink({ label, to, title, body, marker, onClick }: NoticeLinkProps) {
   const titleId = useId();
   return (
     <section aria-labelledby={titleId}>
@@ -31,7 +30,6 @@ export function NoticeLink({ label, to, title, body, meta, marker, onClick }: No
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="font-semibold">{title}</span>
           <span className="text-sm break-words">{body}</span>
-          {meta}
         </span>
         {marker}
         <IconSlot className="text-role-text self-center text-xl">
