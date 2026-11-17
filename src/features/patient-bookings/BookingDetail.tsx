@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { LuCalendar, LuClock, LuFileText, LuHash, LuMapPin, LuPhone, LuX } from 'react-icons/lu';
+import { LuCalendar, LuClock, LuFileText, LuHash, LuMapPin, LuPhone } from 'react-icons/lu';
 import { CancellationNote, PhoneLink } from '@components/bookings/BookingDetails';
 import { bookingStatus, bookingTitle, hasStarted, isMuted } from '@components/bookings/booking-display';
 import { DateTile } from '@components/bookings/DateTile';
@@ -7,8 +7,8 @@ import { rescheduleBlockedNotes, reschedulesLeftText } from '@components/booking
 import {
   Button,
   ButtonLink,
+  CloseButton,
   FormAlert,
-  IconButton,
   InfoList,
   SheetMore,
   StatusChip,
@@ -135,7 +135,7 @@ export function BookingDetail({ booking, titleId, onCancel, onClose, tips = fals
       <header className="flex min-h-14 items-center gap-3 px-4 py-3.5 lg:px-5">
         <StatusChip tone={status.tone}>{status.label}</StatusChip>
         <span className="flex-1" />
-        {onClose && <IconButton label="Fechar" icon={<LuX />} onClick={onClose} />}
+        {onClose && <CloseButton onClick={onClose} />}
       </header>
       <div className="flex flex-col gap-[18px] px-4 pb-5 lg:px-5">
         <div className="flex items-center gap-4">

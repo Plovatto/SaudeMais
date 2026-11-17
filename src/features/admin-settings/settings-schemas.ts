@@ -79,8 +79,6 @@ export const policySchema = z.object({
 
 export const integrationSchema = z.object({ name: catalogName });
 
-export type SpecialtyValues = z.infer<typeof specialtySchema>;
 export type UnitValues = z.infer<typeof unitSchema>;
 export type ExamTypeValues = z.infer<typeof examTypeSchema>;
-export type OfferValues = z.infer<typeof offerSchema>;
 export type PolicyValues = z.infer<typeof policySchema>;

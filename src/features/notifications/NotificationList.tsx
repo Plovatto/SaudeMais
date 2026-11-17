@@ -49,7 +49,7 @@ const visuals: Record<UserNotification['type'], Visual> = {
 
 const fallbackVisual: Visual = { icon: LuBell, tone: 'role' };
 
-export type NotificationVariant = 'page' | 'popover';
+type NotificationVariant = 'page' | 'popover';
 
 const looks = {
   page: {

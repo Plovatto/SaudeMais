@@ -1,7 +1,7 @@
 import { formatDate, formatSince, todayInSaoPaulo } from '@lib/date';
 import { formatPhone } from '@lib/phone';
 
-export function ageOf(birthDate: string, today = todayInSaoPaulo()): number {
+function ageOf(birthDate: string, today = todayInSaoPaulo()): number {
   const years = Number(today.slice(0, 4)) - Number(birthDate.slice(0, 4));
   return today.slice(5) < birthDate.slice(5) ? years - 1 : years;
 }
