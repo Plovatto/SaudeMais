@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { LuSlidersHorizontal } from 'react-icons/lu';
-import { Button, Dialog, RadioChips } from '@components/ui';
+import { Button, CountBadge, Dialog, RadioChips } from '@components/ui';
 import { activeCount, NO_FILTERS, statusOptions, TYPE_OPTIONS, type BookingFilters } from './booking-filters';
 import type { BookingListParams } from './bookings-api';
 
@@ -34,12 +34,9 @@ export function BookingsFilter({ scope, filters, onApply }: BookingsFilterProps)
       >
         Filtrar
         {count > 0 && (
-          <span
-            aria-hidden
-            className="bg-role-strong text-on-role grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[0.71875rem] font-bold"
-          >
+          <CountBadge inline className="bg-role-strong text-on-role">
             {count}
-          </span>
+          </CountBadge>
         )}
       </Button>
       <Dialog

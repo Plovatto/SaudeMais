@@ -40,6 +40,9 @@ export function statusDisplay(key: StatusKey, viewer: Role): StatusDisplay {
 
 export const hasStarted = (startsAt: string, now = Date.now()) => new Date(startsAt).getTime() <= now;
 
+export const isMuted = (booking: Pick<PatientBooking, 'startsAt' | 'status'>) =>
+  hasStarted(booking.startsAt) || booking.status === 'cancelled';
+
 export function bookingStatus(
   { status, startsAt }: { status: BookingStatus; startsAt: string },
   viewer: Role,

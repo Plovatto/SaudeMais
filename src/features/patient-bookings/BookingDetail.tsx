@@ -10,7 +10,7 @@ import {
   LuX,
 } from 'react-icons/lu';
 import { CancellationNote, PhoneLink } from '@components/bookings/BookingDetails';
-import { bookingStatus, bookingTitle, hasStarted } from '@components/bookings/booking-display';
+import { bookingStatus, bookingTitle, hasStarted, isMuted } from '@components/bookings/booking-display';
 import { DateTile } from '@components/bookings/DateTile';
 import { rescheduleBlockedNotes, reschedulesLeftText } from '@components/bookings/reschedule-text';
 import {
@@ -122,10 +122,11 @@ export interface BookingDetailProps {
 
 export function BookingDetail({ booking, titleId, onCancel, onClose }: BookingDetailProps) {
   const leftId = useId();
+  const tipsId = useId();
   const status = bookingStatus(booking, 'patient');
   const { title, subtitle } = bookingTitle(booking);
   const { actions, cancellation } = booking;
-  const muted = hasStarted(booking.startsAt) || booking.status === 'cancelled';
+  const muted = isMuted(booking);
   const tips = tipsFor(booking);
   const blocked = [
     actions.cancelBlockedReason && blockedNotes[actions.cancelBlockedReason],
@@ -166,8 +167,10 @@ export function BookingDetail({ booking, titleId, onCancel, onClose }: BookingDe
           </FormAlert>
         ))}
         <div className="border-border flex flex-col gap-2 border-t pt-4">
-          <p className={overline}>{tips.title}</p>
-          <ul className="text-text-secondary flex flex-col gap-1.5 text-[0.8125rem]">
+          <p id={tipsId} className={overline}>
+            {tips.title}
+          </p>
+          <ul aria-labelledby={tipsId} className="text-text-secondary flex flex-col gap-1.5 text-[0.8125rem]">
             {tips.items.map((tip) => (
               <li
                 key={tip}

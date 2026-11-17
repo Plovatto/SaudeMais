@@ -1,6 +1,6 @@
 import { useQuery, type QueryKey } from '@tanstack/react-query';
 import { useState } from 'react';
-import { RESET_PAGE, useClampedPage, usePageParam, type PageMeta } from './usePageParam';
+import { resetPageAnd, useClampedPage, usePageParam, type PageMeta } from './usePageParam';
 import { useSearchParam } from './useSearchParam';
 
 interface ListPage extends PageMeta {
@@ -17,6 +17,7 @@ interface ListSource<Result> {
 export function useTabbedList<Tabs extends TabList, Result extends ListPage>(
   tabs: Tabs,
   source: (tab: Tabs[number], page: number) => ListSource<Result>,
+  resetOnTab: readonly string[] = [],
 ) {
   const [page, setPage] = usePageParam();
   const [tabParam, setTabParam] = useSearchParam('aba', tabs[0].value);
@@ -36,7 +37,7 @@ export function useTabbedList<Tabs extends TabList, Result extends ListPage>(
 
   return {
     tab,
-    selectTab: (value: string) => setTabParam(value, RESET_PAGE),
+    selectTab: (value: string) => setTabParam(value, resetPageAnd(resetOnTab)),
     page,
     setPage,
     lastPage,

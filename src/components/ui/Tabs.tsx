@@ -1,6 +1,7 @@
 import type { KeyboardEvent, ReactNode } from 'react';
 import { cx } from '@lib/cx';
 import { rovingIndex } from '@lib/roving-index';
+import { CountBadge } from './CountBadge';
 import { pill } from './styles';
 import { TileButton } from './TileButton';
 
@@ -49,11 +50,7 @@ export function Tabs<T extends string>({
       role="tablist"
       aria-label={label}
       onKeyDown={onKeyDown}
-      className={cx(
-        'flex',
-        variant === 'line' ? 'border-border gap-1 overflow-x-auto border-b' : 'gap-3',
-        className,
-      )}
+      className={cx('flex', variant === 'line' ? 'border-border gap-1 border-b' : 'gap-3', className)}
     >
       {items.map((item) => {
         const selected = item.value === value;
@@ -80,14 +77,15 @@ export function Tabs<T extends string>({
             >
               {item.label}
               {item.count !== undefined && (
-                <span
+                <CountBadge
+                  inline
                   className={cx(
-                    'grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[0.71875rem] font-bold tabular-nums transition-colors duration-150',
+                    'transition-colors duration-150',
                     selected ? 'bg-role-strong text-on-role' : 'bg-surface-strong text-text-secondary',
                   )}
                 >
                   {item.count}
-                </span>
+                </CountBadge>
               )}
             </button>
           );

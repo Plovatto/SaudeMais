@@ -1,6 +1,6 @@
 import { LuChevronRight } from 'react-icons/lu';
 import { Link } from 'react-router';
-import { Avatar } from '@components/ui';
+import { Avatar, CountBadge } from '@components/ui';
 import { profileUrl, type Area } from '@constants/areas';
 import { useCurrentUser } from '@lib/auth/useSession';
 import { cx } from '@lib/cx';
@@ -27,17 +27,19 @@ function SideLink({ item }: { item: NavItem }) {
       />
       <span className="min-w-0 flex-1 truncate">{item.label}</span>
       {item.badge ? (
-        <span
-          className={cx(
-            'grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[0.71875rem] font-bold tabular-nums',
-            item.quiet
-              ? 'bg-white/14 text-white'
-              : 'bg-role text-[color-mix(in_oklab,var(--role-deep)_75%,#000)]',
-          )}
-        >
-          <span aria-hidden>{countLabel(item.badge)}</span>
+        <>
+          <CountBadge
+            inline
+            className={
+              item.quiet
+                ? 'bg-white/14 text-white'
+                : 'bg-role text-[color-mix(in_oklab,var(--role-deep)_75%,#000)]'
+            }
+          >
+            {countLabel(item.badge)}
+          </CountBadge>
           <span className="sr-only">, {badgeText(item)}</span>
-        </span>
+        </>
       ) : null}
     </Link>
   );

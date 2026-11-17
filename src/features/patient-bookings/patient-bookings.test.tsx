@@ -190,6 +190,10 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     const { user, router } = renderApp('/paciente/agendamentos');
 
     expect(screen.queryByRole('dialog', { name: SHEET })).not.toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Dr\. João Silveira/ })).toHaveAttribute(
+      'aria-haspopup',
+      'dialog',
+    );
     const detail = await openDetail(user, /Dr\. João Silveira/);
 
     expect(router.state.location.search).toBe('?id=b1');
@@ -217,13 +221,44 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     expect(detail.getByText('EX-123')).toBeVisible();
   });
 
+  it('forgets a booking of the address that is not in the list', async () => {
+    serve({ upcoming: [booking('b1')] });
+    const { router } = renderApp('/paciente/agendamentos?id=b9');
+
+    await screen.findByRole('button', { name: /Dr\. João Silveira/ });
+    await waitFor(() => expect(router.state.location.search).toBe(''));
+    expect(router.state.historyAction).toBe('REPLACE');
+    expect(screen.queryByRole('dialog', { name: SHEET })).not.toBeInTheDocument();
+  });
+
+  it('does not reopen a cancelled booking on another tab', async () => {
+    const lists: Lists = { upcoming: [booking('b1')], past: [] };
+    serve(lists, () => {
+      lists.past = [booking('b1', { status: 'cancelled', actions: closed })];
+      lists.upcoming = [];
+      return { status: 200, body: {} };
+    });
+    const { user, router } = renderApp('/paciente/agendamentos');
+
+    const dialog = await openCancel(user);
+    await user.click(within(dialog).getByRole('button', { name: 'Cancelar agendamento' }));
+    await screen.findByText('Nada por aqui');
+    await waitFor(() => expect(router.state.location.search).toBe(''));
+    await user.click(screen.getByRole('tab', { name: /^Histórico/ }));
+
+    expect((await screen.findAllByText('Cancelada')).length).toBeGreaterThan(0);
+    expect(router.state.location.search).toBe('?aba=realizados');
+    expect(screen.queryByRole('dialog', { name: SHEET })).not.toBeInTheDocument();
+  });
+
   it('shows the details beside the list on large screens', async () => {
     stubMatchMedia((query) => query === DESKTOP_QUERY);
     serve({ upcoming: [booking('b1'), exam('b2')] });
     const { user, router } = renderApp('/paciente/agendamentos');
 
     const first = await screen.findByRole('button', { name: /Dr\. João Silveira/ });
-    expect(first).toHaveAttribute('aria-pressed', 'true');
+    expect(first).toHaveAttribute('aria-current', 'true');
+    expect(first).not.toHaveAttribute('aria-haspopup');
     expect(await screen.findByRole('heading', { name: 'Dr. João Silveira' })).toBeVisible();
     expect(screen.queryByRole('dialog', { name: SHEET })).not.toBeInTheDocument();
 
@@ -231,8 +266,8 @@ describe('patient bookings', { timeout: 15_000 }, () => {
 
     expect(router.state.location.search).toBe('?id=b2');
     expect(await screen.findByRole('heading', { name: 'Ultrassom' })).toBeVisible();
-    expect(screen.getByRole('button', { name: /Ultrassom/ })).toHaveAttribute('aria-pressed', 'true');
-    expect(first).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('button', { name: /Ultrassom/ })).toHaveAttribute('aria-current', 'true');
+    expect(first).not.toHaveAttribute('aria-current');
   });
 
   it('links to the reschedule page and tells how many reschedules are left', async () => {

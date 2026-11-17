@@ -7,7 +7,7 @@ import { Button, ButtonLink, Dialog, EmptyState, TabPanel, Tabs } from '@compone
 import { overline } from '@components/ui/styles';
 import { areas, BOOKING_PARAM } from '@constants/areas';
 import { DESKTOP_QUERY, useMediaQuery } from '@hooks/useMediaQuery';
-import { RESET_PAGE } from '@hooks/usePageParam';
+import { resetPageAnd } from '@hooks/usePageParam';
 import { useSearchParam, useSetSearchParams } from '@hooks/useSearchParam';
 import { useTabbedList } from '@hooks/useTabbedList';
 import type { PatientBooking } from '@lib/api/models';
@@ -28,6 +28,7 @@ import { CancelDialog } from './CancelDialog';
 
 const BOOK_URL = `${areas.patient.base}/consultas/nova`;
 const TABS_ID = 'patient-bookings';
+const RESET_SELECTION = [BOOKING_PARAM];
 
 const TABS = [
   {
@@ -70,20 +71,24 @@ export function PatientBookingsPage() {
   const desktop = useMediaQuery(DESKTOP_QUERY);
   const detailId = useId();
   const raw = { tipo, status };
-  const list = useTabbedList(TABS, ({ scope }, page) => {
-    const params: BookingListParams = { scope, page, ...filterQuery(scope, raw) };
-    return {
-      queryKey: queryKeys.patient.bookings(params),
-      queryFn: (signal: AbortSignal) => listBookings(params, signal),
-    };
-  });
+  const list = useTabbedList(
+    TABS,
+    ({ scope }, page) => {
+      const params: BookingListParams = { scope, page, ...filterQuery(scope, raw) };
+      return {
+        queryKey: queryKeys.patient.bookings(params),
+        queryFn: (signal: AbortSignal) => listBookings(params, signal),
+      };
+    },
+    RESET_SELECTION,
+  );
   const [cancelling, setCancelling] = useState<PatientBooking | null>(null);
   const results = useRef<HTMLParagraphElement>(null);
   const counts = list.lastData?.counts;
   const valid = normalizeFilters(list.tab.scope, raw);
   const filtered = activeCount(valid) > 0 && !list.query.isPlaceholderData;
   const found = (total: number) => (filtered ? `${count(total)} com esses filtros` : count(total));
-  const applyFilters = (next: BookingFilters) => setParams(next, RESET_PAGE);
+  const applyFilters = (next: BookingFilters) => setParams(next, resetPageAnd(RESET_SELECTION));
   const clearFilters = () => {
     applyFilters(NO_FILTERS);
     results.current?.focus();
@@ -92,6 +97,11 @@ export function PatientBookingsPage() {
   const selected = chosen ?? (desktop ? list.items?.[0] : undefined);
   const select = (booking: PatientBooking) => setSelectedId(booking.id);
   const closeSheet = () => setSelectedId('');
+
+  const settled = list.items !== undefined && !list.query.isPlaceholderData;
+  useEffect(() => {
+    if (settled && selectedId && !chosen) setSelectedId('', { replace: true });
+  }, [settled, selectedId, chosen, setSelectedId]);
 
   useEffect(() => {
     if (valid.tipo !== tipo || valid.status !== status) {
@@ -186,6 +196,7 @@ export function PatientBookingsPage() {
                             booking={booking}
                             selected={desktop && booking.id === selected?.id}
                             onSelect={() => select(booking)}
+                            opensDialog={!desktop}
                           />
                         </li>
                       ))}
@@ -209,7 +220,7 @@ export function PatientBookingsPage() {
         <Dialog
           open={selected !== undefined}
           onClose={closeSheet}
-          title={selected ? 'Detalhes do agendamento' : ''}
+          title="Detalhes do agendamento"
           placement="sheet"
           bare
         >
