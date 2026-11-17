@@ -1,4 +1,4 @@
-import { queryOptions, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { queryOptions, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import type { Role } from '@constants/areas';
 import { queryKeys } from '@lib/query-keys';
@@ -13,6 +13,17 @@ export const unreadCountQuery = (role: Role) =>
     staleTime: 60_000,
     refetchOnWindowFocus: true,
   });
+
+const POLL_INTERVAL_MS = 120_000;
+
+export const useUnreadCount = (role: Role): number | undefined =>
+  useQuery({
+    ...unreadCountQuery(role),
+    refetchInterval: POLL_INTERVAL_MS,
+    refetchIntervalInBackground: false,
+  }).data;
+
+export const unreadText = (count: number) => (count === 1 ? '1 não lida' : `${count} não lidas`);
 
 export type NotificationPage = ResponseOf<'/api/notifications', 'get'>;
 

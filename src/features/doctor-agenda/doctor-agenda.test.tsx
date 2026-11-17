@@ -133,6 +133,9 @@ const complete = async (user: User, scope: Scope) => {
   return dialog;
 };
 
+const homeCalls = (calls: { url: URL }[]) =>
+  calls.filter((call) => call.url.pathname === '/api/doctor/home').length;
+
 describe('doctor home', { timeout: 15_000 }, () => {
   it('shows the request banner, the summary of today and both appointment sections', async () => {
     serve({
@@ -446,10 +449,11 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     const { scope } = await card(/^Andreia Soares/);
     queryClient.setQueryData(queryKeys.doctor.home, home());
     const before = listCalls(calls).length;
+    const homeBefore = homeCalls(calls);
     await user.click(scope.getByRole('button', { name: /^Confirmar/ }));
 
     expect(await screen.findByText('Consulta confirmada.')).toBeVisible();
-    expect(queryClient.getQueryState(queryKeys.doctor.home)?.isInvalidated).toBe(true);
+    await waitFor(() => expect(homeCalls(calls)).toBeGreaterThan(homeBefore));
     expect(posts(calls)[0]?.url.pathname).toBe('/api/appointments/a1/confirm');
     expect(posts(calls)[0]?.body).toEqual({ startsAt: FUTURE });
     await waitFor(() => expect(listCalls(calls).length).toBeGreaterThan(before));
@@ -626,9 +630,10 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     const { scope } = await card(/^Andreia Soares/);
     queryClient.setQueryData(queryKeys.doctor.home, home());
     const before = listCalls(calls).length;
+    const homeBefore = homeCalls(calls);
     await complete(user, scope);
     expect(await screen.findByText('Consulta concluída.')).toBeVisible();
-    expect(queryClient.getQueryState(queryKeys.doctor.home)?.isInvalidated).toBe(true);
+    await waitFor(() => expect(homeCalls(calls)).toBeGreaterThan(homeBefore));
     expect(posts(calls)[0]?.url.pathname).toBe('/api/appointments/a1/complete');
     expect(posts(calls)[0]?.body).toEqual({ startsAt: PAST });
     await waitFor(() => expect(listCalls(calls).length).toBeGreaterThan(before));

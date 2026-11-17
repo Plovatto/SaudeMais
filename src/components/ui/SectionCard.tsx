@@ -14,10 +14,10 @@ export function SectionCard({ title, description, action, children, ...props }: 
       <Card className="flex flex-col gap-5">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-col gap-1">
-            <h2 id={titleId} className="text-text text-lg font-semibold">
+            <h2 id={titleId} className="text-text text-[0.9375rem] font-semibold tracking-[-0.01em]">
               {title}
             </h2>
-            {description && <p className="text-text-secondary text-sm">{description}</p>}
+            {description && <p className="text-text-muted text-[0.8125rem]">{description}</p>}
           </div>
           {action}
         </header>

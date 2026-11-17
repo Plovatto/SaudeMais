@@ -2,7 +2,8 @@ import type { ComponentProps } from 'react';
 import { cx } from '@lib/cx';
 
 const variants = {
-  elevated: 'rounded-card bg-surface p-6 shadow-card dark:border dark:border-border',
+  elevated: 'rounded-card border border-border bg-surface p-5 shadow-card',
+  raised: 'rounded-card border border-border bg-surface p-5 shadow-raised',
   outlined: 'rounded-tile border border-border bg-surface p-4',
 };
 

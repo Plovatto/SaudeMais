@@ -43,14 +43,14 @@ export function Switch({
       <span
         aria-hidden
         className={cx(
-          'relative h-6 w-11 shrink-0 rounded-full transition-colors',
+          'relative h-6 w-10 shrink-0 rounded-full transition-colors duration-150',
           checked ? 'bg-role-strong' : 'bg-border-field',
         )}
       >
         <span
           className={cx(
-            'bg-surface shadow-button absolute start-0.5 top-0.5 size-5 rounded-full transition-transform',
-            checked && 'translate-x-5 rtl:-translate-x-5',
+            'absolute start-[3px] top-[3px] size-[18px] rounded-full bg-white shadow-[0_1px_2px_rgb(0_0_0/0.25)] transition-transform duration-200 ease-(--ease-out-quint)',
+            checked && 'translate-x-4 rtl:-translate-x-4',
           )}
         />
       </span>

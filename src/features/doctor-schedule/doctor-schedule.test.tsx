@@ -86,8 +86,11 @@ describe('doctor schedule', { timeout: 15_000 }, () => {
     expect(sunday.getByText('Nenhum horário configurado')).toBeInTheDocument();
     expect(sunday.getByText('Unidade fechada — sem faixas')).toBeInTheDocument();
     expect(saveButton()).toBeDisabled();
-    const nav = within(screen.getAllByRole('navigation', { name: 'Navegação principal' })[0] as HTMLElement);
-    expect(nav.getByRole('link', { name: 'Gerenciar' })).toHaveAttribute('aria-current', 'page');
+    const nav = within(screen.getAllByRole('navigation', { name: 'Menu' })[0] as HTMLElement);
+    expect(nav.getByRole('link', { name: 'Horários de atendimento' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
   });
 
   it('activates a day, adds a range, saves and shows the warnings', async () => {

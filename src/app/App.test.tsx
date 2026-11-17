@@ -10,11 +10,14 @@ function renderAt(path: string, basename?: string, signedIn = true) {
   return renderApp(path, { ...(basename && { basename }), ...(signedIn && { signedInAs: ALL_ROLES }) });
 }
 
-async function mainNav() {
-  const [nav] = await screen.findAllByRole('navigation', { name: 'Navegação principal' });
-  if (!nav) throw new Error('Main navigation not found');
+async function navigation(name: string) {
+  const [nav] = await screen.findAllByRole('navigation', { name });
+  if (!nav) throw new Error(`${name} navigation not found`);
   return within(nav);
 }
+
+const itemName = (link: HTMLElement) =>
+  (link.getAttribute('aria-label') ?? link.querySelector('span')?.textContent ?? '').trim();
 
 afterEach(() => {
   localStorage.clear();
@@ -23,15 +26,30 @@ afterEach(() => {
 
 describe('role areas', () => {
   it.each([
-    ['/paciente', ['Início', 'Consultas', 'Exames', 'Perfil']],
-    ['/medico', ['Início', 'Agenda', 'Gerenciar', 'Perfil']],
-    ['/admin', ['Início', 'Usuários', 'Relatórios', 'Configurações']],
-  ])('shows the four tabs of %s and marks the current one', async (path, labels) => {
+    ['/paciente', ['Início', 'Meus agendamentos', 'Agendar consulta', 'Agendar exame']],
+    ['/medico', ['Início', 'Agenda', 'Horários de atendimento']],
+    ['/admin', ['Painel', 'Usuários', 'Relatórios', 'Configurações']],
+  ])('lists the menu of %s and marks the current page', async (path, labels) => {
     renderAt(path);
 
-    const nav = await mainNav();
-    expect(nav.getAllByRole('link').map((link) => link.textContent)).toEqual(labels);
-    expect(nav.getByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page');
+    const menu = await navigation('Menu');
+    expect(menu.getAllByRole('link').map(itemName)).toEqual(labels);
+    expect(menu.getAllByRole('link')[0]).toHaveAttribute('aria-current', 'page');
+    expect((await navigation('Conta')).getAllByRole('link').map(itemName)).toEqual([
+      'Notificações',
+      'Meu perfil',
+    ]);
+  });
+
+  it.each([
+    ['/paciente', ['Início', 'Agenda', 'Agendar consulta', 'Avisos', 'Perfil']],
+    ['/medico', ['Início', 'Agenda', 'Horários de atendimento', 'Avisos', 'Perfil']],
+    ['/admin', ['Painel', 'Usuários', 'Relatórios', 'Ajustes']],
+  ])('puts the main actions of %s in the bottom bar', async (path, labels) => {
+    renderAt(path);
+
+    const bar = await navigation('Principal');
+    expect(bar.getAllByRole('link').map(itemName)).toEqual(labels);
   });
 
   it('does not move the focus on the first load', async () => {
@@ -42,15 +60,37 @@ describe('role areas', () => {
   });
 
   it.each([
-    ['/paciente/consultas/1/reagendar', 'Consultas'],
-    ['/paciente/agendamentos', 'Início'],
+    ['/paciente/consultas/1/reagendar', 'Meus agendamentos'],
+    ['/paciente/exames/1/resultado', 'Meus agendamentos'],
     ['/admin/usuarios/1', 'Usuários'],
     ['/admin/configuracoes/especialidades', 'Configurações'],
-  ])('marks the section of %s without calling it the current page', async (path, tab) => {
+  ])('marks the section of %s without calling it the current page', async (path, label) => {
     renderAt(path);
 
-    const nav = await mainNav();
-    expect(nav.getByRole('link', { name: tab })).toHaveAttribute('aria-current', 'true');
+    const menu = await navigation('Menu');
+    const item = menu.getAllByRole('link').find((link) => itemName(link) === label);
+    expect(item).toHaveAttribute('aria-current', 'true');
+  });
+
+  it('keeps the ids of the current address in the link to the parent page', async () => {
+    renderAt('/admin/usuarios/42/medico');
+
+    const crumbs = await navigation('Você está em');
+    expect(crumbs.getByRole('link', { name: 'Editar usuário' })).toHaveAttribute(
+      'href',
+      '/admin/usuarios/42',
+    );
+  });
+
+  it('shows where the page sits and links back to its parent', async () => {
+    renderAt('/paciente/exames/1/resultado');
+
+    const crumbs = await navigation('Você está em');
+    expect(crumbs.getByRole('link', { name: 'Meus agendamentos' })).toHaveAttribute(
+      'href',
+      '/paciente/agendamentos',
+    );
+    expect(crumbs.getByText('Resultado do exame')).toHaveAttribute('aria-current', 'page');
   });
 
   it('skips straight to the main content', async () => {
@@ -69,83 +109,70 @@ describe('role areas', () => {
     ).toHaveAttribute('data-role', 'doctor');
   });
 
-  it('moves the current tab, the page title and the focus when navigating', async () => {
+  it('moves the current page, the page title and the focus when navigating', async () => {
     const { user } = renderAt('/paciente');
-    const nav = await mainNav();
+    const menu = await navigation('Menu');
 
-    await user.click(nav.getByRole('link', { name: 'Consultas' }));
+    await user.click(menu.getByRole('link', { name: 'Agendar consulta' }));
 
     const heading = await screen.findByRole('heading', { level: 1, name: 'Agendar consulta' });
     await waitFor(() => expect(document.title).toBe('Agendar consulta · Saúde+'));
     expect(heading).toHaveFocus();
-    expect(nav.getByRole('link', { name: 'Consultas' })).toHaveAttribute('aria-current', 'page');
-    expect(nav.getByRole('link', { name: 'Início' })).not.toHaveAttribute('aria-current');
+    expect(menu.getByRole('link', { name: 'Agendar consulta' })).toHaveAttribute('aria-current', 'page');
+    expect(menu.getByRole('link', { name: 'Início' })).not.toHaveAttribute('aria-current');
+  });
+
+  it('hides the bottom bar on booking steps', async () => {
+    renderAt('/paciente/consultas/nova');
+
+    await screen.findByRole('heading', { level: 1, name: 'Agendar consulta' });
+    expect(screen.queryByRole('navigation', { name: 'Principal' })).not.toBeInTheDocument();
   });
 });
 
-describe('account menu', () => {
+describe('account', () => {
   it('opens the profile of the current area and switches the profile', async () => {
     const { user, router } = renderAt('/medico');
 
-    await user.click(await screen.findByRole('button', { name: 'Menu da conta, Médico' }));
-    await user.click(screen.getByRole('menuitem', { name: 'Meu perfil' }));
+    await user.click((await navigation('Conta')).getByRole('link', { name: 'Meu perfil' }));
     expect(await screen.findByRole('heading', { level: 1, name: 'Meu perfil' })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/medico/perfil');
 
-    await user.click(screen.getByRole('button', { name: 'Menu da conta, Médico' }));
-    await user.click(screen.getByRole('menuitem', { name: 'Trocar perfil' }));
+    await user.click(screen.getByRole('link', { name: 'Trocar perfil' }));
     expect(await screen.findByRole('heading', { level: 1, name: 'Escolha seu perfil' })).toBeInTheDocument();
   });
 
   it('hides the profile switch for accounts with a single role', async () => {
-    const { user } = renderApp('/paciente', { signedInAs: ['patient'] });
+    renderApp('/paciente/perfil', { signedInAs: ['patient'] });
 
-    await user.click(await screen.findByRole('button', { name: 'Menu da conta, Paciente' }));
+    await screen.findByRole('heading', { level: 1, name: 'Meu perfil' });
 
-    expect(screen.queryByRole('menuitem', { name: 'Trocar perfil' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Trocar perfil' })).not.toBeInTheDocument();
   });
 
-  it('leaves the account from the menu', async () => {
+  it('leaves the account from the profile page', async () => {
     mockApi({ status: 204 });
-    const { user, router } = renderAt('/admin');
+    const { user, router } = renderAt('/admin/perfil');
 
-    await user.click(await screen.findByRole('button', { name: 'Menu da conta, Administrador' }));
-    await user.click(screen.getByRole('menuitem', { name: 'Sair' }));
+    await user.click(await screen.findByRole('button', { name: 'Sair' }));
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/login'));
   });
 
-  it('keeps the chosen theme when moving between the area and public pages', async () => {
+  it('switches the theme from the top bar and keeps it on public pages', async () => {
     const { user, router } = renderAt('/paciente');
-    await user.click(await screen.findByRole('button', { name: 'Menu da conta, Paciente' }));
-    expect(screen.getByRole('group', { name: 'Tema' })).toBeInTheDocument();
-    await user.click(screen.getByRole('menuitemradio', { name: 'Tema escuro' }));
 
-    await router.navigate('/termos');
-    await user.click(await screen.findByRole('button', { name: 'Tema' }));
-
-    expect(screen.getByRole('menuitemradio', { name: 'Tema escuro' })).toHaveAttribute(
-      'aria-checked',
-      'true',
-    );
-  });
-
-  it('switches the theme and marks the current choice', async () => {
-    const { user } = renderAt('/paciente');
-    const trigger = await screen.findByRole('button', { name: 'Menu da conta, Paciente' });
-
-    await user.click(trigger);
-    await user.click(screen.getByRole('menuitemradio', { name: 'Tema escuro' }));
-    await user.click(trigger);
+    const [toggle] = await screen.findAllByRole('button', { name: 'Usar tema escuro' });
+    if (!toggle) throw new Error('Theme toggle not found');
+    await user.click(toggle);
 
     expect(document.documentElement.dataset.theme).toBe('dark');
+    expect(screen.getAllByRole('button', { name: 'Usar tema claro' }).length).toBeGreaterThan(0);
+    await router.navigate('/termos');
+    await user.click(await screen.findByRole('button', { name: 'Tema' }));
     expect(screen.getByRole('menuitemradio', { name: 'Tema escuro' })).toHaveAttribute(
       'aria-checked',
       'true',
-    );
-    expect(screen.getByRole('menuitemradio', { name: 'Tema claro' })).toHaveAttribute(
-      'aria-checked',
-      'false',
     );
   });
 });
@@ -230,7 +257,7 @@ describe('public pages and errors', () => {
     renderRouter(router, { signedInAs: ['patient'] });
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Algo deu errado' })).toBeInTheDocument();
-    expect(screen.getAllByRole('navigation', { name: 'Navegação principal' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('navigation', { name: 'Menu' }).length).toBeGreaterThan(0);
   });
 
   it('shows the 403 page', async () => {

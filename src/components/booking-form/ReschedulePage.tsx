@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { LuLock } from 'react-icons/lu';
 import { useParams } from 'react-router';
@@ -74,7 +74,6 @@ interface ReschedulePageProps<B extends Reschedulable> extends RescheduleFormPro
   kind: PatientBooking['kind'];
   title: string;
   subtitle: string;
-  icon: ReactNode;
   bookedTitle: string;
   describe: (booking: B) => string;
   load: (id: string, signal: AbortSignal) => Promise<B>;
@@ -155,7 +154,6 @@ export function ReschedulePage<B extends Reschedulable>({
   kind,
   title,
   subtitle,
-  icon,
   bookedTitle,
   describe,
   load,
@@ -172,13 +170,7 @@ export function ReschedulePage<B extends Reschedulable>({
   const gone = detail.error instanceof ApiError && detail.error.code === 'NOT_FOUND';
 
   return (
-    <BookingPage<B>
-      title={title}
-      subtitle={subtitle}
-      icon={icon}
-      bookedTitle={bookedTitle}
-      describe={describe}
-    >
+    <BookingPage<B> title={title} subtitle={subtitle} bookedTitle={bookedTitle} describe={describe}>
       {(onBooked) => (
         <>
           {detail.isPending && (

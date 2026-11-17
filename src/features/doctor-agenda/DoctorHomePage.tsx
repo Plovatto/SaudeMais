@@ -7,8 +7,7 @@ import { ButtonLink, QueryError, SectionCard, StatGrid } from '@components/ui';
 import { areas } from '@constants/areas';
 import { AGENDA_TABS, doctorAgendaUrl } from '@constants/doctor-agenda';
 import { notificationText } from '@lib/messages/notifications.pt-BR';
-import { queryKeys } from '@lib/query-keys';
-import { doctorApi, type DoctorHome } from './doctor-api';
+import { doctorHomeQuery, type DoctorHome } from './doctor-api';
 import { HomeSection } from './HomeSection';
 
 const DOCTOR = areas.doctor.base;
@@ -53,10 +52,7 @@ function HomeNotice({ home: { lastNotification, counts } }: { home: DoctorHome }
 }
 
 export function DoctorHomePage() {
-  const query = useQuery({
-    queryKey: queryKeys.doctor.home,
-    queryFn: ({ signal }) => doctorApi.home(signal),
-  });
+  const query = useQuery(doctorHomeQuery);
   const data = query.data;
 
   return (

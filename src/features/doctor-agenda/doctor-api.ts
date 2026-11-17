@@ -1,5 +1,7 @@
+import { queryOptions } from '@tanstack/react-query';
 import { apiFetch, type ResponseOf } from '@lib/api/api-fetch';
 import type { DoctorAppointment, HealthMetricsInput } from '@lib/api/models';
+import { queryKeys } from '@lib/query-keys';
 
 const PAGE_SIZE = 10;
 
@@ -19,8 +21,12 @@ const decide =
   ({ id, startsAt }: DoctorAppointment) =>
     apiFetch('post', path, { params: { id }, body: { startsAt } });
 
+export const doctorHomeQuery = queryOptions({
+  queryKey: queryKeys.doctor.home,
+  queryFn: ({ signal }) => apiFetch('get', '/api/doctor/home', { signal }),
+});
+
 export const doctorApi = {
-  home: (signal: AbortSignal) => apiFetch('get', '/api/doctor/home', { signal }),
   list: ({ tab, page }: AgendaParams, signal: AbortSignal) =>
     apiFetch('get', '/api/doctor/appointments', { query: { tab, page, pageSize: PAGE_SIZE }, signal }),
   confirm: decide('/api/appointments/{id}/confirm'),

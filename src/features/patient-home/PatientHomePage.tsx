@@ -5,9 +5,8 @@ import { LastNotification } from '@components/notifications/LastNotification';
 import { ButtonLink, IconSlot } from '@components/ui';
 import { areas } from '@constants/areas';
 import { cx } from '@lib/cx';
-import { queryKeys } from '@lib/query-keys';
 import { HealthSummary } from './HealthSummary';
-import { fetchPatientHome } from './patient-home-api';
+import { patientHomeQuery } from './patient-home-api';
 import { UpcomingBookings } from './UpcomingBookings';
 
 const PATIENT = areas.patient.base;
@@ -30,10 +29,7 @@ const SHORTCUTS = [
 ] as const;
 
 export function PatientHomePage() {
-  const query = useQuery({
-    queryKey: queryKeys.patient.home,
-    queryFn: ({ signal }) => fetchPatientHome(signal),
-  });
+  const query = useQuery(patientHomeQuery);
   const notification = query.data?.lastNotification;
 
   return (

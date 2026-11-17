@@ -2,32 +2,22 @@ import { useRef, useState, type ReactNode } from 'react';
 import { LuCheck } from 'react-icons/lu';
 import { PageHeader } from '@components/layout/PageHeader';
 import { ButtonLink, Card, Dialog } from '@components/ui';
-import { areas, PATIENT_BOOKINGS_PATH } from '@constants/areas';
-
-const PATIENT = areas.patient.base;
+import { PATIENT_BOOKINGS_PATH } from '@constants/areas';
 
 interface BookingPageProps<R> {
   title: string;
   subtitle: string;
-  icon: ReactNode;
   bookedTitle: string;
   describe: (booked: R) => string;
   children: (onBooked: (booked: R) => void) => ReactNode;
 }
 
-export function BookingPage<R>({
-  title,
-  subtitle,
-  icon,
-  bookedTitle,
-  describe,
-  children,
-}: BookingPageProps<R>) {
+export function BookingPage<R>({ title, subtitle, bookedTitle, describe, children }: BookingPageProps<R>) {
   const [booked, setBooked] = useState<R | null>(null);
   const detailsLink = useRef<HTMLAnchorElement>(null);
   return (
     <div className="mx-auto w-full max-w-[520px]">
-      <PageHeader title={title} subtitle={subtitle} icon={icon} back backFallback={PATIENT} />
+      <PageHeader title={title} subtitle={subtitle} />
       <Card className="px-5 py-8 sm:px-8">{children(setBooked)}</Card>
       <Dialog
         open={booked !== null}

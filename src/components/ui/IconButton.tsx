@@ -13,7 +13,11 @@ export function IconButton({ label, icon, className, type = 'button', ...props }
     <button
       type={type}
       aria-label={label}
-      className={cx(squareButton, 'text-text-secondary can-hover:bg-surface-muted', className)}
+      className={cx(
+        squareButton,
+        'text-text-secondary can-hover:bg-surface-strong can-hover:text-text',
+        className,
+      )}
       {...props}
     >
       <IconSlot className="text-xl">{icon}</IconSlot>

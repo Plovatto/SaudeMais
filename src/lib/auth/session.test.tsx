@@ -72,7 +72,7 @@ describe('session check', () => {
     renderApp('/paciente');
 
     expect(screen.getByRole('status', { name: 'Carregando' })).toBeInTheDocument();
-    expect(await screen.findByText('Ana Maria Silva')).toBeInTheDocument();
+    expect((await screen.findAllByText('Ana Maria Silva')).length).toBeGreaterThan(0);
     const headers = new Headers(fetchMock.mock.calls[0]?.[1]?.headers);
     expect(headers.get('Authorization')).toBe(`Bearer ${TEST_TOKEN}`);
   });
@@ -91,7 +91,9 @@ describe('session check', () => {
   it('keeps the session and offers a retry when the server cannot be reached', async () => {
     sessionStorage.setItem(SESSION_STORAGE_KEY, TEST_TOKEN);
     let online = false;
-    mockFetch(() => (online ? { status: 200, body: testUser(['patient']) } : { status: 503 }));
+    mockFetch((path) =>
+      online && path === '/api/me' ? { status: 200, body: testUser(['patient']) } : { status: 503 },
+    );
     const { user } = renderApp('/paciente');
 
     await user.click(await screen.findByRole('button', { name: 'Tentar de novo' }));
@@ -99,7 +101,7 @@ describe('session check', () => {
     online = true;
     await user.click(screen.getByRole('button', { name: 'Tentar de novo' }));
 
-    expect(await screen.findByText('Ana Maria Silva')).toBeInTheDocument();
+    expect((await screen.findAllByText('Ana Maria Silva')).length).toBeGreaterThan(0);
   });
 
   it('offers a retry when the network fails outright while checking', async () => {
@@ -248,7 +250,7 @@ describe('signing out', () => {
 describe('cached data between sessions', () => {
   it('is cleared when the session expires', async () => {
     const { queryClient } = renderApp('/paciente', { signedInAs: ['patient'] });
-    await screen.findByText('Ana Maria Silva');
+    await screen.findAllByText('Ana Maria Silva');
     queryClient.setQueryData(['private'], 'dados de Ana');
 
     act(() => endSession('expired', TEST_TOKEN));
@@ -258,7 +260,7 @@ describe('cached data between sessions', () => {
 
   it('is cleared when another account logs in on the same tab', async () => {
     const { queryClient } = renderApp('/paciente', { signedInAs: ['patient'] });
-    await screen.findByText('Ana Maria Silva');
+    await screen.findAllByText('Ana Maria Silva');
     queryClient.setQueryData(['private'], 'dados de Ana');
 
     act(() => startSession('B'.repeat(43), false));
@@ -268,7 +270,7 @@ describe('cached data between sessions', () => {
 
   it('ends the session when any request answers 401 with the current token', async () => {
     const { router, queryClient } = renderApp('/paciente/agendamentos', { signedInAs: ['patient'] });
-    await screen.findByText('Ana Maria Silva');
+    await screen.findAllByText('Ana Maria Silva');
     const expiredError = Object.assign(new ApiError(401, 'UNAUTHENTICATED', ''), { token: TEST_TOKEN });
 
     await act(() =>
@@ -294,7 +296,7 @@ describe('cached data between sessions', () => {
 describe('signing out across tabs', () => {
   it('follows another tab to the login, without a way back, and drops cached data', async () => {
     const { router, queryClient } = renderApp('/paciente/agendamentos', { signedInAs: ['patient'] });
-    await screen.findByText('Ana Maria Silva');
+    await screen.findAllByText('Ana Maria Silva');
     queryClient.setQueryData(['private'], 'dados de Ana');
     const otherTab = new BroadcastChannel('saudemais:v1:session');
 
@@ -308,7 +310,7 @@ describe('signing out across tabs', () => {
 
   it('notices a remembered token removed by another tab', async () => {
     const { router } = renderApp('/paciente', { signedInAs: ['patient'] });
-    await screen.findByText('Ana Maria Silva');
+    await screen.findAllByText('Ana Maria Silva');
     sessionStorage.clear();
 
     act(() => {

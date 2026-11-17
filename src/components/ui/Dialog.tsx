@@ -89,11 +89,11 @@ export function Dialog({
           ref.current?.close();
       }}
       className={cx(
-        'rounded-card border-role bg-surface text-text shadow-card m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-sm overflow-y-auto border p-0',
+        'border-border bg-surface text-text shadow-overlay backdrop:motion-safe:animate-fade motion-safe:animate-pop m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-sm overflow-y-auto rounded-[20px] border p-0',
         placement === 'side' &&
-          'max-w-lg lg:me-0 lg:h-dvh lg:max-h-dvh lg:w-full lg:rounded-e-none lg:border-y-0 lg:border-e-0',
+          'lg:motion-safe:animate-slide max-w-lg lg:me-0 lg:h-dvh lg:max-h-dvh lg:w-full lg:rounded-e-none lg:border-y-0 lg:border-e-0',
         placement === 'sheet' &&
-          'max-sm:mb-0 max-sm:w-full max-sm:max-w-none max-sm:rounded-b-none max-sm:border-x-0 max-sm:border-b-0 max-sm:pb-[env(safe-area-inset-bottom)] sm:max-w-md',
+          'max-sm:rounded-t-sheet max-sm:motion-safe:animate-sheet max-sm:mb-0 max-sm:w-full max-sm:max-w-none max-sm:rounded-b-none max-sm:border-x-0 max-sm:border-b-0 max-sm:pb-[env(safe-area-inset-bottom)] sm:max-w-md',
       )}
     >
       <div className={cx('relative flex flex-col gap-4 p-6 pt-8', centered && 'items-center text-center')}>
