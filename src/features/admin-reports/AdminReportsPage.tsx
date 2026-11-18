@@ -1,7 +1,8 @@
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { LuChartColumn, LuDownload, LuFileText } from 'react-icons/lu';
+import { LuDownload, LuFileText } from 'react-icons/lu';
 import { PageHeader } from '@components/layout/PageHeader';
+import { NoBookings } from '@components/reports/NoBookings';
 import { attendanceRate, reportOutcomes } from '@components/reports/report-outcomes';
 import {
   downloadAdminReport,
@@ -9,7 +10,7 @@ import {
   type AdminReport,
   type ReportFormat,
 } from '@components/reports/reports-api';
-import { Button, EmptyState, QueryError, Skeleton, StatTile, stagger, useToast } from '@components/ui';
+import { Button, Card, QueryError, Skeleton, StatTile, stagger, useToast } from '@components/ui';
 import { useLeaveSignal } from '@hooks/useLeaveSignal';
 import { ApiError } from '@lib/api/api-error';
 import { cx } from '@lib/cx';
@@ -104,7 +105,7 @@ export function AdminReportsPage() {
               icon={icon}
               loading={busy}
               disabled={!ready || (exporting.isPending && !busy)}
-              aria-label={`Exportar em ${label}`}
+              loadingLabel={label}
               onClick={() => data && exporting.mutate({ format, report: data })}
             >
               {busy ? 'Gerando…' : label}
@@ -115,14 +116,12 @@ export function AdminReportsPage() {
       <div className="flex flex-col gap-4 lg:gap-5">
         <PeriodControls errors={fieldErrors ?? NO_ERRORS} />
         {query.isPending && <ReportSkeleton />}
-        {query.isError && !fieldErrors && <QueryError error={error} onRetry={() => void query.refetch()} />}
-        {empty && (
-          <EmptyState
-            icon={<LuChartColumn />}
-            title="Nenhum agendamento no período"
-            description="Escolha outro período para ver os números."
-          />
+        {query.isError && !fieldErrors && (
+          <Card>
+            <QueryError error={error} onRetry={() => void query.refetch()} />
+          </Card>
         )}
+        {empty && <NoBookings />}
         {data && !empty && (
           <div
             aria-busy={query.isPlaceholderData}

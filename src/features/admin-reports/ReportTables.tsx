@@ -1,4 +1,5 @@
 import { statusDisplay, type StatusKey } from '@components/bookings/booking-display';
+import { seriesCopy, TOP_LISTS } from '@components/reports/report-copy';
 import { outcomesOf } from '@components/reports/report-outcomes';
 import type { AdminReport } from '@components/reports/reports-api';
 import { SectionCard, StatusChip } from '@components/ui';
@@ -33,26 +34,10 @@ const KIND_COLUMNS = ['Consultas', 'Exames'];
 
 const SERIES_COLUMNS = ['Total', 'Realizados', 'Em aberto', 'Cancelados', 'Faltas'];
 
-const TOP_LISTS = [
-  {
-    key: 'topSpecialties',
-    title: 'Especialidades mais procuradas',
-    rowHeader: 'Especialidade',
-    empty: 'Nenhuma consulta no período.',
-  },
-  {
-    key: 'topExamTypes',
-    title: 'Exames mais procurados',
-    rowHeader: 'Exame',
-    empty: 'Nenhum exame no período.',
-  },
-] as const;
-
 const counts = (values: readonly number[]) => values.map(formatCount);
 
 function SeriesTable({ report }: { report: AdminReport }) {
-  const weekly = report.period.granularity === 'week';
-  const title = weekly ? 'Agendamentos por semana' : 'Agendamentos por dia';
+  const { title, rowHeader, rowLabel } = seriesCopy(report.period.granularity);
   const values = (point: Parameters<typeof outcomesOf>[0]) => {
     const { total, completed, open, cancelled, noShow } = outcomesOf(point);
     return [total, completed, open, cancelled, noShow];
@@ -74,11 +59,11 @@ function SeriesTable({ report }: { report: AdminReport }) {
     >
       <ReportTable
         label={title}
-        rowHeader={weekly ? 'Semana' : 'Dia'}
+        rowHeader={rowHeader}
         columns={SERIES_COLUMNS}
         rows={report.series.map((point) => ({
           key: point.start,
-          header: weekly ? `Semana de ${formatDate(point.start)}` : formatDate(point.start),
+          header: rowLabel(point.start),
           cells: counts(values(point)),
         }))}
         total={counts(totals)}
