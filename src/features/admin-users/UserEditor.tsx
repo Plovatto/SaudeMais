@@ -5,8 +5,8 @@ import { useForm } from 'react-hook-form';
 import { LuMail, LuSend, LuShieldCheck, LuShieldOff, LuStethoscope } from 'react-icons/lu';
 import { FormShell } from '@components/forms/FormShell';
 import { IdentityHeader } from '@components/forms/IdentityHeader';
-import { PersonalDataFields } from '@components/forms/PersonalDataFields';
-import { Button, FormAlert, Input, SettingRow, Switch, useToast } from '@components/ui';
+import { PersonalDataFields, ReadOnlyEmailField } from '@components/forms/PersonalDataFields';
+import { Button, FormAlert, SettingRow, Switch, useToast } from '@components/ui';
 import { formatCivilDate } from '@lib/date';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
 import { useFormSubmit } from '@hooks/useFormSubmit';
@@ -236,11 +236,8 @@ export function UserEditor({
           Esta conta está desativada. Reative-a para alterar dados e perfis.
         </FormAlert>
       )}
-      <Input
-        label="E-mail"
-        type="email"
-        value={user.email}
-        readOnly
+      <ReadOnlyEmailField
+        email={user.email}
         icon={<LuMail />}
         hint="O e-mail é usado para entrar e não pode ser alterado."
       />

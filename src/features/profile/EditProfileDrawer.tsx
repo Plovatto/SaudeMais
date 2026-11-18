@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { LuCake, LuLock } from 'react-icons/lu';
 import { FormShell } from '@components/forms/FormShell';
 import { IdentityHeader } from '@components/forms/IdentityHeader';
-import { PersonalDataFields } from '@components/forms/PersonalDataFields';
+import { PersonalDataFields, ReadOnlyEmailField } from '@components/forms/PersonalDataFields';
 import { Drawer, Input, useToast } from '@components/ui';
 import { areas, type Role } from '@constants/areas';
 import { useReportSubmitting } from '@hooks/useReportSubmitting';
@@ -92,11 +92,8 @@ function EditProfileForm({ user, role, withBirthDate, onClose, onSubmittingChang
           {...register('birthDate')}
         />
       )}
-      <Input
-        label="E-mail"
-        type="email"
-        value={user.email}
-        readOnly
+      <ReadOnlyEmailField
+        email={user.email}
         end={<LuLock aria-hidden className="text-text-muted me-3.5 shrink-0" />}
         hint="Usado para entrar. Para trocar, fale com a administração."
       />
