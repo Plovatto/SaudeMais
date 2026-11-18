@@ -1,7 +1,7 @@
 import { LuMoon, LuSun } from 'react-icons/lu';
 import { IconButton } from '@components/ui';
 import { setThemePreference } from '@lib/theme';
-import { useTheme } from '@lib/useTheme';
+import { useTheme } from '@hooks/useTheme';
 
 export function ThemeToggle() {
   const dark = useTheme() === 'dark';

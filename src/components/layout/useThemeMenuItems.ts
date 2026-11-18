@@ -2,7 +2,7 @@ import { createElement } from 'react';
 import { LuMonitor, LuMoon, LuSun } from 'react-icons/lu';
 import type { MenuItem } from '@components/ui';
 import { setThemePreference, THEME_OPTIONS, type ThemePreference } from '@lib/theme';
-import { useThemePreference } from '@lib/useTheme';
+import { useThemePreference } from '@hooks/useTheme';
 
 const icons = { light: LuSun, dark: LuMoon, system: LuMonitor } satisfies Record<ThemePreference, unknown>;
 

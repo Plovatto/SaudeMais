@@ -6,7 +6,7 @@ import {
   subscribeThemePreference,
   type Theme,
   type ThemePreference,
-} from './theme';
+} from '@lib/theme';
 
 export const useTheme = (): Theme => useSyncExternalStore(subscribeTheme, currentTheme, () => 'light');
 
