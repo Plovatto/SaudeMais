@@ -7,7 +7,7 @@ import { errorMessage } from '@lib/messages/errors.pt-BR';
 import { CompleteDialog } from './CompleteDialog';
 import type { Decision } from './decisions';
 
-const nextTask = () => new Promise((resolve) => setTimeout(resolve));
+export const nextTask = () => new Promise((resolve) => setTimeout(resolve));
 
 interface Request {
   decision: Decision;

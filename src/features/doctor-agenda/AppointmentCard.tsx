@@ -71,7 +71,7 @@ export function AppointmentActions({ appointment, onCancel, ...state }: Appointm
       ))}
       {actions.canCancel && (
         <Button variant="danger-outline" icon={<LuCircleX />} onClick={() => onCancel(appointment)}>
-          Cancelar
+          {appointment.status === 'pending' ? 'Recusar' : 'Cancelar'}
           <ActionTarget appointment={appointment} />
         </Button>
       )}

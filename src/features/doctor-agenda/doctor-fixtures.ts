@@ -81,7 +81,7 @@ export const serve = ({ lists = {}, homeData = home(), action, totals = {} }: Se
   serveApi(['doctor'], {
     [HOME]: () => ({ status: 200, body: homeData }),
     [LIST]: (_method, _body, url) => {
-      const tab = url.searchParams.get('tab') as AgendaTab | 'all';
+      const tab = (url.searchParams.get('tab') ?? 'pending') as AgendaTab | 'all';
       const count = (key: AgendaTab) => totals[key] ?? lists[key]?.length ?? 0;
       const items =
         tab === 'all'

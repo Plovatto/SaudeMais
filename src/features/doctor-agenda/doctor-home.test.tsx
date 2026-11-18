@@ -51,10 +51,7 @@ const intercept = (
 const serverError = () =>
   Promise.resolve(new Response(JSON.stringify(SERVER_ERROR.body), { status: SERVER_ERROR.status }));
 
-const rows = (section: HTMLElement) =>
-  within(section)
-    .getAllByRole('listitem')
-    .map((item) => item.textContent);
+const rows = (section: HTMLElement) => Array.from(section.querySelectorAll('li'), (item) => item.textContent);
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] });

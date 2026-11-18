@@ -8,7 +8,7 @@ import type { DoctorAppointment } from '@lib/api/models';
 import { formatDateTime } from '@lib/date';
 import { queryKeys } from '@lib/query-keys';
 import { AppointmentActions, AppointmentHeading, AppointmentInfo } from './AppointmentCard';
-import { useDecisions } from './useDecisions';
+import { nextTask, useDecisions } from './useDecisions';
 
 const cancelCopy = (appointment: DoctorAppointment | null) =>
   appointment?.status === 'pending'
@@ -49,7 +49,7 @@ export function useAppointmentActions(fallbackFocus: RefObject<HTMLElement | nul
                 busy={decisions.busy}
                 onDecide={(decision, appointment) => {
                   closeView();
-                  decisions.request(decision, appointment);
+                  void nextTask().then(() => decisions.request(decision, appointment));
                 }}
                 onCancel={(appointment) => {
                   closeView();
