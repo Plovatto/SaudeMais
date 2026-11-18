@@ -97,7 +97,10 @@ export function DoctorAgendaPage() {
   const current: View = view === AGENDA_VIEWS.list ? AGENDA_VIEWS.list : AGENDA_VIEWS.week;
 
   const days = weekOf(day);
-  const week = useQuery(agendaRangeQuery(days[0] ?? day, days[6] ?? day));
+  const week = useQuery({
+    ...agendaRangeQuery(days[0] ?? day, days[6] ?? day),
+    enabled: current === AGENDA_VIEWS.week,
+  });
   const dayItems = week.data?.filter((appointment) => civilDay(appointment) === day);
 
   const list = useTabbedList(
@@ -279,6 +282,7 @@ export function DoctorAgendaPage() {
           {desktop && selected && (
             <aside
               key={selected.id}
+              aria-label="Detalhes da consulta"
               className="rounded-card border-border bg-surface shadow-raised motion-safe:animate-pop sticky top-4 border"
             >
               <AppointmentDetail appointment={selected} titleId={detailId} {...detailState} />
