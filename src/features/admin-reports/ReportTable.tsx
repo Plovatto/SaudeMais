@@ -45,11 +45,15 @@ export function ReportTable({ label, rowHeader, columns, rows, total }: ReportTa
           {rows.map(({ key, header, cells }) => (
             <tr
               key={key}
-              className="border-border can-hover:bg-surface-muted/60 border-b transition-colors duration-150 last:border-0"
+              className="group border-border can-hover:bg-surface-muted/60 border-b transition-colors duration-150 last:border-0"
             >
               <th
                 scope="row"
-                className={cx(cell, sticky, 'bg-surface text-text py-3 text-start font-normal')}
+                className={cx(
+                  cell,
+                  sticky,
+                  'bg-surface text-text can-hover:group-hover:bg-[color-mix(in_oklab,var(--surface-muted)_60%,var(--surface))] py-3 text-start font-normal transition-colors duration-150',
+                )}
               >
                 {header}
               </th>
