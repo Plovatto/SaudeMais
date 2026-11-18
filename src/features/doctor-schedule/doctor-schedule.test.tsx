@@ -2,6 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { DESKTOP_QUERY } from '@hooks/useMediaQuery';
 import { addDays, todayInSaoPaulo } from '@lib/date';
+import { queryKeys } from '@lib/query-keys';
 import { stubMatchMedia } from '@/test/match-media';
 import { renderApp, serveApi, type ApiRoute, type MockResponse } from '@/test/render-app';
 
@@ -195,6 +196,7 @@ describe('doctor schedule', { timeout: 15_000 }, () => {
     expect(body?.days[3]).toEqual({ weekday: 3, isActive: true, ranges: [{ startMin: 420, endMin: 660 }] });
     expect(body).not.toHaveProperty('appointmentDurationMin');
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Salvar' })).not.toBeInTheDocument());
+    expect(screen.getByRole('form', { name: 'Horários de atendimento' })).toHaveFocus();
   });
 
   it('turns a day off and hides its periods while keeping them in the request', async () => {
@@ -247,6 +249,7 @@ describe('doctor schedule', { timeout: 15_000 }, () => {
     await waitFor(() =>
       expect(screen.queryByRole('button', { name: 'Salvar horários' })).not.toBeInTheDocument(),
     );
+    expect(screen.getByRole('form', { name: 'Horários de atendimento' })).toHaveFocus();
   });
 
   it('removes a period, keeps the focus in the day and shows the warnings after saving', async () => {
@@ -261,7 +264,9 @@ describe('doctor schedule', { timeout: 15_000 }, () => {
     expect(tuesday.getByText(/08:00–12:00/).closest('p')).toHaveTextContent('08:00–12:00 · 4 h');
     await user.click(saveButton());
 
-    expect(await screen.findByText('Horários salvos.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Horários salvos. 1 consulta ficou fora dos períodos.'),
+    ).toBeInTheDocument();
     expect(savedBody(calls)?.days[2]).toEqual({
       weekday: 2,
       isActive: true,
@@ -468,6 +473,72 @@ describe('doctor schedule', { timeout: 15_000 }, () => {
 
     expect(await screen.findByText('Horários salvos.')).toBeInTheDocument();
     expect(savedBody(calls)).toHaveProperty('appointmentDurationMin', null);
+  });
+
+  it('returns to the specialty duration when the own duration has the same value', async () => {
+    const { calls } = serve({
+      save: savedEcho(),
+      loaded: withDays({}, { appointmentDurationMin: 30, isSpecialtyDefault: false }),
+    });
+    const { user } = renderApp(PAGE);
+
+    await user.click(await screen.findByRole('button', { name: /^Duração de cada consulta/ }));
+    await user.click(screen.getByRole('option', { name: /^30 minutos/ }));
+    await user.click((await sectionOf('Sábado')).getByRole('switch', { name: 'Atender aos sábados' }));
+    await user.click(saveButton());
+
+    expect(await screen.findByText('Horários salvos.')).toBeInTheDocument();
+    expect(savedBody(calls)).toHaveProperty('appointmentDurationMin', null);
+  });
+
+  it('follows a background refresh while the form is untouched', async () => {
+    let loaded = withDays({}, { appointmentDurationMin: 45, isSpecialtyDefault: false });
+    const { calls } = serve({
+      extra: {
+        [PATH]: (method, body) => (method === 'PUT' ? savedEcho()(body) : { status: 200, body: loaded }),
+      },
+    });
+    const { user, queryClient } = renderApp(PAGE);
+    const consultas = await sectionOf('Consultas');
+    expect(consultas.getByText('15 horários')).toBeInTheDocument();
+
+    loaded = schedule;
+    await queryClient.invalidateQueries({ queryKey: queryKeys.doctorSchedule });
+    expect(await consultas.findByText('24 horários')).toBeInTheDocument();
+    await user.click((await sectionOf('Sábado')).getByRole('switch', { name: 'Atender aos sábados' }));
+    await user.click(saveButton());
+
+    expect(await screen.findByText('Horários salvos.')).toBeInTheDocument();
+    expect(savedBody(calls)).not.toHaveProperty('appointmentDurationMin');
+  });
+
+  it('shows an error about a field outside the periods above the form', async () => {
+    serve({
+      save: () => ({
+        status: 422,
+        body: {
+          code: 'VALIDATION_ERROR',
+          message: 'Dados inválidos.',
+          fields: { appointmentDurationMin: 'Escolha uma duração da lista.' },
+        },
+      }),
+    });
+    const { user } = renderApp(PAGE);
+    await user.click((await sectionOf('Sábado')).getByRole('switch', { name: 'Atender aos sábados' }));
+
+    await user.click(saveButton());
+
+    const alert = await screen.findByText('Escolha uma duração da lista.');
+    expect(alert).toHaveAttribute('role', 'alert');
+    expect(screen.getByRole('form', { name: 'Horários de atendimento' })).toContainElement(alert);
+    expect(saveButton()).toBeInTheDocument();
+  });
+
+  it('announces the loading schedule', async () => {
+    serve();
+    renderApp(PAGE);
+
+    expect(await screen.findByText('Carregando horários')).toBeInTheDocument();
   });
 
   it('explains when the account has no doctor profile', async () => {
