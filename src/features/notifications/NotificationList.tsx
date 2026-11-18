@@ -13,7 +13,7 @@ import {
   LuX,
 } from 'react-icons/lu';
 import { Link } from 'react-router';
-import { EmptyState, QueryError, Skeleton } from '@components/ui';
+import { EmptyState, QueryError, Skeleton, stagger } from '@components/ui';
 import type { Role } from '@constants/areas';
 import type { UserNotification } from '@lib/api/models';
 import { useMarkNotificationRead, type NotificationPage } from '@lib/api/notifications-api';
@@ -173,8 +173,8 @@ function NotificationGroup({ group, role, variant }: GroupProps) {
         {group.day}
       </Heading>
       <ul aria-labelledby={dayId} className={look.list}>
-        {group.items.map((notification) => (
-          <li key={notification.id}>
+        {group.items.map((notification, index) => (
+          <li key={notification.id} className={stagger(index)}>
             <NotificationItem notification={notification} role={role} variant={variant} />
           </li>
         ))}

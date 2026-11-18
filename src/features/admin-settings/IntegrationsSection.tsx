@@ -36,7 +36,7 @@ function IntegrationForm({
     defaultValues: { name: '' },
     fields: ['name'],
     save: async (values) => onCreated((await integrationsApi.create(values)).apiKey),
-    invalidate: queryKeys.catalog.integrations,
+    invalidate: [queryKeys.catalog.integrations],
     success: 'Integração criada.',
     messages: integrationMessages,
   });
@@ -87,7 +87,7 @@ export function IntegrationsSection() {
   const revoke = useConfirmedAction<IntegrationClient>({
     keyOf: idOf,
     run: (client) => integrationsApi.revoke(client.id),
-    invalidate: queryKeys.catalog.integrations,
+    invalidate: [queryKeys.catalog.integrations],
     success: (client) => `Chave de ${client.name} revogada.`,
     confirm: (client) => ({
       title: client ? `Revogar a chave de ${client.name}?` : 'Revogar a chave?',

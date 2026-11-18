@@ -4,5 +4,5 @@ import { queryKeys } from './query-keys';
 export const refreshPatientBookings = (queryClient: QueryClient) =>
   Promise.all([
     queryClient.invalidateQueries({ queryKey: queryKeys.patient.all }),
-    queryClient.invalidateQueries({ queryKey: queryKeys.booking.availabilities }),
+    queryClient.resetQueries({ queryKey: queryKeys.booking.availabilities }),
   ]);

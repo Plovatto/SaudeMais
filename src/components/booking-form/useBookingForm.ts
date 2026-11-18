@@ -1,5 +1,11 @@
-import { useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
-import { useEffect, useEffectEvent, useState } from 'react';
+import {
+  useInfiniteQuery,
+  useQueryClient,
+  type DefaultError,
+  type InfiniteData,
+  type QueryKey,
+} from '@tanstack/react-query';
+import { useEffect, useEffectEvent, useMemo, useState } from 'react';
 import { useWatch, type FieldValues, type Path, type UseFormReturn } from 'react-hook-form';
 import { ApiError } from '@lib/api/api-error';
 import type { FieldAliases } from '@lib/form-errors';
@@ -11,7 +17,14 @@ import {
 } from '@lib/messages/errors.pt-BR';
 import { refreshPatientBookings } from '@lib/refresh-patient-bookings';
 import { useFormSubmit } from '@lib/useFormSubmit';
-import type { AvailableDay } from './availability';
+import {
+  firstWindowPage,
+  horizonEnd,
+  loadedThrough,
+  nextWindowPage,
+  type AvailableDay,
+  type WindowPage,
+} from './availability';
 
 type SlotValues = { date: string; startsAt: string; notes: string };
 
@@ -27,7 +40,7 @@ interface BookingFormOptions<TIn extends FieldValues, TOut, R> {
   fields: readonly Path<TIn>[];
   availability: {
     queryKey: QueryKey;
-    load: (signal: AbortSignal) => Promise<AvailableDay[]>;
+    load: (signal: AbortSignal, page: WindowPage) => Promise<AvailableDay[]>;
     enabled: boolean;
   };
   fieldByCode?: Partial<Record<string, Path<TIn>>>;
@@ -56,20 +69,45 @@ export function useBookingForm<TIn extends SlotValues, TOut, R>(
   const { control, register, getValues, setValue, setError, clearErrors, formState } =
     form as unknown as UseFormReturn<SlotValues>;
   const [date, startsAt] = useWatch({ control, name: ['date', 'startsAt'] });
-  const availability = useQuery({
+  const availability = useInfiniteQuery<
+    AvailableDay[],
+    DefaultError,
+    InfiniteData<AvailableDay[], WindowPage>,
+    QueryKey,
+    WindowPage
+  >({
     queryKey: source.queryKey,
-    queryFn: ({ signal }) => source.load(signal),
+    queryFn: ({ signal, pageParam }) => source.load(signal, pageParam),
+    initialPageParam: firstWindowPage(),
+    getNextPageParam: (_last, pages, lastParam) => nextWindowPage(lastParam.start, pages.length),
     enabled: source.enabled,
     staleTime: 0,
+    refetchOnWindowFocus: false,
   });
-  const days = source.enabled ? (availability.data ?? []) : [];
+  const loaded = useMemo(() => availability.data?.pages.flat(), [availability.data]);
+  const days = source.enabled ? (loaded ?? []) : [];
+  const sourceKey = JSON.stringify(source.queryKey);
+  const [want, setWant] = useState({ key: '', until: '' });
+  const wanted = want.key === sourceKey ? want.until : '';
+  const start = availability.data?.pageParams[0]?.start;
+  const through = start ? loadedThrough(start, availability.data?.pages.length ?? 0) : '';
+  const { hasNextPage, isFetching, isFetchingNextPage, isError, fetchNextPage } = availability;
+  const searching = source.enabled && loaded?.length === 0 && hasNextPage && !isError;
+  const reset = () => queryClient.resetQueries({ queryKey: source.queryKey });
   const slots = days.find((day) => day.date === date)?.slots ?? [];
   const { errors, isSubmitting } = formState;
 
   useEffect(() => {
-    if (!availability.data) return;
+    if (!through || (wanted <= through && !searching) || !hasNextPage || isFetching) return;
+    void fetchNextPage().then((result) => {
+      if (result.isFetchNextPageError) setWant({ key: '', until: '' });
+    });
+  }, [wanted, through, searching, hasNextPage, isFetching, fetchNextPage]);
+
+  useEffect(() => {
+    if (!loaded) return;
     const current = getValues();
-    const day = availability.data.find((item) => item.date === current.date);
+    const day = loaded.find((item) => item.date === current.date);
     if (current.date && !day) {
       setValue('date', '');
       setValue('startsAt', '');
@@ -79,7 +117,7 @@ export function useBookingForm<TIn extends SlotValues, TOut, R>(
       setValue('startsAt', '');
       setError('startsAt', { message: SLOT_GONE_MESSAGE }, { shouldFocus: true });
     }
-  }, [availability.data, getValues, setValue, setError, clearErrors]);
+  }, [loaded, getValues, setValue, setError, clearErrors]);
 
   const notFound = useEffectEvent(onNotFound);
 
@@ -115,7 +153,7 @@ export function useBookingForm<TIn extends SlotValues, TOut, R>(
       if (SLOT_CODES.has(error.code)) {
         if (STALE_SLOT_CODES.has(error.code)) {
           clearSlot();
-          void availability.refetch();
+          void reset();
         }
         setError('startsAt', { message: errorMessage(error) }, { shouldFocus: true });
         return true;
@@ -160,10 +198,14 @@ export function useBookingForm<TIn extends SlotValues, TOut, R>(
     slots: {
       days,
       slots,
-      loading: availability.isFetching && days.length === 0,
+      loading: (isFetching || searching) && days.length === 0,
+      loadingMore: isFetchingNextPage || (through !== '' && wanted > through && hasNextPage),
       failure: availability.error,
-      retry: () => void availability.refetch(),
-      empty: availability.data?.length === 0,
+      retry: () => void reset(),
+      empty: loaded?.length === 0 && !hasNextPage,
+      reach: start ? horizonEnd(start) : undefined,
+      sourceKey,
+      showUntil: (until: string) => setWant({ key: sourceKey, until }),
       messages,
     },
   };

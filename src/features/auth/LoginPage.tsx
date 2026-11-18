@@ -7,7 +7,7 @@ import { PAGE_TITLE_ID } from '@components/layout/PageTitle';
 import { Button, Checkbox, FormAlert, PasswordInput, TextLink } from '@components/ui';
 import { hitArea } from '@components/ui/styles';
 import { homeFor } from '@lib/auth/return-to';
-import { acknowledgeSessionExpiry, startSession } from '@lib/auth/session';
+import { acknowledgeSessionEnd, startSession } from '@lib/auth/session';
 import { sessionQuery } from '@lib/auth/useSession';
 import { cx } from '@lib/cx';
 import { applyApiErrors } from '@lib/form-errors';
@@ -28,7 +28,7 @@ export function LoginPage() {
   );
   const { pathname, search } = useLocation();
   useEffect(() => {
-    acknowledgeSessionExpiry();
+    acknowledgeSessionEnd();
     if (state?.expired) void navigate({ pathname, search }, { replace: true, state: null });
   }, [state, pathname, search, navigate]);
   const {

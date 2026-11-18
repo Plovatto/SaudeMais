@@ -14,7 +14,7 @@ export function SheetGrab(props: ComponentProps<'div'>) {
     >
       <span
         aria-hidden
-        className="bg-border-strong group-hover/grab:bg-text-muted group-focus-visible/grab:bg-text-muted in-data-dragging:bg-text-muted h-[5px] w-11 rounded-full transition-[width,background-color] group-hover/grab:w-[54px] group-focus-visible/grab:w-[54px] in-data-dragging:w-[54px]"
+        className="bg-border-strong group-hover/grab:bg-text-muted group-focus-visible/grab:bg-text-muted in-data-dragging:bg-text-muted h-[5px] w-11 rounded-full transition-[scale,background-color] group-hover/grab:scale-x-[1.227] group-focus-visible/grab:scale-x-[1.227] in-data-dragging:scale-x-[1.227]"
       />
     </div>
   );

@@ -12,7 +12,7 @@ export interface CatalogFormOptions<T extends FieldValues> {
   defaultValues: DefaultValues<T> | undefined;
   fields: readonly Path<T>[];
   save: (values: T) => Promise<unknown>;
-  invalidate: QueryKey;
+  invalidate: readonly QueryKey[];
   success: string;
   onDone?: () => void;
   messages?: MessageOverrides;
@@ -38,7 +38,7 @@ export function useCatalogForm<T extends FieldValues>({
   const onSubmit = form.handleSubmit((values) =>
     run(async () => {
       await save(values);
-      await queryClient.invalidateQueries({ queryKey: invalidate });
+      await Promise.all(invalidate.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
       show({ message: success, tone: 'success' });
       onDone?.();
     }),

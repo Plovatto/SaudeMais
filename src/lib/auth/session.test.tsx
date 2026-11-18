@@ -258,6 +258,20 @@ describe('signing out', () => {
     answer(new Response(null, { status: 204 }));
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+
+  it('keeps the way back for a later deep link after signing out', async () => {
+    mockApi({ status: 204 });
+    const { router, user } = renderApp('/perfis', { signedInAs: ['doctor', 'patient'] });
+
+    await user.click(await screen.findByRole('button', { name: 'Entrar com outra conta' }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/login'));
+    expect(router.state.location.search).toBe('');
+
+    await act(() => router.navigate('/paciente/agendamentos'));
+
+    await waitFor(() => expect(router.state.location.search).toBe('?returnTo=%2Fpaciente%2Fagendamentos'));
+    expect(router.state.location.pathname).toBe('/login');
+  });
 });
 
 describe('cached data between sessions', () => {

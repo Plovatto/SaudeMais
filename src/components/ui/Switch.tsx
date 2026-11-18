@@ -52,7 +52,7 @@ export function Switch({
       >
         <span
           className={cx(
-            'absolute start-[3px] top-[3px] size-[18px] rounded-full bg-white shadow-[0_1px_2px_rgb(0_0_0/0.25)] transition-transform duration-200 ease-(--ease-out-quint)',
+            'ease-out-quint absolute start-[3px] top-[3px] size-[18px] rounded-full bg-white shadow-[0_1px_2px_rgb(0_0_0/0.25)] transition-transform duration-(--duration-base)',
             checked && 'translate-x-4 rtl:-translate-x-4',
           )}
         />

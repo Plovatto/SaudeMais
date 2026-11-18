@@ -41,13 +41,19 @@ function OfferForm({ unitId, offer, choices, onDone }: OfferFormProps) {
       : { examTypeId: '', capacityPerSlot: 1, isActive: true },
     fields: ['examTypeId', 'capacityPerSlot'],
     save: ({ examTypeId, ...body }) => offersApi.save(unitId, examTypeId, body),
-    invalidate: [...queryKeys.catalog.offers, unitId],
+    invalidate: [[...queryKeys.catalog.offers, unitId], queryKeys.catalog.activeUnits],
     success: 'Oferta salva.',
     onDone,
   });
   const { errors, isSubmitting } = form.formState;
   return (
-    <FormShell onSubmit={form.onSubmit} alert={form.alert} submitting={isSubmitting} onCancel={onDone}>
+    <FormShell
+      onSubmit={form.onSubmit}
+      alert={form.alert}
+      submitting={isSubmitting}
+      submitDisabled={!offer && choices.length === 0}
+      onCancel={onDone}
+    >
       {offer ? (
         <Input label="Exame" value={offer.examTypeName} readOnly />
       ) : choices.length === 0 ? (

@@ -1,6 +1,8 @@
 import { useId, type ReactNode } from 'react';
 import { LuTrendingDown, LuTrendingUp } from 'react-icons/lu';
+import { useCountUp } from '@hooks/useCountUp';
 import { cx } from '@lib/cx';
+import { formatCount } from '@lib/number';
 import { Skeleton } from './Skeleton';
 
 export interface StatDelta {
@@ -11,7 +13,8 @@ export interface StatDelta {
 
 export interface StatTileProps {
   label: string;
-  value: string | undefined;
+  value: number | string | undefined;
+  format?: ((value: number) => string) | undefined;
   icon?: ReactNode;
   delta?: StatDelta | undefined;
   foot?: string | undefined;
@@ -32,6 +35,17 @@ export function DeltaBadge({ delta }: { delta: StatDelta }) {
       <Icon aria-hidden className="size-3" />
       {delta.text}
     </span>
+  );
+}
+
+function CountUp({ value, format }: { value: number; format: (value: number) => string }) {
+  const current = useCountUp(value);
+  if (current === value) return format(value);
+  return (
+    <>
+      <span className="sr-only">{format(value)}</span>
+      <span aria-hidden>{format(current)}</span>
+    </>
   );
 }
 
@@ -84,6 +98,7 @@ function Sparkline({ values }: { values: readonly number[] }) {
 export function StatTile({
   label,
   value,
+  format = formatCount,
   icon,
   delta,
   foot,
@@ -121,7 +136,7 @@ export function StatTile({
             compact ? 'text-[1.375rem]' : 'text-[1.75rem] max-[560px]:text-[1.375rem]',
           )}
         >
-          {value}
+          {typeof value === 'number' ? <CountUp value={value} format={format} /> : value}
         </p>
       )}
       {(delta || foot) && (

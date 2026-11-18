@@ -15,7 +15,7 @@ import { useLeaveSignal } from '@hooks/useLeaveSignal';
 import { ApiError } from '@lib/api/api-error';
 import { cx } from '@lib/cx';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
-import { formatCount, formatPercent } from '@lib/number';
+import { formatPercent } from '@lib/number';
 import { queryKeys } from '@lib/query-keys';
 import { saveFile } from '@lib/save-file';
 import { PeriodControls } from './PeriodControls';
@@ -37,20 +37,21 @@ function SummaryTiles({ report }: { report: AdminReport }) {
   const outcomes = reportOutcomes(report);
   const attendance = attendanceRate(outcomes);
   const tiles = [
-    { label: 'Agendamentos', value: formatCount(outcomes.total) },
-    { label: 'Realizados', value: formatCount(outcomes.completed) },
-    { label: 'Cancelados', value: formatCount(outcomes.cancelled) },
-    { label: 'Faltas', value: formatCount(outcomes.noShow) },
-    { label: 'Comparecimento', value: attendance === null ? '—' : formatPercent(attendance) },
+    { label: 'Agendamentos', value: outcomes.total },
+    { label: 'Realizados', value: outcomes.completed },
+    { label: 'Cancelados', value: outcomes.cancelled },
+    { label: 'Faltas', value: outcomes.noShow },
+    { label: 'Comparecimento', value: attendance ?? '—', format: formatPercent },
   ];
   return (
     <div className={TILE_GRID}>
-      {tiles.map(({ label, value }, index) => (
+      {tiles.map(({ label, value, format }, index) => (
         <StatTile
           key={label}
           compact
           label={label}
           value={value}
+          format={format}
           className={cx(stagger(index), index === tiles.length - 1 && LAST_TILE)}
         />
       ))}

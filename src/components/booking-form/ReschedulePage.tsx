@@ -17,7 +17,7 @@ import { cx } from '@lib/cx';
 import { civilDateInSaoPaulo, middayOf, whenText } from '@lib/date';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
 import { queryKeys } from '@lib/query-keys';
-import type { AvailableDay } from './availability';
+import type { AvailableDay, WindowPage } from './availability';
 import { BookingForm, WhenCard } from './BookingForm';
 import { emptySlot, slotShape } from './slot-schema';
 import { useBookedRedirect } from './useBookedRedirect';
@@ -136,7 +136,7 @@ interface RescheduleFormProps<B extends Reschedulable> {
   details: (booking: B) => LockedDetails;
   availability: (booking: B) => {
     queryKey: QueryKey;
-    load: (signal: AbortSignal) => Promise<AvailableDay[]>;
+    load: (signal: AbortSignal, page: WindowPage) => Promise<AvailableDay[]>;
   };
   reschedule: (booking: B, newStartsAt: string) => Promise<B>;
 }
@@ -177,8 +177,8 @@ function RescheduleForm<B extends Reschedulable>({
     fields: FIELDS,
     availability: {
       queryKey: source.queryKey,
-      load: async (signal) =>
-        (await source.load(signal)).filter((day) =>
+      load: async (signal, page) =>
+        (await source.load(signal, page)).filter((day) =>
           day.slots.some((slot) => slot.startsAt !== current.startsAt),
         ),
       enabled: true,
