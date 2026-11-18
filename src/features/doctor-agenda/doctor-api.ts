@@ -73,7 +73,10 @@ const listRange = async (from: string, to: string, signal: AbortSignal) => {
   const rest = await Promise.all(
     Array.from({ length: Math.max(pages - 1, 0) }, (_, index) => pageOf(index + 2)),
   );
-  return [first, ...rest].flatMap(({ items }) => items).filter(({ status }) => ON_AGENDA.has(status));
+  const unique = new Map(
+    [first, ...rest].flatMap(({ items }) => items.map((item) => [item.id, item] as const)),
+  );
+  return [...unique.values()].filter(({ status }) => ON_AGENDA.has(status));
 };
 
 export const agendaRangeQuery = (from: string, to = from) =>
