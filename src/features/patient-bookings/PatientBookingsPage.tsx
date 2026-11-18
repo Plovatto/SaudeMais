@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { useEffect, useId, useRef, useState } from 'react';
 import { LuCalendarX, LuFilterX, LuPlus } from 'react-icons/lu';
 import { BookingRow } from '@components/bookings/BookingRow';
@@ -25,7 +26,7 @@ import {
   type BookingFilters,
 } from './booking-filters';
 import { BookingsFilter } from './BookingsFilter';
-import { listBookings, type BookingListParams } from './bookings-api';
+import { getBooking, listBookings, type BookingListParams } from './bookings-api';
 import { CancelDialog } from './CancelDialog';
 import { plural } from '@lib/plural';
 
@@ -83,15 +84,23 @@ export function PatientBookingsPage() {
     applyFilters(NO_FILTERS);
     results.current?.focus();
   };
-  const { desktop, selectedId, setSelectedId, chosen, selected, select, closeSheet } = useListSelection(
+  const [selectedId, setSelectedId] = useSearchParam(BOOKING_PARAM);
+  const listed = list.items?.find((booking) => booking.id === selectedId);
+  const settled = list.items !== undefined && !list.query.isPlaceholderData && !list.query.isFetching;
+  const loaded = useQuery({
+    queryKey: queryKeys.patient.bookingById(selectedId),
+    queryFn: ({ signal }) => getBooking(selectedId, signal),
+    enabled: settled && selectedId !== '' && !listed,
+  });
+  const extra = !listed && loaded.data?.id === selectedId ? loaded.data : undefined;
+  const { desktop, selected, select, closeSheet } = useListSelection(
     BOOKING_PARAM,
-    list.items,
+    extra && list.items ? [...list.items, extra] : list.items,
   );
 
-  const settled = list.items !== undefined && !list.query.isPlaceholderData && !list.query.isFetching;
   useEffect(() => {
-    if (settled && selectedId && !chosen) setSelectedId('', { replace: true });
-  }, [settled, selectedId, chosen, setSelectedId]);
+    if (selectedId && !listed && loaded.isError) setSelectedId('', { replace: true });
+  }, [selectedId, listed, loaded.isError, setSelectedId]);
 
   useEffect(() => {
     if (valid.tipo !== tipo || valid.status !== status) {

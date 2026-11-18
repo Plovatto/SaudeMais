@@ -224,6 +224,45 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     expect(detail.getByText('EX-123')).toBeVisible();
   });
 
+  it('loads the booking of the address when it is not on the current page', async () => {
+    serveApi(['patient'], {
+      [LIST]: () => ({
+        status: 200,
+        body: { items: [booking('b1')], page: 1, pageSize: 10, total: 11, counts: { upcoming: 11, past: 0 } },
+      }),
+      '/api/appointments/b7': () => ({ status: 404, body: { error: { code: 'NOT_FOUND', message: '' } } }),
+      '/api/exam-bookings/b7': () => ({
+        status: 200,
+        body: {
+          id: 'b7',
+          status: 'confirmed',
+          publicCode: 'EX-7F3K2Q',
+          startsAt: FUTURE,
+          endsAt: '2030-01-10T13:10:00.000Z',
+          notes: null,
+          examType: { id: 'e1', name: 'Ultrassom', kind: 'imaging' },
+          unit: {
+            id: 'u1',
+            name: 'Hospital Central',
+            address: 'Rua das Flores, 123',
+            phone: '+551133334444',
+          },
+          hasResult: false,
+          cancellation: null,
+          createdAt: PAST,
+          actions: actions(),
+          events: [],
+        },
+      }),
+    });
+    const { router } = renderApp('/paciente/agendamentos?id=b7');
+
+    const detail = within(await screen.findByRole('dialog', { name: SHEET }));
+    expect(detail.getByRole('heading', { name: 'Ultrassom' })).toBeVisible();
+    expect(detail.getByText('EX-7F3K2Q')).toBeVisible();
+    expect(router.state.location.search).toBe('?id=b7');
+  });
+
   it('forgets a booking of the address that is not in the list', async () => {
     serve({ upcoming: [booking('b1')] });
     const { router } = renderApp('/paciente/agendamentos?id=b9');
