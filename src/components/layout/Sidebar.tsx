@@ -63,6 +63,7 @@ export function Sidebar({ area, menu, account }: { area: Area; menu: NavItem[]; 
   const user = useCurrentUser();
   return (
     <aside
+      aria-label="Menu lateral"
       className={cx(
         brandSurface,
         'sticky top-0 hidden h-dvh w-[272px] shrink-0 [scrollbar-width:none] flex-col gap-7 overflow-y-auto px-4 pt-[22px] pb-4 shadow-[inset_-1px_0_0_rgb(0_0_0/0.2)] lg:flex dark:shadow-[inset_-1px_0_0_var(--border)] print:hidden',

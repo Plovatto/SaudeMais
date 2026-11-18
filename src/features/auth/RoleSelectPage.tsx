@@ -2,10 +2,11 @@ import { LuUserX } from 'react-icons/lu';
 import { Link, Navigate } from 'react-router';
 import { RoleLogo } from '@components/layout/RoleLogo';
 import { Chevron, EmptyState, stagger } from '@components/ui';
-import { textLink } from '@components/ui/styles';
+import { hitArea, textLink } from '@components/ui/styles';
 import { areas } from '@constants/areas';
 import { useCurrentUser } from '@lib/auth/useSession';
 import { useSignOut } from '@lib/auth/useSignOut';
+import { cx } from '@lib/cx';
 import { firstName } from '@lib/initials';
 import { plural } from '@lib/plural';
 import { AuthFooter } from './AuthFooterLink';
@@ -59,7 +60,7 @@ export function RoleSelectPage() {
           type="button"
           onClick={() => void signOut()}
           aria-describedby="role-select-back-hint"
-          className={textLink}
+          className={cx(hitArea, textLink)}
         >
           Entrar com outra conta
         </button>
