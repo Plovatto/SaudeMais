@@ -116,7 +116,7 @@ export function DoctorSchedulePage() {
   });
   return (
     <>
-      <PageHeader title="Gerenciar agenda" back backFallback={areas.doctor.base} />
+      <PageHeader title="Horários de atendimento" back backFallback={areas.doctor.base} />
       {schedule.isPending && (
         <div className={dayGrid} aria-busy>
           {WEEKDAYS.map((name) => (
