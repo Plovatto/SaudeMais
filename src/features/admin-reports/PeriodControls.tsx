@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button, Input, RadioChips } from '@components/ui';
+import { PERIOD_PRESETS } from '@components/reports/report-periods';
+import type { Period } from '@components/reports/reports-api';
+import { Button, Card, Input, RadioChips } from '@components/ui';
 import type { FieldErrors } from '@lib/api/api-error';
-import type { Period } from './reports-api';
-import { PRESETS, presetPeriod, usePeriod } from './usePeriod';
+import { usePeriod } from './usePeriod';
 
 const REVERSED_MESSAGE = 'A data final deve ser igual ou posterior à inicial.';
 
@@ -67,21 +68,16 @@ function CustomPeriodForm({ period, errors, onApply }: CustomPeriodProps) {
 }
 
 export function PeriodControls({ errors }: { errors: FieldErrors }) {
-  const { period, preset, setPeriod } = usePeriod();
+  const { period, preset, setPreset, setPeriod } = usePeriod();
   return (
-    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
-      <RadioChips
-        legend="Período"
-        options={PRESETS}
-        value={preset}
-        onValueChange={(value) => setPeriod(presetPeriod(value), { replace: true })}
-      />
+    <Card className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
+      <RadioChips legend="Período" options={PERIOD_PRESETS} value={preset} onValueChange={setPreset} />
       <CustomPeriodForm
         key={`${period.from}|${period.to}`}
         period={period}
         errors={errors}
         onApply={(next) => setPeriod(next)}
       />
-    </div>
+    </Card>
   );
 }

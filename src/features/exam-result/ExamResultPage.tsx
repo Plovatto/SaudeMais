@@ -1,5 +1,4 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
 import { LuDownload, LuFileText, LuFileX } from 'react-icons/lu';
 import { useParams } from 'react-router';
 import { PreviousVersions } from '@components/exam-results/PreviousVersions';
@@ -18,6 +17,7 @@ import {
   useToast,
 } from '@components/ui';
 import { PATIENT_PAST_PATH } from '@constants/areas';
+import { useLeaveSignal } from '@hooks/useLeaveSignal';
 import { ApiError } from '@lib/api/api-error';
 import { apiDownload, apiFetch } from '@lib/api/api-fetch';
 import { formatCivilDate } from '@lib/date';
@@ -41,12 +41,7 @@ export function ExamResultPage() {
     queryFn: ({ signal }) =>
       apiFetch('get', '/api/patient/exam-results/{bookingId}', { params: { bookingId }, signal }),
   });
-  const leaving = useRef(new AbortController());
-  useEffect(() => {
-    const controller = new AbortController();
-    leaving.current = controller;
-    return () => controller.abort();
-  }, []);
+  const leaving = useLeaveSignal();
   const download = useMutation({
     mutationFn: () =>
       apiDownload('/api/patient/exam-results/{bookingId}/pdf', {
