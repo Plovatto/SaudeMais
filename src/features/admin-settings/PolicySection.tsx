@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
+import { FormDropdown } from '@components/forms/FormFields';
 import { FormAlert, QueryError, SettingRow, Skeleton, type DropdownOption } from '@components/ui';
 import { plural } from '@lib/plural';
 import { catalogMessages } from './catalog-messages';
-import { FormDropdown } from './FormFields';
 import type { PolicyValues } from './settings-schemas';
 import { SettingsCard } from './SettingsCard';
 import { POLICY_CARD_ID, POLICY_FORM_ID, type PolicySettings } from './usePolicySettings';
