@@ -27,6 +27,7 @@ export function UserPanel({ fallbackFocus }: UserPanelProps) {
   const removal = useProfileRemoval(doctorButton, backToUser);
   const [lastSection, setLastSection] = useState(section);
   const [backFromDoctor, setBackFromDoctor] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   if (lastSection !== section) {
     setLastSection(section);
     setBackFromDoctor(lastSection === DOCTOR_SECTION);
@@ -45,8 +46,15 @@ export function UserPanel({ fallbackFocus }: UserPanelProps) {
 
   return (
     <>
-      <Drawer side open={userParam !== ''} onClose={close} title={title} fallbackFocus={fallbackFocus}>
-        {creating && <CreateUserForm onClose={close} />}
+      <Drawer
+        side
+        open={userParam !== ''}
+        onClose={close}
+        title={title}
+        dismissible={!submitting}
+        fallbackFocus={fallbackFocus}
+      >
+        {creating && <CreateUserForm onClose={close} onSubmittingChange={setSubmitting} />}
         {userId !== '' && query.isPending && (
           <DrawerBody>
             <div aria-busy="true" className="flex flex-col gap-4">
@@ -70,6 +78,7 @@ export function UserPanel({ fallbackFocus }: UserPanelProps) {
               locked={locks.isInactive}
               onBack={backToUser}
               onRemove={() => removal.request(user)}
+              onSubmittingChange={setSubmitting}
             />
           ) : (
             <UserEditor
@@ -81,6 +90,7 @@ export function UserPanel({ fallbackFocus }: UserPanelProps) {
               focusDoctor={backFromDoctor}
               onDoctor={() => setSection(DOCTOR_SECTION)}
               onClose={close}
+              onSubmittingChange={setSubmitting}
             />
           ))}
       </Drawer>

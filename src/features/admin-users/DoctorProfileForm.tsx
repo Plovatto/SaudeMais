@@ -7,6 +7,7 @@ import { Button, Input, useToast } from '@components/ui';
 import { useFormSubmit } from '@lib/useFormSubmit';
 import { DoctorProfileFields } from './DoctorProfileFields';
 import { useDoctorCatalog } from './useDoctorCatalog';
+import { useReportSubmitting } from './useReportSubmitting';
 import { syncUser } from './user-cache';
 import { userMessages } from './user-messages';
 import { DOCTOR_FIELDS, doctorProfileSchema, type DoctorProfileValues } from './user-schemas';
@@ -17,9 +18,16 @@ export interface DoctorProfileFormProps {
   locked: boolean;
   onBack: () => void;
   onRemove: () => void;
+  onSubmittingChange: (submitting: boolean) => void;
 }
 
-export function DoctorProfileForm({ user, locked, onBack, onRemove }: DoctorProfileFormProps) {
+export function DoctorProfileForm({
+  user,
+  locked,
+  onBack,
+  onRemove,
+  onSubmittingChange,
+}: DoctorProfileFormProps) {
   const queryClient = useQueryClient();
   const { show } = useToast();
   const profile = user.doctorProfile;
@@ -39,6 +47,7 @@ export function DoctorProfileForm({ user, locked, onBack, onRemove }: DoctorProf
     },
   });
   const { alert, run } = useFormSubmit(setError, DOCTOR_FIELDS, undefined, userMessages);
+  useReportSubmitting(isSubmitting, onSubmittingChange);
   const catalog = useDoctorCatalog(profile, useWatch({ control, name: 'specialtyId' }));
 
   const finish = (updated: AdminUserDetail, message: string) => {

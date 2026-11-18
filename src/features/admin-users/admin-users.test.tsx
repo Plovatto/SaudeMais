@@ -319,6 +319,27 @@ describe('edit user', () => {
     await waitFor(() => expect(lists()).toBeGreaterThan(before));
   });
 
+  it('keeps the panel open while the changes are saved', async () => {
+    const { fetchMock } = serve({
+      '/api/admin/users': listOf(ana),
+      '/api/admin/users/ana': () => ok(detail(ana)),
+    });
+    const { user, router } = renderApp('/admin/usuarios?usuario=ana');
+
+    const dialog = await panel('Editar usuário');
+    await user.type(await within(dialog).findByRole('textbox', { name: 'Nome completo' }), ' Souza');
+    fetchMock.mockImplementationOnce(() => new Promise<Response>(() => undefined));
+    await user.click(within(dialog).getByRole('button', { name: 'Salvar alterações' }));
+
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Cancelar' })).toBeDisabled());
+    expect(within(dialog).queryByRole('button', { name: 'Fechar' })).not.toBeInTheDocument();
+    act(() => {
+      (dialog as HTMLDialogElement).close();
+    });
+    expect(dialog).toHaveAttribute('open');
+    expect(searchOf(router)).toEqual({ usuario: 'ana' });
+  });
+
   it('shows the API error next to the field', async () => {
     serve({
       '/api/admin/users': listOf(ana),
