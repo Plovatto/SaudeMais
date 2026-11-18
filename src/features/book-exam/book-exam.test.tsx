@@ -4,6 +4,7 @@ import { todayInSaoPaulo } from '@lib/date';
 import {
   calendar,
   dropdown,
+  examSlot,
   openDays,
   pick,
   pickDay,
@@ -12,7 +13,7 @@ import {
   slotGroup,
   slotTimes,
 } from '@/test/booking-flow';
-import { renderApp, serveApi, type ApiRoute, type MockResponse } from '@/test/render-app';
+import { apiError, renderApp, serveApi, type ApiRoute, type MockResponse } from '@/test/render-app';
 
 const examTypes = [
   {
@@ -49,15 +50,13 @@ const units = [
   unit('u2', 'Unidade Sul', 'Av. Ipiranga, 987'),
 ];
 
-const slot = (startsAt: string, remaining: number) => ({ startsAt, endsAt: startsAt, remaining });
-
 const days = [
   {
     date: '2026-11-23',
     slots: [
-      slot('2026-11-23T11:00:00.000Z', 2),
-      slot('2026-11-23T11:10:00.000Z', 1),
-      slot('2026-11-23T20:00:00.000Z', 5),
+      examSlot('2026-11-23T11:00:00.000Z', 2),
+      examSlot('2026-11-23T11:10:00.000Z', 1),
+      examSlot('2026-11-23T20:00:00.000Z', 5),
     ],
   },
 ];
@@ -75,11 +74,6 @@ const examBooking = {
   createdAt: '2026-11-14T12:00:00.000Z',
   events: [],
 };
-
-const apiError = (status: number, code: string, fields: Record<string, string> = {}) => ({
-  status,
-  body: { code, message: `API: ${code}`, fields },
-});
 
 function serve(
   book: () => MockResponse = () => ({ status: 201, body: examBooking }),
@@ -314,7 +308,7 @@ describe('book exam', { timeout: 20_000 }, () => {
   });
 
   it('reloads the free slots and keeps the form when the last place was taken', async () => {
-    const remaining = [{ date: '2026-11-23', slots: [slot('2026-11-23T20:00:00.000Z', 5)] }];
+    const remaining = [{ date: '2026-11-23', slots: [examSlot('2026-11-23T20:00:00.000Z', 5)] }];
     const { availabilityLoads } = serve(
       () => apiError(409, 'NO_CAPACITY', { startsAt: 'API' }),
       [days, remaining],

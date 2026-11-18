@@ -3,8 +3,8 @@ import { useQueryClient, type QueryKey } from '@tanstack/react-query';
 import { useForm, type DefaultValues, type FieldValues, type Path, type Resolver } from 'react-hook-form';
 import type { z } from 'zod';
 import { useToast } from '@components/ui';
+import { useFormSubmit } from '@hooks/useFormSubmit';
 import type { MessageOverrides } from '@lib/messages/errors.pt-BR';
-import { useFormSubmit } from '@lib/useFormSubmit';
 import { catalogMessages } from './catalog-messages';
 
 export interface CatalogFormOptions<T extends FieldValues> {

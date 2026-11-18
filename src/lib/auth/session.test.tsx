@@ -1,7 +1,7 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ApiError } from '@lib/api/api-error';
-import { mockApi, mockFetch, renderApp, signIn, TEST_TOKEN, testUser } from '@/test/render-app';
+import { holdRequests, mockApi, mockFetch, renderApp, signIn, TEST_TOKEN, testUser } from '@/test/render-app';
 import { homeFor, safeReturnTo } from './return-to';
 import { endSession, startSession } from './session';
 import { clearToken, readToken, saveToken, SESSION_STORAGE_KEY } from './token-store';
@@ -237,14 +237,8 @@ describe('role choice', () => {
 
 describe('signing out', () => {
   it('leaves at once and tells the server afterwards, ignoring repeated clicks', async () => {
-    let answer: (response: Response) => void = () => undefined;
-    const fetchMock = vi.fn(
-      (_url: RequestInfo | URL, _init?: RequestInit) =>
-        new Promise<Response>((resolve) => {
-          answer = resolve;
-        }),
-    );
-    vi.stubGlobal('fetch', fetchMock);
+    const fetchMock = mockApi({ status: 204 });
+    const held = holdRequests(fetchMock, () => true);
     const { router, user } = renderApp('/perfis', { signedInAs: ['doctor', 'patient'] });
 
     await user.click(await screen.findByRole('button', { name: 'Entrar com outra conta' }));
@@ -255,7 +249,7 @@ describe('signing out', () => {
     expect(new Headers(fetchMock.mock.calls[0]?.[1]?.headers).get('Authorization')).toBe(
       `Bearer ${TEST_TOKEN}`,
     );
-    answer(new Response(null, { status: 204 }));
+    held[0]?.release();
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 

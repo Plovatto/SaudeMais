@@ -1,43 +1,14 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { FUTURE, PAST } from '@/test/doctor-fixtures';
 import { stubMatchMedia } from '@/test/match-media';
-import { renderApp, serveApi, type ApiCall, type MockResponse } from '@/test/render-app';
+import { actions, booking } from '@/test/patient-fixtures';
+import { holdRequests, renderApp, serveApi, type ApiCall, type MockResponse } from '@/test/render-app';
 import { DESKTOP_QUERY } from '@hooks/useMediaQuery';
 import type { PatientBooking } from '@lib/api/models';
 
-const FUTURE = '2030-01-10T13:00:00.000Z';
-const PAST = '2020-01-10T13:00:00.000Z';
 const LIST = '/api/patient/bookings';
 const STALE = 'Este agendamento mudou ou não pode mais ser alterado. Confira a lista atualizada.';
-
-const actions = (overrides: Partial<PatientBooking['actions']> = {}): PatientBooking['actions'] => ({
-  canCancel: true,
-  lateCancellation: false,
-  cancelBlockedReason: null,
-  canReschedule: true,
-  rescheduleBlockedReason: null,
-  reschedulesLeft: 2,
-  ...overrides,
-});
-
-const booking = (id: string, overrides: Partial<PatientBooking> = {}): PatientBooking => ({
-  id,
-  kind: 'appointment',
-  status: 'confirmed',
-  startsAt: FUTURE,
-  endsAt: '2030-01-10T13:30:00.000Z',
-  notes: null,
-  visitType: 'routine',
-  doctor: { id: 'd1', fullName: 'Dr. João Silveira' },
-  specialty: { id: 's1', name: 'Cardiologia', council: 'CRM' },
-  examType: null,
-  publicCode: null,
-  unit: { id: 'u1', name: 'Hospital Central', address: 'Rua das Flores, 123', phone: '+551133334444' },
-  actions: actions(),
-  cancellation: null,
-  hasResult: false,
-  ...overrides,
-});
 
 const closed = actions({
   canCancel: false,
@@ -263,22 +234,15 @@ describe('patient bookings', { timeout: 15_000 }, () => {
 
   it('waits for the booking of the address before showing one beside the list', async () => {
     stubMatchMedia((query) => query === DESKTOP_QUERY);
-    const { fetchMock } = serveOffPage();
-    const respond = fetchMock.getMockImplementation();
-    let release: (() => void) | undefined;
-    fetchMock.mockImplementation(async (url, init) => {
-      const href = url instanceof Request ? url.url : url.toString();
-      if (href.endsWith('/api/exam-bookings/b7')) await new Promise<void>((resolve) => (release = resolve));
-      return (respond as NonNullable<typeof respond>)(url, init);
-    });
+    const held = holdRequests(serveOffPage().fetchMock, (path) => path === '/api/exam-bookings/b7');
     renderApp('/paciente/agendamentos?id=b7');
 
     const first = await screen.findByRole('button', { name: /Dr\. João Silveira/ });
-    await waitFor(() => expect(release).toBeDefined());
+    await waitFor(() => expect(held).toHaveLength(1));
     expect(first).not.toHaveAttribute('aria-current');
     expect(screen.queryByRole('complementary', { name: SHEET })).not.toBeInTheDocument();
 
-    release?.();
+    held[0]?.release();
     const aside = await screen.findByRole('complementary', { name: SHEET });
     expect(await within(aside).findByRole('heading', { name: 'Ultrassom' })).toBeVisible();
     expect(first).not.toHaveAttribute('aria-current');

@@ -1,37 +1,15 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { PatientBooking, UserNotification } from '@lib/api/models';
+import { booking as baseBooking } from '@/test/patient-fixtures';
 import { renderApp, serveApi, type MockResponse } from '@/test/render-app';
 import type { PatientHome, ResultSummary } from './patient-home-api';
 
 const FUTURE = '2030-07-19T18:30:00.000Z';
 const HOUR_MS = 3_600_000;
 
-const booking = (id: string, overrides: Partial<PatientBooking> = {}): PatientBooking => ({
-  id,
-  kind: 'appointment',
-  status: 'confirmed',
-  startsAt: FUTURE,
-  endsAt: '2030-07-19T19:00:00.000Z',
-  notes: null,
-  visitType: 'routine',
-  doctor: { id: 'd1', fullName: 'Dr. João Silveira' },
-  specialty: { id: 's1', name: 'Cardiologia', council: 'CRM' },
-  examType: null,
-  publicCode: null,
-  unit: { id: 'u1', name: 'Hospital Central', address: 'Rua das Flores, 123', phone: '+551133334444' },
-  actions: {
-    canCancel: true,
-    lateCancellation: false,
-    cancelBlockedReason: null,
-    canReschedule: true,
-    rescheduleBlockedReason: null,
-    reschedulesLeft: 2,
-  },
-  cancellation: null,
-  hasResult: false,
-  ...overrides,
-});
+const booking = (id: string, overrides: Partial<PatientBooking> = {}): PatientBooking =>
+  baseBooking(id, { startsAt: FUTURE, endsAt: '2030-07-19T19:00:00.000Z', ...overrides });
 
 const notification = (overrides: Partial<UserNotification> = {}): UserNotification => ({
   id: 'n1',

@@ -4,7 +4,7 @@ import { DESKTOP_QUERY } from '@hooks/useMediaQuery';
 import { addDays, todayInSaoPaulo } from '@lib/date';
 import { queryKeys } from '@lib/query-keys';
 import { stubMatchMedia } from '@/test/match-media';
-import { renderApp, serveApi, type ApiRoute, type MockResponse } from '@/test/render-app';
+import { holdRequests, renderApp, serveApi, type ApiRoute, type MockResponse } from '@/test/render-app';
 
 const PATH = '/api/doctor/schedule';
 const TIME_OFF = '/api/doctor/time-off';
@@ -773,12 +773,7 @@ describe('doctor time off', { timeout: 15_000 }, () => {
     const { fetchMock } = serve({
       timeOff: createRoute((body) => ({ status: 201, body: { ...(body as object), warnings: [] } })),
     });
-    const respond = fetchMock.getMockImplementation();
-    let release = () => {};
-    fetchMock.mockImplementation(async (url, init) => {
-      if (init?.method === 'POST') await new Promise<void>((resolve) => (release = resolve));
-      return (respond as NonNullable<typeof respond>)(url, init);
-    });
+    const held = holdRequests(fetchMock, (_path, method) => method === 'POST');
     const { user } = renderApp(PAGE);
     const drawer = await openDrawer(user);
 
@@ -789,7 +784,7 @@ describe('doctor time off', { timeout: 15_000 }, () => {
     await user.keyboard('{Escape}');
     expect(screen.getByRole('dialog', { name: 'Bloquear uma data' })).toBeInTheDocument();
 
-    release();
+    held[0]?.release();
     expect(await screen.findByText('Data bloqueada.')).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });

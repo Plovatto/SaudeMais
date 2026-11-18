@@ -1,6 +1,6 @@
 import type { UseFormRegisterReturn } from 'react-hook-form';
 import { LuPhone, LuUser } from 'react-icons/lu';
-import { Input } from '@components/ui';
+import { Input, type InputProps } from '@components/ui';
 
 export interface PersonalDataFieldsProps {
   fullName: UseFormRegisterReturn;
@@ -43,4 +43,13 @@ export function PersonalDataFields({
       />
     </>
   );
+}
+
+export interface ReadOnlyEmailFieldProps extends Pick<InputProps, 'icon' | 'end'> {
+  email: string;
+  hint: string;
+}
+
+export function ReadOnlyEmailField({ email, ...props }: ReadOnlyEmailFieldProps) {
+  return <Input label="E-mail" type="email" value={email} readOnly {...props} />;
 }

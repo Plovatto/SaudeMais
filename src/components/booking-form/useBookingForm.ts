@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-query';
 import { useEffect, useEffectEvent, useMemo, useState } from 'react';
 import { useWatch, type FieldValues, type Path, type UseFormReturn } from 'react-hook-form';
+import { useFormSubmit } from '@hooks/useFormSubmit';
 import { ApiError } from '@lib/api/api-error';
 import type { FieldAliases } from '@lib/form-errors';
 import {
@@ -16,7 +17,6 @@ import {
   type MessageOverrides,
 } from '@lib/messages/errors.pt-BR';
 import { refreshPatientBookings } from '@lib/refresh-patient-bookings';
-import { useFormSubmit } from '@lib/useFormSubmit';
 import {
   firstWindowPage,
   horizonEnd,

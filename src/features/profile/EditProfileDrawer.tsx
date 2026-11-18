@@ -5,13 +5,13 @@ import { useForm } from 'react-hook-form';
 import { LuCake, LuLock } from 'react-icons/lu';
 import { FormShell } from '@components/forms/FormShell';
 import { IdentityHeader } from '@components/forms/IdentityHeader';
-import { PersonalDataFields } from '@components/forms/PersonalDataFields';
+import { PersonalDataFields, ReadOnlyEmailField } from '@components/forms/PersonalDataFields';
 import { Drawer, Input, useToast } from '@components/ui';
 import { areas, type Role } from '@constants/areas';
+import { useFormSubmit } from '@hooks/useFormSubmit';
 import { useReportSubmitting } from '@hooks/useReportSubmitting';
 import type { CurrentUser } from '@lib/auth/useSession';
 import { queryKeys } from '@lib/query-keys';
-import { useFormSubmit } from '@lib/useFormSubmit';
 import { updateProfile } from './profile-api';
 import {
   birthDateLimits,
@@ -92,11 +92,8 @@ function EditProfileForm({ user, role, withBirthDate, onClose, onSubmittingChang
           {...register('birthDate')}
         />
       )}
-      <Input
-        label="E-mail"
-        type="email"
-        value={user.email}
-        readOnly
+      <ReadOnlyEmailField
+        email={user.email}
         end={<LuLock aria-hidden className="text-text-muted me-3.5 shrink-0" />}
         hint="Usado para entrar. Para trocar, fale com a administração."
       />

@@ -4,7 +4,7 @@ import { LuPhone, LuUser } from 'react-icons/lu';
 import { useNavigate } from 'react-router';
 import { NewPasswordFields } from '@components/forms/NewPasswordFields';
 import { Button, Checkbox, FormAlert, Input, TextLink, useToast } from '@components/ui';
-import { useFormSubmit } from '@lib/useFormSubmit';
+import { useFormSubmit } from '@hooks/useFormSubmit';
 import { register as createAccount } from './auth-api';
 import { registerSchema, type RegisterValues } from './auth-schemas';
 import { AuthFooterLink } from './AuthFooterLink';

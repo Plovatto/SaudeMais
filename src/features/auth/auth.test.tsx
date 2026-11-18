@@ -1,8 +1,8 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import type userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { Role } from '@constants/areas';
-import { mockApi, renderApp, requestBody, TEST_TOKEN, testUser } from '@/test/render-app';
+import { holdRequests, mockApi, renderApp, requestBody, TEST_TOKEN, testUser } from '@/test/render-app';
 import { EXAMPLE_DOCTOR, EXAMPLE_PATIENT } from '@constants/example-accounts';
 
 const renderAt = (path: string) => renderApp(path);
@@ -11,10 +11,6 @@ const session = (roles: Role[]) => ({
   token: TEST_TOKEN,
   expiresAt: '2026-11-20T12:00:00.000Z',
   user: testUser(roles),
-});
-
-afterEach(() => {
-  vi.unstubAllGlobals();
 });
 
 describe('login', () => {
@@ -115,15 +111,9 @@ describe('login', () => {
   });
 
   it('ignores Enter while the login is running', async () => {
-    let release: () => void = () => undefined;
-    const fetchMock = vi.fn(
-      () =>
-        new Promise<Response>((resolve) => {
-          release = () => resolve(new Response(JSON.stringify(session(['patient'])), { status: 200 }));
-        }),
-    );
-    vi.stubGlobal('fetch', fetchMock);
-    const { user } = renderAt('/login');
+    const fetchMock = mockApi({ status: 200, body: session(['patient']) });
+    const held = holdRequests(fetchMock, () => true);
+    const { router, user } = renderAt('/login');
 
     await user.type(await screen.findByLabelText('E-mail'), 'ana@email.com');
     await user.type(screen.getByLabelText('Senha'), 'senha-segura-123{Enter}');
@@ -131,21 +121,13 @@ describe('login', () => {
     await user.type(screen.getByLabelText('Senha'), '{Enter}');
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    release();
+    held[0]?.release();
+    await waitFor(() => expect(router.state.location.pathname).toBe('/paciente'));
   });
 
   it('keeps the button busy while the request runs', async () => {
-    let release: () => void = () => undefined;
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        () =>
-          new Promise<Response>((resolve) => {
-            release = () => resolve(new Response(JSON.stringify(session(['patient'])), { status: 200 }));
-          }),
-      ),
-    );
-    const { user } = renderAt('/login');
+    const held = holdRequests(mockApi({ status: 200, body: session(['patient']) }), () => true);
+    const { router, user } = renderAt('/login');
 
     await user.type(await screen.findByLabelText('E-mail'), 'ana@email.com');
     await user.type(screen.getByLabelText('Senha'), 'senha-segura-123');
@@ -155,7 +137,8 @@ describe('login', () => {
       'aria-disabled',
       'true',
     );
-    release();
+    held[0]?.release();
+    await waitFor(() => expect(router.state.location.pathname).toBe('/paciente'));
   });
 });
 
