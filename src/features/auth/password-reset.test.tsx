@@ -1,13 +1,9 @@
 import { screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { SESSION_STORAGE_KEY } from '@lib/auth/token-store';
-import { mockApi, mockFetch, renderApp, TEST_TOKEN } from '@/test/render-app';
+import { mockApi, mockFetch, renderApp, requestBody, TEST_TOKEN } from '@/test/render-app';
 
 const RESET_TOKEN = 'b'.repeat(43);
-
-function body(fetchMock: ReturnType<typeof mockApi>, call = 0): unknown {
-  return JSON.parse(fetchMock.mock.calls[call]?.[1]?.body as string);
-}
 
 describe('forgot password', () => {
   it('always confirms the request with the same message', async () => {
@@ -21,7 +17,7 @@ describe('forgot password', () => {
     expect(confirmation.closest('[role="status"]')).not.toBeNull();
     expect(confirmation).toHaveFocus();
     expect(screen.getByText('ana@email.com')).toBeInTheDocument();
-    expect(body(fetchMock)).toEqual({ email: 'ana@email.com' });
+    expect(requestBody(fetchMock)).toEqual({ email: 'ana@email.com' });
   });
 
   it('validates the e-mail before calling the API', async () => {
@@ -86,7 +82,7 @@ describe('reset password', () => {
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/login'));
     expect(await screen.findByText('Senha redefinida. Entre com a nova senha.')).toBeInTheDocument();
-    expect(body(fetchMock)).toEqual({
+    expect(requestBody(fetchMock)).toEqual({
       token: RESET_TOKEN,
       password: 'nova-senha-456',
       passwordConfirmation: 'nova-senha-456',

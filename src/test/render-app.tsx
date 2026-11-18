@@ -34,6 +34,10 @@ export function mockFetch(handler: Handler) {
   return fetchMock;
 }
 
+export function requestBody(fetchMock: ReturnType<typeof mockFetch>, call = 0): unknown {
+  return JSON.parse(fetchMock.mock.calls[call]?.[1]?.body as string);
+}
+
 export function mockApi(...responses: MockResponse[]) {
   const queue = [...responses];
   return mockFetch(() => queue.shift());
