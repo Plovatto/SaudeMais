@@ -46,7 +46,6 @@ function PasswordForm({ onClose, onSubmittingChange }: PasswordFormProps) {
 
   return (
     <FormShell
-      label="Alterar senha"
       onSubmit={onSubmit}
       alert={alert}
       submitting={isSubmitting}

@@ -4,6 +4,7 @@ import { SHEET_QUERY, useSheetDrag } from '@hooks/useSheetDrag';
 import { cx } from '@lib/cx';
 import { softTones } from './styles';
 import { CloseButton } from './CloseButton';
+import { DialogTitleContext } from './dialog-title';
 import { IconSlot } from './IconSlot';
 import { SheetGrab } from './SheetGrab';
 
@@ -111,45 +112,49 @@ export function Dialog({
       )}
     >
       {draggable && <SheetGrab {...sheet.grabProps} />}
-      {bare ? (
-        <>
-          <h2 id={titleId} className="sr-only">
-            {title}
-          </h2>
-          {children}
-        </>
-      ) : (
-        <div className={cx('relative flex flex-col gap-4 p-6 pt-8', centered && 'items-center text-center')}>
-          {dismissible && (
-            <CloseButton
-              label={closeLabel}
-              onClick={() => ref.current?.close()}
-              className="absolute end-2 top-2"
-            />
-          )}
-          {icon && (
-            <IconSlot
-              className={cx(
-                'size-12 justify-center rounded-full text-[22px]',
-                softTones[tone === 'danger' ? 'danger' : 'info'],
-              )}
-            >
-              {icon}
-            </IconSlot>
-          )}
-          <div className="flex flex-col gap-1">
-            <h2 id={titleId} className="text-lg font-semibold">
+      <DialogTitleContext value={titleId}>
+        {bare ? (
+          <>
+            <h2 id={titleId} className="sr-only">
               {title}
             </h2>
-            {description && (
-              <div id={descriptionId} className="text-text-secondary text-sm">
-                {description}
-              </div>
+            {children}
+          </>
+        ) : (
+          <div
+            className={cx('relative flex flex-col gap-4 p-6 pt-8', centered && 'items-center text-center')}
+          >
+            {dismissible && (
+              <CloseButton
+                label={closeLabel}
+                onClick={() => ref.current?.close()}
+                className="absolute end-2 top-2"
+              />
             )}
+            {icon && (
+              <IconSlot
+                className={cx(
+                  'size-12 justify-center rounded-full text-[22px]',
+                  softTones[tone === 'danger' ? 'danger' : 'info'],
+                )}
+              >
+                {icon}
+              </IconSlot>
+            )}
+            <div className="flex flex-col gap-1">
+              <h2 id={titleId} className="text-lg font-semibold">
+                {title}
+              </h2>
+              {description && (
+                <div id={descriptionId} className="text-text-secondary text-sm">
+                  {description}
+                </div>
+              )}
+            </div>
+            {children}
           </div>
-          {children}
-        </div>
-      )}
+        )}
+      </DialogTitleContext>
     </dialog>
   );
 }

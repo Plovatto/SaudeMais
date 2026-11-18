@@ -73,7 +73,6 @@ export function DoctorProfileForm({
 
   return (
     <FormShell
-      label={profile ? 'Dados profissionais' : 'Tornar médico'}
       onSubmit={onSubmit}
       alert={alert}
       submitting={isSubmitting}

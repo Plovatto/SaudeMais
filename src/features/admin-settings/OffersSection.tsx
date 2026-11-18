@@ -47,13 +47,7 @@ function OfferForm({ unitId, offer, choices, onDone }: OfferFormProps) {
   });
   const { errors, isSubmitting } = form.formState;
   return (
-    <FormShell
-      label="Oferta"
-      onSubmit={form.onSubmit}
-      alert={form.alert}
-      submitting={isSubmitting}
-      onCancel={onDone}
-    >
+    <FormShell onSubmit={form.onSubmit} alert={form.alert} submitting={isSubmitting} onCancel={onDone}>
       {offer ? (
         <Input label="Exame" value={offer.examTypeName} readOnly />
       ) : choices.length === 0 ? (

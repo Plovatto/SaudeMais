@@ -72,7 +72,6 @@ export function CreateUserForm({ onClose, onSubmittingChange }: CreateUserFormPr
 
   return (
     <FormShell
-      label="Novo usuário"
       onSubmit={onSubmit}
       alert={alert}
       submitting={isSubmitting}

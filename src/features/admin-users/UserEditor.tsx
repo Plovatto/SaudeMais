@@ -218,7 +218,6 @@ export function UserEditor({
 
   return (
     <FormShell
-      label={`Dados de ${user.fullName}`}
       onSubmit={onSubmit}
       alert={null}
       submitting={isSubmitting}

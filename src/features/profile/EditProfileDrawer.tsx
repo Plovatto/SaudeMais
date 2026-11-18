@@ -59,7 +59,6 @@ function EditProfileForm({ user, role, withBirthDate, onClose, onSubmittingChang
 
   return (
     <FormShell
-      label="Editar perfil"
       onSubmit={async (event) => {
         if (hasIncompleteBirthDate(event.currentTarget)) {
           event.preventDefault();

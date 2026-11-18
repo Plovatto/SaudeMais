@@ -124,7 +124,7 @@ describe('admin settings', () => {
     });
     const { user } = renderApp('/admin/configuracoes');
     await user.click(await screen.findByRole('button', { name: 'Adicionar tipo de exame' }));
-    const form = await findForm('Tipo de exame');
+    const form = await findForm('Novo tipo de exame');
     const duration = within(form).getByLabelText('Duração (minutos)');
 
     await user.type(within(form).getByLabelText('Nome'), 'Hemograma');
@@ -168,7 +168,7 @@ describe('admin settings', () => {
     });
     const { user } = renderApp('/admin/configuracoes');
     await user.click(await screen.findByRole('button', { name: 'Adicionar especialidade' }));
-    const form = await findForm('Especialidade');
+    const form = await findForm('Nova especialidade');
 
     expect(within(form).queryByRole('switch')).not.toBeInTheDocument();
     await user.type(within(form).getByLabelText('Nome'), 'Cardiologia');
@@ -210,7 +210,7 @@ describe('admin settings', () => {
     const { user } = renderApp('/admin/configuracoes');
     await screen.findByText('Especialidade 1');
     await user.click(row('Especialidade 1'));
-    const form = await findForm('Especialidade');
+    const form = await findForm('Editar especialidade');
     const active = within(form).getByRole('switch', { name: 'Especialidade ativa' });
 
     expect(active).toBeChecked();
@@ -229,7 +229,7 @@ describe('admin settings', () => {
 
     expect(await screen.findByText('Especialidade atualizada.')).toBeInTheDocument();
     await waitFor(() =>
-      expect(screen.queryByRole('form', { name: 'Especialidade' })).not.toBeInTheDocument(),
+      expect(screen.queryByRole('form', { name: 'Editar especialidade' })).not.toBeInTheDocument(),
     );
   });
 
@@ -240,7 +240,7 @@ describe('admin settings', () => {
     });
     const { user } = renderApp('/admin/configuracoes');
     await user.click(await screen.findByRole('button', { name: 'Adicionar unidade' }));
-    const form = await findForm('Unidade');
+    const form = await findForm('Nova unidade');
 
     await user.type(within(form).getByLabelText('Nome'), 'Unidade Central');
     await user.type(within(form).getByLabelText('Endereço'), 'Rua das Flores, 123');
@@ -285,7 +285,7 @@ describe('admin settings', () => {
     const { user } = renderApp('/admin/configuracoes');
     await screen.findByText('Rua A, 1 · aberta 1 dia por semana');
     await user.click(row('Central'));
-    const form = await findForm('Unidade');
+    const form = await findForm('Editar unidade');
 
     expect(within(form).getByLabelText('Telefone')).toHaveValue('(11) 3333-4444');
     expect(within(form).getByLabelText('Abre (Segunda-feira)')).toHaveValue('08:00');
@@ -410,7 +410,7 @@ describe('admin settings', () => {
     const { user } = renderApp('/admin/configuracoes');
     await screen.findByText('Especialidade 1');
     await user.click(row('Especialidade 1'));
-    const form = await findForm('Especialidade');
+    const form = await findForm('Editar especialidade');
     await user.click(within(form).getByRole('button', { name: 'Salvar' }));
 
     expect(await within(form).findByText('Este item não existe mais. Atualize a lista.')).toBeInTheDocument();
@@ -458,17 +458,19 @@ describe('admin settings', () => {
     expect(await screen.findByText('2 ao mesmo tempo')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Oferecer exame' }));
-    const create = await findForm('Oferta');
+    const create = await findForm('Oferecer exame');
     await user.click(within(create).getByRole('button', { name: /^Exame Escolha o exame/ }));
     const options = within(await screen.findByRole('listbox', { name: 'Exame' })).getAllByRole('option');
     expect(options).toHaveLength(1);
     expect(options[0]).toHaveAccessibleName(/^Ultrassom/);
     await user.keyboard('{Escape}');
     await user.click(within(create).getByRole('button', { name: 'Cancelar' }));
-    await waitFor(() => expect(screen.queryByRole('form', { name: 'Oferta' })).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByRole('form', { name: 'Oferecer exame' })).not.toBeInTheDocument(),
+    );
 
     await user.click(row('Raio-X', 'ofertas'));
-    const edit = await findForm('Oferta');
+    const edit = await findForm('Editar Raio-X');
     expect(within(edit).getByLabelText('Exame')).toHaveValue('Raio-X');
     const capacity = within(edit).getByLabelText('Exames ao mesmo tempo');
     await user.clear(capacity);
