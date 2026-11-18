@@ -25,12 +25,12 @@ export function UserPanel({ fallbackFocus }: UserPanelProps) {
   const doctorButton = useRef<HTMLButtonElement>(null);
   const backToUser = () => setSection('', { replace: true });
   const removal = useProfileRemoval(doctorButton, backToUser);
-  const [lastSection, setLastSection] = useState(section);
+  const [last, setLast] = useState({ userParam, section });
   const [backFromDoctor, setBackFromDoctor] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  if (lastSection !== section) {
-    setLastSection(section);
-    setBackFromDoctor(lastSection === DOCTOR_SECTION);
+  if (last.userParam !== userParam || last.section !== section) {
+    setLast({ userParam, section });
+    setBackFromDoctor(last.userParam === userParam && last.section === DOCTOR_SECTION);
   }
 
   const user = query.data;
