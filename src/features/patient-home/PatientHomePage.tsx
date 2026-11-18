@@ -61,7 +61,8 @@ export function PatientHomePage() {
   const pending = useQuery({ ...pendingBookingsQuery, enabled: partial && confirmed.isSuccess && !next });
   const later = upcoming.filter((booking) => booking.id !== next?.id);
   const pendingCount = partial ? (pending.data?.total ?? 0) : shownPending;
-  const nextQuery = [confirmed, pending].find((extra) => extra.isLoading || extra.isError) ?? query;
+  const nextQuery =
+    [confirmed, pending].find((extra) => extra.isEnabled && (extra.isLoading || extra.isError)) ?? query;
   const notification = query.data?.lastNotification;
 
   return (
