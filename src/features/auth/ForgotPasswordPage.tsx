@@ -35,7 +35,14 @@ export function ForgotPasswordPage() {
   );
 
   return (
-    <AuthScreen title="Esqueceu a senha?" subtitle="Enviamos um link para você criar uma nova senha">
+    <AuthScreen
+      art={{
+        title: 'Acontece com todo mundo.',
+        text: 'Enviamos um link seguro para o seu e-mail e você cria uma nova senha em instantes.',
+      }}
+      title="Esqueceu a senha?"
+      subtitle="Informe seu e-mail e enviaremos um link para criar uma nova senha."
+    >
       <div role="status">
         {sentTo && (
           <p ref={confirmation} tabIndex={-1} className="text-text text-sm focus-visible:outline-none">

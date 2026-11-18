@@ -43,7 +43,14 @@ export function RegisterPage() {
   );
 
   return (
-    <AuthScreen title="Criar conta" subtitle="Preencha os dados para se cadastrar">
+    <AuthScreen
+      art={{
+        title: 'Sua conta pronta em poucos minutos.',
+        text: 'Cadastre-se para agendar consultas e exames e acompanhar seus resultados.',
+      }}
+      title="Criar conta"
+      subtitle="Preencha os dados para se cadastrar."
+    >
       <FormAlert tone="warning" role="note">
         Ambiente de demonstração: não use dados reais.
       </FormAlert>
@@ -94,7 +101,7 @@ export function RegisterPage() {
         <Button type="submit" size="lg" fullWidth loading={isSubmitting}>
           Cadastrar-se
         </Button>
-        <AuthFooterLink question="Já tem uma conta?" label="Faça login aqui" to="/login" />
+        <AuthFooterLink question="Já tem conta?" label="Entrar" to="/login" />
       </form>
     </AuthScreen>
   );

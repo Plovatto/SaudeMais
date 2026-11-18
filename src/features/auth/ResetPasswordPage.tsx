@@ -61,7 +61,14 @@ export function ResetPasswordPage() {
   );
 
   return (
-    <AuthScreen title="Criar nova senha" subtitle="Escolha uma senha nova para a sua conta">
+    <AuthScreen
+      art={{
+        title: 'Uma senha nova, um acesso seguro.',
+        text: 'Escolha uma senha que você não use em outros sites.',
+      }}
+      title="Criar nova senha"
+      subtitle="Escolha uma senha nova para a sua conta."
+    >
       {invalid ? (
         <div ref={invalidAlert} tabIndex={-1} className="focus-visible:outline-none">
           <FormAlert>
