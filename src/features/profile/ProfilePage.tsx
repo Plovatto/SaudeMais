@@ -30,7 +30,12 @@ export function ProfilePage() {
 
   return (
     <>
-      <PageHeader title="Meu perfil" subtitle="Seus dados, segurança e preferências." />
+      <PageHeader
+        title="Meu perfil"
+        subtitle="Seus dados, segurança e preferências."
+        back
+        backFallback={Area.base}
+      />
       <div className="flex flex-col gap-4 lg:gap-5">
         {user.roles.length > 1 && (
           <Link
