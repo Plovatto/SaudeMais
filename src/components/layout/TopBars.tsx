@@ -9,8 +9,9 @@ import { ThemeToggle } from './ThemeToggle';
 
 function useCrumb(area: Area): { label: string; to: string } | undefined {
   const { pathname } = useLocation();
-  return pathname === NOTIFICATIONS_PATH
-    ? { label: 'Conta', to: profileUrl(area.role) }
+  const profile = profileUrl(area.role);
+  return pathname === NOTIFICATIONS_PATH || pathname === profile
+    ? { label: 'Conta', to: profile }
     : parentLink(area, pathname);
 }
 
