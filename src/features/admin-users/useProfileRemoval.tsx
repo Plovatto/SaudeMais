@@ -45,5 +45,5 @@ export function useProfileRemoval(fallbackFocus: RefObject<HTMLElement | null>, 
     />
   );
 
-  return { request: (user: AdminUser) => setPending(user), dialog };
+  return { request: (user: AdminUser) => setPending(user), dismiss: () => setPending(null), dialog };
 }

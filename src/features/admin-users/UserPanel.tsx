@@ -31,6 +31,7 @@ export function UserPanel({ fallbackFocus }: UserPanelProps) {
   if (last.userParam !== userParam || last.section !== section) {
     setLast({ userParam, section });
     setBackFromDoctor(last.userParam === userParam && last.section === DOCTOR_SECTION);
+    removal.dismiss();
   }
 
   const user = query.data;
