@@ -3,7 +3,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SESSION_STORAGE_KEY } from '@lib/auth/token-store';
 import { THEME_STORAGE_KEY } from '@lib/theme';
 import { passwordSchema } from './profile-schemas';
-import { mockFetch, renderApp, TEST_TOKEN, testUser, type MockResponse } from '@/test/render-app';
+import {
+  holdRequests,
+  renderApp,
+  serveApi,
+  TEST_TOKEN,
+  testUser,
+  type MockResponse,
+} from '@/test/render-app';
 
 type Route = (method: string, body: unknown) => MockResponse | undefined;
 
@@ -37,18 +44,19 @@ type ServedUser = Omit<ReturnType<typeof testUser>, 'phone'> & {
   passwordChangedAt?: string | null;
 };
 
+const defaults: Record<string, MockResponse> = {
+  '/api/me/sessions': { status: 200, body: sessionsList },
+  '/api/me/email-preferences': { status: 200, body: preferences },
+};
+
 function serve(user: ServedUser, routes: Record<string, Route> = {}) {
-  sessionStorage.setItem(SESSION_STORAGE_KEY, TEST_TOKEN);
-  return mockFetch((path, init) => {
-    const method = init?.method ?? 'GET';
-    const body: unknown = typeof init?.body === 'string' ? JSON.parse(init.body) : undefined;
-    const custom = routes[path]?.(method, body);
-    if (custom) return custom;
-    if (path === '/api/me' && method === 'GET') return { status: 200, body: user };
-    if (path === '/api/me/sessions' && method === 'GET') return { status: 200, body: sessionsList };
-    if (path === '/api/me/email-preferences' && method === 'GET') return { status: 200, body: preferences };
-    return undefined;
+  const paths = new Set([...Object.keys(defaults), ...Object.keys(routes)]);
+  const served = [...paths].map((path) => {
+    const route: Route = (method, body) =>
+      routes[path]?.(method, body) ?? (method === 'GET' ? defaults[path] : undefined);
+    return [path, route] as const;
   });
+  return serveApi(user.roles, Object.fromEntries(served), user).fetchMock;
 }
 
 const openProfile = (base = '/paciente') => renderApp(`${base}/perfil`);
@@ -58,36 +66,6 @@ type User = ReturnType<typeof openProfile>['user'];
 async function openDrawer(user: User, opener: string) {
   await user.click(await screen.findByRole('button', { name: opener }));
   return within(await screen.findByRole('dialog'));
-}
-
-type Fetch = (url: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
-
-function holdRequests(
-  fetchMock: ReturnType<typeof serve>,
-  matches: (path: string, method: string) => boolean,
-) {
-  const original = fetchMock.getMockImplementation() as Fetch;
-  const held: { body: unknown; respond: (status: number, body?: unknown) => void }[] = [];
-  vi.stubGlobal(
-    'fetch',
-    vi.fn((url: RequestInfo | URL, init?: RequestInit) => {
-      const path = new URL(url instanceof Request ? url.url : url).pathname;
-      if (!matches(path, init?.method ?? 'GET')) return original(url, init);
-      return new Promise<Response>((resolve) => {
-        held.push({
-          body: typeof init?.body === 'string' ? JSON.parse(init.body) : undefined,
-          respond: (status, body) =>
-            resolve(
-              new Response(body === undefined ? null : JSON.stringify(body), {
-                status,
-                headers: { 'Content-Type': 'application/json' },
-              }),
-            ),
-        });
-      });
-    }),
-  );
-  return held;
 }
 
 const holdPatches = (fetchMock: ReturnType<typeof serve>) =>

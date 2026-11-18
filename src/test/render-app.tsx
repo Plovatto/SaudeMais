@@ -20,18 +20,49 @@ type Handler = (path: string, init?: RequestInit, url?: URL) => MockResponse | u
 
 export const TEST_TOKEN = 'A'.repeat(43);
 
+const requestUrl = (url: RequestInfo | URL) => new URL(url instanceof Request ? url.url : url);
+
+const jsonResponse = ({ status, body }: MockResponse) =>
+  new Response(body === undefined ? null : JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+
 export function mockFetch(handler: Handler) {
   const fetchMock = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
-    const parsed = new URL(url instanceof Request ? url.url : url);
+    const parsed = requestUrl(url);
     const response = handler(parsed.pathname, init, parsed) ?? { status: 500 };
     await Promise.resolve();
-    return new Response(response.body === undefined ? null : JSON.stringify(response.body), {
-      status: response.status,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonResponse(response);
   });
   vi.stubGlobal('fetch', fetchMock);
   return fetchMock;
+}
+
+type FetchMock = ReturnType<typeof mockFetch>;
+
+export interface HeldRequest {
+  release: () => void;
+  respond: (status: number, body?: unknown) => void;
+}
+
+export function holdRequests(
+  fetchMock: FetchMock,
+  matches: (path: string, method: string) => boolean,
+): HeldRequest[] {
+  const original = fetchMock.getMockImplementation();
+  if (!original) throw new Error('holdRequests needs a mocked fetch implementation');
+  const held: HeldRequest[] = [];
+  fetchMock.mockImplementation((url, init) => {
+    if (!matches(requestUrl(url).pathname, init?.method ?? 'GET')) return original(url, init);
+    return new Promise<Response>((resolve) => {
+      held.push({
+        release: () => resolve(original(url, init)),
+        respond: (status, body) => resolve(jsonResponse({ status, body })),
+      });
+    });
+  });
+  return held;
 }
 
 export function requestBody(fetchMock: ReturnType<typeof mockFetch>, call = 0): unknown {
@@ -61,22 +92,30 @@ export interface ApiCall {
   body: unknown;
 }
 
-export function serveApi(roles: Role[], routes: Record<string, ApiRoute>) {
+export function serveApi(roles: Role[], routes: Record<string, ApiRoute>, user: unknown = testUser(roles)) {
   const calls: ApiCall[] = [];
-  const fetchMock = signIn(roles, (path, init, url = new URL(path, 'https://api.test')) => {
-    const method = init?.method ?? 'GET';
-    const body: unknown = typeof init?.body === 'string' ? JSON.parse(init.body) : undefined;
-    calls.push({ method, url, body });
-    return routes[path]?.(method, body, url);
-  });
+  const fetchMock = signIn(
+    roles,
+    (path, init, url = new URL(path, 'https://api.test')) => {
+      const method = init?.method ?? 'GET';
+      const body: unknown = typeof init?.body === 'string' ? JSON.parse(init.body) : undefined;
+      calls.push({ method, url, body });
+      return routes[path]?.(method, body, url);
+    },
+    user,
+  );
   return { calls, fetchMock };
 }
 
-export function signIn(roles: Role[] = ['patient'], handler: Handler = () => undefined) {
+export function signIn(
+  roles: Role[] = ['patient'],
+  handler: Handler = () => undefined,
+  user: unknown = testUser(roles),
+) {
   sessionStorage.setItem(SESSION_STORAGE_KEY, TEST_TOKEN);
   return mockFetch((path, init, url) =>
     path === '/api/me' && (init?.method ?? 'GET') === 'GET'
-      ? { status: 200, body: testUser(roles) }
+      ? { status: 200, body: user }
       : handler(path, init, url),
   );
 }

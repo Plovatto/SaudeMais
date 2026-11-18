@@ -1,7 +1,7 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { stubMatchMedia } from '@/test/match-media';
-import { renderApp, serveApi, type ApiCall, type MockResponse } from '@/test/render-app';
+import { holdRequests, renderApp, serveApi, type ApiCall, type MockResponse } from '@/test/render-app';
 import { DESKTOP_QUERY } from '@hooks/useMediaQuery';
 import type { PatientBooking } from '@lib/api/models';
 
@@ -263,22 +263,15 @@ describe('patient bookings', { timeout: 15_000 }, () => {
 
   it('waits for the booking of the address before showing one beside the list', async () => {
     stubMatchMedia((query) => query === DESKTOP_QUERY);
-    const { fetchMock } = serveOffPage();
-    const respond = fetchMock.getMockImplementation();
-    let release: (() => void) | undefined;
-    fetchMock.mockImplementation(async (url, init) => {
-      const href = url instanceof Request ? url.url : url.toString();
-      if (href.endsWith('/api/exam-bookings/b7')) await new Promise<void>((resolve) => (release = resolve));
-      return (respond as NonNullable<typeof respond>)(url, init);
-    });
+    const held = holdRequests(serveOffPage().fetchMock, (path) => path === '/api/exam-bookings/b7');
     renderApp('/paciente/agendamentos?id=b7');
 
     const first = await screen.findByRole('button', { name: /Dr\. João Silveira/ });
-    await waitFor(() => expect(release).toBeDefined());
+    await waitFor(() => expect(held).toHaveLength(1));
     expect(first).not.toHaveAttribute('aria-current');
     expect(screen.queryByRole('complementary', { name: SHEET })).not.toBeInTheDocument();
 
-    release?.();
+    held[0]?.release();
     const aside = await screen.findByRole('complementary', { name: SHEET });
     expect(await within(aside).findByRole('heading', { name: 'Ultrassom' })).toBeVisible();
     expect(first).not.toHaveAttribute('aria-current');
