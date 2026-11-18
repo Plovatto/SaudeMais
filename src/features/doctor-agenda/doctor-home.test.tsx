@@ -109,7 +109,7 @@ describe('doctor home', { timeout: 15_000 }, () => {
     expect(within(requests).getByRole('button', { name: /^Confirmar: Andreia Soares/ })).toBeVisible();
     expect(within(requests).getByRole('link', { name: 'Ver todos' })).toHaveAttribute(
       'href',
-      '/medico/agenda?aba=a-confirmar',
+      '/medico/agenda?aba=consultas&situacao=a-confirmar',
     );
 
     const today = await region('Agenda de hoje');
@@ -393,6 +393,6 @@ describe('doctor home', { timeout: 15_000 }, () => {
     renderApp('/medico');
 
     const notice = await screen.findByRole('link', { name: /Consulta cancelada pelo paciente/ });
-    expect(notice).toHaveAttribute('href', '/medico/agenda?aba=historico');
+    expect(notice).toHaveAttribute('href', '/medico/agenda?aba=consultas&situacao=historico');
   });
 });
