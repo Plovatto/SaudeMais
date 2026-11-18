@@ -56,8 +56,8 @@ export function NextCard({ label, query, next, empty }: NextCardProps) {
   );
   const content = (
     <>
-      <span className="flex items-center justify-between gap-3">
-        <span className={cx(nextLabel, 'min-w-0 truncate')}>{label}</span>
+      <span className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+        <span className={cx(nextLabel, 'min-w-0 wrap-break-word')}>{label}</span>
         {next.tag}
       </span>
       <span className="flex items-center gap-3.5 min-[561px]:gap-[18px]">
