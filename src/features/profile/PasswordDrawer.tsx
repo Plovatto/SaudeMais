@@ -1,10 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { NewPasswordFields } from '@components/forms/NewPasswordFields';
 import { PasswordStrength } from '@components/forms/PasswordStrength';
 import { FormShell } from '@components/forms/FormShell';
 import { Drawer, PasswordInput, useToast } from '@components/ui';
+import { useReportSubmitting } from '@hooks/useReportSubmitting';
 import { queryKeys } from '@lib/query-keys';
 import { useFormSubmit } from '@lib/useFormSubmit';
 import { changePassword } from './profile-api';
@@ -14,9 +16,10 @@ const emptyPassword: PasswordValues = { currentPassword: '', password: '', passw
 
 interface PasswordFormProps {
   onClose: () => void;
+  onSubmittingChange: (submitting: boolean) => void;
 }
 
-function PasswordForm({ onClose }: PasswordFormProps) {
+function PasswordForm({ onClose, onSubmittingChange }: PasswordFormProps) {
   const queryClient = useQueryClient();
   const { show } = useToast();
   const {
@@ -29,6 +32,7 @@ function PasswordForm({ onClose }: PasswordFormProps) {
   const values = useWatch({ control });
   const canSubmit = passwordSchema.safeParse(values).success;
   const { alert, run } = useFormSubmit(setError, ['currentPassword', 'password', 'passwordConfirmation']);
+  useReportSubmitting(isSubmitting, onSubmittingChange);
 
   const onSubmit = handleSubmit((values) =>
     run(async () => {
@@ -68,10 +72,16 @@ function PasswordForm({ onClose }: PasswordFormProps) {
   );
 }
 
-export function PasswordDrawer({ open, ...props }: PasswordFormProps & { open: boolean }) {
+export interface PasswordDrawerProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+export function PasswordDrawer({ open, onClose }: PasswordDrawerProps) {
+  const [submitting, setSubmitting] = useState(false);
   return (
-    <Drawer open={open} onClose={props.onClose} title="Alterar senha">
-      {open && <PasswordForm {...props} />}
+    <Drawer open={open} onClose={onClose} title="Alterar senha" dismissible={!submitting}>
+      {open && <PasswordForm onClose={onClose} onSubmittingChange={setSubmitting} />}
     </Drawer>
   );
 }

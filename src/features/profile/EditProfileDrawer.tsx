@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { LuCake, LuLock } from 'react-icons/lu';
 import { FormShell } from '@components/forms/FormShell';
@@ -7,6 +8,7 @@ import { IdentityHeader } from '@components/forms/IdentityHeader';
 import { PersonalDataFields } from '@components/forms/PersonalDataFields';
 import { Drawer, Input, useToast } from '@components/ui';
 import { areas, type Role } from '@constants/areas';
+import { useReportSubmitting } from '@hooks/useReportSubmitting';
 import type { CurrentUser } from '@lib/auth/useSession';
 import { queryKeys } from '@lib/query-keys';
 import { useFormSubmit } from '@lib/useFormSubmit';
@@ -31,9 +33,10 @@ interface EditProfileFormProps {
   role: Role;
   withBirthDate: boolean;
   onClose: () => void;
+  onSubmittingChange: (submitting: boolean) => void;
 }
 
-function EditProfileForm({ user, role, withBirthDate, onClose }: EditProfileFormProps) {
+function EditProfileForm({ user, role, withBirthDate, onClose, onSubmittingChange }: EditProfileFormProps) {
   const queryClient = useQueryClient();
   const { show } = useToast();
   const {
@@ -43,6 +46,7 @@ function EditProfileForm({ user, role, withBirthDate, onClose }: EditProfileForm
     formState: { errors, isSubmitting, isDirty },
   } = useForm<ProfileValues>({ resolver: zodResolver(profileSchema), defaultValues: profileValues(user) });
   const { alert, run } = useFormSubmit(setError, ['fullName', 'phone', 'birthDate']);
+  useReportSubmitting(isSubmitting, onSubmittingChange);
 
   const submit = handleSubmit((values) =>
     run(async () => {
@@ -101,14 +105,15 @@ function EditProfileForm({ user, role, withBirthDate, onClose }: EditProfileForm
   );
 }
 
-export interface EditProfileDrawerProps extends EditProfileFormProps {
+export interface EditProfileDrawerProps extends Omit<EditProfileFormProps, 'onSubmittingChange'> {
   open: boolean;
 }
 
 export function EditProfileDrawer({ open, ...props }: EditProfileDrawerProps) {
+  const [submitting, setSubmitting] = useState(false);
   return (
-    <Drawer open={open} onClose={props.onClose} title="Editar perfil">
-      {open && <EditProfileForm {...props} />}
+    <Drawer open={open} onClose={props.onClose} title="Editar perfil" dismissible={!submitting}>
+      {open && <EditProfileForm {...props} onSubmittingChange={setSubmitting} />}
     </Drawer>
   );
 }

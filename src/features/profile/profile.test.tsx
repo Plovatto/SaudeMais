@@ -152,6 +152,26 @@ describe('profile page', () => {
     expect(screen.getAllByText('Ana Souza').length).toBeGreaterThan(0);
   });
 
+  it('keeps the edit drawer open while the changes are being saved', async () => {
+    const fetchMock = serve(testUser());
+    const held = holdRequests(fetchMock, (path, method) => path === '/api/me' && method === 'PATCH');
+    const { user } = openProfile();
+
+    const drawer = await openDrawer(user, 'Editar perfil');
+    const name = drawer.getByLabelText('Nome completo');
+    await user.clear(name);
+    await user.type(name, 'Ana Souza');
+    await user.click(drawer.getByRole('button', { name: 'Salvar alterações' }));
+
+    await waitFor(() => expect(drawer.queryByRole('button', { name: 'Fechar' })).not.toBeInTheDocument());
+    await user.keyboard('{Escape}');
+    expect(screen.getByRole('dialog', { name: 'Editar perfil' })).toBeInTheDocument();
+
+    held[0]?.respond(200, { ...testUser(), fullName: 'Ana Souza' });
+    expect(await screen.findByText('Dados atualizados.')).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
   it('saves the birth date for patients', async () => {
     const patch = vi.fn((method: string, body: unknown) =>
       method === 'PATCH' ? { status: 200, body: { ...testUser(), ...(body as object) } } : undefined,
@@ -492,6 +512,24 @@ describe('password change', () => {
 
     expect(await drawer.findByText('A senha atual está incorreta.')).toBeInTheDocument();
     expect(drawer.getByLabelText('Senha atual')).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('keeps the drawer open while the password is being changed', async () => {
+    const fetchMock = serve(testUser());
+    const held = holdRequests(fetchMock, (path) => path === '/api/me/password');
+    const { user } = openProfile();
+
+    const drawer = await fill(user);
+
+    await waitFor(() => expect(drawer.queryByRole('button', { name: 'Fechar' })).not.toBeInTheDocument());
+    await user.keyboard('{Escape}');
+    expect(screen.getByRole('dialog', { name: 'Alterar senha' })).toBeInTheDocument();
+
+    held[0]?.respond(204);
+    expect(
+      await screen.findByText('Senha alterada. As outras sessões foram encerradas.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('changes the password, closes the drawer and refreshes the sessions', async () => {
