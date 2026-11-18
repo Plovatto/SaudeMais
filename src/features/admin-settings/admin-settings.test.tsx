@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { stubMatchMedia } from '@/test/match-media';
 import { renderApp } from '@/test/render-app';
 import { DESKTOP_QUERY } from '@hooks/useMediaQuery';
@@ -43,10 +43,6 @@ const findForm = (name: string) => screen.findByRole('form', { name });
 
 const requestUrls = (fetchMock: ReturnType<typeof serve>['fetchMock']) =>
   fetchMock.mock.calls.map(([url]) => String(url instanceof Request ? url.url : url));
-
-afterEach(() => {
-  vi.unstubAllGlobals();
-});
 
 describe('admin settings', () => {
   it('shows every section on one page with details, statuses and pages per card', async () => {

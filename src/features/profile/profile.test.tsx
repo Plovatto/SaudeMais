@@ -96,7 +96,6 @@ const holdPatches = (fetchMock: ReturnType<typeof serve>) =>
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
-  vi.unstubAllGlobals();
   localStorage.clear();
 });
 

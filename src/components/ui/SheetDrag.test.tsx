@@ -88,7 +88,6 @@ describe('draggable sheet', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
-    vi.unstubAllGlobals();
     Reflect.deleteProperty(HTMLElement.prototype, 'setPointerCapture');
     Reflect.deleteProperty(HTMLElement.prototype, 'hasPointerCapture');
     Reflect.deleteProperty(HTMLElement.prototype, 'releasePointerCapture');

@@ -1,5 +1,5 @@
 import { screen, waitFor } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { SESSION_STORAGE_KEY } from '@lib/auth/token-store';
 import { mockApi, mockFetch, renderApp, TEST_TOKEN } from '@/test/render-app';
 
@@ -8,10 +8,6 @@ const RESET_TOKEN = 'b'.repeat(43);
 function body(fetchMock: ReturnType<typeof mockApi>, call = 0): unknown {
   return JSON.parse(fetchMock.mock.calls[call]?.[1]?.body as string);
 }
-
-afterEach(() => {
-  vi.unstubAllGlobals();
-});
 
 describe('forgot password', () => {
   it('always confirms the request with the same message', async () => {

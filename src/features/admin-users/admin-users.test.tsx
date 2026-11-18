@@ -1,5 +1,5 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { DESKTOP_QUERY } from '@hooks/useMediaQuery';
 import { SHEET_QUERY } from '@hooks/useSheetDrag';
 import { SESSION_STORAGE_KEY } from '@lib/auth/token-store';
@@ -90,10 +90,6 @@ const phone = () => {
     },
   );
 };
-
-afterEach(() => {
-  vi.unstubAllGlobals();
-});
 
 const rowOf = (name: string) => screen.findByRole('button', { name: new RegExp(`^${name}`) });
 const panel = (name: string) => screen.findByRole('dialog', { name });
