@@ -32,10 +32,12 @@ const card = async (name: RegExp) => {
   return { header, scope: within(header.closest('li') as HTMLElement) };
 };
 
-const openCancel = async (user: User) => {
+const REFUSE = 'Recusar pedido?';
+
+const openCancel = async (user: User, title = 'Cancelar consulta?') => {
   const { scope } = await card(/^Andreia Soares/);
-  await user.click(scope.getByRole('button', { name: /^Cancelar/ }));
-  return screen.getByRole('dialog', { name: 'Cancelar consulta?' });
+  await user.click(scope.getByRole('button', { name: /^(Cancelar|Recusar)/ }));
+  return screen.getByRole('dialog', { name: title });
 };
 
 const homeCalls = (calls: { url: URL }[]) => calls.filter((call) => call.url.pathname === HOME).length;
@@ -678,12 +680,12 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     });
     const { user } = renderApp('/medico/agenda');
 
-    const dialog = await openCancel(user);
+    const dialog = await openCancel(user, REFUSE);
     expect(within(dialog).getByText(/^Rotina com Andreia Soares em/)).toBeVisible();
     const reason = within(dialog).getByRole('textbox', { name: 'Motivo' });
     expect(reason).toBeRequired();
     await user.type(reason, '   ');
-    await user.click(within(dialog).getByRole('button', { name: 'Cancelar agendamento' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Recusar pedido' }));
 
     expect(await within(dialog).findByText(REASON)).toBeVisible();
     expect(reason).toHaveFocus();
@@ -700,9 +702,9 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     });
     const { user } = renderApp('/medico/agenda');
 
-    const dialog = await openCancel(user);
+    const dialog = await openCancel(user, REFUSE);
     await user.type(within(dialog).getByRole('textbox', { name: 'Motivo' }), 'Imprevisto');
-    await user.click(within(dialog).getByRole('button', { name: 'Cancelar agendamento' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Recusar pedido' }));
 
     expect(await within(dialog).findByText(REASON)).toBeVisible();
     expect(within(dialog).getByRole('textbox', { name: 'Motivo' })).toHaveAttribute('aria-invalid', 'true');
@@ -733,14 +735,14 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     });
     const { user } = renderApp('/medico/agenda');
 
-    const dialog = await openCancel(user);
+    const dialog = await openCancel(user, REFUSE);
     await user.type(within(dialog).getByRole('textbox', { name: 'Motivo' }), 'Imprevisto');
-    await user.click(within(dialog).getByRole('button', { name: 'Cancelar agendamento' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Recusar pedido' }));
 
     expect(await within(dialog).findByRole('alert')).toHaveTextContent(
       'Este agendamento não existe mais. Confira a lista atualizada.',
     );
-    expect(within(dialog).queryByRole('button', { name: 'Cancelar agendamento' })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', { name: 'Recusar pedido' })).not.toBeInTheDocument();
   });
 
   it('paginates through the URL and resets the page when the tab changes', async () => {
