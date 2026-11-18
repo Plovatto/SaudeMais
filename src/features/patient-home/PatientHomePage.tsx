@@ -62,7 +62,7 @@ export function PatientHomePage() {
       <PageTitle className="sr-only">Início</PageTitle>
       {notification && <LastNotification notification={notification} role="patient" />}
       <div className="@container">
-        <div className="grid items-start gap-4 lg:gap-5 @min-[880px]:grid-cols-[minmax(0,1fr)_360px] @min-[880px]:items-stretch">
+        <div className="grid grid-cols-1 items-start gap-4 lg:gap-5 @min-[880px]:grid-cols-[minmax(0,1fr)_360px] @min-[880px]:items-stretch">
           <div className="flex min-w-0 flex-col gap-4 lg:gap-5">
             <div className={stagger(0)}>
               <NextCard

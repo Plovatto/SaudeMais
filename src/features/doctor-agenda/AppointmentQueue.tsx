@@ -73,7 +73,7 @@ export function AppointmentQueue({
                   metaClassName="tabular-nums"
                 />
               </button>
-              <div className="max-[560px]:*:rounded-tile flex shrink-0 gap-2 max-[560px]:grid max-[560px]:basis-full max-[560px]:auto-cols-fr max-[560px]:grid-flow-col max-[560px]:gap-2.5 max-[560px]:*:min-h-[46px] max-[560px]:*:w-full max-[560px]:*:text-[0.9375rem] max-lg:*:min-h-11 min-[561px]:*:min-w-28">
+              <div className="max-[560px]:*:rounded-tile flex shrink-0 gap-2 max-[560px]:grid max-[560px]:min-w-0 max-[560px]:basis-full max-[560px]:auto-cols-fr max-[560px]:grid-flow-col max-[560px]:gap-2.5 max-[560px]:*:min-h-[46px] max-[560px]:*:w-full max-[560px]:*:px-2 max-[560px]:*:text-[0.9375rem] max-[560px]:*:whitespace-normal max-lg:*:min-h-11 min-[561px]:*:min-w-28">
                 {actions(appointment)}
               </div>
             </li>

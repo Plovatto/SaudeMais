@@ -32,8 +32,8 @@ export function AuthScreen({ art, title, subtitle, children }: AuthScreenProps) 
           <p className="text-white/80">{art.text}</p>
         </div>
       </div>
-      <div className="bg-surface grid flex-1 place-items-center content-start px-6 py-10 lg:flex-[1_1_480px] lg:content-center">
-        <div className="motion-safe:animate-rise flex w-full max-w-[400px] flex-col gap-5">
+      <div className="bg-surface grid min-w-0 flex-1 grid-cols-1 place-items-center content-start px-6 py-10 lg:flex-[1_1_480px] lg:content-center">
+        <div className="motion-safe:animate-rise flex w-full max-w-[400px] min-w-0 flex-col gap-5">
           <header className="flex flex-col gap-2.5">
             <PageTitle className="text-[1.625rem] font-[650] tracking-[-0.025em]">{title}</PageTitle>
             <p className="text-text-secondary text-[0.9375rem]">{subtitle}</p>
