@@ -41,7 +41,7 @@ test('the doctor confirms a request and the patient is notified', async ({ signe
   await expect(bell(patientPage)).toHaveAccessibleName(new RegExp(`, ${unread + 1} não lidas?$`));
   await bell(patientPage).click();
   const notifications = patientPage.getByRole('dialog', { name: 'Notificações' });
-  await expect(notifications.getByText('Consulta confirmada!').first()).toBeVisible();
+  await expect(notifications.getByText('Consulta confirmada', { exact: true }).first()).toBeVisible();
   await expectAccessible(patientPage);
 
   await patientPage.goto('paciente/agendamentos?tipo=consulta&status=confirmado');
