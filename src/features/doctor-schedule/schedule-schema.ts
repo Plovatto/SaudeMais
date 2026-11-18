@@ -90,15 +90,27 @@ export function toBody(
   loaded: DoctorSchedule,
 ): ScheduleBody {
   const body = { days: days.map((entry, weekday) => ({ weekday, ...entry })) };
-  if (appointmentDurationMin === loaded.appointmentDurationMin) return body;
   if (appointmentDurationMin === loaded.specialtyDurationMin)
-    return { ...body, appointmentDurationMin: null };
+    return loaded.isSpecialtyDefault ? body : { ...body, appointmentDurationMin: null };
+  if (appointmentDurationMin === loaded.appointmentDurationMin) return body;
   const duration = durationOf(appointmentDurationMin);
   return duration === undefined ? body : { ...body, appointmentDurationMin: duration };
 }
 
-export const dayMinutes = ({ isActive, ranges }: Day) =>
-  isActive ? ranges.reduce((total, item) => total + Math.max(0, item.endMin - item.startMin), 0) : 0;
+export function dayMinutes({ isActive, ranges }: Day): number {
+  if (!isActive) return 0;
+  let total = 0;
+  let coveredUntil = -1;
+  [...ranges]
+    .sort((a, b) => a.startMin - b.startMin)
+    .forEach(({ startMin, endMin }) => {
+      const from = Math.max(startMin, coveredUntil);
+      if (endMin <= from) return;
+      total += endMin - from;
+      coveredUntil = endMin;
+    });
+  return total;
+}
 
 export const weeklySlots = ({ days, appointmentDurationMin }: ScheduleValues) =>
   days.reduce((total, entry) => total + Math.floor(dayMinutes(entry) / appointmentDurationMin), 0);
