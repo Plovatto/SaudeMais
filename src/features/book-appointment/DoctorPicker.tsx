@@ -7,6 +7,7 @@ import {
   ListSkeleton,
   RowText,
   SectionCard,
+  stagger,
 } from '@components/ui';
 import type { ResponseOf } from '@lib/api/api-fetch';
 import { cx } from '@lib/cx';
@@ -90,6 +91,7 @@ export function DoctorPicker({
                 onClick={() => onPick(doctor)}
                 className={cx(
                   'border-border relative flex w-full items-center gap-3.5 border-b px-4 py-3 text-start transition-colors duration-150 lg:px-5',
+                  stagger(index),
                   selected
                     ? 'before:bg-role bg-[color-mix(in_oklab,var(--role-soft)_55%,var(--surface))] before:absolute before:inset-y-2.5 before:start-0 before:w-[3px] before:rounded-e-[3px]'
                     : 'can-hover:bg-surface-muted',
