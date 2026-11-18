@@ -117,7 +117,7 @@ export interface BookingDetailProps {
   tips?: boolean;
 }
 
-const footerButton = 'h-[46px] min-w-0 flex-1 basis-0 rounded-[12px] text-[0.9375rem]';
+const footerButton = 'h-[46px] flex-1 basis-32 rounded-[12px] text-[0.9375rem]';
 
 export function BookingDetail({ booking, titleId, onCancel, onClose, tips = false }: BookingDetailProps) {
   const leftId = useId();

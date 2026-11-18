@@ -254,33 +254,33 @@ export function DoctorAgendaPage() {
               </TabPanel>
             </div>
           )}
+          <DetailPane
+            desktop={desktop}
+            label="Detalhes da consulta"
+            open={selected !== undefined}
+            paneKey={selected?.id}
+            desktopVisible={visible !== undefined}
+            onClose={closeSheet}
+          >
+            {({ sheet, onClose }) =>
+              selected ? (
+                <AppointmentDetail
+                  appointment={selected}
+                  titleId={detailId}
+                  {...(sheet && { onClose })}
+                  {...detailState}
+                />
+              ) : (
+                <EmptyState
+                  icon={<LuCalendarX />}
+                  title="Nenhuma consulta selecionada"
+                  description="Os detalhes aparecem aqui quando houver uma consulta."
+                />
+              )
+            }
+          </DetailPane>
         </div>
       </TabPanel>
-      <DetailPane
-        desktop={desktop}
-        label="Detalhes da consulta"
-        open={selected !== undefined}
-        paneKey={selected?.id}
-        desktopVisible={visible !== undefined}
-        onClose={closeSheet}
-      >
-        {({ sheet, onClose }) =>
-          selected ? (
-            <AppointmentDetail
-              appointment={selected}
-              titleId={detailId}
-              {...(sheet && { onClose })}
-              {...detailState}
-            />
-          ) : (
-            <EmptyState
-              icon={<LuCalendarX />}
-              title="Nenhuma consulta selecionada"
-              description="Os detalhes aparecem aqui quando houver uma consulta."
-            />
-          )
-        }
-      </DetailPane>
       {actions.dialogs}
     </>
   );

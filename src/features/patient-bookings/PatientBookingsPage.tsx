@@ -201,25 +201,25 @@ export function PatientBookingsPage() {
             )}
           </PagedResults>
         </div>
+        <DetailPane
+          desktop={desktop}
+          label="Detalhes do agendamento"
+          open={selected !== undefined}
+          paneKey={selected?.id}
+          onClose={closeSheet}
+        >
+          {({ sheet, onClose }) =>
+            selected && (
+              <BookingDetail
+                booking={selected}
+                titleId={detailId}
+                onCancel={setCancelling}
+                {...(sheet && { onClose, tips: true })}
+              />
+            )
+          }
+        </DetailPane>
       </TabPanel>
-      <DetailPane
-        desktop={desktop}
-        label="Detalhes do agendamento"
-        open={selected !== undefined}
-        paneKey={selected?.id}
-        onClose={closeSheet}
-      >
-        {({ sheet, onClose }) =>
-          selected && (
-            <BookingDetail
-              booking={selected}
-              titleId={detailId}
-              onCancel={setCancelling}
-              {...(sheet && { onClose, tips: true })}
-            />
-          )
-        }
-      </DetailPane>
       <CancelDialog booking={cancelling} onClose={() => setCancelling(null)} fallbackFocus={results} />
     </>
   );
