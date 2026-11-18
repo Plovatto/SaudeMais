@@ -1,37 +1,28 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useForm, useWatch } from 'react-hook-form';
 import { LuTrash2, LuUser } from 'react-icons/lu';
 import { FormShell } from '@components/forms/FormShell';
 import { Button, Input, useToast } from '@components/ui';
-import { errorMessage } from '@lib/messages/errors.pt-BR';
-import { plural } from '@lib/plural';
 import { useFormSubmit } from '@lib/useFormSubmit';
 import { DoctorProfileFields } from './DoctorProfileFields';
-import { ImpactDialog } from './ImpactDialog';
 import { useDoctorCatalog } from './useDoctorCatalog';
-import { refreshUser, syncUser } from './user-cache';
+import { syncUser } from './user-cache';
 import { userMessages } from './user-messages';
 import { DOCTOR_FIELDS, doctorProfileSchema, type DoctorProfileValues } from './user-schemas';
-import { usersApi, type AdminUserDetail, type DeactivationImpact } from './users-api';
-
-const describeRemoval = ({ futureAppointmentsAsDoctor }: DeactivationImpact) =>
-  futureAppointmentsAsDoctor > 0
-    ? `${plural(futureAppointmentsAsDoctor, 'consulta futura será cancelada', 'consultas futuras serão canceladas')}. A conta continua como paciente.`
-    : 'Não há consultas futuras para cancelar. A conta continua como paciente.';
+import { usersApi, type AdminUserDetail } from './users-api';
 
 export interface DoctorProfileFormProps {
   user: AdminUserDetail;
   locked: boolean;
   onBack: () => void;
+  onRemove: () => void;
 }
 
-export function DoctorProfileForm({ user, locked, onBack }: DoctorProfileFormProps) {
+export function DoctorProfileForm({ user, locked, onBack, onRemove }: DoctorProfileFormProps) {
   const queryClient = useQueryClient();
   const { show } = useToast();
   const profile = user.doctorProfile;
-  const [removing, setRemoving] = useState(false);
   const {
     register,
     control,
@@ -71,71 +62,50 @@ export function DoctorProfileForm({ user, locked, onBack }: DoctorProfileFormPro
     }),
   );
 
-  const remove = useMutation({
-    mutationFn: () => usersApi.removeDoctorProfile(user.id),
-    onSuccess: (updated) => finish(updated, 'Perfil de médico removido.'),
-    onError: (error) => {
-      refreshUser(queryClient, user.id);
-      show({ message: errorMessage(error, userMessages), tone: 'danger' });
-    },
-    onSettled: () => setRemoving(false),
-  });
-
   return (
-    <>
-      <FormShell
-        label={profile ? 'Dados profissionais' : 'Tornar médico'}
-        onSubmit={onSubmit}
-        alert={alert}
-        submitting={isSubmitting}
-        onCancel={onBack}
-        submitLabel={profile ? 'Salvar alterações' : 'Tornar médico'}
-        submitDisabled={locked || catalog.error !== null || (profile !== null && !isDirty)}
-      >
-        <p className="text-text-secondary text-sm">
-          {profile
-            ? 'Mudar a especialidade ou a unidade só é possível sem consultas futuras.'
-            : 'Preencha os dados profissionais para dar o perfil de médico a esta conta.'}
-        </p>
-        <Input label="Nome" value={user.fullName} readOnly icon={<LuUser />} />
-        <DoctorProfileFields
-          catalog={catalog}
-          fields={{
-            specialtyId: register('specialtyId'),
-            registryNumber: register('registryNumber'),
-            registryUf: register('registryUf'),
-            unitId: register('unitId'),
-          }}
-          errors={{
-            specialtyId: errors.specialtyId?.message,
-            registryNumber: errors.registryNumber?.message,
-            registryUf: errors.registryUf?.message,
-            unitId: errors.unitId?.message,
-          }}
-          disabled={locked}
-          autoFocus
-        />
-        {profile && (
-          <Button
-            variant="danger-outline"
-            icon={<LuTrash2 />}
-            disabled={locked}
-            onClick={() => setRemoving(true)}
-            className="self-start"
-          >
-            Remover perfil de médico
-          </Button>
-        )}
-      </FormShell>
-      <ImpactDialog
-        userId={removing ? user.id : null}
-        title={`Remover o perfil de médico de ${user.fullName}?`}
-        confirmLabel="Remover perfil"
-        describe={describeRemoval}
-        loading={remove.isPending}
-        onConfirm={() => remove.mutate()}
-        onClose={() => setRemoving(false)}
+    <FormShell
+      label={profile ? 'Dados profissionais' : 'Tornar médico'}
+      onSubmit={onSubmit}
+      alert={alert}
+      submitting={isSubmitting}
+      onCancel={onBack}
+      submitLabel={profile ? 'Salvar alterações' : 'Tornar médico'}
+      submitDisabled={locked || catalog.error !== null || (profile !== null && !isDirty)}
+    >
+      <p className="text-text-secondary text-sm">
+        {profile
+          ? 'Mudar a especialidade ou a unidade só é possível sem consultas futuras.'
+          : 'Preencha os dados profissionais para dar o perfil de médico a esta conta.'}
+      </p>
+      <Input label="Nome" value={user.fullName} readOnly icon={<LuUser />} />
+      <DoctorProfileFields
+        catalog={catalog}
+        fields={{
+          specialtyId: register('specialtyId'),
+          registryNumber: register('registryNumber'),
+          registryUf: register('registryUf'),
+          unitId: register('unitId'),
+        }}
+        errors={{
+          specialtyId: errors.specialtyId?.message,
+          registryNumber: errors.registryNumber?.message,
+          registryUf: errors.registryUf?.message,
+          unitId: errors.unitId?.message,
+        }}
+        disabled={locked}
+        autoFocus
       />
-    </>
+      {profile && (
+        <Button
+          variant="danger-outline"
+          icon={<LuTrash2 />}
+          disabled={locked}
+          onClick={onRemove}
+          className="self-start"
+        >
+          Remover perfil de médico
+        </Button>
+      )}
+    </FormShell>
   );
 }

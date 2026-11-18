@@ -602,6 +602,7 @@ describe('doctor profile', () => {
     expect(await screen.findByText('Perfil de médico removido.')).toBeInTheDocument();
     expect(changes).toHaveBeenLastCalledWith('DELETE', undefined);
     expect(searchOf(router)).toEqual({ usuario: 'joao' });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Tornar médico' })).toHaveFocus());
   });
 
   it('sends only the registry when the current specialty and unit are inactive', async () => {

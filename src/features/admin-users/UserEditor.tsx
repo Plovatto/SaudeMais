@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useId, type ReactNode } from 'react';
+import { useId, type ReactNode, type RefObject } from 'react';
 import { useForm } from 'react-hook-form';
 import { LuMail, LuSend, LuShieldCheck, LuShieldOff, LuStethoscope } from 'react-icons/lu';
 import { FormShell } from '@components/forms/FormShell';
@@ -55,9 +55,15 @@ function RolesSection({
   user,
   locks,
   actions,
+  doctorButton,
   focusDoctor,
   onDoctor,
-}: SectionProps & { actions: UserActions; focusDoctor: boolean; onDoctor: () => void }) {
+}: SectionProps & {
+  actions: UserActions;
+  doctorButton: RefObject<HTMLButtonElement | null>;
+  focusDoctor: boolean;
+  onDoctor: () => void;
+}) {
   const isAdmin = user.roles.includes('admin');
   const profile = user.doctorProfile;
   const frozen = locks.isInactive;
@@ -77,6 +83,7 @@ function RolesSection({
       )}
       <div className="flex flex-wrap gap-3">
         <Button
+          ref={doctorButton}
           variant="secondary"
           icon={<LuStethoscope />}
           disabled={frozen}
@@ -161,12 +168,21 @@ function AccessSection({ user, locks, actions }: SectionProps & { actions: UserA
 
 export interface UserEditorProps extends SectionProps {
   actions: UserActions;
+  doctorButton: RefObject<HTMLButtonElement | null>;
   focusDoctor: boolean;
   onDoctor: () => void;
   onClose: () => void;
 }
 
-export function UserEditor({ user, locks, actions, focusDoctor, onDoctor, onClose }: UserEditorProps) {
+export function UserEditor({
+  user,
+  locks,
+  actions,
+  doctorButton,
+  focusDoctor,
+  onDoctor,
+  onClose,
+}: UserEditorProps) {
   const queryClient = useQueryClient();
   const { show } = useToast();
   const {
@@ -233,6 +249,7 @@ export function UserEditor({ user, locks, actions, focusDoctor, onDoctor, onClos
         user={user}
         locks={locks}
         actions={actions}
+        doctorButton={doctorButton}
         focusDoctor={focusDoctor}
         onDoctor={onDoctor}
       />
