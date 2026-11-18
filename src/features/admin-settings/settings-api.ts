@@ -15,14 +15,17 @@ interface CatalogTypes {
   '/api/admin/specialties': {
     item: Specialty;
     create: BodyOf<'/api/admin/specialties', 'post'>;
+    update: BodyOf<'/api/admin/specialties/{id}', 'patch'>;
   };
   '/api/admin/units': {
     item: Unit;
     create: BodyOf<'/api/admin/units', 'post'>;
+    update: BodyOf<'/api/admin/units/{id}', 'patch'>;
   };
   '/api/admin/exam-types': {
     item: ExamType;
     create: BodyOf<'/api/admin/exam-types', 'post'>;
+    update: BodyOf<'/api/admin/exam-types/{id}', 'patch'>;
   };
 }
 
@@ -37,10 +40,16 @@ function catalogResource<L extends keyof CatalogTypes>(listPath: L) {
   return {
     list: (page: number, signal: AbortSignal, pageSize = PAGE_SIZE) =>
       send<Page<Types['item']>>('get', listPath, { query: { page, pageSize }, signal }),
-    save: (id: string | null, { isActive, ...body }: Types['create'] & { isActive: boolean }) =>
+    save: (
+      id: string | null,
+      { isActive, ...body }: Types['create'] & Required<Pick<Types['update'], 'isActive'>>,
+    ) =>
       id === null
         ? send<Types['item']>('post', listPath, { body })
-        : send<Types['item']>('patch', `${listPath}/{id}`, { params: { id }, body: { ...body, isActive } }),
+        : send<Types['item']>('patch', `${listPath}/{id}`, {
+            params: { id },
+            body: { ...body, isActive } satisfies Types['update'],
+          }),
   };
 }
 

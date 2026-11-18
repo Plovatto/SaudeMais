@@ -64,7 +64,7 @@ function IntegrationForm({
   );
 }
 
-const separated = "not-first:before:text-text-muted not-first:before:me-1.5 not-first:before:content-['·']";
+const separated = "not-last:after:text-text-muted not-last:after:ms-1.5 not-last:after:content-['·']";
 
 function ClientDetails({ client }: { client: IntegrationClient }) {
   return (
