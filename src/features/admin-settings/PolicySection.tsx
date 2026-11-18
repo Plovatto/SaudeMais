@@ -1,10 +1,11 @@
+import { useEffect, useRef } from 'react';
 import { FormAlert, QueryError, SettingRow, Skeleton, type DropdownOption } from '@components/ui';
 import { plural } from '@lib/plural';
 import { catalogMessages } from './catalog-messages';
 import { FormDropdown } from './FormFields';
 import type { PolicyValues } from './settings-schemas';
 import { SettingsCard } from './SettingsCard';
-import { POLICY_FORM_ID, type PolicySettings } from './usePolicySettings';
+import { POLICY_CARD_ID, POLICY_FORM_ID, type PolicySettings } from './usePolicySettings';
 
 interface PolicyRow {
   name: keyof PolicyValues;
@@ -90,9 +91,13 @@ function optionsOf({ label, presets }: PolicyRow, current: number): DropdownOpti
 }
 
 export function PolicySection({ policy: { query, form } }: { policy: PolicySettings }) {
+  const alertRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (form.alert) alertRef.current?.scrollIntoView({ block: 'center' });
+  }, [form.alert]);
   const saved = query.data;
   return (
-    <SettingsCard id="politica" title="Agendamento" flush={false}>
+    <SettingsCard id={POLICY_CARD_ID} title="Agendamento" flush={false}>
       {query.isPending && <Skeleton className="h-80" />}
       {query.isError && (
         <QueryError error={query.error} messages={catalogMessages} onRetry={() => void query.refetch()} />
@@ -127,7 +132,7 @@ export function PolicySection({ policy: { query, form } }: { policy: PolicySetti
             />
           ))}
           {form.alert && (
-            <div className="pt-1 pb-4">
+            <div ref={alertRef} className="pt-1 pb-4">
               <FormAlert>{form.alert}</FormAlert>
             </div>
           )}
