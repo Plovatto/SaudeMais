@@ -8,9 +8,17 @@ export interface PersonalDataFieldsProps {
   errors: { fullName?: string | undefined; phone?: string | undefined };
   locked?: boolean;
   ownAccount: boolean;
+  phoneHint?: string;
 }
 
-export function PersonalDataFields({ fullName, phone, errors, locked, ownAccount }: PersonalDataFieldsProps) {
+export function PersonalDataFields({
+  fullName,
+  phone,
+  errors,
+  locked,
+  ownAccount,
+  phoneHint = 'Opcional, com DDD. Deixe em branco para remover.',
+}: PersonalDataFieldsProps) {
   return (
     <>
       <Input
@@ -27,7 +35,7 @@ export function PersonalDataFields({ fullName, phone, errors, locked, ownAccount
         autoComplete={ownAccount ? 'tel' : 'off'}
         inputMode="tel"
         placeholder="(99) 99999-9999"
-        hint="Opcional, com DDD. Deixe em branco para remover."
+        hint={phoneHint}
         icon={<LuPhone />}
         disabled={locked}
         error={errors.phone}
