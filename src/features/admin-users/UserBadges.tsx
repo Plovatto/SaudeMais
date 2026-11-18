@@ -1,21 +1,38 @@
-import { LuHeartPulse, LuShieldCheck, LuStethoscope } from 'react-icons/lu';
+import { LuShieldCheck } from 'react-icons/lu';
 import { StatusChip } from '@components/ui';
+import type { SoftTone } from '@components/ui/styles';
 import type { Role } from '@constants/areas';
+import { cx } from '@lib/cx';
 import type { UserLocks } from './user-cache';
 
-const roleLabels: Record<Role, string> = { patient: 'Paciente', doctor: 'Médico', admin: 'Admin' };
+const ROLE_CHIPS: Record<Role, { label: string; tone: SoftTone }> = {
+  doctor: { label: 'Médico', tone: 'accent' },
+  admin: { label: 'Administrador', tone: 'neutral' },
+  patient: { label: 'Paciente', tone: 'info' },
+};
 
-const ROLE_ORDER: readonly Role[] = ['doctor', 'patient', 'admin'];
+const ROLE_ORDER: readonly Role[] = ['doctor', 'admin', 'patient'];
 
-export function UserAvatar({ roles }: { roles: readonly Role[] }) {
-  const isDoctor = roles.includes('doctor');
+export function StatusBadge({ inactive }: { inactive: boolean }) {
+  return <StatusChip tone={inactive ? 'neutral' : 'success'}>{inactive ? 'Inativo' : 'Ativo'}</StatusChip>;
+}
+
+function RoleChip({ role, specialty }: { role: Role; specialty?: string | undefined }) {
+  const { label, tone } = ROLE_CHIPS[role];
   return (
-    <span
-      data-role={isDoctor ? 'doctor' : 'patient'}
-      aria-hidden="true"
-      className="bg-role-strong text-on-role rounded-tile grid size-12 shrink-0 place-items-center text-2xl"
-    >
-      {isDoctor ? <LuStethoscope /> : <LuHeartPulse />}
+    <StatusChip tone={tone} dot={false} icon={role === 'admin' ? <LuShieldCheck /> : undefined}>
+      {role === 'doctor' && specialty ? `${label} · ${specialty}` : label}
+    </StatusChip>
+  );
+}
+
+export function RoleChips({ roles, className }: { roles: readonly Role[]; className?: string }) {
+  const main = ROLE_ORDER.filter((role) => role !== 'patient' && roles.includes(role));
+  return (
+    <span className={cx('flex gap-1.5', className)}>
+      {(main.length > 0 ? main : (['patient'] as const)).map((role) => (
+        <RoleChip key={role} role={role} />
+      ))}
     </span>
   );
 }
@@ -30,15 +47,11 @@ export function UserBadges({ roles, locks, specialty }: UserBadgesProps) {
   return (
     <ul aria-label="Situação e perfis" className="flex flex-wrap gap-1.5">
       <li>
-        <StatusChip tone={locks.isInactive ? 'neutral' : 'success'}>
-          {locks.isInactive ? 'Inativo' : 'Ativo'}
-        </StatusChip>
+        <StatusBadge inactive={locks.isInactive} />
       </li>
       {ROLE_ORDER.filter((role) => roles.includes(role)).map((role) => (
         <li key={role} data-role={role}>
-          <StatusChip tone="info" icon={role === 'admin' ? <LuShieldCheck /> : undefined}>
-            {role === 'doctor' && specialty ? `${roleLabels.doctor} · ${specialty}` : roleLabels[role]}
-          </StatusChip>
+          <RoleChip role={role} specialty={specialty} />
         </li>
       ))}
       {locks.isSelf && (

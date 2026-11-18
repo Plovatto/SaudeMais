@@ -151,8 +151,6 @@ export const areas: Record<Role, Area> = {
         parent: '',
         nav: { label: 'Configurações', short: 'Ajustes', icon: LuSlidersHorizontal },
       },
-      { path: 'usuarios/:id', title: 'Editar usuário', parent: 'usuarios' },
-      { path: 'usuarios/:id/medico', title: 'Cadastro de médico', parent: 'usuarios/:id' },
       profilePage,
     ],
     tabs: ['', 'usuarios', 'relatorios', 'configuracoes/*'],
