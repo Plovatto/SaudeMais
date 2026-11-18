@@ -7,17 +7,26 @@ export interface DrawerProps {
   onClose: () => void;
   title: string;
   dismissible?: boolean;
+  side?: boolean;
   fallbackFocus?: RefObject<HTMLElement | null> | undefined;
   children?: ReactNode;
 }
 
-export function Drawer({ open, onClose, title, dismissible = true, fallbackFocus, children }: DrawerProps) {
+export function Drawer({
+  open,
+  onClose,
+  title,
+  dismissible = true,
+  side = false,
+  fallbackFocus,
+  children,
+}: DrawerProps) {
   return (
     <Dialog
       open={open}
       onClose={onClose}
       title={title}
-      placement="sheet"
+      placement={side ? 'drawer' : 'sheet'}
       dismissible={dismissible}
       fallbackFocus={fallbackFocus}
       bare
