@@ -1,32 +1,27 @@
-import { LuArrowRight, LuFlaskConical, LuStethoscope } from 'react-icons/lu';
+import type { IconType } from 'react-icons';
+import { LuArrowRight } from 'react-icons/lu';
 import { Link } from 'react-router';
-import { areas } from '@constants/areas';
 import { cx } from '@lib/cx';
-import { softTones } from '@components/ui/styles';
+import { softTones } from './styles';
 
-const PATIENT = areas.patient.base;
+export interface QuickAction {
+  to: string;
+  title: string;
+  hint: string;
+  icon: IconType;
+  primary?: boolean;
+}
 
-const ACTIONS = [
-  {
-    to: `${PATIENT}/consultas/nova`,
-    title: 'Agendar consulta',
-    hint: 'Escolha o médico e o horário',
-    icon: LuStethoscope,
-    primary: true,
-  },
-  {
-    to: `${PATIENT}/exames/novo`,
-    title: 'Agendar exame',
-    hint: 'Sangue, urina e imagem',
-    icon: LuFlaskConical,
-  },
-];
+export interface QuickActionsProps {
+  label: string;
+  actions: readonly QuickAction[];
+}
 
-export function QuickActions() {
+export function QuickActions({ label, actions }: QuickActionsProps) {
   return (
-    <nav aria-label="Agendar" className="@container">
+    <nav aria-label={label} className="@container">
       <div className="grid grid-cols-2 gap-2.5 @min-[560px]:gap-4">
-        {ACTIONS.map(({ to, title, hint, icon: Icon, primary }) => (
+        {actions.map(({ to, title, hint, icon: Icon, primary }) => (
           <Link
             key={to}
             to={to}
