@@ -1,5 +1,6 @@
 import { LuBuilding2, LuMapPin, LuPhone } from 'react-icons/lu';
 import { ActiveField } from '@components/forms/FormFields';
+import { FormShell } from '@components/forms/FormShell';
 import { Input } from '@components/ui';
 import { WEEKDAYS } from '@constants/weekdays';
 import { formatPhone } from '@lib/phone';
@@ -7,7 +8,6 @@ import { plural } from '@lib/plural';
 import { queryKeys } from '@lib/query-keys';
 import { fromMinutes, toMinutes } from '@lib/time-of-day';
 import { CatalogCard } from './CatalogCard';
-import { FormShell } from './FormShell';
 import { HoursEditor } from './HoursEditor';
 import { unitsApi, type Unit } from './settings-api';
 import { unitSchema, type UnitValues } from './settings-schemas';

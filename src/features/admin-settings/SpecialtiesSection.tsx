@@ -1,9 +1,9 @@
 import { LuStethoscope } from 'react-icons/lu';
 import { ActiveField } from '@components/forms/FormFields';
+import { FormShell } from '@components/forms/FormShell';
 import { Input } from '@components/ui';
 import { queryKeys } from '@lib/query-keys';
 import { CatalogCard } from './CatalogCard';
-import { FormShell } from './FormShell';
 import { specialtiesApi, type Specialty } from './settings-api';
 import { specialtySchema } from './settings-schemas';
 import { useCatalogForm } from './useCatalogForm';
