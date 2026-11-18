@@ -1,8 +1,9 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { stubMatchMedia } from '@/test/match-media';
-import { renderApp, serveApi, type ApiRoute } from '@/test/render-app';
+import { renderApp } from '@/test/render-app';
 import { DESKTOP_QUERY } from '@hooks/useMediaQuery';
+import { page, policy, serveSettings as serve } from './settings-fixtures';
 
 const specialty = (index: number, overrides: Record<string, unknown> = {}) => ({
   id: `spec-${index}`,
@@ -11,13 +12,6 @@ const specialty = (index: number, overrides: Record<string, unknown> = {}) => ({
   appointmentDurationMin: 30,
   isActive: true,
   ...overrides,
-});
-
-const page = <T,>(items: T[], total = items.length, current = 1) => ({
-  items,
-  page: current,
-  pageSize: 20,
-  total,
 });
 
 const unit = (overrides: Record<string, unknown> = {}) => ({
@@ -39,27 +33,6 @@ const examType = (id: string, name: string, isActive = true) => ({
   preparationNotes: null,
   isActive,
 });
-
-const policy = {
-  appointmentLateWindowHours: 24,
-  examLateWindowHours: 2,
-  maxReschedules: 2,
-  bookingHorizonDays: 60,
-  minLeadMinutes: 60,
-  updatedAt: '2026-11-20T12:00:00.000Z',
-};
-
-const emptyList = () => ({ status: 200, body: page([]) });
-
-const serve = (routes: Record<string, ApiRoute>) =>
-  serveApi(['admin'], {
-    '/api/admin/specialties': emptyList,
-    '/api/admin/exam-types': emptyList,
-    '/api/admin/units': emptyList,
-    '/api/admin/integrations': emptyList,
-    '/api/admin/policy': () => ({ status: 200, body: policy }),
-    ...routes,
-  });
 
 const row = (name: string, card?: string) =>
   within(card ? (document.getElementById(card) as HTMLElement) : document.body).getByRole('button', {
