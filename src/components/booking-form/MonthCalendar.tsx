@@ -2,13 +2,12 @@ import { useState, type Ref } from 'react';
 import { LuChevronLeft, LuChevronRight } from 'react-icons/lu';
 import { IconButton } from '@components/ui';
 import { cx } from '@lib/cx';
-import { addDays, formatLongDay, formatMonth, middayOf, todayInSaoPaulo } from '@lib/date';
+import { addDays, formatLongDay, formatMonth, middayOf, todayInSaoPaulo, weekdayOf } from '@lib/date';
 
 const WEEKDAYS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 const WEEKDAY_NAMES = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
 
 const monthOf = (date: string) => date.slice(0, 7);
-const weekdayOf = (date: string) => new Date(`${date}T00:00:00.000Z`).getUTCDay();
 
 function shiftMonth(month: string, step: number): string {
   const [year = 0, index = 1] = month.split('-').map(Number);

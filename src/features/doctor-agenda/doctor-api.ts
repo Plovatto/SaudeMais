@@ -6,7 +6,7 @@ import { queryKeys } from '@lib/query-keys';
 
 const PAGE_SIZE = 10;
 
-const DAY_LIMIT = 50;
+const RANGE_LIMIT = 50;
 
 export type DoctorHome = ResponseOf<'/api/doctor/home', 'get'>;
 
@@ -17,6 +17,7 @@ export interface AgendaParams {
   page: number;
   from?: string;
   to?: string;
+  search?: string;
   pageSize?: number;
 }
 
@@ -33,9 +34,9 @@ export const doctorHomeQuery = queryOptions({
 });
 
 export const doctorApi = {
-  list: ({ tab, page, from, to, pageSize = PAGE_SIZE }: AgendaParams, signal: AbortSignal) =>
+  list: ({ tab, page, from, to, search, pageSize = PAGE_SIZE }: AgendaParams, signal: AbortSignal) =>
     apiFetch('get', '/api/doctor/appointments', {
-      query: { tab, page, pageSize, ...(from && { from }), ...(to && { to }) },
+      query: { tab, page, pageSize, ...(from && { from }), ...(to && { to }), ...(search && { search }) },
       signal,
     }),
   confirm: decide('/api/appointments/{id}/confirm'),
@@ -64,17 +65,23 @@ const ON_AGENDA: ReadonlySet<DoctorAppointment['status']> = new Set([
   'no_show',
 ]);
 
-const listDay = async (day: string, signal: AbortSignal) => {
-  const { items } = await doctorApi.list(
-    { tab: 'all', page: 1, from: day, to: day, pageSize: DAY_LIMIT },
-    signal,
+const listRange = async (from: string, to: string, signal: AbortSignal) => {
+  const pageOf = (page: number) =>
+    doctorApi.list({ tab: 'all', page, from, to, pageSize: RANGE_LIMIT }, signal);
+  const first = await pageOf(1);
+  const pages = Math.ceil(first.total / RANGE_LIMIT);
+  const rest = await Promise.all(
+    Array.from({ length: Math.max(pages - 1, 0) }, (_, index) => pageOf(index + 2)),
   );
-  return items.filter(({ status }) => ON_AGENDA.has(status));
+  const unique = new Map(
+    [first, ...rest].flatMap(({ items }) => items.map((item) => [item.id, item] as const)),
+  );
+  return [...unique.values()].filter(({ status }) => ON_AGENDA.has(status));
 };
 
-export const dayAgendaQuery = (day: string) =>
+export const agendaRangeQuery = (from: string, to = from) =>
   queryOptions({
-    queryKey: queryKeys.doctor.day(day),
+    queryKey: queryKeys.doctor.range(from, to),
     refetchInterval: MINUTE_MS,
-    queryFn: ({ signal }) => listDay(day, signal),
+    queryFn: ({ signal }) => listRange(from, to, signal),
   });

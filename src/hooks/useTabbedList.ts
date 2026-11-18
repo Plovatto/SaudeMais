@@ -18,9 +18,10 @@ export function useTabbedList<Tabs extends TabList, Result extends ListPage>(
   tabs: Tabs,
   source: (tab: Tabs[number], page: number) => ListSource<Result>,
   resetOnTab: readonly string[] = [],
+  tabParamName = 'aba',
 ) {
   const [page, setPage] = usePageParam();
-  const [tabParam, setTabParam] = useSearchParam('aba', tabs[0].value);
+  const [tabParam, setTabParam] = useSearchParam(tabParamName, tabs[0].value);
   const tab: Tabs[number] = tabs.find((item) => item.value === tabParam) ?? tabs[0];
   const { queryKey, queryFn } = source(tab, page);
   const query = useQuery({

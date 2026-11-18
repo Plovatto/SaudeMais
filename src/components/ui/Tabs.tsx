@@ -18,9 +18,16 @@ export interface TabsProps<T extends string> {
   items: readonly TabItem<T>[];
   value: T;
   onValueChange: (value: T) => void;
-  variant?: 'pill' | 'tile' | 'line';
+  variant?: 'pill' | 'tile' | 'line' | 'chip';
   className?: string;
 }
+
+const listLayout: Record<NonNullable<TabsProps<string>['variant']>, string> = {
+  pill: 'gap-3',
+  tile: 'gap-3',
+  line: 'border-border gap-1 border-b',
+  chip: '-mx-1 gap-2 overflow-x-auto px-1 pb-1 lg:flex-wrap lg:overflow-visible lg:pb-0',
+};
 
 const safe = (value: string) => encodeURIComponent(value).replace(/%/g, '_');
 const tabId = (id: string, value: string) => `${id}-tab-${safe(value)}`;
@@ -50,7 +57,7 @@ export function Tabs<T extends string>({
       role="tablist"
       aria-label={label}
       onKeyDown={onKeyDown}
-      className={cx('flex', variant === 'line' ? 'border-border gap-1 border-b' : 'gap-3', className)}
+      className={cx('flex', listLayout[variant], className)}
     >
       {items.map((item) => {
         const selected = item.value === value;
@@ -106,9 +113,21 @@ export function Tabs<T extends string>({
             key={item.value}
             type="button"
             {...tab}
-            className={cx(pill.base, 'flex-1', selected ? pill.selected : pill.idle)}
+            className={cx(
+              pill.base,
+              variant === 'chip' ? 'inline-flex shrink-0 items-center gap-2 whitespace-nowrap' : 'flex-1',
+              selected ? pill.selected : pill.idle,
+            )}
           >
             {item.label}
+            {variant === 'chip' && item.count !== undefined && (
+              <>
+                {' '}
+                <span className={cx('tabular-nums', selected ? 'opacity-85' : 'text-text-muted')}>
+                  {item.count}
+                </span>
+              </>
+            )}
           </button>
         );
       })}

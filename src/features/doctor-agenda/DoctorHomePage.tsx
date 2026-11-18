@@ -23,7 +23,7 @@ import { cx } from '@lib/cx';
 import { AppointmentQueue } from './AppointmentQueue';
 import { COMPLETE, CONFIRM, NO_SHOW } from './decisions';
 import { ActionTarget, DecisionButton } from './DecisionButton';
-import { dayAgendaQuery, doctorHomeQuery, nextAppointmentQuery } from './doctor-api';
+import { agendaRangeQuery, doctorHomeQuery, nextAppointmentQuery } from './doctor-api';
 import { TodayAgenda } from './TodayAgenda';
 import { useAppointmentActions } from './useAppointmentActions';
 
@@ -58,7 +58,7 @@ export function DoctorHomePage() {
   const today = civilDateInSaoPaulo(now);
   const home = useQuery({ ...doctorHomeQuery, refetchInterval: MINUTE_MS });
   const next = useQuery(nextAppointmentQuery(today));
-  const day = useQuery(dayAgendaQuery(today));
+  const day = useQuery(agendaRangeQuery(today));
   const requests = useRef<HTMLElement>(null);
   const actions = useAppointmentActions(requests);
   const data = home.data;

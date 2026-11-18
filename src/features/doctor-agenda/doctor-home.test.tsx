@@ -109,7 +109,7 @@ describe('doctor home', { timeout: 15_000 }, () => {
     expect(within(requests).getByRole('button', { name: /^Confirmar: Andreia Soares/ })).toBeVisible();
     expect(within(requests).getByRole('link', { name: 'Ver todos' })).toHaveAttribute(
       'href',
-      '/medico/agenda?aba=a-confirmar',
+      '/medico/agenda?aba=consultas&situacao=a-confirmar',
     );
 
     const today = await region('Agenda de hoje');
@@ -246,7 +246,7 @@ describe('doctor home', { timeout: 15_000 }, () => {
     expect(detail.getByText('Hospital Central')).toBeVisible();
     expect(detail.getByText('Telefone indisponível')).toBeVisible();
     expect(detail.getByText('Trazer o hemograma de outubro.')).toBeVisible();
-    expect(detail.getByRole('button', { name: /^Cancelar: Carlos Pereira/ })).toBeVisible();
+    expect(detail.getByRole('button', { name: /^Cancelar consulta: Carlos Pereira/ })).toBeVisible();
   });
 
   it('shows the error of the home with a retry that loads it again', async () => {
@@ -393,6 +393,6 @@ describe('doctor home', { timeout: 15_000 }, () => {
     renderApp('/medico');
 
     const notice = await screen.findByRole('link', { name: /Consulta cancelada pelo paciente/ });
-    expect(notice).toHaveAttribute('href', '/medico/agenda?aba=historico');
+    expect(notice).toHaveAttribute('href', '/medico/agenda?aba=consultas&situacao=historico');
   });
 });

@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { formatDateTime, formatShortDay, formatTime } from '../src/lib/date';
+import { civilDateInSaoPaulo, formatShortDay, formatTime } from '../src/lib/date';
 import { api } from './support/api';
 import { tokenFor } from './support/auth';
 import { bookingCard, expect, expectAccessible, test } from './support/fixtures';
@@ -18,7 +18,6 @@ test('the doctor confirms a request and the patient is notified', async ({ signe
     visitType: 'routine',
     startsAt: await api.firstFreeSlot(token, doctor.id),
   });
-  const when = formatDateTime(startsAt);
   const unread = await api.unreadCount(token, 'patient');
 
   const patientPage = await signedIn('patient');
@@ -28,8 +27,9 @@ test('the doctor confirms a request and the patient is notified', async ({ signe
   );
 
   const doctorPage = await signedIn('doctor');
-  await doctorPage.goto('medico/agenda');
-  const confirm = bookingCard(doctorPage, PATIENT_NAME, when).getByRole('button', { name: /^Confirmar/ });
+  await doctorPage.goto(`medico/agenda?dia=${civilDateInSaoPaulo(new Date(startsAt))}`);
+  await bookingCard(doctorPage, PATIENT_NAME, formatTime(startsAt)).getByRole('button').click();
+  const confirm = doctorPage.getByRole('button', { name: /^Confirmar/ }).locator('visible=true');
   await expect(confirm).toBeVisible();
   await expectAccessible(doctorPage);
   await confirm.click();

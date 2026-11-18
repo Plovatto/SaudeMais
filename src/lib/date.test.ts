@@ -5,7 +5,6 @@ import {
   civilDateInSaoPaulo,
   formatDateTime,
   formatDate,
-  formatDay,
   formatDuration,
   formatLongDay,
   formatMonth,
@@ -14,7 +13,11 @@ import {
   formatSince,
   formatShortDay,
   formatTime,
+  hourInSaoPaulo,
+  isCivilDate,
   todayInSaoPaulo,
+  weekdayOf,
+  weekOf,
 } from './date';
 
 describe.each([
@@ -59,10 +62,6 @@ describe.each([
   it('adds days to a civil date across months and years', () => {
     expect(addDays('2026-11-14', 30)).toBe('2026-12-14');
     expect(addDays('2026-12-31', 1)).toBe('2027-01-01');
-  });
-
-  it('labels a civil date without shifting the day', () => {
-    expect(formatDay('2026-11-20')).toBe('sex., 20/11');
   });
 
   it('formats a civil date with and without the year', () => {
@@ -148,5 +147,33 @@ describe('month and duration', () => {
     expect(formatMonth('2026-12-01T01:00:00.000Z')).toBe('Novembro de 2026');
     expect(formatDuration('2026-11-23T13:00:00.000Z', '2026-11-23T13:30:00.000Z')).toBe('30 minutos');
     expect(formatDuration('2026-11-23T13:00:00.000Z', '2026-11-23T13:01:00.000Z')).toBe('1 minuto');
+  });
+});
+
+describe('civil weeks', () => {
+  it('validates civil dates', () => {
+    expect(isCivilDate('2026-11-23')).toBe(true);
+    expect(isCivilDate('2026-02-30')).toBe(false);
+    expect(isCivilDate('2030-13-40')).toBe(false);
+    expect(isCivilDate('23/11/2026')).toBe(false);
+  });
+
+  it('returns the monday to sunday week of a day', () => {
+    expect(weekdayOf('2026-11-22')).toBe(0);
+    expect(weekOf('2026-11-22')).toEqual([
+      '2026-11-16',
+      '2026-11-17',
+      '2026-11-18',
+      '2026-11-19',
+      '2026-11-20',
+      '2026-11-21',
+      '2026-11-22',
+    ]);
+    expect(weekOf('2026-12-31')[0]).toBe('2026-12-28');
+  });
+
+  it('reads the hour in São Paulo', () => {
+    expect(hourInSaoPaulo('2026-11-23T02:30:00.000Z')).toBe(23);
+    expect(hourInSaoPaulo('2026-11-23T15:00:00.000Z')).toBe(12);
   });
 });
