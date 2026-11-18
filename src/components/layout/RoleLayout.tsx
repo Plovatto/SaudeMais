@@ -23,7 +23,7 @@ export function RoleLayout() {
         <TopBar area={area} />
         <MainContent
           className={cx(
-            'max-w-[1200px] px-4 pt-4 lg:px-8 lg:pt-2 lg:pb-14 print:max-w-none print:px-0',
+            'max-w-[1200px] px-4 pt-4 max-lg:ps-[max(1rem,env(safe-area-inset-left))] max-lg:pe-[max(1rem,env(safe-area-inset-right))] lg:px-8 lg:pt-2 lg:pb-14 print:max-w-none print:px-0',
             flow
               ? 'pb-[calc(14rem+env(safe-area-inset-bottom))]'
               : 'pb-[calc(6.5rem+env(safe-area-inset-bottom))]',

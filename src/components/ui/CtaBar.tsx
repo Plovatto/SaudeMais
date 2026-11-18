@@ -20,7 +20,7 @@ export function CtaBar({ icon, title, sub, muted = false, aboveNav = false, chil
       <div
         data-cta-bar={aboveNav || undefined}
         className={cx(
-          'border-border bg-surface motion-safe:animate-sheet fixed inset-x-0 bottom-0 flex flex-wrap items-center gap-x-3.5 gap-y-5 rounded-t-[26px] border-t px-5 pt-5 shadow-[0_-2px_6px_rgb(16_42_41/0.06),0_-22px_44px_-16px_rgb(16_42_41/0.4)] print:hidden',
+          'border-border bg-surface motion-safe:animate-sheet fixed inset-x-0 bottom-0 flex flex-wrap items-center gap-x-3.5 gap-y-5 rounded-t-[26px] border-t px-5 ps-[max(1.25rem,env(safe-area-inset-left))] pe-[max(1.25rem,env(safe-area-inset-right))] pt-5 shadow-[0_-2px_6px_rgb(16_42_41/0.06),0_-22px_44px_-16px_rgb(16_42_41/0.4)] print:hidden',
           aboveNav
             ? 'z-[29] pb-[calc(5.25rem+env(safe-area-inset-bottom))] lg:hidden'
             : 'z-30 pb-[calc(1.5rem+env(safe-area-inset-bottom))]',
