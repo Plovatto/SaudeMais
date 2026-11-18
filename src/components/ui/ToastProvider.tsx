@@ -7,6 +7,7 @@ import { IconSlot } from './IconSlot';
 import { ToastContext, type ToastInput, type ToastTone } from './toast-context';
 
 export const TOAST_DURATION_MS = 5000;
+export const TOAST_EXIT_MS = 200;
 const MAX_TRANSIENT_TOASTS = 3;
 
 interface ToastItem {
@@ -32,6 +33,7 @@ function Toast({ toast, onDismiss, onRemove }: ToastProps) {
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const remaining = useRef(TOAST_DURATION_MS);
+  const returnFocus = useRef<HTMLElement | null>(null);
   const paused = hovered || focused || toast.tone === 'danger';
 
   useEffect(() => {
@@ -44,23 +46,39 @@ function Toast({ toast, onDismiss, onRemove }: ToastProps) {
     };
   }, [paused, toast.leaving, toast.id, onDismiss]);
 
+  useEffect(() => {
+    if (!toast.leaving) return;
+    const timer = setTimeout(() => onRemove(toast.id), TOAST_EXIT_MS);
+    return () => clearTimeout(timer);
+  }, [toast.leaving, toast.id, onRemove]);
+
+  const close = () => {
+    const target = returnFocus.current?.isConnected
+      ? returnFocus.current
+      : document.querySelector<HTMLElement>('main');
+    target?.focus();
+    onDismiss(toast.id);
+  };
+
   return (
     <div
-      aria-hidden={toast.leaving}
+      inert={toast.leaving}
       onAnimationEnd={(event) => {
         if (toast.leaving && event.target === event.currentTarget) onRemove(toast.id);
       }}
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
-      onFocus={() => setFocused(true)}
+      onFocus={(event) => {
+        setFocused(true);
+        const from = event.relatedTarget;
+        if (from instanceof HTMLElement && !event.currentTarget.contains(from)) returnFocus.current = from;
+      }}
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
       }}
       className={cx(
         'bg-text text-surface shadow-overlay flex w-full max-w-sm items-center gap-3 rounded-[14px] py-1 ps-3 pe-1 text-[0.8125rem] font-medium',
-        toast.leaving
-          ? 'animate-fade-out pointer-events-none'
-          : 'motion-safe:animate-rise pointer-events-auto',
+        toast.leaving ? 'animate-fade-out' : 'motion-safe:animate-rise pointer-events-auto',
       )}
     >
       <IconSlot className="bg-surface/12 size-8 justify-center rounded-[9px] text-base">
@@ -72,7 +90,7 @@ function Toast({ toast, onDismiss, onRemove }: ToastProps) {
       </p>
       <CloseButton
         label="Fechar aviso"
-        onClick={() => onDismiss(toast.id)}
+        onClick={close}
         className="text-surface can-hover:bg-surface/15 focus-visible:outline-surface focus-visible:-outline-offset-2"
       />
     </div>

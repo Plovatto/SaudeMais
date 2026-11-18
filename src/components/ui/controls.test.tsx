@@ -11,7 +11,7 @@ import { Popover } from './Popover';
 import { SectionCard } from './SectionCard';
 import { Switch } from './Switch';
 import { TabPanel, Tabs } from './Tabs';
-import { TOAST_DURATION_MS, ToastProvider } from './ToastProvider';
+import { TOAST_DURATION_MS, TOAST_EXIT_MS, ToastProvider } from './ToastProvider';
 import { useToast } from './useToast';
 
 describe('Button', () => {
@@ -393,11 +393,69 @@ describe('Toast', () => {
     await user.click(screen.getByRole('button', { name: 'Fechar aviso' }));
 
     const toast = screen.getByText('Consulta cancelada').closest('div');
-    expect(toast).toHaveAttribute('aria-hidden', 'true');
+    expect(toast).toHaveAttribute('inert');
     expect(toast).toHaveClass('animate-fade-out');
 
     if (toast) fireEvent.animationEnd(toast);
     expect(screen.getByRole('status')).toBeEmptyDOMElement();
+  });
+
+  it('returns focus and still leaves when the exit animation never ends', () => {
+    vi.useFakeTimers();
+    stubMatchMedia((query) => query === MOTION_QUERY);
+    render(
+      <ToastProvider>
+        <Trigger />
+      </ToastProvider>,
+    );
+    const trigger = screen.getByRole('button', { name: 'Cancelar consulta' });
+
+    fireEvent.click(trigger);
+    trigger.focus();
+    const close = screen.getByRole('button', { name: 'Fechar aviso' });
+    close.focus();
+    fireEvent.click(close);
+
+    expect(trigger).toHaveFocus();
+    expect(screen.getByRole('status')).toHaveTextContent('Consulta cancelada');
+    act(() => {
+      vi.advanceTimersByTime(TOAST_EXIT_MS);
+    });
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    vi.useRealTimers();
+  });
+
+  it('moves focus to the main content when the previous element is gone', async () => {
+    function OneShot() {
+      const { show } = useToast();
+      const [sent, setSent] = useState(false);
+      if (sent) return null;
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            show({ message: 'Consulta cancelada', tone: 'success' });
+            setSent(true);
+          }}
+        >
+          Cancelar consulta
+        </button>
+      );
+    }
+    const user = userEvent.setup();
+    render(
+      <>
+        <main tabIndex={-1}>Conteúdo</main>
+        <ToastProvider>
+          <OneShot />
+        </ToastProvider>
+      </>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Cancelar consulta' }));
+    await user.click(screen.getByRole('button', { name: 'Fechar aviso' }));
+
+    expect(screen.getByRole('main')).toHaveFocus();
   });
 
   it('requires the provider', () => {
