@@ -65,6 +65,12 @@ describe('notification targets', () => {
     expect(notificationTarget(notification(type), role)).toBe(target);
   });
 
+  it('opens the panel of the new user when the notice names the account', () => {
+    expect(
+      notificationTarget(notification('user_registered', { userId: 'u1', fullName: 'Ana' }), 'admin'),
+    ).toBe('/admin/usuarios?usuario=u1');
+  });
+
   it('falls back to the past bookings for a result without a booking', () => {
     expect(notificationTarget({ ...notification('exam_result_available'), bookingId: null }, 'patient')).toBe(
       '/paciente/agendamentos?aba=realizados',
