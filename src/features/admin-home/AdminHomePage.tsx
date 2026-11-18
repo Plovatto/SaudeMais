@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { LuCalendarDays, LuCheck, LuUsers, LuX } from 'react-icons/lu';
 import { PageHeader } from '@components/layout/PageHeader';
 import { countDelta, rateDelta } from '@components/reports/report-deltas';
@@ -260,13 +260,12 @@ export function AdminHomePage() {
   const current = useQuery({
     queryKey: queryKeys.adminReport(period),
     queryFn: ({ signal }) => fetchAdminReport(period, signal),
-    placeholderData: keepPreviousData,
   });
   const past = useQuery({
     queryKey: queryKeys.adminReport(before),
     queryFn: ({ signal }) => fetchAdminReport(before, signal),
   });
-  const report = current.isPlaceholderData ? undefined : current.data;
+  const report = current.data;
   const outcomes = report && reportOutcomes(report);
   const previous = past.data && reportOutcomes(past.data);
 
