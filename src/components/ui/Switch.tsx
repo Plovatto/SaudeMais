@@ -7,6 +7,7 @@ export interface SwitchProps {
   label: string;
   labelHidden?: boolean;
   ariaLabel?: string;
+  ariaDescribedBy?: string | undefined;
   disabled?: boolean;
   busy?: boolean;
   className?: string;
@@ -18,6 +19,7 @@ export function Switch({
   label,
   labelHidden,
   ariaLabel,
+  ariaDescribedBy,
   disabled,
   busy,
   className,
@@ -28,6 +30,7 @@ export function Switch({
       role="switch"
       aria-checked={checked}
       aria-label={ariaLabel ?? (labelHidden ? label : undefined)}
+      aria-describedby={ariaDescribedBy}
       disabled={disabled}
       aria-disabled={busy || undefined}
       aria-busy={busy || undefined}
