@@ -56,7 +56,7 @@ const dayOf = (iso: string) => civilDateInSaoPaulo(new Date(iso));
 export function DoctorHomePage() {
   const now = useNow();
   const today = civilDateInSaoPaulo(now);
-  const home = useQuery(doctorHomeQuery);
+  const home = useQuery({ ...doctorHomeQuery, refetchInterval: MINUTE_MS });
   const next = useQuery(nextAppointmentQuery(today));
   const day = useQuery(dayAgendaQuery(today));
   const requests = useRef<HTMLElement>(null);

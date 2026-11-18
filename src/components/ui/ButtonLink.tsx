@@ -9,6 +9,6 @@ export function ButtonLink({ variant, size, fullWidth, className, ...props }: Bu
   return <Link className={cx(buttonClass({ variant, size, fullWidth }), className)} {...props} />;
 }
 
-export function SectionLink(props: ComponentProps<typeof Link>) {
-  return <ButtonLink variant="ghost" size="sm" className="-me-2" {...props} />;
+export function SectionLink({ className, ...props }: ComponentProps<typeof Link>) {
+  return <ButtonLink variant="ghost" size="sm" className={cx('-me-2', className)} {...props} />;
 }

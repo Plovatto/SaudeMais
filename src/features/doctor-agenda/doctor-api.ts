@@ -30,7 +30,6 @@ const decide =
 export const doctorHomeQuery = queryOptions({
   queryKey: queryKeys.doctor.home,
   queryFn: ({ signal }) => apiFetch('get', '/api/doctor/home', { signal }),
-  refetchInterval: MINUTE_MS,
 });
 
 export const doctorApi = {
