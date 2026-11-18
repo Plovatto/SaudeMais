@@ -1,8 +1,8 @@
 import { LuStethoscope } from 'react-icons/lu';
+import { ActiveField } from '@components/forms/FormFields';
 import { Input } from '@components/ui';
 import { queryKeys } from '@lib/query-keys';
 import { CatalogCard } from './CatalogCard';
-import { ActiveField } from './FormFields';
 import { FormShell } from './FormShell';
 import { specialtiesApi, type Specialty } from './settings-api';
 import { specialtySchema } from './settings-schemas';
