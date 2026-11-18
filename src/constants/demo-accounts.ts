@@ -17,5 +17,3 @@ export const DEMO_DOCTOR: DemoAccount = {
 };
 
 export const DEMO_ACCOUNTS = [DEMO_PATIENT, DEMO_DOCTOR] as const;
-
-export const isDemoEmail = (email: string) => DEMO_ACCOUNTS.some((account) => account.email === email);

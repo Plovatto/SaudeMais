@@ -1,5 +1,6 @@
 import type { UseFormRegisterReturn } from 'react-hook-form';
 import { PasswordInput } from '@components/ui';
+import { PASSWORD_MIN } from '@lib/validation/account-fields';
 
 const labels = {
   create: { password: 'Senha', confirmation: 'Confirmar senha' },
@@ -28,7 +29,7 @@ export function NewPasswordFields({
       <PasswordInput
         label={labels[variant].password}
         autoComplete="new-password"
-        hint={showHint ? 'Pelo menos 8 caracteres.' : undefined}
+        hint={showHint ? `Pelo menos ${PASSWORD_MIN} caracteres.` : undefined}
         disabled={disabled}
         error={errors.password}
         {...password}

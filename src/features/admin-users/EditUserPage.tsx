@@ -32,7 +32,7 @@ function PasswordResetSection({ user, locks }: SectionProps) {
         variant="secondary"
         icon={<LuSend />}
         loading={send.isPending}
-        disabled={locks.isProtected || locks.isInactive}
+        disabled={locks.isInactive}
         onClick={() => send.mutate()}
         className="self-start"
       >
@@ -49,7 +49,7 @@ function RolesSection({
 }: SectionProps & { actions: ReturnType<typeof useUserActions> }) {
   const isAdmin = user.roles.includes('admin');
   const profile = user.doctorProfile;
-  const frozen = locks.isProtected || locks.isInactive;
+  const frozen = locks.isInactive;
   const busy = actions.busyId === user.id;
   return (
     <SectionCard title="Perfis" description="O que esta conta pode fazer no Saúde+.">
@@ -115,7 +115,6 @@ function AccountSection({
         <Button
           variant="secondary"
           icon={<LuUserCheck />}
-          disabled={locks.isProtected}
           loading={busy}
           onClick={() => actions.request('reactivate', user)}
           className="self-start"
@@ -126,7 +125,7 @@ function AccountSection({
         <Button
           variant="danger"
           icon={<LuUserX />}
-          disabled={locks.isProtected || locks.isSelf}
+          disabled={locks.isSelf}
           loading={busy}
           onClick={() => actions.request('deactivate', user)}
           className="self-start"
@@ -152,7 +151,7 @@ export function EditUserPage() {
             key={user.id}
             title="Dados pessoais"
             person={user}
-            locked={locks.isProtected || locks.isInactive}
+            locked={locks.isInactive}
             messages={userMessages}
             onSave={async (values) => {
               const updated = await usersApi.update(user.id, personalDataBody(values));

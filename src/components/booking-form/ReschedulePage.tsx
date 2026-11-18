@@ -12,6 +12,7 @@ import { FormAlert, InfoList, QueryError, SectionCard, Skeleton, TextLink } from
 import { PATIENT_BOOKINGS_PATH } from '@constants/areas';
 import { ApiError } from '@lib/api/api-error';
 import type { PatientBooking } from '@lib/api/models';
+import { softTones } from '@components/ui/styles';
 import { cx } from '@lib/cx';
 import { civilDateInSaoPaulo, middayOf, whenText } from '@lib/date';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
@@ -240,7 +241,12 @@ function RescheduleForm<B extends Reschedulable>({
       <SectionCard
         title="Seu agendamento"
         action={
-          <span className="bg-surface-strong text-text-secondary inline-flex h-6 items-center gap-1 rounded-full px-2.5 text-xs font-semibold">
+          <span
+            className={cx(
+              softTones.neutral,
+              'inline-flex h-6 items-center gap-1 rounded-full px-2.5 text-xs font-semibold',
+            )}
+          >
             <LuLock aria-hidden className="size-3" />
             Não muda
           </span>

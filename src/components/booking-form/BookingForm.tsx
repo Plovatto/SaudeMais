@@ -76,7 +76,12 @@ export function WhenCard({
               describedBy={booking.errors.date ? errorId : undefined}
             />
           </div>
-          <div className="border-border min-w-0 border-t p-4 lg:p-5 @min-[520px]:border-s @min-[520px]:border-t-0">
+          <div
+            className={cx(
+              sectionPad,
+              'border-border min-w-0 border-t @min-[520px]:border-s @min-[520px]:border-t-0',
+            )}
+          >
             {booking.date ? (
               <SlotPicker
                 key={booking.date}

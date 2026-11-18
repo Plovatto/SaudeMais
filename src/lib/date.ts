@@ -81,6 +81,9 @@ export function formatDate(date: string, { year = true } = {}): string {
   return (year ? fullDate : shortDate).format(utcDay(date));
 }
 
+export const formatCivilDate = (iso: string, options?: { year?: boolean }) =>
+  formatDate(civilDateInSaoPaulo(new Date(iso)), options);
+
 const relativeTime = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto', style: 'short' });
 const relativeSpan = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'always' });
 

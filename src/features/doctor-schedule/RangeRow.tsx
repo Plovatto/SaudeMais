@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import { useWatch, type UseFormReturn } from 'react-hook-form';
-import { LuClock, LuX } from 'react-icons/lu';
-import { FieldError, IconButton, IconSlot, Select } from '@components/ui';
+import { LuClock } from 'react-icons/lu';
+import { CloseButton, FieldError, IconSlot, Select } from '@components/ui';
 import { formatTimeRange } from '@lib/time-of-day';
 import { rangePath, type ScheduleValues } from './schedule-schema';
 import { timeOption, type TimeOptions } from './time-options';
@@ -51,10 +51,9 @@ export function RangeRow({ form, weekday, index, dayName, options, error, onRemo
           </span>
           {time('endMin', 'Fim', options.end, endMin)}
         </div>
-        <IconButton
+        <CloseButton
           data-remove-range
           label={`Remover faixa ${formatTimeRange(startMin, endMin)} de ${dayName}`}
-          icon={<LuX />}
           onClick={onRemove}
           className="text-danger-text"
         />

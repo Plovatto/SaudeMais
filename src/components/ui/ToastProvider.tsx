@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { LuCircleAlert, LuCircleCheck, LuInfo, LuX } from 'react-icons/lu';
-import { IconButton } from './IconButton';
+import { LuCircleAlert, LuCircleCheck, LuInfo } from 'react-icons/lu';
+import { CloseButton } from './CloseButton';
 import { IconSlot } from './IconSlot';
 import { ToastContext, type ToastInput, type ToastTone } from './toast-context';
 
@@ -52,9 +52,8 @@ function Toast({ toast, onDismiss }: { toast: ToastItem; onDismiss: (id: number)
         <span className="sr-only">{tones[toast.tone].prefix}</span>
         {toast.message}
       </p>
-      <IconButton
+      <CloseButton
         label="Fechar aviso"
-        icon={<LuX />}
         onClick={() => onDismiss(toast.id)}
         className="text-surface can-hover:bg-surface/15 focus-visible:outline-surface focus-visible:-outline-offset-2"
       />

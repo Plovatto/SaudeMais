@@ -6,7 +6,7 @@ export interface PersonalDataFieldsProps {
   fullName: UseFormRegisterReturn;
   phone: UseFormRegisterReturn;
   errors: { fullName?: string | undefined; phone?: string | undefined };
-  locked: boolean;
+  locked?: boolean;
   ownAccount: boolean;
 }
 

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRef } from 'react';
+import { PageColumn } from '@components/layout/PageColumn';
 import { PageHeader } from '@components/layout/PageHeader';
 import { useAreaRole } from '@components/layout/route-handle';
 import { Card, Pagination, Skeleton } from '@components/ui';
@@ -46,7 +47,7 @@ export function NotificationsPage() {
   const query = useQuery(notificationsQuery(role, page, PAGE_SIZE));
   const { lastPage } = useClampedPage(page, setPage, query.data);
   return (
-    <div className="mx-auto w-full max-w-[856px]">
+    <PageColumn>
       <PageHeader title="Notificações" subtitle={subtitles[role]} back backFallback={areas[role].base} />
       <div className="flex flex-col gap-4">
         <Card
@@ -59,6 +60,6 @@ export function NotificationsPage() {
         </Card>
         <Pagination page={page} totalPages={lastPage} onPageChange={(next) => setPage(next)} />
       </div>
-    </div>
+    </PageColumn>
   );
 }

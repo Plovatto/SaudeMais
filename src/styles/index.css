@@ -22,7 +22,8 @@
     U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-:root {
+:root,
+[data-theme='light'] {
   --canvas: #f3f6f6;
   --surface: #ffffff;
   --surface-muted: #f7f9f9;
@@ -63,7 +64,8 @@
   color-scheme: light;
 }
 
-:root[data-theme='dark'] {
+:root[data-theme='dark'],
+[data-theme='dark'] {
   --canvas: #0b1213;
   --surface: #121b1c;
   --surface-muted: #162122;

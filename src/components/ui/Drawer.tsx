@@ -1,7 +1,6 @@
 import type { ReactNode, RefObject } from 'react';
-import { LuX } from 'react-icons/lu';
 import { Dialog } from './Dialog';
-import { IconButton } from './IconButton';
+import { CloseButton } from './CloseButton';
 
 export interface DrawerProps {
   open: boolean;
@@ -19,7 +18,7 @@ export function Drawer({ open, onClose, title, fallbackFocus, children }: Drawer
           <p aria-hidden className="text-text flex-1 text-[0.9375rem] font-semibold tracking-[-0.01em]">
             {title}
           </p>
-          <IconButton label="Fechar" icon={<LuX />} onClick={onClose} className="-me-2" />
+          <CloseButton onClick={onClose} className="-me-2" />
         </header>
         {children}
       </div>

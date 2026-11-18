@@ -13,7 +13,6 @@ import {
 } from '@components/ui';
 import { footerBar, sectionPad, tile } from '@components/ui/styles';
 import { cx } from '@lib/cx';
-import { isProtectedAccount } from '@lib/auth/protected-account';
 import { useSignOut } from '@lib/auth/useSignOut';
 import { formatDateTime } from '@lib/date';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
@@ -24,7 +23,7 @@ import { endAllSessions, endOtherSessions, endSession, listSessions } from './pr
 
 const devicesText = (count: number) => plural(count, 'aparelho', 'aparelhos');
 
-export function SessionsSection({ locked, onProtected }: { locked: boolean; onProtected: () => void }) {
+export function SessionsSection() {
   const signOut = useSignOut();
   const queryClient = useQueryClient();
   const { show } = useToast();
@@ -38,8 +37,7 @@ export function SessionsSection({ locked, onProtected }: { locked: boolean; onPr
     await queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
   };
   const failed = async (error: unknown) => {
-    if (isProtectedAccount(error)) onProtected();
-    else show({ message: errorMessage(error), tone: 'danger' });
+    show({ message: errorMessage(error), tone: 'danger' });
     await queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
   };
   const endOne = useMutation({
@@ -108,7 +106,7 @@ export function SessionsSection({ locked, onProtected }: { locked: boolean; onPr
                       variant="danger-outline"
                       size="sm"
                       aria-label={`Encerrar sessão: ${device}`}
-                      disabled={locked || (endOne.isPending && endOne.variables !== session.id)}
+                      disabled={endOne.isPending && endOne.variables !== session.id}
                       loading={endOne.isPending && endOne.variables === session.id}
                       onClick={() => endOne.mutate(session.id)}
                     >
@@ -131,7 +129,7 @@ export function SessionsSection({ locked, onProtected }: { locked: boolean; onPr
           <Button
             variant="secondary"
             size="sm"
-            disabled={locked || others === 0}
+            disabled={others === 0}
             loading={endOthers.isPending}
             onClick={() => endOthers.mutate()}
           >

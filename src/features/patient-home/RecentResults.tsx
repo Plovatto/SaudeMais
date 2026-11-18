@@ -3,7 +3,7 @@ import { LuFileText } from 'react-icons/lu';
 import { ListPlaceholder, ListRow, QueryError, SectionCard } from '@components/ui';
 import { tile } from '@components/ui/styles';
 import { examResultUrl } from '@constants/areas';
-import { civilDateInSaoPaulo, formatDate } from '@lib/date';
+import { formatCivilDate } from '@lib/date';
 import { recentResultsQuery, type ResultSummary } from './patient-home-api';
 
 function summaryText({ summary }: ResultSummary): string {
@@ -33,7 +33,7 @@ export function RecentResults() {
                   </span>
                 }
                 title={result.examType.name}
-                meta={`${formatDate(civilDateInSaoPaulo(new Date(result.startsAt)), { year: false })} · ${summaryText(result)}`}
+                meta={`${formatCivilDate(result.startsAt, { year: false })} · ${summaryText(result)}`}
               />
             </li>
           ))}

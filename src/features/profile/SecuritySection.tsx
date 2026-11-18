@@ -5,11 +5,10 @@ import { passwordChangeText } from './profile-text';
 
 export interface SecuritySectionProps {
   passwordChangedAt: string | null | undefined;
-  locked: boolean;
   onChangePassword: () => void;
 }
 
-export function SecuritySection({ passwordChangedAt, locked, onChangePassword }: SecuritySectionProps) {
+export function SecuritySection({ passwordChangedAt, onChangePassword }: SecuritySectionProps) {
   return (
     <SectionCard title="Segurança" className="lg:flex-1">
       <SettingRow
@@ -25,7 +24,6 @@ export function SecuritySection({ passwordChangedAt, locked, onChangePassword }:
           <Button
             variant="secondary"
             size="sm"
-            disabled={locked}
             onClick={onChangePassword}
             aria-label="Alterar senha"
             aria-haspopup="dialog"

@@ -1,10 +1,9 @@
 import { useEffect, useEffectEvent, useId, useRef, type ReactNode, type RefObject } from 'react';
-import { LuX } from 'react-icons/lu';
 import { useMediaQuery } from '@hooks/useMediaQuery';
 import { SHEET_QUERY, useSheetDrag } from '@hooks/useSheetDrag';
 import { cx } from '@lib/cx';
 import { softTones } from './styles';
-import { IconButton } from './IconButton';
+import { CloseButton } from './CloseButton';
 import { IconSlot } from './IconSlot';
 import { SheetGrab } from './SheetGrab';
 
@@ -120,9 +119,8 @@ export function Dialog({
       ) : (
         <div className={cx('relative flex flex-col gap-4 p-6 pt-8', centered && 'items-center text-center')}>
           {dismissible && (
-            <IconButton
+            <CloseButton
               label={closeLabel}
-              icon={<LuX />}
               onClick={() => ref.current?.close()}
               className="absolute end-2 top-2"
             />
