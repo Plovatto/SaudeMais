@@ -64,6 +64,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/reports/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Exportar os relatórios
+         * @description Gera o mesmo relatório de `GET /api/admin/reports`, com os mesmos períodos e regras, como arquivo para baixar: `pdf` para imprimir (resumo de consultas e exames, série por dia ou semana e especialidades e exames mais procurados) ou `xlsx` para abrir em planilha (abas Resumo, Série, Especialidades e Exames, com números, datas e percentuais de verdade). Responde como anexo (`Content-Disposition: attachment; filename=relatorio_<início>_a_<fim>.<formato>`). Só números, sem dados pessoais. Limite: 20 arquivos por minuto por IP.
+         */
+        get: operations["exportAdminReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/users": {
         parameters: {
             query?: never;
@@ -689,16 +709,60 @@ export interface paths {
         };
         /**
          * Ver a agenda semanal
-         * @description Os 7 dias da semana do médico logado, com as faixas de atendimento em minutos desde 00:00, e o horário da unidade dele. Sem agenda salva, todos os dias vêm inativos e sem faixas. Limite: 120 requisições por minuto por IP.
+         * @description Os 7 dias da semana do médico logado, com as faixas de atendimento em minutos desde 00:00, o horário da unidade dele e a duração de cada consulta. Sem agenda salva, todos os dias vêm inativos e sem faixas. Sem duração própria, vale a da especialidade (`isSpecialtyDefault`). Limite: 120 requisições por minuto por IP.
          */
         get: operations["getDoctorSchedule"];
         /**
          * Salvar a agenda semanal
-         * @description Substitui a agenda inteira de uma vez: envie os 7 dias, cada um com `isActive` e as faixas em minutos desde 00:00 (de 0 a 1440, início antes do fim). Dia inativo guarda as faixas e não gera vagas. As faixas de um dia não podem se sobrepor, mas podem se encostar, e precisam caber no horário da unidade do médico. Nenhuma consulta é cancelada: `warnings` lista as consultas futuras que ficaram fora das novas faixas. Limite: 30 requisições por minuto por IP.
+         * @description Substitui a agenda inteira de uma vez: envie os 7 dias, cada um com `isActive` e as faixas em minutos desde 00:00 (de 0 a 1440, início antes do fim). Dia inativo guarda as faixas e não gera vagas. As faixas de um dia não podem se sobrepor, mas podem se encostar, e precisam caber no horário da unidade do médico. `appointmentDurationMin` muda a duração das próximas vagas e consultas (15, 20, 30, 45 ou 60 minutos); `null` volta para a duração da especialidade e, sem o campo, nada muda. Consultas já marcadas mantêm o horário. Nenhuma consulta é cancelada: `warnings` lista as consultas futuras que ficaram fora das novas faixas. Limite: 30 requisições por minuto por IP.
          */
         put: operations["saveDoctorSchedule"];
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/doctor/time-off": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar folgas e bloqueios
+         * @description Os dias bloqueados do médico logado, de hoje em diante, em ordem de data. Dia bloqueado não gera vagas. Limite: 120 requisições por minuto por IP.
+         */
+        get: operations["listDoctorTimeOff"];
+        put?: never;
+        /**
+         * Bloquear um dia
+         * @description Bloqueia um dia inteiro, de hoje até 365 dias à frente, mesmo além do prazo de agendamento, com um motivo opcional de até 80 caracteres. Pacientes deixam de ver vagas no dia e não conseguem marcar nem reagendar para ele (`OUTSIDE_AVAILABILITY`). Nenhuma consulta é cancelada: `warnings` lista as consultas pendentes ou confirmadas que já estavam marcadas no dia. Limite: 30 requisições por minuto por IP.
+         */
+        post: operations["createDoctorTimeOff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/doctor/time-off/{date}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Desbloquear um dia
+         * @description Remove o bloqueio de hoje ou de um dia futuro, que volta a gerar vagas pela agenda semanal. Limite: 30 requisições por minuto por IP.
+         */
+        delete: operations["deleteDoctorTimeOff"];
         options?: never;
         head?: never;
         patch?: never;
@@ -733,7 +797,7 @@ export interface paths {
         };
         /**
          * Ver as vagas livres de um médico
-         * @description Vagas livres do médico entre `from` e `to` (datas de São Paulo, até 31 dias por vez), agrupadas por dia. Cada vaga dura o tempo de consulta da especialidade, começa no início de uma faixa do médico em passos dessa duração e cabe inteira na faixa e no horário da unidade. Vagas antes da antecedência mínima, depois do horizonte da política de agendamento ou já ocupadas não aparecem, e dias sem vaga ficam de fora. Para agendar, envie o `startsAt` recebido, sem montar o horário no cliente. Na tela de reagendar, envie `rescheduling` com o id da consulta: ela deixa de ocupar a agenda na lista, e o horário atual dela aparece como vaga. Limite: 120 requisições por minuto por IP.
+         * @description Vagas livres do médico entre `from` e `to` (datas de São Paulo, até 31 dias por vez), agrupadas por dia. Cada vaga dura o tempo de consulta escolhido pelo médico ou, sem escolha, o da especialidade, começa no início de uma faixa do médico em passos dessa duração e cabe inteira na faixa e no horário da unidade. Vagas antes da antecedência mínima, depois do horizonte da política de agendamento ou já ocupadas não aparecem, e dias bloqueados pelo médico ou sem vaga ficam de fora. Para agendar, envie o `startsAt` recebido, sem montar o horário no cliente. Na tela de reagendar, envie `rescheduling` com o id da consulta: ela deixa de ocupar a agenda na lista, e o horário atual dela aparece como vaga. Limite: 120 requisições por minuto por IP.
          */
         get: operations["getDoctorAvailability"];
         put?: never;
@@ -2717,8 +2781,29 @@ export interface components {
                     endMin: number;
                 }[];
             }[];
+            /**
+             * @description Duração de cada consulta do médico, em minutos: 15, 20, 30, 45 ou 60. `null` volta para a duração padrão da especialidade; sem o campo, a duração atual fica como está.
+             * @example 30
+             * @enum {number|null}
+             */
+            appointmentDurationMin?: 15 | null;
         };
         DoctorSchedule: {
+            /**
+             * @description Duração de cada consulta, em minutos, usada nas vagas e nos novos agendamentos.
+             * @example 30
+             */
+            appointmentDurationMin: number;
+            /**
+             * @description Duração padrão da especialidade do médico.
+             * @example 30
+             */
+            specialtyDurationMin: number;
+            /**
+             * @description Verdadeiro quando o médico não escolheu uma duração própria e vale a da especialidade.
+             * @example true
+             */
+            isSpecialtyDefault: boolean;
             /** @description Os 7 dias, de domingo a sábado, com as faixas em ordem. */
             days: {
                 /**
@@ -2757,14 +2842,45 @@ export interface components {
                 closeMin: number;
             }[];
         };
+        ScheduleWarning: {
+            /** Format: uuid */
+            appointmentId: string;
+            /**
+             * Format: date-time
+             * @example 2026-11-23T12:00:00.000Z
+             */
+            startsAt: string;
+        };
         SavedDoctorSchedule: components["schemas"]["DoctorSchedule"] & {
             /** @description Consultas futuras que ficaram fora das novas faixas. Nada é cancelado: o médico decide o que fazer com cada uma. */
-            warnings: {
-                /** Format: uuid */
-                appointmentId: string;
-                /** Format: date-time */
-                startsAt: string;
-            }[];
+            warnings: components["schemas"]["ScheduleWarning"][];
+        };
+        CreateDoctorTimeOffRequest: {
+            /**
+             * Format: date
+             * @description Dia bloqueado, no fuso de São Paulo.
+             * @example 2026-12-24
+             */
+            date: string;
+            /**
+             * @description Motivo opcional, visível só para o médico.
+             * @example Congresso de cardiologia
+             */
+            reason?: string;
+        };
+        DoctorTimeOff: {
+            /**
+             * Format: date
+             * @description Dia bloqueado, no fuso de São Paulo.
+             * @example 2026-12-24
+             */
+            date: string;
+            /** @example Congresso de cardiologia */
+            reason: string | null;
+        };
+        CreatedDoctorTimeOff: components["schemas"]["DoctorTimeOff"] & {
+            /** @description Consultas pendentes ou confirmadas que já estavam marcadas no dia. Nada é cancelado: o médico decide o que fazer com cada uma. */
+            warnings: components["schemas"]["ScheduleWarning"][];
         };
         EmailPreference: {
             /**
@@ -3620,6 +3736,114 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminReport"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    exportAdminReport: {
+        parameters: {
+            query: {
+                /** @description Primeiro dia, no fuso de São Paulo. Sem ele, 29 dias antes do último, que por padrão é hoje. */
+                from?: string;
+                /** @description Último dia, incluído, no fuso de São Paulo. Sem ele, hoje. */
+                to?: string;
+                /** @description Formato do arquivo: `pdf` para imprimir ou `xlsx` para abrir em planilha. */
+                format: "pdf" | "xlsx";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Relatório no formato pedido. */
+            200: {
+                headers: {
+                    /** @description Sempre `attachment`, com o nome `relatorio_<primeiro dia>_a_<último dia>.<pdf ou xlsx>`. */
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
                 };
             };
             /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
@@ -8451,6 +8675,21 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Registro inexistente (`NOT_FOUND`). */
             404: {
                 headers: {
@@ -8478,6 +8717,386 @@ export interface operations {
                      *       "code": "OVERLAP",
                      *       "fields": {
                      *         "days.1.ranges.1": "Esta faixa se sobrepõe a outra do mesmo dia."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listDoctorTimeOff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dias bloqueados. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoctorTimeOff"][];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Esta conta ainda não tem perfil médico.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createDoctorTimeOff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CreateDoctorTimeOffRequest"];
+            };
+        };
+        responses: {
+            /** @description Dia bloqueado. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedDoctorTimeOff"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro inexistente (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Esta conta ainda não tem perfil médico.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflito com o estado atual (`TIME_OFF_EXISTS`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Esta data já está bloqueada.",
+                     *       "code": "TIME_OFF_EXISTS",
+                     *       "fields": {
+                     *         "date": "Esta data já está bloqueada."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Data já passou (`PAST_DATE`) ou fica a mais de 365 dias (`DATE_TOO_FAR`). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Escolha uma data em até 365 dias.",
+                     *       "code": "DATE_TOO_FAR",
+                     *       "fields": {
+                     *         "date": "Escolha uma data em até 365 dias."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteDoctorTimeOff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Dia bloqueado, no fuso de São Paulo. */
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dia desbloqueado. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Médico sem perfil ou dia não bloqueado (`NOT_FOUND`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Esta data não está bloqueada.",
+                     *       "code": "NOT_FOUND"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Data já passou (`PAST_DATE`). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Escolha hoje ou uma data futura.",
+                     *       "code": "PAST_DATE",
+                     *       "fields": {
+                     *         "date": "Escolha hoje ou uma data futura."
                      *       }
                      *     }
                      */
