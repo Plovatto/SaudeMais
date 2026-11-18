@@ -1,8 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
+import { PAGE_TITLE_ID } from '@components/layout/PageTitle';
 import { Button, Checkbox, FormAlert, PasswordInput, TextLink } from '@components/ui';
 import { homeFor } from '@lib/auth/return-to';
 import { acknowledgeSessionExpiry, startSession } from '@lib/auth/session';
@@ -12,8 +13,8 @@ import { login } from './auth-api';
 import { loginSchema, type LoginValues } from './auth-schemas';
 import { AuthFooterLink } from './AuthFooterLink';
 import { AuthScreen } from './AuthScreen';
+import { DemoAccounts } from './DemoAccounts';
 import { EmailInput } from './EmailInput';
-import { TestAccounts } from './TestAccounts';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -33,11 +34,14 @@ export function LoginPage() {
     handleSubmit,
     setError,
     setValue,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: state?.email ?? '', password: '', remember: false },
   });
+
+  const email = useWatch({ control, name: 'email' });
 
   const onSubmit = handleSubmit(async (values) => {
     setAlert(null);
@@ -58,38 +62,42 @@ export function LoginPage() {
 
   return (
     <AuthScreen
-      title="Saúde+"
-      subtitle="Faça login para acessar sua conta"
-      withLogo
-      footer={
-        <TestAccounts
-          onFill={({ email, password }) => {
-            setValue('email', email, { shouldValidate: true });
-            setValue('password', password, { shouldValidate: true });
-          }}
-        />
-      }
+      art={{
+        title: 'Sua saúde, seus horários, em um só lugar.',
+        text: 'Agende consultas, acompanhe exames e receba os resultados sem sair de casa.',
+      }}
+      title="Entrar"
+      subtitle="Use seu e-mail e senha da clínica."
     >
       <form
         noValidate
-        aria-label="Entrar"
+        aria-labelledby={PAGE_TITLE_ID}
         onSubmit={(event) => void onSubmit(event)}
         className="flex flex-col gap-5"
       >
         <EmailInput autoComplete="username" error={errors.email?.message} {...register('email')} />
-        <PasswordInput label="Senha" error={errors.password?.message} {...register('password')} />
-        <div className="flex flex-wrap items-center justify-between gap-x-4">
-          <Checkbox label="Lembrar de mim" {...register('remember')} />
-          <TextLink to="/esqueci-senha" className="text-sm">
-            Esqueceu a senha?
-          </TextLink>
+        <div className="flex flex-col gap-1">
+          <PasswordInput label="Senha" error={errors.password?.message} {...register('password')} />
+          <div className="flex flex-wrap items-center justify-between gap-x-4">
+            <Checkbox label="Lembrar de mim" {...register('remember')} />
+            <TextLink to="/esqueci-senha" className="text-[0.8125rem]">
+              Esqueci a senha
+            </TextLink>
+          </div>
         </div>
         {alert && <FormAlert>{alert}</FormAlert>}
         <Button type="submit" size="lg" fullWidth loading={isSubmitting}>
           Entrar
         </Button>
-        <AuthFooterLink question="Não tem uma conta?" label="Cadastre-se aqui" to="/cadastro" />
+        <AuthFooterLink question="Não tem conta?" label="Cadastre-se" to="/cadastro" />
       </form>
+      <DemoAccounts
+        selected={email}
+        onFill={(account) => {
+          setValue('email', account.email, { shouldValidate: true });
+          setValue('password', account.password, { shouldValidate: true });
+        }}
+      />
     </AuthScreen>
   );
 }
