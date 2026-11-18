@@ -2,21 +2,13 @@ import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { todayInSaoPaulo } from '@lib/date';
 import { examSlot, openDays, pickDay, pickedDay, pickTime, slotGroup, slotTimes } from '@/test/booking-flow';
+import { actions } from '@/test/patient-fixtures';
 import { apiError, renderApp, serveApi, type MockResponse } from '@/test/render-app';
 
 const CURRENT = '2026-11-23T17:30:00.000Z';
 const LIST_LINK = 'Voltar para meus agendamentos';
 
 const unit = { id: 'u1', name: 'Unidade Central', address: 'Rua das Flores, 123', phone: '+551133334444' };
-
-const actions = {
-  canCancel: true,
-  lateCancellation: false,
-  cancelBlockedReason: null,
-  canReschedule: true,
-  rescheduleBlockedReason: null,
-  reschedulesLeft: 2,
-};
 
 const appointment = {
   id: 'a1',
@@ -31,7 +23,7 @@ const appointment = {
   unit,
   cancellation: null,
   createdAt: '2026-11-14T12:00:00.000Z',
-  patientActions: actions,
+  patientActions: actions(),
   doctorActions: null,
   events: [],
 };
@@ -47,7 +39,7 @@ const exam = {
   unit,
   cancellation: null,
   createdAt: '2026-11-14T12:00:00.000Z',
-  actions,
+  actions: actions(),
   events: [],
 };
 
@@ -318,7 +310,7 @@ describe('reschedule', { timeout: 20_000 }, () => {
         status: 200,
         body: {
           ...appointment,
-          patientActions: { ...actions, canReschedule: false, rescheduleBlockedReason: 'window_closed' },
+          patientActions: actions({ canReschedule: false, rescheduleBlockedReason: 'window_closed' }),
         },
       }),
     });
