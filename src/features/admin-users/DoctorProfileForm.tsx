@@ -7,7 +7,7 @@ import { Button, Input, useToast } from '@components/ui';
 import { useFormSubmit } from '@lib/useFormSubmit';
 import { DoctorProfileFields } from './DoctorProfileFields';
 import { useDoctorCatalog } from './useDoctorCatalog';
-import { useReportSubmitting } from './useReportSubmitting';
+import { useReportSubmitting } from '@hooks/useReportSubmitting';
 import { syncUser } from './user-cache';
 import { userMessages } from './user-messages';
 import { DOCTOR_FIELDS, doctorProfileSchema, type DoctorProfileValues } from './user-schemas';

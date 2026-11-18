@@ -9,7 +9,7 @@ import type { Role } from '@constants/areas';
 import { useFormSubmit } from '@lib/useFormSubmit';
 import { DoctorProfileFields } from './DoctorProfileFields';
 import { useDoctorCatalog } from './useDoctorCatalog';
-import { useReportSubmitting } from './useReportSubmitting';
+import { useReportSubmitting } from '@hooks/useReportSubmitting';
 import { syncUser } from './user-cache';
 import { userMessages } from './user-messages';
 import {
