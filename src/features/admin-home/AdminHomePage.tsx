@@ -14,7 +14,8 @@ import {
   DEFAULT_PRESET,
   PERIOD_PRESETS,
   presetPeriod,
-  type PeriodPreset,
+  PANEL_PRESETS,
+  type PanelPreset,
 } from '@components/reports/report-periods';
 import { NoBookings } from '@components/reports/NoBookings';
 import { seriesCopy, TOP_LISTS } from '@components/reports/report-copy';
@@ -42,9 +43,10 @@ import { queryKeys } from '@lib/query-keys';
 import { fetchAdminHome } from './admin-home-api';
 import { StatusDonut } from './StatusDonut';
 
-const PANEL_PRESETS: readonly PeriodPreset[] = ['7', '30', 'mes', '365'];
+const isPanelPreset = (value: string): value is PanelPreset =>
+  PANEL_PRESETS.some((preset) => preset === value);
 
-const PERIOD_OPTIONS = PERIOD_PRESETS.filter(({ value }) => PANEL_PRESETS.includes(value));
+const PERIOD_OPTIONS = PERIOD_PRESETS.filter(({ value }) => isPanelPreset(value));
 
 type Group = 'completed' | 'cancelled' | 'noShow';
 
@@ -55,9 +57,6 @@ const SERIES: readonly ChartSeries<Group>[] = [
 ];
 
 const rate = (value: number | null) => (value === null ? '—' : formatPercent(value));
-
-const isPanelPreset = (value: string): value is PeriodPreset =>
-  PANEL_PRESETS.some((preset) => preset === value);
 
 const present = (values: readonly (number | null)[]) =>
   values.filter((value): value is number => value !== null);

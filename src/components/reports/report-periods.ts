@@ -23,7 +23,11 @@ export const PERIOD_PRESETS = [
 
 export type PeriodPreset = (typeof PERIOD_PRESETS)[number]['value'];
 
-export const DEFAULT_PRESET: PeriodPreset = '30';
+export const DEFAULT_PRESET = '30' satisfies PeriodPreset;
+
+export const PANEL_PRESETS = ['7', '30', 'mes', '365'] as const satisfies readonly PeriodPreset[];
+
+export type PanelPreset = (typeof PANEL_PRESETS)[number];
 
 const TIE_ORDER: readonly PeriodPreset[] = ['mes', 'mes-passado', 'hoje', '7', '30', '365'];
 
@@ -47,15 +51,13 @@ export function previousPeriod({ from, to }: Period): Period {
   return { from: addDays(from, -days), to: addDays(from, -1) };
 }
 
-const COMPARISON_LABELS: Record<Exclude<PeriodPreset, 'mes'>, string> = {
-  hoje: 'vs. dia anterior',
+const COMPARISON_LABELS: Record<Exclude<PanelPreset, 'mes'>, string> = {
   '7': 'vs. semana anterior',
   '30': 'vs. 30 dias anteriores',
-  'mes-passado': 'vs. mês anterior',
   '365': 'vs. ano anterior',
 };
 
-export function comparison(preset: PeriodPreset, period: Period): { period: Period; label: string } {
+export function comparison(preset: PanelPreset, period: Period): { period: Period; label: string } {
   if (preset === 'mes') {
     const end = addDays(period.from, -1);
     const start = monthStart(end);
