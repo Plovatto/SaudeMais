@@ -68,7 +68,10 @@ export function useUserActions(fallbackFocus?: RefObject<HTMLElement | null>) {
     else setPending({ action, user });
   };
 
-  const busyId = mutation.isPending ? mutation.variables.user.id : null;
+  const isBusy = (user: AdminUser, ...actions: UserAction[]) =>
+    mutation.isPending &&
+    mutation.variables.user.id === user.id &&
+    actions.includes(mutation.variables.action);
 
   const close = () => setPending(null);
   const confirm = () => pending && mutation.mutate(pending);
@@ -110,5 +113,5 @@ export function useUserActions(fallbackFocus?: RefObject<HTMLElement | null>) {
     </>
   );
 
-  return { request, dialogs, busyId };
+  return { request, dialogs, isBusy };
 }
