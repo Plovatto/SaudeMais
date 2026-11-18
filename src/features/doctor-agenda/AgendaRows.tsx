@@ -38,6 +38,7 @@ export function AgendaRow({
       onClick={() => onView(appointment)}
       aria-haspopup={opensDialog ? 'dialog' : undefined}
       selected={selected}
+      className="flex-wrap gap-y-2"
       leading={
         <DateTile startsAt={appointment.startsAt} muted={hasStarted(appointment.startsAt, now.getTime())} />
       }
@@ -50,7 +51,11 @@ export function AgendaRow({
           · {visitTypeLabels[appointment.visitType]}
         </>
       }
-      trailing={<StatusChip tone={status.tone}>{status.label}</StatusChip>}
+      trailing={
+        <span className="flex shrink-0 @max-[25rem]:order-last @max-[25rem]:basis-full @max-[25rem]:ps-[66px]">
+          <StatusChip tone={status.tone}>{status.label}</StatusChip>
+        </span>
+      }
     />
   );
 }
@@ -77,7 +82,7 @@ export function AgendaRows({ items, now, showNow, groupOf, row }: AgendaRowsProp
           <Fragment key={appointment.id}>
             {index === nowAt && <NowLine now={now} />}
             {position === 0 && key && <li className={cx(groupHeader, overline)}>{key}</li>}
-            <li>{row(appointment)}</li>
+            <li className="@container">{row(appointment)}</li>
           </Fragment>
         )),
       )}
