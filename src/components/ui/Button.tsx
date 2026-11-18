@@ -27,6 +27,7 @@ export function Button({
     <button
       type={type}
       aria-disabled={loading || undefined}
+      aria-busy={loading || undefined}
       onClick={(event) => {
         if (loading) event.preventDefault();
         else onClick?.(event);

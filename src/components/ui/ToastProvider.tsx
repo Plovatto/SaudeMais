@@ -89,7 +89,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext value={value}>
       {children}
-      <div className="pointer-events-none fixed inset-x-0 bottom-24 z-50 flex flex-col items-center gap-2 px-4 lg:bottom-6">
+      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-50 flex flex-col items-center gap-2 ps-[max(1rem,env(safe-area-inset-left))] pe-[max(1rem,env(safe-area-inset-right))] lg:bottom-[calc(1.5rem+env(safe-area-inset-bottom))]">
         {regions.map(({ role, items }) => (
           <div key={role} role={role} aria-atomic="false" className="flex w-full flex-col items-center gap-2">
             {items.map((toast) => (
