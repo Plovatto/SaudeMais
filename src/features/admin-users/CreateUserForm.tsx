@@ -75,7 +75,7 @@ export function CreateUserForm({ onClose }: CreateUserFormProps) {
       submitting={isSubmitting}
       onCancel={onClose}
       submitLabel="Criar usuário"
-      submitDisabled={role === 'doctor' && catalog.error !== null}
+      submitDisabled={role === 'doctor' && (catalog.loading || catalog.error !== null)}
     >
       <Input
         label="E-mail"
