@@ -96,7 +96,7 @@ function RolesSection({
           variant="secondary"
           icon={isAdmin ? <LuShieldOff /> : <LuShieldCheck />}
           disabled={frozen || (isAdmin && locks.isSelf)}
-          loading={actions.busyId === user.id}
+          loading={actions.isBusy(user, 'grantAdmin', 'revokeAdmin')}
           onClick={() => actions.request(isAdmin ? 'revokeAdmin' : 'grantAdmin', user)}
         >
           {isAdmin ? 'Remover admin' : 'Tornar admin'}
@@ -154,7 +154,7 @@ function AccessSection({ user, locks, actions }: SectionProps & { actions: UserA
             labelHidden
             checked={!locks.isInactive}
             disabled={locks.isSelf && !locks.isInactive}
-            busy={actions.busyId === user.id}
+            busy={actions.isBusy(user, 'deactivate', 'reactivate')}
             onCheckedChange={(active) => actions.request(active ? 'reactivate' : 'deactivate', user)}
           />
         }

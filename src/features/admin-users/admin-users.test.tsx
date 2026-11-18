@@ -460,6 +460,30 @@ describe('edit user', () => {
     expect(await screen.findByRole('button', { name: 'Remover admin' })).toBeInTheDocument();
   });
 
+  it('shows only the pending action as busy', async () => {
+    const { fetchMock } = serve({
+      '/api/admin/users': listOf(ana),
+      '/api/admin/users/ana': () => ok(detail(ana)),
+    });
+    const { user } = renderApp('/admin/usuarios?usuario=ana');
+
+    await user.click(await screen.findByRole('button', { name: 'Tornar admin' }));
+    const confirm = await screen.findByRole('dialog', { name: /Dar perfil de administrador/ });
+    fetchMock.mockImplementationOnce(() => new Promise<Response>(() => undefined));
+    await user.click(within(confirm).getByRole('button', { name: 'Tornar admin' }));
+
+    const panelDialog = await panel('Editar usuário');
+    await waitFor(() =>
+      expect(within(panelDialog).getByRole('button', { name: /^Tornar admin/ })).toHaveAttribute(
+        'aria-disabled',
+        'true',
+      ),
+    );
+    expect(within(panelDialog).getByRole('switch', { name: 'Acesso ativo' })).not.toHaveAttribute(
+      'aria-busy',
+    );
+  });
+
   it('disables changes that would lock the own account out', async () => {
     serve({
       '/api/admin/users': listOf(me),
