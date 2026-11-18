@@ -40,7 +40,7 @@ function SummaryTiles({ report }: { report: AdminReport }) {
     { label: 'Comparecimento', value: attendance === null ? '—' : formatPercent(attendance) },
   ];
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 lg:gap-4">
+    <div className="grid grid-cols-2 gap-3 min-[1281px]:grid-cols-5 sm:grid-cols-3 lg:gap-4">
       {tiles.map(({ label, value }, index) => (
         <StatTile
           key={label}
@@ -57,7 +57,7 @@ function SummaryTiles({ report }: { report: AdminReport }) {
 function ReportSkeleton() {
   return (
     <div aria-busy="true" className="flex flex-col gap-4 lg:gap-5">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 lg:gap-4">
+      <div className="grid grid-cols-2 gap-3 min-[1281px]:grid-cols-5 sm:grid-cols-3 lg:gap-4">
         {[0, 1, 2, 3, 4].map((index) => (
           <Skeleton key={index} className={cx('h-[88px]', index === 4 && 'max-sm:col-span-2')} />
         ))}

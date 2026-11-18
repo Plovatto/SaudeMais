@@ -146,11 +146,11 @@ function PanelStats({ outcomes, previous, report, versus }: StatsProps) {
 
 function PanelSkeleton() {
   return (
-    <div aria-busy="true" className="grid gap-4 lg:grid-cols-12 lg:gap-5">
-      <Skeleton className="h-80 lg:col-span-8" />
-      <Skeleton className="h-80 lg:col-span-4" />
-      <Skeleton className="h-56 lg:col-span-6" />
-      <Skeleton className="h-56 lg:col-span-6" />
+    <div aria-busy="true" className="grid gap-4 min-[1281px]:grid-cols-12 lg:gap-5">
+      <Skeleton className="h-80 min-[1281px]:col-span-8" />
+      <Skeleton className="h-80 min-[1281px]:col-span-4" />
+      <Skeleton className="h-56 min-[1281px]:col-span-6" />
+      <Skeleton className="h-56 min-[1281px]:col-span-6" />
     </div>
   );
 }
@@ -168,11 +168,11 @@ function PanelCharts({
   const delta = countDelta(outcomes.total, previous?.total);
   const average = outcomes.total / Math.max(report.series.length, 1);
   return (
-    <div className="grid gap-4 lg:grid-cols-12 lg:gap-5">
+    <div className="grid gap-4 min-[1281px]:grid-cols-12 lg:gap-5">
       <SectionCard
         title="Volume de agendamentos"
         description="Consultas e exames marcados no período, pela situação atual."
-        className={cx('lg:col-span-8', stagger(1))}
+        className={cx('min-[1281px]:col-span-8', stagger(1))}
       >
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2.5">
@@ -196,7 +196,7 @@ function PanelCharts({
       <SectionCard
         title="Situação dos agendamentos"
         description="Cancelados inclui os pedidos não confirmados a tempo."
-        className={cx('lg:col-span-4', stagger(2))}
+        className={cx('min-[1281px]:col-span-4', stagger(2))}
       >
         <StatusDonut
           total={outcomes.total}
@@ -235,7 +235,7 @@ function PanelCharts({
       {TOP_LISTS.map(({ key, title, empty }, index) => {
         const items = report[key];
         return (
-          <SectionCard key={key} title={title} className={cx('lg:col-span-6', stagger(3 + index))}>
+          <SectionCard key={key} title={title} className={cx('min-[1281px]:col-span-6', stagger(3 + index))}>
             {items.length === 0 ? (
               <p className="text-text-secondary text-sm">{empty}</p>
             ) : (
