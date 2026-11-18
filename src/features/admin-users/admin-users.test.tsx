@@ -609,6 +609,26 @@ describe('doctor profile', () => {
     expect(calls.some((call) => call.method === 'POST')).toBe(false);
   });
 
+  it('does not focus the doctor button of the next user opened after closing', async () => {
+    serve({
+      ...catalog,
+      '/api/admin/users': listOf(ana, joao),
+      '/api/admin/users/ana': () => ok(detail(ana)),
+      '/api/admin/users/joao': () => ok(detail(joao, joaoProfile)),
+    });
+    const { user } = renderApp('/admin/usuarios?usuario=ana&secao=medico');
+
+    const dialog = await panel('Tornar médico');
+    await within(dialog).findByRole('combobox', { name: 'Especialidade' });
+    await user.click(within(dialog).getByRole('button', { name: 'Fechar' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await user.click(await rowOf('João Silveira'));
+
+    const editor = await panel('Editar usuário');
+    const doctorButton = await within(editor).findByRole('button', { name: 'Editar perfil de médico' });
+    expect(doctorButton).not.toHaveFocus();
+  });
+
   it('goes back to the user without saving', async () => {
     serve({
       ...catalog,
