@@ -94,6 +94,19 @@ describe('admin settings', () => {
     await waitFor(() => expect(router.state.location.pathname).toBe('/admin/configuracoes'));
   });
 
+  it('scrolls to a deep linked card again once the cards above it have loaded', async () => {
+    const unitLoaded: boolean[] = [];
+    vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(function (this: Element) {
+      if (this.id === 'exames')
+        unitLoaded.push(screen.queryByText('Rua A, 1 · sem horário definido') !== null);
+    });
+    serve({ '/api/admin/units': () => ({ status: 200, body: page([unit()]) }) });
+    renderApp('/admin/configuracoes/exames');
+
+    await waitFor(() => expect(unitLoaded.at(-1)).toBe(true));
+    expect(unitLoaded[0]).toBe(false);
+  });
+
   it('shows an empty state for a list without items', async () => {
     serve({});
     renderApp('/admin/configuracoes');
