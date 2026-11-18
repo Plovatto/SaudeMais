@@ -21,7 +21,7 @@ function SpecialtyForm({ specialty, onDone }: { specialty: Specialty | null; onD
     defaultValues: valuesOf(specialty),
     fields: ['name', 'council', 'appointmentDurationMin'],
     save: (values) => specialtiesApi.save(specialty?.id ?? null, values),
-    invalidate: queryKeys.catalog.specialties,
+    invalidate: queryKeys.catalog.all,
     success: specialty ? 'Especialidade atualizada.' : 'Especialidade criada.',
     onDone,
   });

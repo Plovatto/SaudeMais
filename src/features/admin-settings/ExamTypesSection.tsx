@@ -35,7 +35,7 @@ function ExamTypeForm({ examType, onDone }: { examType: ExamType | null; onDone:
     defaultValues: valuesOf(examType),
     fields: ['code', 'name', 'kind', 'durationMin', 'preparationNotes'],
     save: (values) => examTypesApi.save(examType?.id ?? null, toBody(values)),
-    invalidate: queryKeys.catalog.examTypes,
+    invalidate: queryKeys.catalog.all,
     success: examType ? 'Tipo de exame atualizado.' : 'Tipo de exame criado.',
     onDone,
   });

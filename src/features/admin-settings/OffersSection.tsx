@@ -41,7 +41,7 @@ function OfferForm({ unitId, offer, choices, onDone }: OfferFormProps) {
       : { examTypeId: '', capacityPerSlot: 1, isActive: true },
     fields: ['examTypeId', 'capacityPerSlot'],
     save: ({ examTypeId, ...body }) => offersApi.save(unitId, examTypeId, body),
-    invalidate: [...queryKeys.catalog.offers, unitId],
+    invalidate: queryKeys.catalog.all,
     success: 'Oferta salva.',
     onDone,
   });
