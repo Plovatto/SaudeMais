@@ -91,17 +91,18 @@ export function useBookingForm<TIn extends SlotValues, TOut, R>(
   const wanted = want.key === sourceKey ? want.until : '';
   const start = availability.data?.pageParams[0]?.start;
   const through = start ? loadedThrough(start, availability.data?.pages.length ?? 0) : '';
-  const { hasNextPage, isFetching, isFetchingNextPage, fetchNextPage } = availability;
+  const { hasNextPage, isFetching, isFetchingNextPage, isError, fetchNextPage } = availability;
+  const searching = source.enabled && loaded?.length === 0 && hasNextPage && !isError;
   const reset = () => queryClient.resetQueries({ queryKey: source.queryKey });
   const slots = days.find((day) => day.date === date)?.slots ?? [];
   const { errors, isSubmitting } = formState;
 
   useEffect(() => {
-    if (!through || wanted <= through || !hasNextPage || isFetching) return;
+    if (!through || (wanted <= through && !searching) || !hasNextPage || isFetching) return;
     void fetchNextPage().then((result) => {
       if (result.isFetchNextPageError) setWant({ key: '', until: '' });
     });
-  }, [wanted, through, hasNextPage, isFetching, fetchNextPage]);
+  }, [wanted, through, searching, hasNextPage, isFetching, fetchNextPage]);
 
   useEffect(() => {
     if (!loaded) return;
@@ -198,11 +199,11 @@ export function useBookingForm<TIn extends SlotValues, TOut, R>(
     slots: {
       days,
       slots,
-      loading: availability.isFetching && days.length === 0,
+      loading: (isFetching || searching) && days.length === 0,
       loadingMore: isFetchingNextPage || (through !== '' && wanted > through && hasNextPage),
       failure: availability.error,
       retry: () => void reset(),
-      empty: availability.data?.pages[0]?.length === 0,
+      empty: loaded?.length === 0 && !hasNextPage,
       reach: start ? horizonEnd(start) : undefined,
       sourceKey,
       showUntil: (until: string) => setWant({ key: sourceKey, until }),

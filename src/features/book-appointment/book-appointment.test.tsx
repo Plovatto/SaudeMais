@@ -322,14 +322,30 @@ describe('book appointment', { timeout: 20_000 }, () => {
     expect(failed()).toHaveLength(1);
   });
 
-  it('warns when the doctor has no free slot', async () => {
-    serve(undefined, { first: [[]] });
+  it('warns when the doctor has no free slot in the whole horizon', async () => {
+    const { calls } = serve(undefined, { first: [[]] });
     const { user } = await start();
 
     await user.click(screen.getByRole('radio', { name: /Carlos Mendes/ }));
 
     expect(await screen.findByRole('note')).toHaveTextContent(/não tem vagas livres/);
     expect(screen.queryByRole('group', { name: 'Calendário' })).not.toBeInTheDocument();
+    expect(windowsOf(calls)).toHaveLength(12);
+    expect(windowsOf(calls).at(-1)?.to).toBe(addDays(todayInSaoPaulo(), 365));
+  });
+
+  it('looks for later windows when the first ones have no free slot', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-20T02:30:00.000Z'));
+    const farDay = { date: '2027-03-01', slots: [slot('2027-03-01T11:00:00.000Z')] };
+    const { calls } = serve(undefined, { first: [[]], later: { '2027-02-20': [farDay] } });
+    const { user } = await start();
+
+    await user.click(screen.getByRole('radio', { name: /Carlos Mendes/ }));
+
+    await waitFor(() => expect(openDays()).toEqual(['Segunda, 1 de março']));
+    expect(screen.queryByText(/não tem vagas livres/)).not.toBeInTheDocument();
+    expect(windowsOf(calls)).toHaveLength(4);
   });
 
   it('clears a picked day that is no longer free and points at it', async () => {
