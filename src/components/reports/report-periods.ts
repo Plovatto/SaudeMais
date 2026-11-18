@@ -60,7 +60,10 @@ export function comparison(preset: PeriodPreset, period: Period): { period: Peri
     const end = addDays(period.from, -1);
     const start = monthStart(end);
     const sameDay = addDays(start, daysBetween(period.from, period.to));
-    return { period: { from: start, to: sameDay < end ? sameDay : end }, label: `vs. ${formatMonthName(start)}` };
+    return {
+      period: { from: start, to: sameDay < end ? sameDay : end },
+      label: `vs. ${formatMonthName(start)}`,
+    };
   }
   return { period: previousPeriod(period), label: COMPARISON_LABELS[preset] };
 }

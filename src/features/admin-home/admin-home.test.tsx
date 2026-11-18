@@ -48,7 +48,7 @@ describe('admin panel', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Painel' })).toBeInTheDocument();
     expect(screen.getByText('Visão geral da clínica · 17/10/2026 a 15/11/2026')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '30 dias' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('radio', { name: '30 dias' })).toBeChecked();
 
     const done = await tile('Realizados');
     expect(await done.findByText('25')).toBeInTheDocument();
@@ -70,17 +70,30 @@ describe('admin panel', () => {
     const { user, router } = renderApp('/admin');
     await tile('Realizados');
 
-    await user.click(screen.getByRole('button', { name: '7 dias' }));
+    await user.click(screen.getByRole('radio', { name: '7 dias' }));
 
     await waitFor(() => expect(router.state.location.search).toBe('?periodo=7'));
     expect(router.state.historyAction).toBe('REPLACE');
-    expect(screen.getByRole('button', { name: '7 dias' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('radio', { name: '7 dias' })).toBeChecked();
     expect(screen.getByText('Visão geral da clínica · 09/11/2026 a 15/11/2026')).toBeInTheDocument();
     await waitFor(() =>
       expect(reportQueries(calls)).toEqual(
         expect.arrayContaining(['2026-11-09|2026-11-15', '2026-11-02|2026-11-08']),
       ),
     );
+  });
+
+  it('moves through the periods with the arrow keys', async () => {
+    serve();
+    const { user, router } = renderApp('/admin');
+    await tile('Realizados');
+    expect(screen.getByRole('radiogroup', { name: 'Período' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('radio', { name: '30 dias' }));
+    await user.keyboard('{ArrowRight}');
+
+    await waitFor(() => expect(router.state.location.search).toBe('?periodo=mes'));
+    expect(screen.getByRole('radio', { name: 'Este mês' })).toHaveFocus();
   });
 
   it('compares this month with the same days of the month before', async () => {
