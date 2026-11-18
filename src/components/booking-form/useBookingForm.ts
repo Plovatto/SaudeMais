@@ -9,7 +9,7 @@ import {
   messageFor,
   type MessageOverrides,
 } from '@lib/messages/errors.pt-BR';
-import { queryKeys } from '@lib/query-keys';
+import { refreshPatientBookings } from '@lib/refresh-patient-bookings';
 import { useFormSubmit } from '@lib/useFormSubmit';
 import type { AvailableDay } from './availability';
 
@@ -134,8 +134,7 @@ export function useBookingForm<TIn extends SlotValues, TOut, R>(
       setMissing(false);
       return run(async () => {
         const result = await book(values);
-        void queryClient.invalidateQueries({ queryKey: queryKeys.booking.availabilities });
-        void queryClient.invalidateQueries({ queryKey: queryKeys.patient.all });
+        void refreshPatientBookings(queryClient);
         form.reset();
         onBooked(result);
       });
