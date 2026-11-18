@@ -1,6 +1,8 @@
 import { screen, within } from '@testing-library/react';
-import { renderApp, serveApi, type ApiCall, type MockResponse } from '@/test/render-app';
+import type { renderApp } from '@/test/render-app';
+import { serveApi, type ApiCall, type MockResponse } from '@/test/render-app';
 import type { DoctorAppointment } from '@lib/api/models';
+import { civilDateInSaoPaulo } from '@lib/date';
 import type { AgendaTab, DoctorHome } from './doctor-api';
 
 export const FUTURE = '2030-01-10T13:00:00.000Z';
@@ -60,7 +62,13 @@ export const home = (overrides: Partial<DoctorHome> = {}): DoctorHome => ({
   ...overrides,
 });
 
-type Lists = Partial<Record<AgendaTab, DoctorAppointment[]>>;
+const withinDays = (params: URLSearchParams, day: string) => {
+  const from = params.get('from');
+  const to = params.get('to');
+  return (!from || day >= from) && (!to || day <= to);
+};
+
+type Lists = Partial<Record<AgendaTab | 'all', DoctorAppointment[]>>;
 
 interface Serve {
   lists?: Lists;
@@ -73,15 +81,21 @@ export const serve = ({ lists = {}, homeData = home(), action, totals = {} }: Se
   serveApi(['doctor'], {
     [HOME]: () => ({ status: 200, body: homeData }),
     [LIST]: (_method, _body, url) => {
-      const tab = url.searchParams.get('tab') as AgendaTab;
+      const tab = url.searchParams.get('tab') as AgendaTab | 'all';
       const count = (key: AgendaTab) => totals[key] ?? lists[key]?.length ?? 0;
+      const items =
+        tab === 'all'
+          ? (lists.all ?? Object.values(lists).flat())
+              .filter(({ startsAt }) => withinDays(url.searchParams, civilDateInSaoPaulo(new Date(startsAt))))
+              .toSorted((a, b) => a.startsAt.localeCompare(b.startsAt))
+          : (lists[tab] ?? []);
       return {
         status: 200,
         body: {
-          items: lists[tab] ?? [],
+          items,
           page: Number(url.searchParams.get('page')),
           pageSize: 10,
-          total: count(tab),
+          total: tab === 'all' ? items.length : count(tab),
           counts: {
             pending: count('pending'),
             confirmed: count('confirmed'),

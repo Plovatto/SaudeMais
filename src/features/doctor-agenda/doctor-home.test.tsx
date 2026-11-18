@@ -5,13 +5,13 @@ import { renderApp } from '@/test/render-app';
 import {
   actions,
   appointment,
-  complete,
   confirmed,
   counts,
   FUTURE,
   home,
   HOME,
   LIST,
+  openComplete,
   PAST,
   posts,
   serve,
@@ -39,7 +39,9 @@ const intercept = (
   const served = fetchMock.getMockImplementation();
   let active = true;
   fetchMock.mockImplementation((url, init) =>
-    active && matches(String(url)) ? respond() : (served?.(url, init) ?? Promise.reject(new Error('no api'))),
+    active && matches(url instanceof Request ? url.url : url.toString())
+      ? respond()
+      : (served?.(url, init) ?? Promise.reject(new Error('no api'))),
   );
   return () => {
     active = false;
@@ -166,9 +168,7 @@ describe('doctor home', { timeout: 15_000 }, () => {
     expect(queries).toEqual(
       expect.arrayContaining([
         { tab: 'confirmed', page: '1', pageSize: '1', from: '2030-01-10' },
-        { tab: 'history', page: '1', pageSize: '50', from: '2030-01-10' },
-        { tab: 'confirmed', page: '1', pageSize: '50', from: '2030-01-10' },
-        { tab: 'pending', page: '1', pageSize: '50', from: '2030-01-10' },
+        { tab: 'all', page: '1', pageSize: '50', from: '2030-01-10', to: '2030-01-10' },
       ]),
     );
   });
@@ -269,7 +269,7 @@ describe('doctor home', { timeout: 15_000 }, () => {
 
   it('shows the error of the agenda of today with a retry', async () => {
     const { fetchMock } = serve({});
-    const recover = intercept(fetchMock, (url) => url.includes('tab=history'), serverError);
+    const recover = intercept(fetchMock, (url) => url.includes('tab=all'), serverError);
     const { user } = renderApp('/medico');
 
     const today = await region('Agenda de hoje');
@@ -336,8 +336,9 @@ describe('doctor home', { timeout: 15_000 }, () => {
     const { user } = renderApp('/medico');
 
     const awaiting = await region('Aguardando registro');
-    const dialog = await complete(user, within(awaiting));
+    const dialog = await openComplete(user, within(awaiting));
     expect(dialog.getByRole('textbox', { name: 'Peso (kg)' })).toBeInTheDocument();
+    await user.click(dialog.getByRole('button', { name: 'Concluir consulta' }));
 
     expect(await screen.findByText('Consulta concluída.')).toBeVisible();
     expect(posts(calls)[0]?.url.pathname).toBe('/api/appointments/a1/complete');
