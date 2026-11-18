@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useId, useRef } from 'react';
 import { LuCalendarX, LuSearchX } from 'react-icons/lu';
 import { PagedResults } from '@components/bookings/PagedResults';
 import { PageHeader } from '@components/layout/PageHeader';
@@ -14,10 +14,9 @@ import {
   Tabs,
 } from '@components/ui';
 import { AGENDA_STATUS_PARAM, AGENDA_TABS, AGENDA_VIEWS } from '@constants/doctor-agenda';
-import { SEARCH_DELAY_MS, useDebouncedValue } from '@hooks/useDebouncedValue';
 import { DESKTOP_QUERY, useMediaQuery } from '@hooks/useMediaQuery';
 import { useNow } from '@hooks/useNow';
-import { resetPageAnd } from '@hooks/usePageParam';
+import { useSearchDraft } from '@hooks/useSearchDraft';
 import { useSearchParam } from '@hooks/useSearchParam';
 import { useTabbedList } from '@hooks/useTabbedList';
 import type { DoctorAppointment } from '@lib/api/models';
@@ -83,15 +82,11 @@ export function DoctorAgendaPage() {
   const detailId = useId();
   const results = useRef<HTMLParagraphElement>(null);
   const dayList = useRef<HTMLElement>(null);
-  const written = useRef<string | null>(null);
-  const settled = useRef<string | null>(null);
   const [view, setView] = useSearchParam('aba', AGENDA_VIEWS.week);
   const [dayParam, setDay] = useSearchParam(DAY_PARAM, today);
   const day = isCivilDate(dayParam) ? dayParam : today;
   const [selectedId, setSelectedId] = useSearchParam(SELECTED_PARAM);
-  const [searchParam, setSearchParam] = useSearchParam(SEARCH_PARAM);
-  const [search, setSearch] = useState(searchParam);
-  const debounced = useDebouncedValue(search.trim(), SEARCH_DELAY_MS);
+  const { search, setSearch, searchParam } = useSearchDraft(SEARCH_PARAM, RESET_SELECTION);
   const current: View = view === AGENDA_VIEWS.list ? AGENDA_VIEWS.list : AGENDA_VIEWS.week;
   const actions = useAppointmentActions(current === AGENDA_VIEWS.week ? dayList : results);
 
@@ -122,25 +117,6 @@ export function DoctorAgendaPage() {
   );
   const counts = list.lastData?.counts;
   const allCount = counts ? counts.pending + counts.confirmed + counts.history : undefined;
-
-  useEffect(() => {
-    if (written.current === null) written.current = searchParam;
-    else if (searchParam !== written.current) {
-      written.current = searchParam;
-      setSearch(searchParam);
-    }
-  }, [searchParam]);
-
-  useEffect(() => {
-    if (settled.current === null || debounced === settled.current) {
-      settled.current = debounced;
-      return;
-    }
-    settled.current = debounced;
-    if (debounced === written.current) return;
-    written.current = debounced;
-    setSearchParam(debounced, resetPageAnd(RESET_SELECTION));
-  }, [debounced, setSearchParam]);
 
   const visible = current === AGENDA_VIEWS.week ? dayItems : list.items;
   const chosen = visible?.find((appointment) => appointment.id === selectedId);
