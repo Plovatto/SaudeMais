@@ -13,6 +13,9 @@ export const policy = {
   maxReschedules: 2,
   bookingHorizonDays: 60,
   minLeadMinutes: 60,
+  maxActiveBookings: 5,
+  maxActiveAppointments: 5,
+  maxActiveExams: 5,
   updatedAt: '2026-11-20T12:00:00.000Z',
 };
 

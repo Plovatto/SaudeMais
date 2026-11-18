@@ -1,12 +1,12 @@
 import AxeBuilder from '@axe-core/playwright';
 import { test as base, expect, type BrowserContext, type Locator, type Page } from '@playwright/test';
-import { storageStateFor, type DemoRole } from './auth';
+import { storageStateFor, type ExampleRole } from './auth';
 import type { Person } from './people';
 
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 const BLOCKING_IMPACTS = new Set(['serious', 'critical']);
 
-export const test = base.extend<{ signedIn: (role: DemoRole) => Promise<Page> }>({
+export const test = base.extend<{ signedIn: (role: ExampleRole) => Promise<Page> }>({
   signedIn: async ({ browser }, use) => {
     const contexts: BrowserContext[] = [];
     await use(async (role) => {
