@@ -9,10 +9,11 @@ import {
   pickDay,
   pickedDay,
   pickTime,
+  slot,
   slotGroup,
   slotTimes,
 } from '@/test/booking-flow';
-import { renderApp, serveApi, type MockResponse } from '@/test/render-app';
+import { apiError, renderApp, serveApi, type MockResponse } from '@/test/render-app';
 
 const specialties = [
   { id: 's1', name: 'Cardiologia', council: 'CRM', appointmentDurationMin: 30, isActive: true },
@@ -38,8 +39,6 @@ const doctors = [
   },
 ];
 
-const slot = (startsAt: string) => ({ startsAt, endsAt: startsAt });
-
 const days = [
   {
     date: '2026-11-23',
@@ -62,11 +61,6 @@ const appointment = {
   createdAt: '2026-11-14T12:00:00.000Z',
   events: [],
 };
-
-const apiError = (status: number, code: string, fields: Record<string, string> = {}) => ({
-  status,
-  body: { code, message: `API: ${code}`, fields },
-});
 
 type Day = (typeof days)[number];
 

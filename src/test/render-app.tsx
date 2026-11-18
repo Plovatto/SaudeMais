@@ -16,6 +16,15 @@ export interface MockResponse {
   body?: unknown;
 }
 
+export const apiError = (
+  status: number,
+  code: string,
+  fields: Record<string, string> = {},
+): MockResponse => ({
+  status,
+  body: { code, message: `API: ${code}`, fields },
+});
+
 type Handler = (path: string, init?: RequestInit, url?: URL) => MockResponse | undefined;
 
 export const TEST_TOKEN = 'A'.repeat(43);

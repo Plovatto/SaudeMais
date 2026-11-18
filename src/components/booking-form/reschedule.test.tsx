@@ -1,8 +1,8 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { todayInSaoPaulo } from '@lib/date';
-import { openDays, pickDay, pickedDay, pickTime, slotGroup, slotTimes } from '@/test/booking-flow';
-import { renderApp, serveApi, type MockResponse } from '@/test/render-app';
+import { examSlot, openDays, pickDay, pickedDay, pickTime, slotGroup, slotTimes } from '@/test/booking-flow';
+import { apiError, renderApp, serveApi, type MockResponse } from '@/test/render-app';
 
 const CURRENT = '2026-11-23T17:30:00.000Z';
 const LIST_LINK = 'Voltar para meus agendamentos';
@@ -51,17 +51,10 @@ const exam = {
   events: [],
 };
 
-const slot = (startsAt: string) => ({ startsAt, endsAt: startsAt, remaining: 5 });
-
 const days = [
-  { date: '2026-11-23', slots: [slot('2026-11-23T11:00:00.000Z'), slot(CURRENT)] },
-  { date: '2026-11-24', slots: [slot('2026-11-24T12:00:00.000Z')] },
+  { date: '2026-11-23', slots: [examSlot('2026-11-23T11:00:00.000Z'), examSlot(CURRENT)] },
+  { date: '2026-11-24', slots: [examSlot('2026-11-24T12:00:00.000Z')] },
 ];
-
-const apiError = (status: number, code: string, fields: Record<string, string> = {}) => ({
-  status,
-  body: { code, message: `API: ${code}`, fields },
-});
 
 const kinds = {
   appointment: {
@@ -161,8 +154,8 @@ describe('reschedule', { timeout: 20_000 }, () => {
     serve({
       detail: () => ({ status: 200, body: { ...appointment, startsAt: current } }),
       available: [
-        { date: '2026-11-30', slots: [slot('2026-11-30T12:00:00.000Z')] },
-        { date: '2026-12-02', slots: [slot('2026-12-02T12:00:00.000Z'), slot(current)] },
+        { date: '2026-11-30', slots: [examSlot('2026-11-30T12:00:00.000Z')] },
+        { date: '2026-12-02', slots: [examSlot('2026-12-02T12:00:00.000Z'), examSlot(current)] },
       ],
     });
     await start();
@@ -179,7 +172,9 @@ describe('reschedule', { timeout: 20_000 }, () => {
   });
 
   it('leaves out a day whose only free slot is the current one', async () => {
-    serve({ available: [{ date: '2026-11-23', slots: [slot(CURRENT)] }, days[1] as (typeof days)[number]] });
+    serve({
+      available: [{ date: '2026-11-23', slots: [examSlot(CURRENT)] }, days[1] as (typeof days)[number]],
+    });
     await start();
 
     await waitFor(() => expect(openDays()).toEqual([TUESDAY]));
@@ -187,7 +182,7 @@ describe('reschedule', { timeout: 20_000 }, () => {
   });
 
   it('warns when no slot other than the current one is free', async () => {
-    serve({ available: [{ date: '2026-11-23', slots: [slot(CURRENT)] }] });
+    serve({ available: [{ date: '2026-11-23', slots: [examSlot(CURRENT)] }] });
     renderApp(kinds.appointment.path);
 
     expect(await screen.findByText(/não tem outras vagas livres/)).toBeVisible();
@@ -297,7 +292,7 @@ describe('reschedule', { timeout: 20_000 }, () => {
   });
 
   it('reloads the free slots and keeps the day when the new slot was just taken', async () => {
-    const remaining = [{ date: '2026-11-24', slots: [slot('2026-11-24T13:00:00.000Z')] }];
+    const remaining = [{ date: '2026-11-24', slots: [examSlot('2026-11-24T13:00:00.000Z')] }];
     const { calls } = serve({
       reschedule: () => apiError(409, 'SLOT_TAKEN', { newStartsAt: 'API' }),
       afterSubmit: remaining,

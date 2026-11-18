@@ -1,6 +1,10 @@
 import { screen, within } from '@testing-library/react';
 import type { UserEvent } from '@testing-library/user-event';
 
+export const slot = (startsAt: string) => ({ startsAt, endsAt: startsAt });
+
+export const examSlot = (startsAt: string, remaining = 5) => ({ ...slot(startsAt), remaining });
+
 export const dropdown = (label: string) => screen.getByRole('button', { name: new RegExp(`^${label} `) });
 
 export async function pick(user: UserEvent, label: string, option: string) {
