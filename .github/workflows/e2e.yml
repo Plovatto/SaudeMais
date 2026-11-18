@@ -40,7 +40,7 @@ jobs:
     env:
       VITE_API_URL: http://localhost:3001
       ADMIN_EMAIL: admin@e2e.test
-      API_REF: ${{ inputs.api_ref || '1f29362777fe40cfe4b8db6b46c05284bf9c7fc4' }}
+      API_REF: ${{ inputs.api_ref || '1a7993404ba614ff376aa02f73a310e0e1a073ce' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
