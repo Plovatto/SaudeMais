@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, toApiError } from './api-error';
 import { apiFetch, setTokenProvider } from './api-fetch';
-import { getHealth } from './system-api';
 
 const fetchMock = vi.fn<typeof fetch>();
 
@@ -19,7 +18,6 @@ beforeEach(() => {
 
 afterEach(() => {
   fetchMock.mockReset();
-  vi.unstubAllGlobals();
 });
 
 describe('apiFetch', () => {
@@ -47,7 +45,7 @@ describe('apiFetch', () => {
   it('calls the API URL and returns the parsed body', async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, { status: 'ok' }));
 
-    await expect(getHealth()).resolves.toEqual({ status: 'ok' });
+    await expect(apiFetch('get', '/health')).resolves.toEqual({ status: 'ok' });
 
     const [url, init] = fetchMock.mock.calls[0] ?? [];
     expect(url).toBe('http://localhost:3001/health');

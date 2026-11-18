@@ -22,7 +22,7 @@ export const DEFAULT_ROLE: Role = 'patient';
 
 export type NavBadge = 'patient-upcoming' | 'doctor-pending';
 
-export interface AreaPage {
+interface AreaPage {
   path: string;
   title: string;
   crumb?: string;
@@ -162,7 +162,7 @@ export function pageUrl(area: Area, page: Pick<AreaPage, 'path'>): string {
   return path ? `${area.base}/${path}` : area.base;
 }
 
-export const findPage = (area: Area, path: string) => area.pages.find((page) => page.path === path);
+const findPage = (area: Area, path: string) => area.pages.find((page) => page.path === path);
 
 const patternOf = (area: Area, page: AreaPage) => (page.path ? `${area.base}/${page.path}` : area.base);
 
@@ -186,7 +186,7 @@ export function parentLink(area: Area, pathname: string): { label: string; to: s
   };
 }
 
-export type NavState = 'page' | 'section' | undefined;
+type NavState = 'page' | 'section' | undefined;
 
 export function navState(area: Area, navPath: string, pathname: string): NavState {
   let page = currentPage(area, pathname);

@@ -5,7 +5,7 @@ export const GENERIC_ERROR_MESSAGE = 'Algo deu errado. Tente de novo em instante
 export const NO_LINK_MESSAGE =
   'Você só vê os resultados de um paciente com quem tem uma consulta de avaliação de exames confirmada ou concluída nos últimos 30 dias.';
 
-export const errorMessages: Record<string, string> = {
+const errorMessages: Record<string, string> = {
   EMAIL_TAKEN: 'Este e-mail já está cadastrado.',
   NAME_TAKEN: 'Já existe um cadastro com esse nome.',
   CODE_TAKEN: 'Já existe um tipo de exame com esse código.',

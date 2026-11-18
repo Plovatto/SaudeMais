@@ -2,7 +2,7 @@ import { env } from '@config/env';
 import { ApiError, toApiError } from './api-error';
 import type { paths } from './schema';
 
-export const DEFAULT_TIMEOUT_MS = 15_000;
+const DEFAULT_TIMEOUT_MS = 15_000;
 
 type Method = 'get' | 'post' | 'put' | 'patch' | 'delete';
 type MethodOf<P extends keyof paths> = {
@@ -25,7 +25,7 @@ export type BodyOf<P extends keyof paths, M extends MethodOf<P>> =
 type PathParamsOf<P extends keyof paths, M extends MethodOf<P>> =
   Operation<P, M> extends { parameters: { path: infer Params } } ? Params : never;
 
-export type QueryValue = string | number | boolean | undefined;
+type QueryValue = string | number | boolean | undefined;
 
 export interface ApiFetchOptions<Body, Params = Record<string, string>> {
   body?: Body;

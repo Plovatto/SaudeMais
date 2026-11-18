@@ -66,7 +66,7 @@ export function matchPreset(period: Period, today = todayInSaoPaulo()): PeriodPr
   });
 }
 
-export function previousPeriod({ from, to }: Period): Period {
+function previousPeriod({ from, to }: Period): Period {
   const days = daysBetween(from, to) + 1;
   return { from: addDays(from, -days), to: addDays(from, -1) };
 }
