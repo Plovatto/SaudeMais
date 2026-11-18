@@ -329,9 +329,60 @@ describe('admin settings', () => {
     await user.click(screen.getByRole('option', { name: /^90 dias/ }));
     await user.click(screen.getByRole('button', { name: 'Salvar configurações' }));
 
-    await waitFor(() =>
-      expect(calls.find((call) => call.method === 'PUT')?.body).toMatchObject({ bookingHorizonDays: 90 }),
-    );
+    expect(await screen.findByText('Configurações salvas.')).toBeInTheDocument();
+    expect(calls.find((call) => call.method === 'PUT')?.body).toMatchObject({ bookingHorizonDays: 90 });
+    await waitFor(() => expect(document.getElementById('politica')).toHaveFocus());
+    expect(screen.queryByRole('button', { name: 'Salvar configurações' })).not.toBeInTheDocument();
+  });
+
+  it('keeps the changes and the save bar when saving the policy fails', async () => {
+    serve({
+      '/api/admin/policy': (method) =>
+        method === 'PUT'
+          ? { status: 503, body: { message: 'Indisponível.', code: 'SERVICE_UNAVAILABLE' } }
+          : { status: 200, body: policy },
+    });
+    const { user } = renderApp('/admin/configuracoes');
+    await user.click(await screen.findByRole('button', { name: /^Reagendamentos 2 vezes/ }));
+    await user.click(screen.getByRole('option', { name: /^3 vezes/ }));
+    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+
+    expect(
+      await within(screen.getByRole('form', { name: 'Agendamento' })).findByRole('alert'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Salvar' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Reagendamentos 3 vezes/ })).toBeInTheDocument();
+  });
+
+  it('explains an item that no longer exists when saving it', async () => {
+    serve({
+      '/api/admin/specialties': () => ({ status: 200, body: page([specialty(1)]) }),
+      '/api/admin/specialties/spec-1': () => ({
+        status: 404,
+        body: { message: 'Specialty not found.', code: 'NOT_FOUND' },
+      }),
+    });
+    const { user } = renderApp('/admin/configuracoes');
+    await screen.findByText('Especialidade 1');
+    await user.click(row('Especialidade 1'));
+    const form = await findForm('Especialidade');
+    await user.click(within(form).getByRole('button', { name: 'Salvar' }));
+
+    expect(await within(form).findByText('Este item não existe mais. Atualize a lista.')).toBeInTheDocument();
+  });
+
+  it('opens the offers of the unit in the URL', async () => {
+    serve({
+      '/api/admin/units': () => ({ status: 200, body: page([unit()]) }),
+      '/api/admin/units/u1/exam-offers': () => ({
+        status: 200,
+        body: [{ examTypeId: 'e1', examTypeName: 'Raio-X', capacityPerSlot: 2, isActive: false }],
+      }),
+    });
+    renderApp('/admin/configuracoes/ofertas?unidade=u1');
+
+    expect(await screen.findByText('2 ao mesmo tempo')).toBeInTheDocument();
+    expect(within(row('Raio-X', 'ofertas')).getByText('Inativo')).toBeInTheDocument();
   });
 
   it('offers only active exam types not yet offered and edits an existing offer', async () => {
@@ -365,7 +416,8 @@ describe('admin settings', () => {
     const create = await findForm('Oferta');
     await user.click(within(create).getByRole('button', { name: /^Exame Escolha o exame/ }));
     const options = within(await screen.findByRole('listbox', { name: 'Exame' })).getAllByRole('option');
-    expect(options.map((option) => option.querySelector('span span')?.textContent)).toEqual(['Ultrassom']);
+    expect(options).toHaveLength(1);
+    expect(options[0]).toHaveAccessibleName(/^Ultrassom/);
     await user.keyboard('{Escape}');
     await user.click(within(create).getByRole('button', { name: 'Cancelar' }));
     await waitFor(() => expect(screen.queryByRole('form', { name: 'Oferta' })).not.toBeInTheDocument());
