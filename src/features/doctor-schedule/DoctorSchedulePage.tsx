@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { usePrefetchQuery, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import { LuCheck, LuClock } from 'react-icons/lu';
 import { PageHeader } from '@components/layout/PageHeader';
@@ -37,6 +37,11 @@ const scheduleMessages = {
 
 const layout = 'grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-5';
 
+const savedMessage = (outside: number) =>
+  outside === 0
+    ? 'Horários salvos.'
+    : `Horários salvos. ${plural(outside, 'consulta ficou', 'consultas ficaram')} fora dos períodos.`;
+
 const column = 'flex min-w-0 flex-col gap-3.5';
 
 function ScheduleHeader({ action }: { action?: ReactNode }) {
@@ -56,13 +61,17 @@ function ScheduleForm({ schedule }: { schedule: DoctorSchedule }) {
   const queryClient = useQueryClient();
   const { show } = useToast();
   const timeOff = useTimeOff();
+  const warningRef = useRef<HTMLDivElement>(null);
+  const [base, setBase] = useState(schedule);
   const [warnings, setWarnings] = useState<ScheduleWarning[]>([]);
   const [expanded, setExpanded] = useState<ReadonlySet<number>>(() => new Set());
   const [focusTarget, setFocusTarget] = useState<RangePath>();
-  const schema = useMemo(() => scheduleSchema(schedule.unitHours), [schedule.unitHours]);
-  const form = useForm<ScheduleValues>({ resolver: zodResolver(schema), defaultValues: toValues(schedule) });
+  const schema = useMemo(() => scheduleSchema(base.unitHours), [base.unitHours]);
+  const values = useMemo(() => toValues(base), [base]);
+  const form = useForm<ScheduleValues>({ resolver: zodResolver(schema), values });
   const { control, setError, setFocus, reset, subscribe, trigger } = form;
   const { isDirty, isSubmitting, submitCount } = form.formState;
+  if (schedule !== base && !isDirty && !isSubmitting) setBase(schedule);
   const slots = useWeeklySlots(control);
 
   const setDayExpanded = (weekday: number, open: boolean) =>
@@ -87,11 +96,14 @@ function ScheduleForm({ schedule }: { schedule: DoctorSchedule }) {
     (values) =>
       run(async () => {
         setWarnings([]);
-        const { warnings: outside, ...saved } = await scheduleApi.save(toBody(values, schedule));
+        const { warnings: outside, ...saved } = await scheduleApi.save(toBody(values, base));
+        const active = document.activeElement;
+        if (active instanceof HTMLButtonElement && active.form?.id === SCHEDULE_FORM_ID) active.form.focus();
         queryClient.setQueryData(queryKeys.doctorSchedule, saved);
+        setBase(saved);
         reset(toValues(saved));
         setWarnings(outside);
-        show({ message: 'Horários salvos.', tone: 'success' });
+        show({ message: savedMessage(outside.length), tone: outside.length > 0 ? 'info' : 'success' });
       }),
     (errors) => focusRanges(rangeErrorPaths(errors)),
   );
@@ -99,6 +111,10 @@ function ScheduleForm({ schedule }: { schedule: DoctorSchedule }) {
   useEffect(() => {
     if (!isSubmitting && focusTarget) setFocus(`${focusTarget}.startMin`);
   }, [focusTarget, isSubmitting, setFocus]);
+
+  useEffect(() => {
+    if (warnings.length > 0) warningRef.current?.scrollIntoView({ block: 'center' });
+  }, [warnings]);
 
   useEffect(() => {
     if (submitCount === 0) return;
@@ -129,21 +145,23 @@ function ScheduleForm({ schedule }: { schedule: DoctorSchedule }) {
       <ScheduleHeader action={desktop && isDirty && save('Salvar horários')} />
       <form
         id={SCHEDULE_FORM_ID}
+        tabIndex={-1}
         aria-label="Horários de atendimento"
         noValidate
         onSubmit={(event) => {
           setFocusTarget(undefined);
           void onSubmit(event);
         }}
-        className="flex flex-col gap-4 lg:gap-5"
+        className="flex flex-col gap-4 outline-none lg:gap-5"
       >
         <WarningAlert
+          ref={warningRef}
           warnings={warnings}
           one="consulta futura ficou fora dos novos períodos"
           many="consultas futuras ficaram fora dos novos períodos"
         />
         {alert && <FormAlert>{alert}</FormAlert>}
-        <fieldset disabled={isSubmitting} className={cx(layout, 'min-w-0')}>
+        <fieldset disabled={isSubmitting} className={cx(layout, 'min-w-0 lg:items-stretch')}>
           <legend className="sr-only">Dias e consultas</legend>
           <div className={cx(column, stagger(0))}>
             {DAY_ORDER.map((weekday) => (
@@ -151,14 +169,14 @@ function ScheduleForm({ schedule }: { schedule: DoctorSchedule }) {
                 key={weekday}
                 form={form}
                 weekday={weekday}
-                unit={unitFor(schedule.unitHours, weekday)}
+                unit={unitFor(base.unitHours, weekday)}
                 expanded={expanded.has(weekday)}
                 onExpandedChange={(open) => setDayExpanded(weekday, open)}
               />
             ))}
           </div>
           <div className={cx('flex min-w-0 flex-col gap-4 lg:gap-5', stagger(1))}>
-            <DurationCard control={control} schedule={schedule} slots={slots} />
+            <DurationCard control={control} schedule={base} slots={slots} />
             {timeOff.card}
           </div>
         </fieldset>
@@ -192,6 +210,7 @@ export function DoctorSchedulePage() {
       <ScheduleHeader />
       {schedule.isPending && (
         <div className={layout} aria-busy>
+          <span className="sr-only">Carregando horários</span>
           <div className={column}>
             {DAY_ORDER.map((weekday) => (
               <Skeleton key={weekday} className="rounded-card h-[74px]" />
