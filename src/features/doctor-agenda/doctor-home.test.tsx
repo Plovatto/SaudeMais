@@ -246,7 +246,7 @@ describe('doctor home', { timeout: 15_000 }, () => {
     expect(detail.getByText('Hospital Central')).toBeVisible();
     expect(detail.getByText('Telefone indisponível')).toBeVisible();
     expect(detail.getByText('Trazer o hemograma de outubro.')).toBeVisible();
-    expect(detail.getByRole('button', { name: /^Cancelar: Carlos Pereira/ })).toBeVisible();
+    expect(detail.getByRole('button', { name: /^Cancelar consulta: Carlos Pereira/ })).toBeVisible();
   });
 
   it('shows the error of the home with a retry that loads it again', async () => {
