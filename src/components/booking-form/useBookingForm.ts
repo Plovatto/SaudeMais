@@ -1,4 +1,10 @@
-import { useInfiniteQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useQueryClient,
+  type DefaultError,
+  type InfiniteData,
+  type QueryKey,
+} from '@tanstack/react-query';
 import { useEffect, useEffectEvent, useMemo, useState } from 'react';
 import { useWatch, type FieldValues, type Path, type UseFormReturn } from 'react-hook-form';
 import { ApiError } from '@lib/api/api-error';
@@ -63,11 +69,17 @@ export function useBookingForm<TIn extends SlotValues, TOut, R>(
   const { control, register, getValues, setValue, setError, clearErrors, formState } =
     form as unknown as UseFormReturn<SlotValues>;
   const [date, startsAt] = useWatch({ control, name: ['date', 'startsAt'] });
-  const availability = useInfiniteQuery({
+  const availability = useInfiniteQuery<
+    AvailableDay[],
+    DefaultError,
+    InfiniteData<AvailableDay[], WindowPage>,
+    QueryKey,
+    WindowPage
+  >({
     queryKey: source.queryKey,
     queryFn: ({ signal, pageParam }) => source.load(signal, pageParam),
     initialPageParam: firstWindowPage(),
-    getNextPageParam: (_last, pages, first) => nextWindowPage(first.start, pages.length),
+    getNextPageParam: (_last, pages, lastParam) => nextWindowPage(lastParam.start, pages.length),
     enabled: source.enabled,
     staleTime: 0,
     refetchOnWindowFocus: false,
@@ -77,7 +89,7 @@ export function useBookingForm<TIn extends SlotValues, TOut, R>(
   const sourceKey = JSON.stringify(source.queryKey);
   const [want, setWant] = useState({ key: '', until: '' });
   const wanted = want.key === sourceKey ? want.until : '';
-  const start = (availability.data?.pageParams[0] as WindowPage | undefined)?.start;
+  const start = availability.data?.pageParams[0]?.start;
   const through = start ? loadedThrough(start, availability.data?.pages.length ?? 0) : '';
   const { hasNextPage, isFetching, fetchNextPage } = availability;
   const reset = () => queryClient.resetQueries({ queryKey: source.queryKey });
