@@ -136,7 +136,7 @@ interface RescheduleFormProps<B extends Reschedulable> {
   details: (booking: B) => LockedDetails;
   availability: (booking: B) => {
     queryKey: QueryKey;
-    load: (signal: AbortSignal) => Promise<AvailableDay[]>;
+    load: (signal: AbortSignal, page: number) => Promise<AvailableDay[]>;
   };
   reschedule: (booking: B, newStartsAt: string) => Promise<B>;
 }
@@ -177,8 +177,8 @@ function RescheduleForm<B extends Reschedulable>({
     fields: FIELDS,
     availability: {
       queryKey: source.queryKey,
-      load: async (signal) =>
-        (await source.load(signal)).filter((day) =>
+      load: async (signal, page) =>
+        (await source.load(signal, page)).filter((day) =>
           day.slots.some((slot) => slot.startsAt !== current.startsAt),
         ),
       enabled: true,

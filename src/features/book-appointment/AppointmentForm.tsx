@@ -52,7 +52,7 @@ export function AppointmentForm({ onBooked }: { onBooked: (appointment: Appointm
     fields: FIELDS,
     availability: {
       queryKey: queryKeys.booking.availability(doctorId),
-      load: (signal) => bookingApi.availability(doctorId, signal),
+      load: (signal, page) => bookingApi.availability(doctorId, page, signal),
       enabled: doctorId !== '',
     },
     fieldByCode,

@@ -1,4 +1,4 @@
-import { useState, type Ref } from 'react';
+import { useEffect, useEffectEvent, useState, type Ref } from 'react';
 import { LuChevronLeft, LuChevronRight } from 'react-icons/lu';
 import { IconButton } from '@components/ui';
 import { cx } from '@lib/cx';
@@ -28,13 +28,25 @@ export interface MonthCalendarProps {
   onSelect: (date: string) => void;
   focusRef?: Ref<HTMLDivElement>;
   describedBy?: string | undefined;
+  reach?: string | undefined;
+  onShowMonth?: (lastDay: string) => void;
 }
 
-export function MonthCalendar({ available, selected, onSelect, focusRef, describedBy }: MonthCalendarProps) {
+export function MonthCalendar({
+  available,
+  selected,
+  onSelect,
+  focusRef,
+  describedBy,
+  reach,
+  onShowMonth,
+}: MonthCalendarProps) {
   const today = todayInSaoPaulo();
   const open = new Set(available);
   const first = monthOf(available[0] ?? today);
-  const last = monthOf(available.at(-1) ?? today);
+  const lastAvailable = monthOf(available.at(-1) ?? today);
+  const reachMonth = reach ? monthOf(reach) : '';
+  const last = reachMonth > lastAvailable ? reachMonth : lastAvailable;
   const [shown, setShown] = useState(monthOf(selected || available[0] || today));
   const [followed, setFollowed] = useState(selected);
   if (selected !== followed) {
@@ -42,6 +54,9 @@ export function MonthCalendar({ available, selected, onSelect, focusRef, describ
     if (selected) setShown(monthOf(selected));
   }
   const month = shown < first ? first : shown > last ? last : shown;
+  const lastDay = addDays(`${shiftMonth(month, 1)}-01`, -1);
+  const showMonth = useEffectEvent((day: string) => onShowMonth?.(day));
+  useEffect(() => showMonth(lastDay), [lastDay]);
 
   return (
     <div

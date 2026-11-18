@@ -31,7 +31,7 @@ export function RescheduleAppointmentPage() {
       })}
       availability={({ id, doctor }) => ({
         queryKey: queryKeys.booking.availability(doctor.id, id),
-        load: (signal) => bookingApi.availability(doctor.id, signal, id),
+        load: (signal, page) => bookingApi.availability(doctor.id, page, signal, id),
       })}
       reschedule={bookingApi.reschedule}
     />

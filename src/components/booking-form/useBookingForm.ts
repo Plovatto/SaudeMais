@@ -1,5 +1,5 @@
-import { useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
-import { useEffect, useEffectEvent, useState } from 'react';
+import { useInfiniteQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
+import { useEffect, useEffectEvent, useMemo, useState } from 'react';
 import { useWatch, type FieldValues, type Path, type UseFormReturn } from 'react-hook-form';
 import { ApiError } from '@lib/api/api-error';
 import type { FieldAliases } from '@lib/form-errors';
@@ -11,7 +11,7 @@ import {
 } from '@lib/messages/errors.pt-BR';
 import { queryKeys } from '@lib/query-keys';
 import { useFormSubmit } from '@lib/useFormSubmit';
-import type { AvailableDay } from './availability';
+import { horizonEnd, loadedThrough, nextWindowPage, type AvailableDay } from './availability';
 
 type SlotValues = { date: string; startsAt: string; notes: string };
 
@@ -27,7 +27,7 @@ interface BookingFormOptions<TIn extends FieldValues, TOut, R> {
   fields: readonly Path<TIn>[];
   availability: {
     queryKey: QueryKey;
-    load: (signal: AbortSignal) => Promise<AvailableDay[]>;
+    load: (signal: AbortSignal, page: number) => Promise<AvailableDay[]>;
     enabled: boolean;
   };
   fieldByCode?: Partial<Record<string, Path<TIn>>>;
@@ -56,20 +56,30 @@ export function useBookingForm<TIn extends SlotValues, TOut, R>(
   const { control, register, getValues, setValue, setError, clearErrors, formState } =
     form as unknown as UseFormReturn<SlotValues>;
   const [date, startsAt] = useWatch({ control, name: ['date', 'startsAt'] });
-  const availability = useQuery({
+  const availability = useInfiniteQuery({
     queryKey: source.queryKey,
-    queryFn: ({ signal }) => source.load(signal),
+    queryFn: ({ signal, pageParam }) => source.load(signal, pageParam),
+    initialPageParam: 0,
+    getNextPageParam: (_last, pages) => nextWindowPage(pages.length),
     enabled: source.enabled,
     staleTime: 0,
   });
-  const days = source.enabled ? (availability.data ?? []) : [];
+  const loaded = useMemo(() => availability.data?.pages.flat(), [availability.data]);
+  const days = source.enabled ? (loaded ?? []) : [];
+  const [wanted, setWanted] = useState('');
+  const through = loadedThrough(availability.data?.pages.length ?? 0);
+  const { hasNextPage, isFetching, fetchNextPage } = availability;
   const slots = days.find((day) => day.date === date)?.slots ?? [];
   const { errors, isSubmitting } = formState;
 
   useEffect(() => {
-    if (!availability.data) return;
+    if (wanted > through && hasNextPage && !isFetching) void fetchNextPage();
+  }, [wanted, through, hasNextPage, isFetching, fetchNextPage]);
+
+  useEffect(() => {
+    if (!loaded) return;
     const current = getValues();
-    const day = availability.data.find((item) => item.date === current.date);
+    const day = loaded.find((item) => item.date === current.date);
     if (current.date && !day) {
       setValue('date', '');
       setValue('startsAt', '');
@@ -79,7 +89,7 @@ export function useBookingForm<TIn extends SlotValues, TOut, R>(
       setValue('startsAt', '');
       setError('startsAt', { message: SLOT_GONE_MESSAGE }, { shouldFocus: true });
     }
-  }, [availability.data, getValues, setValue, setError, clearErrors]);
+  }, [loaded, getValues, setValue, setError, clearErrors]);
 
   const notFound = useEffectEvent(onNotFound);
 
@@ -164,7 +174,9 @@ export function useBookingForm<TIn extends SlotValues, TOut, R>(
       loading: availability.isFetching && days.length === 0,
       failure: availability.error,
       retry: () => void availability.refetch(),
-      empty: availability.data?.length === 0,
+      empty: availability.data?.pages[0]?.length === 0,
+      reach: hasNextPage ? horizonEnd() : undefined,
+      showUntil: setWanted,
       messages,
     },
   };

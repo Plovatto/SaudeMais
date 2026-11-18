@@ -230,30 +230,34 @@ describe('book appointment', { timeout: 20_000 }, () => {
     expect(windowsOf(calls)).toEqual([
       { from: '2026-11-19', to: '2026-12-19' },
       { from: '2026-12-20', to: '2027-01-19' },
-      { from: '2027-01-20', to: '2027-02-19' },
-      { from: '2027-02-20', to: '2027-03-22' },
     ]);
   });
 
-  it('keeps asking for later windows while the last one still has free slots, up to a year', async () => {
+  it('loads later months on demand as the calendar moves, past a month without free slots', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-11-20T02:30:00.000Z'));
     const farDay = { date: '2027-03-01', slots: [slot('2027-03-01T11:00:00.000Z')] };
     const { calls } = serve(undefined, {
       first: [[days[0] as Day]],
-      second: [days[1] as Day],
-      later: { '2027-02-20': [farDay] },
+      second: [],
+      later: { '2027-01-20': [], '2027-02-20': [farDay] },
     });
     const { user } = await start();
 
     await user.click(screen.getByRole('radio', { name: /Carlos Mendes/ }));
+    await waitFor(() => expect(openDays()).toEqual([MONDAY]));
+    expect(windowsOf(calls)).toHaveLength(2);
 
-    await waitFor(() => expect(windowsOf(calls)).toHaveLength(6));
-    expect(windowsOf(calls).slice(4)).toEqual([
+    for (let step = 0; step < 4; step += 1) {
+      await user.click(within(calendar()).getByRole('button', { name: 'Próximo mês' }));
+    }
+
+    await waitFor(() => expect(openDays()).toEqual(['Segunda, 1 de março']));
+    expect(windowsOf(calls).slice(2)).toEqual([
+      { from: '2027-01-20', to: '2027-02-19' },
+      { from: '2027-02-20', to: '2027-03-22' },
       { from: '2027-03-23', to: '2027-04-22' },
-      { from: '2027-04-23', to: '2027-05-23' },
     ]);
-    await waitFor(() => expect(openDays()).toEqual([MONDAY, TUESDAY]));
   });
 
   it('warns when the doctor has no free slot', async () => {

@@ -15,13 +15,15 @@ export const bookingApi = {
       },
       signal,
     }),
-  availability: (doctorId: string, signal: AbortSignal, rescheduling?: string) =>
-    inWindows((from, to) =>
-      apiFetch('get', '/api/doctors/{id}/availability', {
-        params: { id: doctorId },
-        query: { from, to, rescheduling },
-        signal,
-      }),
+  availability: (doctorId: string, page: number, signal: AbortSignal, rescheduling?: string) =>
+    inWindows(
+      (from, to) =>
+        apiFetch('get', '/api/doctors/{id}/availability', {
+          params: { id: doctorId },
+          query: { from, to, rescheduling },
+          signal,
+        }),
+      page,
     ),
   book: (body: BodyOf<'/api/appointments', 'post'>) => apiFetch('post', '/api/appointments', { body }),
   detail: (id: string, signal: AbortSignal) =>
