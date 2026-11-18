@@ -51,7 +51,10 @@ function Sparkline({ values }: { values: readonly number[] }) {
     .join(' ');
   const last = values.at(-1) ?? 0;
   return (
-    <div aria-hidden className="relative -mx-[18px] mt-2.5 h-10">
+    <div
+      aria-hidden
+      className="relative -mx-[18px] mt-2.5 h-10 max-[560px]:-mx-3.5 max-[560px]:mt-2 max-[560px]:h-[34px]"
+    >
       <svg viewBox="0 0 100 36" preserveAspectRatio="none" className="block size-full">
         <defs>
           <linearGradient id={gradient} x1="0" x2="0" y1="0" y2="1">
@@ -93,8 +96,8 @@ export function StatTile({
       aria-label={label}
       aria-busy={value === undefined}
       className={cx(
-        'rounded-card border-border bg-surface shadow-card relative flex min-w-0 flex-col gap-1 overflow-hidden border px-[18px] pt-[18px]',
-        (compact || !trend || trend.length < 2) && 'pb-4',
+        'rounded-card border-border bg-surface shadow-card relative flex min-w-0 flex-col gap-1 overflow-hidden border px-[18px] pt-[18px] max-[560px]:px-3.5 max-[560px]:pt-3.5',
+        (compact || !trend || trend.length < 2) && 'pb-4 max-[560px]:pb-3.5',
         className,
       )}
     >
@@ -115,7 +118,7 @@ export function StatTile({
         <p
           className={cx(
             'text-text leading-[1.15] font-[650] tracking-[-0.02em] tabular-nums',
-            compact ? 'text-[1.375rem]' : 'text-[1.75rem]',
+            compact ? 'text-[1.375rem]' : 'text-[1.75rem] max-[560px]:text-[1.375rem]',
           )}
         >
           {value}
