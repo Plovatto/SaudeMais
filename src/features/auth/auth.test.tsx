@@ -3,7 +3,7 @@ import type userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Role } from '@constants/areas';
 import { mockApi, renderApp, TEST_TOKEN, testUser } from '@/test/render-app';
-import { DEMO_DOCTOR, DEMO_PATIENT } from '@constants/demo-accounts';
+import { EXAMPLE_DOCTOR, EXAMPLE_PATIENT } from '@constants/example-accounts';
 
 function requestBody(fetchMock: ReturnType<typeof mockApi>, call = 0): unknown {
   const init = fetchMock.mock.calls[call]?.[1];
@@ -55,8 +55,8 @@ describe('login', () => {
   });
 
   it.each([
-    ['Paciente 1 perfil', DEMO_PATIENT],
-    ['Médico 2 perfis', DEMO_DOCTOR],
+    ['Paciente 1 perfil', EXAMPLE_PATIENT],
+    ['Médico 2 perfis', EXAMPLE_DOCTOR],
   ])('fills in the example account %s and marks it', async (name, account) => {
     const { user } = renderAt('/login');
 

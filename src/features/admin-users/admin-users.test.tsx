@@ -15,7 +15,6 @@ const person = (id: string, fullName: string, overrides: Partial<AdminUser> = {}
   email: `${id}@email.com`,
   phone: null,
   roles: ['patient'],
-  isProtected: false,
   deactivatedAt: null,
   createdAt: '2026-11-01T12:00:00.000Z',
   ...overrides,

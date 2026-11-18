@@ -1,31 +1,31 @@
 import { pill } from '@components/ui/styles';
-import { DEMO_ACCOUNTS, type DemoAccount } from '@constants/demo-accounts';
+import { EXAMPLE_ACCOUNTS, type ExampleAccount } from '@constants/example-accounts';
 import { cx } from '@lib/cx';
 import { plural } from '@lib/plural';
 
-export interface DemoAccountsProps {
+export interface ExampleAccountsProps {
   selected: string;
-  onFill: (account: DemoAccount) => void;
+  onFill: (account: ExampleAccount) => void;
 }
 
-export function DemoAccounts({ selected, onFill }: DemoAccountsProps) {
+export function ExampleAccounts({ selected, onFill }: ExampleAccountsProps) {
   return (
     <section
-      aria-labelledby="demo-accounts-title"
+      aria-labelledby="example-accounts-title"
       className="border-border-strong mt-1.5 flex flex-col gap-2.5 border-t border-dashed pt-[18px]"
     >
-      <h2 id="demo-accounts-title" className="text-text-muted text-xs font-normal">
+      <h2 id="example-accounts-title" className="text-text-muted text-xs font-normal">
         Contas de exemplo
       </h2>
-      <p id="demo-accounts-hint" className="sr-only">
+      <p id="example-accounts-hint" className="sr-only">
         Preenche o e-mail e a senha da conta.
       </p>
       <div className="flex flex-wrap gap-2">
-        {DEMO_ACCOUNTS.map((account) => (
+        {EXAMPLE_ACCOUNTS.map((account) => (
           <button
             key={account.email}
             type="button"
-            aria-describedby="demo-accounts-hint"
+            aria-describedby="example-accounts-hint"
             aria-pressed={selected === account.email}
             onClick={() => onFill(account)}
             className={cx(

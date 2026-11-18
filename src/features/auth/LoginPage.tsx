@@ -15,7 +15,7 @@ import { login } from './auth-api';
 import { loginSchema, type LoginValues } from './auth-schemas';
 import { AuthFooterLink } from './AuthFooterLink';
 import { AuthScreen } from './AuthScreen';
-import { DemoAccounts } from './DemoAccounts';
+import { ExampleAccounts } from './ExampleAccounts';
 import { EmailInput } from './EmailInput';
 
 export function LoginPage() {
@@ -93,7 +93,7 @@ export function LoginPage() {
         </Button>
         <AuthFooterLink question="Não tem conta?" label="Cadastre-se" to="/cadastro" />
       </form>
-      <DemoAccounts
+      <ExampleAccounts
         selected={email}
         onFill={(account) => {
           setValue('email', account.email, { shouldValidate: true });

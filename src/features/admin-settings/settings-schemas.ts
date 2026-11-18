@@ -78,6 +78,9 @@ export const policySchema = z.object({
   maxReschedules: wholeNumber(0, 10, 'Use de 0 a 10.'),
   bookingHorizonDays: wholeNumber(1, 365, 'Use de 1 a 365 dias.'),
   minLeadMinutes: wholeNumber(0, 10080, 'Use de 0 a 10080 minutos.'),
+  maxActiveBookings: wholeNumber(1, 50, 'Use de 1 a 50.'),
+  maxActiveAppointments: wholeNumber(1, 50, 'Use de 1 a 50.'),
+  maxActiveExams: wholeNumber(1, 50, 'Use de 1 a 50.'),
 });
 
 export const integrationSchema = z.object({ name: catalogName });

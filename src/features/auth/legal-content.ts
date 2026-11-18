@@ -21,7 +21,7 @@ export const termsOfUse: LegalDocument = {
       heading: 'Uso da conta',
       paragraphs: [
         'Você é responsável pelos dados que informa e pela guarda da sua senha. Não cadastre dados reais de saúde nem de terceiros.',
-        'As contas de demonstração são compartilhadas entre visitantes, não podem ser alteradas e têm os dados restaurados periodicamente.',
+        'As contas de exemplo são compartilhadas entre visitantes e seguem as mesmas regras de qualquer conta, então os dados delas podem mudar a qualquer momento.',
       ],
     },
     {
