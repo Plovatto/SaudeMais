@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useSearchParams } from 'react-router';
 
-interface SetOptions {
+export interface SetOptions {
   replace?: boolean;
   reset?: readonly string[];
 }

@@ -42,6 +42,10 @@ const fullDate = new Intl.DateTimeFormat('pt-BR', {
   year: 'numeric',
 });
 
+const longDate = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long', timeZone: 'UTC' });
+
+export const formatLongDate = (date: string) => longDate.format(new Date(date));
+
 const utcDay = (date: string) => new Date(`${date}T00:00:00.000Z`);
 
 export function formatDateTime(iso: string): string {
@@ -102,7 +106,7 @@ const relativeLong = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto' });
 
 export const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;
-const DAY_MS = 24 * HOUR_MS;
+export const DAY_MS = 24 * HOUR_MS;
 const RELATIVE_DAYS = 7;
 
 function relativeOr(

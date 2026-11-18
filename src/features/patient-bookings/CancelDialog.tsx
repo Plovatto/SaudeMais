@@ -7,7 +7,7 @@ import { FormAlert } from '@components/ui';
 import { cancelAppointment, cancelExam } from '@lib/api/cancel-api';
 import type { PatientBooking } from '@lib/api/models';
 import { whenText } from '@lib/date';
-import { queryKeys } from '@lib/query-keys';
+import { refreshPatientBookings } from '@lib/refresh-patient-bookings';
 
 export interface CancelDialogProps {
   booking: PatientBooking | null;
@@ -32,11 +32,7 @@ function Summary({ booking }: { booking: PatientBooking }) {
 export function CancelDialog({ booking, onClose, fallbackFocus }: CancelDialogProps) {
   const queryClient = useQueryClient();
   const exam = booking?.kind === 'exam';
-  const refresh = () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.patient.all }),
-      queryClient.resetQueries({ queryKey: queryKeys.booking.availabilities }),
-    ]);
+  const refresh = () => refreshPatientBookings(queryClient);
 
   return (
     <CancelBookingDialog

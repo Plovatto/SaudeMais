@@ -22,7 +22,7 @@ import {
   serve,
   unrecorded,
   type User,
-} from './doctor-fixtures';
+} from '@/test/doctor-fixtures';
 
 const DAY = '2030-01-10';
 const NEXT_DAY = '2030-01-11T02:30:00.000Z';
@@ -144,6 +144,17 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     expect(await screen.findByRole('button', { name: /^Andreia Soares/ })).toHaveTextContent('Confirmado');
     expect(listCalls(calls).at(-1)?.url.searchParams.get('tab')).toBe('confirmed');
     expect(screen.getByRole('tab', { name: 'A confirmar 1' })).toBeVisible();
+  });
+
+  it('counts on the appointments tab only what the list from today shows', async () => {
+    serve({
+      lists: { pending: [appointment('a1')], all: [appointment('a1'), confirmed('a2')] },
+      totals: { history: 5 },
+    });
+    renderApp('/medico/agenda');
+
+    const consultas = await screen.findByRole('tab', { name: /^Consultas/ });
+    await waitFor(() => expect(consultas).toHaveTextContent('Consultas2'));
   });
 
   it('opens the awaiting status from the URL', async () => {

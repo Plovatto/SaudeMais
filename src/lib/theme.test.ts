@@ -25,7 +25,6 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
@@ -155,7 +154,6 @@ describe('followSystemTheme', () => {
 
 describe('theme-init script', () => {
   function runThemeInit(win: unknown) {
-    // eslint-disable-next-line @typescript-eslint/no-implied-eval -- runs the real pre-paint script
     const run = new Function('window', 'document', 'localStorage', 'matchMedia', themeInit) as (
       ...globals: unknown[]
     ) => void;

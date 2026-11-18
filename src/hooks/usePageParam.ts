@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from 'react';
-import { useSearchParam } from './useSearchParam';
+import { useSearchParam, type SetOptions } from './useSearchParam';
 
 export const RESET_PAGE = { replace: true, reset: ['pagina'] } as const;
 
@@ -17,7 +17,7 @@ export function usePageParam(name = 'pagina') {
   const [raw, setRaw] = useSearchParam(name, '1');
   const page = Math.max(1, Math.trunc(Number(raw)) || 1);
   const setPage = useCallback(
-    (next: number, options?: { replace?: boolean }) => setRaw(String(next), options),
+    (next: number, options?: SetOptions) => setRaw(String(next), options),
     [setRaw],
   );
   return [page, setPage] as const;

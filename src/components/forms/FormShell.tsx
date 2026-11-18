@@ -1,8 +1,7 @@
 import type { FormEvent, ReactNode } from 'react';
-import { Button, DrawerBody, DrawerFooter, FormAlert } from '@components/ui';
+import { Button, DrawerBody, DrawerFooter, FormAlert, useDialogTitleId } from '@components/ui';
 
 export interface FormShellProps {
-  label: string;
   onSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   alert: string | null;
   submitting: boolean;
@@ -13,7 +12,6 @@ export interface FormShellProps {
 }
 
 export function FormShell({
-  label,
   onSubmit,
   alert,
   submitting,
@@ -22,9 +20,10 @@ export function FormShell({
   submitDisabled = false,
   children,
 }: FormShellProps) {
+  const titleId = useDialogTitleId();
   return (
     <form
-      aria-label={label}
+      aria-labelledby={titleId}
       noValidate
       onSubmit={(event) => void onSubmit(event)}
       className="flex flex-1 flex-col"

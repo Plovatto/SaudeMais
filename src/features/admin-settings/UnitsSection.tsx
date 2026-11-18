@@ -49,13 +49,7 @@ function UnitForm({ unit, onDone }: { unit: Unit | null; onDone: () => void }) {
   });
   const { errors, isSubmitting } = form.formState;
   return (
-    <FormShell
-      label="Unidade"
-      onSubmit={form.onSubmit}
-      alert={form.alert}
-      submitting={isSubmitting}
-      onCancel={onDone}
-    >
+    <FormShell onSubmit={form.onSubmit} alert={form.alert} submitting={isSubmitting} onCancel={onDone}>
       <Input label="Nome" autoComplete="off" error={errors.name?.message} {...form.register('name')} />
       <Input
         label="Endereço"

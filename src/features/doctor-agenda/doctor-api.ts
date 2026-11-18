@@ -28,11 +28,6 @@ const decide =
   ({ id, startsAt }: DoctorAppointment) =>
     apiFetch('post', path, { params: { id }, body: { startsAt } });
 
-export const doctorHomeQuery = queryOptions({
-  queryKey: queryKeys.doctor.home,
-  queryFn: ({ signal }) => apiFetch('get', '/api/doctor/home', { signal }),
-});
-
 export const doctorApi = {
   list: ({ tab, page, from, to, search, pageSize = PAGE_SIZE }: AgendaParams, signal: AbortSignal) =>
     apiFetch('get', '/api/doctor/appointments', {

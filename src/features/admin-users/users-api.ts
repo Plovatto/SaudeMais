@@ -1,12 +1,12 @@
 import type { Role } from '@constants/areas';
 import { apiFetch, type BodyOf, type ResponseOf } from '@lib/api/api-fetch';
 
-export const USERS_PAGE_SIZE = 20;
+const USERS_PAGE_SIZE = 20;
 
 export type AdminUser = ResponseOf<'/api/admin/users', 'get'>['items'][number];
 export type AdminUserDetail = ResponseOf<'/api/admin/users/{id}', 'get'>;
 export type DeactivationImpact = ResponseOf<'/api/admin/users/{id}/deactivation-impact', 'get'>;
-export type DoctorProfileInput = BodyOf<'/api/admin/users/{id}/doctor-profile', 'post'>;
+type DoctorProfileInput = BodyOf<'/api/admin/users/{id}/doctor-profile', 'post'>;
 export type CreateUserInput = BodyOf<'/api/admin/users', 'post'>;
 export type UserRoleFilter = Role | '';
 export type UserStatusFilter = 'active' | 'inactive' | '';

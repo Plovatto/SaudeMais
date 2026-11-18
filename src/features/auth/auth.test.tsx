@@ -2,13 +2,8 @@ import { screen, waitFor, within } from '@testing-library/react';
 import type userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Role } from '@constants/areas';
-import { mockApi, renderApp, TEST_TOKEN, testUser } from '@/test/render-app';
+import { mockApi, renderApp, requestBody, TEST_TOKEN, testUser } from '@/test/render-app';
 import { EXAMPLE_DOCTOR, EXAMPLE_PATIENT } from '@constants/example-accounts';
-
-function requestBody(fetchMock: ReturnType<typeof mockApi>, call = 0): unknown {
-  const init = fetchMock.mock.calls[call]?.[1];
-  return JSON.parse(init?.body as string);
-}
 
 const renderAt = (path: string) => renderApp(path);
 

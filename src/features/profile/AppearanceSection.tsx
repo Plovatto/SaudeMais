@@ -2,7 +2,7 @@ import { LuCheck } from 'react-icons/lu';
 import { SectionCard } from '@components/ui';
 import { cx } from '@lib/cx';
 import { setThemePreference, THEME_OPTIONS, type Theme, type ThemePreference } from '@lib/theme';
-import { useThemePreference } from '@lib/useTheme';
+import { useThemePreference } from '@hooks/useTheme';
 
 const mockColors = {
   light: { background: 'bg-surface-strong', line: 'bg-surface' },

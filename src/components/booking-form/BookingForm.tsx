@@ -136,7 +136,7 @@ export function NotesCard({ booking, placeholder }: { booking: BookingFormState;
   );
 }
 
-export interface BookingSummary {
+interface BookingSummary {
   title: string;
   details: ReactNode;
   line: string | null;

@@ -1,4 +1,4 @@
-import { serveApi, type ApiRoute } from '@/test/render-app';
+import { serveApi, type ApiRoute } from './render-app';
 
 export const page = <T>(items: T[], total = items.length, current = 1) => ({
   items,

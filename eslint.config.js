@@ -33,6 +33,7 @@ export default defineConfig(
     languageOptions: { globals: globals.node },
     rules: { 'react-hooks/rules-of-hooks': 'off' },
   },
+  { files: ['src/lib/theme.test.ts'], rules: { '@typescript-eslint/no-implied-eval': 'off' } },
   { files: ['eslint.config.js', 'public/*.js'], extends: [tseslint.configs.disableTypeChecked] },
   prettier,
 );

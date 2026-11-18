@@ -4,8 +4,9 @@ import { useId, type ReactNode, type RefObject } from 'react';
 import { useForm } from 'react-hook-form';
 import { LuMail, LuSend, LuShieldCheck, LuShieldOff, LuStethoscope } from 'react-icons/lu';
 import { FormShell } from '@components/forms/FormShell';
+import { IdentityHeader } from '@components/forms/IdentityHeader';
 import { PersonalDataFields } from '@components/forms/PersonalDataFields';
-import { Avatar, Button, FormAlert, Input, SettingRow, Switch, useToast } from '@components/ui';
+import { Button, FormAlert, Input, SettingRow, Switch, useToast } from '@components/ui';
 import { formatCivilDate } from '@lib/date';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
 import { useFormSubmit } from '@lib/useFormSubmit';
@@ -217,7 +218,6 @@ export function UserEditor({
 
   return (
     <FormShell
-      label={`Dados de ${user.fullName}`}
       onSubmit={onSubmit}
       alert={null}
       submitting={isSubmitting}
@@ -225,15 +225,11 @@ export function UserEditor({
       submitLabel="Salvar alterações"
       submitDisabled={locks.isInactive || !isDirty}
     >
-      <div className="flex items-center gap-3">
-        <Avatar name={user.fullName} seed={user.id} size="lg" />
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <p className="text-text truncate text-sm font-semibold">{user.fullName}</p>
-          <p className="text-text-secondary text-[0.8125rem]">
-            Cadastro em {formatCivilDate(user.createdAt)}
-          </p>
-        </div>
-      </div>
+      <IdentityHeader
+        name={user.fullName}
+        seed={user.id}
+        detail={`Cadastro em ${formatCivilDate(user.createdAt)}`}
+      />
       <UserBadges roles={user.roles} locks={locks} specialty={user.doctorProfile?.specialtyName} />
       {locks.isInactive && (
         <FormAlert tone="warning" role="note">

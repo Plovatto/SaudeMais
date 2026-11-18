@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SHEET_QUERY } from '@hooks/useSheetDrag';
-import { stubMatchMedia } from '../../test/match-media';
+import { stubMatchMedia } from '@/test/match-media';
 import { Dialog, type DialogProps } from './Dialog';
 import { SheetMore } from './SheetMore';
 
@@ -88,7 +88,6 @@ describe('draggable sheet', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
-    vi.unstubAllGlobals();
     Reflect.deleteProperty(HTMLElement.prototype, 'setPointerCapture');
     Reflect.deleteProperty(HTMLElement.prototype, 'hasPointerCapture');
     Reflect.deleteProperty(HTMLElement.prototype, 'releasePointerCapture');

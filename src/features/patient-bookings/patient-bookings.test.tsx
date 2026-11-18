@@ -89,6 +89,33 @@ const serve = (lists: Lists, cancel?: () => MockResponse, total?: number) =>
 
 const listCalls = (calls: ApiCall[]) => calls.filter((call) => call.url.pathname === LIST);
 
+const serveOffPage = () =>
+  serveApi(['patient'], {
+    [LIST]: () => ({
+      status: 200,
+      body: { items: [booking('b1')], page: 1, pageSize: 10, total: 11, counts: { upcoming: 11, past: 0 } },
+    }),
+    '/api/appointments/b7': () => ({ status: 404, body: { error: { code: 'NOT_FOUND', message: '' } } }),
+    '/api/exam-bookings/b7': () => ({
+      status: 200,
+      body: {
+        id: 'b7',
+        status: 'confirmed',
+        publicCode: 'EX-7F3K2Q',
+        startsAt: FUTURE,
+        endsAt: '2030-01-10T13:10:00.000Z',
+        notes: null,
+        examType: { id: 'e1', name: 'Ultrassom', kind: 'imaging' },
+        unit: { id: 'u1', name: 'Hospital Central', address: 'Rua das Flores, 123', phone: '+551133334444' },
+        hasResult: false,
+        cancellation: null,
+        createdAt: PAST,
+        actions: actions(),
+        events: [],
+      },
+    }),
+  });
+
 const SHEET = 'Detalhes do agendamento';
 
 type User = ReturnType<typeof renderApp>['user'];
@@ -222,6 +249,39 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     const detail = within(await screen.findByRole('dialog', { name: SHEET }));
     expect(detail.getByRole('heading', { name: 'Ultrassom' })).toBeVisible();
     expect(detail.getByText('EX-123')).toBeVisible();
+  });
+
+  it('loads the booking of the address when it is not on the current page', async () => {
+    serveOffPage();
+    const { router } = renderApp('/paciente/agendamentos?id=b7');
+
+    const detail = within(await screen.findByRole('dialog', { name: SHEET }));
+    expect(detail.getByRole('heading', { name: 'Ultrassom' })).toBeVisible();
+    expect(detail.getByText('EX-7F3K2Q')).toBeVisible();
+    expect(router.state.location.search).toBe('?id=b7');
+  });
+
+  it('waits for the booking of the address before showing one beside the list', async () => {
+    stubMatchMedia((query) => query === DESKTOP_QUERY);
+    const { fetchMock } = serveOffPage();
+    const respond = fetchMock.getMockImplementation();
+    let release: (() => void) | undefined;
+    fetchMock.mockImplementation(async (url, init) => {
+      const href = url instanceof Request ? url.url : url.toString();
+      if (href.endsWith('/api/exam-bookings/b7')) await new Promise<void>((resolve) => (release = resolve));
+      return (respond as NonNullable<typeof respond>)(url, init);
+    });
+    renderApp('/paciente/agendamentos?id=b7');
+
+    const first = await screen.findByRole('button', { name: /Dr\. João Silveira/ });
+    await waitFor(() => expect(release).toBeDefined());
+    expect(first).not.toHaveAttribute('aria-current');
+    expect(screen.queryByRole('complementary', { name: SHEET })).not.toBeInTheDocument();
+
+    release?.();
+    const aside = await screen.findByRole('complementary', { name: SHEET });
+    expect(await within(aside).findByRole('heading', { name: 'Ultrassom' })).toBeVisible();
+    expect(first).not.toHaveAttribute('aria-current');
   });
 
   it('forgets a booking of the address that is not in the list', async () => {
@@ -478,6 +538,22 @@ describe('patient bookings', { timeout: 15_000 }, () => {
 
     await user.click(screen.getByRole('tab', { name: /^Histórico/ }));
     expect(router.state.location.search).toBe('?aba=realizados');
+  });
+
+  it('drops the selected booking when the page changes', async () => {
+    stubMatchMedia((query) => query === DESKTOP_QUERY);
+    const { calls } = serve({ upcoming: [booking('b1'), exam('b2')] }, undefined, 25);
+    const { user, router } = renderApp('/paciente/agendamentos');
+
+    await user.click(await screen.findByRole('button', { name: /Ultrassom/ }));
+    expect(router.state.location.search).toBe('?id=b2');
+
+    const pages = screen.getByRole('navigation', { name: 'Paginação' });
+    await user.click(within(pages).getByRole('button', { name: 'Página 2' }));
+
+    expect(router.state.location.search).toBe('?pagina=2');
+    await waitFor(() => expect(listCalls(calls).at(-1)?.url.searchParams.get('page')).toBe('2'));
+    expect(calls.some(({ url }) => url.pathname.endsWith('/b2'))).toBe(false);
   });
 
   it('shows an empty state with a way to book on each tab', async () => {

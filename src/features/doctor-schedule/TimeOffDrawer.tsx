@@ -34,7 +34,6 @@ function TimeOffForm({ loading, onSubmit, onClose }: TimeOffFormProps) {
 
   return (
     <FormShell
-      label="Bloquear uma data"
       onSubmit={submit}
       alert={alert}
       submitting={loading || isSubmitting}

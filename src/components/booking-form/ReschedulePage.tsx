@@ -116,7 +116,7 @@ interface Reschedulable {
   startsAt: string;
 }
 
-export interface LockedDetails {
+interface LockedDetails {
   icon: ReactNode;
   kindLabel: string;
   title: string;

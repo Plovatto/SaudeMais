@@ -1,9 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { NewPasswordFields } from '@components/forms/NewPasswordFields';
 import { PasswordStrength } from '@components/forms/PasswordStrength';
-import { Button, Drawer, DrawerBody, DrawerFooter, FormAlert, PasswordInput, useToast } from '@components/ui';
+import { FormShell } from '@components/forms/FormShell';
+import { Drawer, PasswordInput, useToast } from '@components/ui';
+import { useReportSubmitting } from '@hooks/useReportSubmitting';
 import { queryKeys } from '@lib/query-keys';
 import { useFormSubmit } from '@lib/useFormSubmit';
 import { changePassword } from './profile-api';
@@ -13,9 +16,10 @@ const emptyPassword: PasswordValues = { currentPassword: '', password: '', passw
 
 interface PasswordFormProps {
   onClose: () => void;
+  onSubmittingChange: (submitting: boolean) => void;
 }
 
-function PasswordForm({ onClose }: PasswordFormProps) {
+function PasswordForm({ onClose, onSubmittingChange }: PasswordFormProps) {
   const queryClient = useQueryClient();
   const { show } = useToast();
   const {
@@ -28,6 +32,7 @@ function PasswordForm({ onClose }: PasswordFormProps) {
   const values = useWatch({ control });
   const canSubmit = passwordSchema.safeParse(values).success;
   const { alert, run } = useFormSubmit(setError, ['currentPassword', 'password', 'passwordConfirmation']);
+  useReportSubmitting(isSubmitting, onSubmittingChange);
 
   const onSubmit = handleSubmit((values) =>
     run(async () => {
@@ -40,42 +45,42 @@ function PasswordForm({ onClose }: PasswordFormProps) {
   );
 
   return (
-    <form noValidate onSubmit={(event) => void onSubmit(event)} className="flex flex-1 flex-col">
-      <DrawerBody>
-        <PasswordInput
-          label="Senha atual"
-          autoComplete="current-password"
-          error={errors.currentPassword?.message}
-          {...register('currentPassword')}
-        />
-        <NewPasswordFields
-          password={register('password')}
-          confirmation={register('passwordConfirmation')}
-          errors={{ password: errors.password?.message, confirmation: errors.passwordConfirmation?.message }}
-          showHint={false}
-        />
-        <PasswordStrength password={values.password ?? ''} current={values.currentPassword ?? ''} />
-        <p className="text-text-muted text-xs">
-          Ao trocar a senha, as outras sessões da conta são encerradas.
-        </p>
-        {alert && <FormAlert>{alert}</FormAlert>}
-      </DrawerBody>
-      <DrawerFooter>
-        <Button variant="secondary" onClick={onClose}>
-          Cancelar
-        </Button>
-        <Button type="submit" loading={isSubmitting} disabled={!canSubmit}>
-          Alterar senha
-        </Button>
-      </DrawerFooter>
-    </form>
+    <FormShell
+      onSubmit={onSubmit}
+      alert={alert}
+      submitting={isSubmitting}
+      onCancel={onClose}
+      submitLabel="Alterar senha"
+      submitDisabled={!canSubmit}
+    >
+      <PasswordInput
+        label="Senha atual"
+        autoComplete="current-password"
+        error={errors.currentPassword?.message}
+        {...register('currentPassword')}
+      />
+      <NewPasswordFields
+        password={register('password')}
+        confirmation={register('passwordConfirmation')}
+        errors={{ password: errors.password?.message, confirmation: errors.passwordConfirmation?.message }}
+        showHint={false}
+      />
+      <PasswordStrength password={values.password ?? ''} current={values.currentPassword ?? ''} />
+      <p className="text-text-muted text-xs">Ao trocar a senha, as outras sessões da conta são encerradas.</p>
+    </FormShell>
   );
 }
 
-export function PasswordDrawer({ open, ...props }: PasswordFormProps & { open: boolean }) {
+export interface PasswordDrawerProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+export function PasswordDrawer({ open, onClose }: PasswordDrawerProps) {
+  const [submitting, setSubmitting] = useState(false);
   return (
-    <Drawer open={open} onClose={props.onClose} title="Alterar senha">
-      {open && <PasswordForm {...props} />}
+    <Drawer open={open} onClose={onClose} title="Alterar senha" dismissible={!submitting}>
+      {open && <PasswordForm onClose={onClose} onSubmittingChange={setSubmitting} />}
     </Drawer>
   );
 }

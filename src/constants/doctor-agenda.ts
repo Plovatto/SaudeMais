@@ -1,4 +1,4 @@
-import { areas } from './areas';
+import { areas, TAB_PARAM } from './areas';
 
 export const AGENDA_VIEWS = { week: 'agenda', list: 'consultas' } as const;
 
@@ -17,4 +17,4 @@ type AgendaSlug = (typeof AGENDA_TABS)[keyof typeof AGENDA_TABS];
 const AGENDA_URL = `${areas.doctor.base}/agenda`;
 
 export const doctorAgendaUrl = (slug?: AgendaSlug) =>
-  slug ? `${AGENDA_URL}?aba=${AGENDA_VIEWS.list}&${AGENDA_STATUS_PARAM}=${slug}` : AGENDA_URL;
+  slug ? `${AGENDA_URL}?${TAB_PARAM}=${AGENDA_VIEWS.list}&${AGENDA_STATUS_PARAM}=${slug}` : AGENDA_URL;

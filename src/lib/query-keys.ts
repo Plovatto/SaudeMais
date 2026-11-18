@@ -28,6 +28,7 @@ export const queryKeys = {
     home: ['patient', 'home'] as const,
     bookings: (params: object) => ['patient', 'bookings', params] as const,
     booking: (kind: string, id: string) => ['patient', 'booking', kind, id] as const,
+    bookingById: (id: string) => ['patient', 'booking', id] as const,
     examResult: (bookingId: string) => ['patient', 'exam-result', bookingId] as const,
     examResults: (params: object) => ['patient', 'exam-results', params] as const,
   },

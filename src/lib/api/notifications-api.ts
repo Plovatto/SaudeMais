@@ -2,6 +2,7 @@ import { pluralWord } from '@lib/plural';
 import { queryOptions, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import type { Role } from '@constants/areas';
+import { MINUTE_MS } from '@lib/date';
 import { queryKeys } from '@lib/query-keys';
 import { apiFetch, type ResponseOf } from './api-fetch';
 import type { UserNotification } from './models';
@@ -11,11 +12,11 @@ export const unreadCountQuery = (role: Role) =>
     queryKey: queryKeys.notifications.unread(role),
     queryFn: ({ signal }) => apiFetch('get', '/api/notifications/unread-count', { query: { role }, signal }),
     select: ({ count }) => count,
-    staleTime: 60_000,
+    staleTime: MINUTE_MS,
     refetchOnWindowFocus: true,
   });
 
-const POLL_INTERVAL_MS = 120_000;
+const POLL_INTERVAL_MS = 2 * MINUTE_MS;
 
 export const useUnreadCount = (role: Role): number | undefined =>
   useQuery({

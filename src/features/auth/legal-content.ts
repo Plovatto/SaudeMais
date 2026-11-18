@@ -1,4 +1,4 @@
-export const TERMS_VERSION = '2026-11-13';
+const TERMS_VERSION = '2026-11-13';
 
 export interface LegalDocument {
   title: string;

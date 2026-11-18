@@ -48,7 +48,6 @@ function OfferForm({ unitId, offer, choices, onDone }: OfferFormProps) {
   const { errors, isSubmitting } = form.formState;
   return (
     <FormShell
-      label="Oferta"
       onSubmit={form.onSubmit}
       alert={form.alert}
       submitting={isSubmitting}

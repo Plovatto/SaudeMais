@@ -1,10 +1,14 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { LuCake, LuLock } from 'react-icons/lu';
+import { FormShell } from '@components/forms/FormShell';
+import { IdentityHeader } from '@components/forms/IdentityHeader';
 import { PersonalDataFields } from '@components/forms/PersonalDataFields';
-import { Avatar, Button, Drawer, DrawerBody, DrawerFooter, FormAlert, Input, useToast } from '@components/ui';
+import { Drawer, Input, useToast } from '@components/ui';
 import { areas, type Role } from '@constants/areas';
+import { useReportSubmitting } from '@hooks/useReportSubmitting';
 import type { CurrentUser } from '@lib/auth/useSession';
 import { queryKeys } from '@lib/query-keys';
 import { useFormSubmit } from '@lib/useFormSubmit';
@@ -29,9 +33,10 @@ interface EditProfileFormProps {
   role: Role;
   withBirthDate: boolean;
   onClose: () => void;
+  onSubmittingChange: (submitting: boolean) => void;
 }
 
-function EditProfileForm({ user, role, withBirthDate, onClose }: EditProfileFormProps) {
+function EditProfileForm({ user, role, withBirthDate, onClose, onSubmittingChange }: EditProfileFormProps) {
   const queryClient = useQueryClient();
   const { show } = useToast();
   const {
@@ -41,6 +46,7 @@ function EditProfileForm({ user, role, withBirthDate, onClose }: EditProfileForm
     formState: { errors, isSubmitting, isDirty },
   } = useForm<ProfileValues>({ resolver: zodResolver(profileSchema), defaultValues: profileValues(user) });
   const { alert, run } = useFormSubmit(setError, ['fullName', 'phone', 'birthDate']);
+  useReportSubmitting(isSubmitting, onSubmittingChange);
 
   const submit = handleSubmit((values) =>
     run(async () => {
@@ -52,74 +58,61 @@ function EditProfileForm({ user, role, withBirthDate, onClose }: EditProfileForm
   );
 
   return (
-    <form
-      noValidate
-      onSubmit={(event) => {
+    <FormShell
+      onSubmit={async (event) => {
         if (hasIncompleteBirthDate(event.currentTarget)) {
           event.preventDefault();
           setError('birthDate', { message: INCOMPLETE_BIRTH_DATE }, { shouldFocus: true });
           return;
         }
-        void submit(event);
+        await submit(event);
       }}
-      className="flex flex-1 flex-col"
+      alert={alert}
+      submitting={isSubmitting}
+      onCancel={onClose}
+      submitLabel="Salvar alterações"
+      submitDisabled={!isDirty}
     >
-      <DrawerBody>
-        <div className="flex items-center gap-3">
-          <Avatar name={user.fullName} seed={user.id} size="lg" />
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <p className="text-text truncate text-sm font-semibold">{user.fullName}</p>
-            <p className="text-text-secondary text-[0.8125rem]">{areas[role].label}</p>
-          </div>
-        </div>
-        <PersonalDataFields
-          fullName={register('fullName')}
-          phone={register('phone')}
-          errors={{ fullName: errors.fullName?.message, phone: errors.phone?.message }}
-          ownAccount
-        />
-        {withBirthDate && (
-          <Input
-            label="Data de nascimento"
-            type="date"
-            autoComplete="bday"
-            icon={<LuCake />}
-            hint="Opcional. Deixe em branco para remover."
-            {...birthDateLimits()}
-            error={errors.birthDate?.message}
-            {...register('birthDate')}
-          />
-        )}
+      <IdentityHeader name={user.fullName} seed={user.id} detail={areas[role].label} />
+      <PersonalDataFields
+        fullName={register('fullName')}
+        phone={register('phone')}
+        errors={{ fullName: errors.fullName?.message, phone: errors.phone?.message }}
+        ownAccount
+      />
+      {withBirthDate && (
         <Input
-          label="E-mail"
-          type="email"
-          value={user.email}
-          readOnly
-          end={<LuLock aria-hidden className="text-text-muted me-3.5 shrink-0" />}
-          hint="Usado para entrar. Para trocar, fale com a administração."
+          label="Data de nascimento"
+          type="date"
+          autoComplete="bday"
+          icon={<LuCake />}
+          hint="Opcional. Deixe em branco para remover."
+          {...birthDateLimits()}
+          error={errors.birthDate?.message}
+          {...register('birthDate')}
         />
-        {alert && <FormAlert>{alert}</FormAlert>}
-      </DrawerBody>
-      <DrawerFooter>
-        <Button variant="secondary" onClick={onClose}>
-          Cancelar
-        </Button>
-        <Button type="submit" loading={isSubmitting} disabled={!isDirty}>
-          Salvar alterações
-        </Button>
-      </DrawerFooter>
-    </form>
+      )}
+      <Input
+        label="E-mail"
+        type="email"
+        value={user.email}
+        readOnly
+        end={<LuLock aria-hidden className="text-text-muted me-3.5 shrink-0" />}
+        hint="Usado para entrar. Para trocar, fale com a administração."
+      />
+    </FormShell>
   );
 }
 
-export interface EditProfileDrawerProps extends EditProfileFormProps {
+export interface EditProfileDrawerProps extends Omit<EditProfileFormProps, 'onSubmittingChange'> {
   open: boolean;
 }
 
 export function EditProfileDrawer({ open, ...props }: EditProfileDrawerProps) {
+  const [submitting, setSubmitting] = useState(false);
   return (
-    <Drawer open={open} onClose={props.onClose} title="Editar perfil">
-      {open && <EditProfileForm {...props} />}
+    <Drawer open={open} onClose={props.onClose} title="Editar perfil" dismissible={!submitting}>
+      {open && <EditProfileForm {...props} onSubmittingChange={setSubmitting} />}
     </Drawer>
   );
 }

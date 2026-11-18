@@ -33,7 +33,7 @@ export const buttonVariants = {
 
 export type ButtonVariant = keyof typeof buttonVariants;
 
-export const buttonSizes = {
+const buttonSizes = {
   sm: 'min-h-11 rounded-field px-3 text-[0.8125rem] font-semibold lg:min-h-8',
   md: 'min-h-11 rounded-field px-4 text-sm font-semibold lg:min-h-10',
   lg: 'min-h-[50px] rounded-tile px-6 text-[0.9375rem] font-semibold lg:min-h-12',

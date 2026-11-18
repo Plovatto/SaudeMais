@@ -44,7 +44,6 @@ function IntegrationForm({
   useReportSubmitting(isSubmitting, onSubmittingChange);
   return (
     <FormShell
-      label="Integração"
       onSubmit={form.onSubmit}
       alert={form.alert}
       submitting={isSubmitting}

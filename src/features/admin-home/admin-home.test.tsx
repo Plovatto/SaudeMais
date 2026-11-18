@@ -38,7 +38,6 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
-  vi.unstubAllGlobals();
 });
 
 describe('admin panel', () => {

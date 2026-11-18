@@ -1,4 +1,4 @@
-import { apiFetch, type ApiFetchOptions, type BodyOf, type ResponseOf } from '@lib/api/api-fetch';
+import { apiFetch, type BodyOf, type ResponseOf } from '@lib/api/api-fetch';
 import type { Page } from '@lib/api/page';
 
 export const PAGE_SIZE = 20;
@@ -11,51 +11,40 @@ export type ExamOffer = ResponseOf<'/api/admin/units/{id}/exam-offers', 'get'>[n
 export type Policy = ResponseOf<'/api/admin/policy', 'get'>;
 export type IntegrationClient = ResponseOf<'/api/admin/integration-clients', 'get'>['items'][number];
 
-interface CatalogTypes {
-  '/api/admin/specialties': {
-    item: Specialty;
-    create: BodyOf<'/api/admin/specialties', 'post'>;
-    update: BodyOf<'/api/admin/specialties/{id}', 'patch'>;
-  };
-  '/api/admin/units': {
-    item: Unit;
-    create: BodyOf<'/api/admin/units', 'post'>;
-    update: BodyOf<'/api/admin/units/{id}', 'patch'>;
-  };
-  '/api/admin/exam-types': {
-    item: ExamType;
-    create: BodyOf<'/api/admin/exam-types', 'post'>;
-    update: BodyOf<'/api/admin/exam-types/{id}', 'patch'>;
-  };
+type WithActive<Body> = Body & { isActive: boolean };
+
+interface CatalogCalls<Item, Values> {
+  list: (query: { page: number; pageSize: number }, signal: AbortSignal) => Promise<Page<Item>>;
+  create: (values: Values) => Promise<Item>;
+  update: (id: string, values: Values) => Promise<Item>;
 }
 
-const send = apiFetch as unknown as <T>(
-  method: 'get' | 'post' | 'patch',
-  path: string,
-  options: ApiFetchOptions<unknown>,
-) => Promise<T>;
-
-function catalogResource<L extends keyof CatalogTypes>(listPath: L) {
-  type Types = CatalogTypes[L];
+function catalogResource<Item, Values>(calls: CatalogCalls<Item, Values>) {
   return {
-    list: (page: number, signal: AbortSignal, pageSize = PAGE_SIZE) =>
-      send<Page<Types['item']>>('get', listPath, { query: { page, pageSize }, signal }),
-    save: (
-      id: string | null,
-      { isActive, ...body }: Types['create'] & Required<Pick<Types['update'], 'isActive'>>,
-    ) =>
-      id === null
-        ? send<Types['item']>('post', listPath, { body })
-        : send<Types['item']>('patch', `${listPath}/{id}`, {
-            params: { id },
-            body: { ...body, isActive } satisfies Types['update'],
-          }),
+    list: (page: number, signal: AbortSignal, pageSize = PAGE_SIZE) => calls.list({ page, pageSize }, signal),
+    save: (id: string | null, values: Values) =>
+      id === null ? calls.create(values) : calls.update(id, values),
   };
 }
 
-export const specialtiesApi = catalogResource('/api/admin/specialties');
-export const unitsApi = catalogResource('/api/admin/units');
-export const examTypesApi = catalogResource('/api/admin/exam-types');
+export const specialtiesApi = catalogResource({
+  list: (query, signal) => apiFetch('get', '/api/admin/specialties', { query, signal }),
+  create: ({ isActive: _isActive, ...body }: WithActive<BodyOf<'/api/admin/specialties', 'post'>>) =>
+    apiFetch('post', '/api/admin/specialties', { body }),
+  update: (id, body) => apiFetch('patch', '/api/admin/specialties/{id}', { params: { id }, body }),
+});
+export const unitsApi = catalogResource({
+  list: (query, signal) => apiFetch('get', '/api/admin/units', { query, signal }),
+  create: ({ isActive: _isActive, ...body }: WithActive<BodyOf<'/api/admin/units', 'post'>>) =>
+    apiFetch('post', '/api/admin/units', { body }),
+  update: (id, body) => apiFetch('patch', '/api/admin/units/{id}', { params: { id }, body }),
+});
+export const examTypesApi = catalogResource({
+  list: (query, signal) => apiFetch('get', '/api/admin/exam-types', { query, signal }),
+  create: ({ isActive: _isActive, ...body }: WithActive<BodyOf<'/api/admin/exam-types', 'post'>>) =>
+    apiFetch('post', '/api/admin/exam-types', { body }),
+  update: (id, body) => apiFetch('patch', '/api/admin/exam-types/{id}', { params: { id }, body }),
+});
 
 export const offersApi = {
   list: (unitId: string, signal: AbortSignal) =>

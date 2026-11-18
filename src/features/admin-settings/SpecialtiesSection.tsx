@@ -27,13 +27,7 @@ function SpecialtyForm({ specialty, onDone }: { specialty: Specialty | null; onD
   });
   const { errors, isSubmitting } = form.formState;
   return (
-    <FormShell
-      label="Especialidade"
-      onSubmit={form.onSubmit}
-      alert={form.alert}
-      submitting={isSubmitting}
-      onCancel={onDone}
-    >
+    <FormShell onSubmit={form.onSubmit} alert={form.alert} submitting={isSubmitting} onCancel={onDone}>
       <Input label="Nome" autoComplete="off" error={errors.name?.message} {...form.register('name')} />
       <Input
         label="Conselho profissional"

@@ -22,7 +22,7 @@ export const DEFAULT_ROLE: Role = 'patient';
 
 export type NavBadge = 'patient-upcoming' | 'doctor-pending';
 
-export interface AreaPage {
+interface AreaPage {
   path: string;
   title: string;
   crumb?: string;
@@ -44,6 +44,8 @@ export interface Area {
 }
 
 const PROFILE = 'perfil';
+export const BOOK_APPOINTMENT_PATH = 'consultas/nova';
+export const BOOK_EXAM_PATH = 'exames/novo';
 
 const profilePage: AreaPage = { path: PROFILE, title: 'Meu perfil' };
 
@@ -69,14 +71,14 @@ export const areas: Record<Role, Area> = {
         },
       },
       {
-        path: 'consultas/nova',
+        path: BOOK_APPOINTMENT_PATH,
         title: 'Agendar consulta',
         parent: '',
         flow: true,
         nav: { label: 'Agendar consulta', icon: LuStethoscope },
       },
       {
-        path: 'exames/novo',
+        path: BOOK_EXAM_PATH,
         title: 'Agendar exame',
         parent: '',
         flow: true,
@@ -100,7 +102,7 @@ export const areas: Record<Role, Area> = {
       { path: 'exames/:id/resultado', title: 'Resultado do exame', parent: 'agendamentos' },
     ],
     tabs: ['', 'agendamentos'],
-    fab: { path: 'consultas/nova', label: 'Agendar consulta', icon: LuPlus },
+    fab: { path: BOOK_APPOINTMENT_PATH, label: 'Agendar consulta', icon: LuPlus },
   },
   doctor: {
     role: 'doctor',
@@ -162,7 +164,7 @@ export function pageUrl(area: Area, page: Pick<AreaPage, 'path'>): string {
   return path ? `${area.base}/${path}` : area.base;
 }
 
-export const findPage = (area: Area, path: string) => area.pages.find((page) => page.path === path);
+const findPage = (area: Area, path: string) => area.pages.find((page) => page.path === path);
 
 const patternOf = (area: Area, page: AreaPage) => (page.path ? `${area.base}/${page.path}` : area.base);
 
@@ -186,7 +188,7 @@ export function parentLink(area: Area, pathname: string): { label: string; to: s
   };
 }
 
-export type NavState = 'page' | 'section' | undefined;
+type NavState = 'page' | 'section' | undefined;
 
 export function navState(area: Area, navPath: string, pathname: string): NavState {
   let page = currentPage(area, pathname);
@@ -216,7 +218,9 @@ export const notificationsUrl = (role: Role) => `${NOTIFICATIONS_PATH}?${AREA_PA
 
 export const PATIENT_BOOKINGS_PATH = `${areas.patient.base}/agendamentos`;
 
-export const PATIENT_PAST_PATH = `${PATIENT_BOOKINGS_PATH}?aba=realizados`;
+export const TAB_PARAM = 'aba';
+
+export const PATIENT_PAST_PATH = `${PATIENT_BOOKINGS_PATH}?${TAB_PARAM}=realizados`;
 
 export const examResultUrl = (bookingId: string) => `${areas.patient.base}/exames/${bookingId}/resultado`;
 
@@ -228,4 +232,4 @@ export function parentUrl(pathname: string): string | undefined {
 export const BOOKING_PARAM = 'id';
 
 export const bookingUrl = (bookingId: string, past = false) =>
-  `${PATIENT_BOOKINGS_PATH}?${past ? 'aba=realizados&' : ''}${BOOKING_PARAM}=${bookingId}`;
+  `${PATIENT_BOOKINGS_PATH}?${past ? `${TAB_PARAM}=realizados&` : ''}${BOOKING_PARAM}=${bookingId}`;

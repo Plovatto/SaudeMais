@@ -8,6 +8,7 @@ export { ConfirmDialog, type ConfirmDialogProps } from './ConfirmDialog';
 export { CountBadge } from './CountBadge';
 export { CtaBar, ctaButton, type CtaBarProps } from './CtaBar';
 export { Dialog, type DialogProps } from './Dialog';
+export { useDialogTitleId } from './dialog-title';
 export { Drawer, DrawerBody, DrawerFooter, type DrawerProps } from './Drawer';
 export { Dropdown, type DropdownOption, type DropdownProps } from './Dropdown';
 export { EmptyState, type EmptyStateProps } from './EmptyState';
