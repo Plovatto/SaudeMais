@@ -1,59 +1,13 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { adminReport as report, emptyReport, reportCounts as counts } from '@/test/admin-report';
 import { renderApp, serveApi, type MockResponse } from '@/test/render-app';
-import type { AdminReport } from './reports-api';
 
-const counts = {
-  total: 40,
-  pending: 3,
-  confirmed: 8,
-  awaitingRecord: 2,
-  completed: 18,
-  noShow: 2,
-  cancelled: 6,
-  expired: 1,
-  lateCancellations: 2,
-  cancelledBy: { patient: 4, doctor: 1, admin: 0, system: 1 },
-};
-
-const point = (start: string, completed: number) => ({
-  start,
-  total: completed + 4,
-  pending: 1,
-  confirmed: 1,
-  awaitingRecord: 0,
-  completed,
-  noShow: 1,
-  cancelled: 1,
-  expired: 0,
-});
-
-function report(overrides: Partial<AdminReport> = {}): AdminReport {
-  return {
-    period: { from: '2026-10-17', to: '2026-11-15', granularity: 'day' },
-    appointments: { ...counts, noShowRate: 0.1 },
-    exams: {
-      ...counts,
-      total: 12,
-      pending: 0,
-      noShow: 0,
-      expired: 0,
-      completed: 7,
-      lateCancellations: 1,
-      cancelledBy: { patient: 2, doctor: 0, admin: 1, system: 0 },
-    },
-    series: [point('2026-11-14', 3), point('2026-11-15', 5)],
-    topSpecialties: [
-      { id: 's1', name: 'Cardiologia', total: 12 },
-      { id: 's2', name: 'Dermatologia', total: 7 },
-    ],
-    topExamTypes: [{ id: 'e1', name: 'Hemograma', total: 9 }],
-    ...overrides,
-  };
-}
-
-const serve = (respond: (url: URL) => MockResponse) =>
-  serveApi(['admin'], { '/api/admin/reports': (_method, _body, url) => respond(url) });
+const serve = (respond: (url: URL) => MockResponse, exportFile?: (url: URL) => MockResponse) =>
+  serveApi(['admin'], {
+    '/api/admin/reports': (_method, _body, url) => respond(url),
+    '/api/admin/reports/export': (_method, _body, url) => exportFile?.(url),
+  });
 
 const lastQuery = (calls: ReturnType<typeof serve>['calls']) => {
   const url = calls.filter((call) => call.url.pathname === '/api/admin/reports').at(-1)?.url;
@@ -83,14 +37,21 @@ describe('admin reports', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Relatórios' })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/admin/relatorios');
     expect(await screen.findByText('17/10/2026 a 15/11/2026')).toBeInTheDocument();
-    expect(lastQuery(calls)).toEqual({ from: '2026-10-17', to: '2026-11-15' });
+    expect(
+      calls.some(
+        ({ url }) =>
+          url.pathname === '/api/admin/reports' &&
+          url.searchParams.get('from') === '2026-10-17' &&
+          url.searchParams.get('to') === '2026-11-15',
+      ),
+    ).toBe(true);
     expect(screen.getByRole('radio', { name: '30 dias' })).toBeChecked();
   });
 
   it('puts a preset in the URL and in the request', async () => {
     const { calls } = serve(() => ({ status: 200, body: report() }));
     const { user, router } = renderApp('/admin/relatorios');
-    await section('Consultas');
+    await section('Agendamentos por dia');
 
     await user.click(screen.getByRole('radio', { name: '7 dias' }));
 
@@ -105,27 +66,32 @@ describe('admin reports', () => {
     const { calls } = serve(() => ({ status: 200, body: report() }));
     renderApp('/admin/relatorios');
 
-    await section('Consultas');
+    await section('Agendamentos por dia');
 
     expect(lastQuery(calls)).toEqual({ from: '2026-10-17', to: '2026-11-15' });
   });
 
-  it('hides the previous period while the next one loads', async () => {
+  it('dims the previous period while the next one loads', async () => {
     const { fetchMock } = serve(() => ({ status: 200, body: report() }));
-    const { user } = renderApp('/admin/relatorios');
-    expect(await screen.findByText('17/10/2026 a 15/11/2026')).toBeInTheDocument();
+    const { user, router } = renderApp('/admin/relatorios');
+    await section('Agendamentos por dia');
     fetchMock.mockImplementationOnce(() => new Promise<Response>(() => undefined));
 
-    await user.click(screen.getByRole('radio', { name: '90 dias' }));
+    await user.click(screen.getByRole('radio', { name: 'Mês passado' }));
 
-    await waitFor(() => expect(screen.queryByText('17/10/2026 a 15/11/2026')).not.toBeInTheDocument());
-    expect(screen.getByRole('region', { name: 'Consultas' })).toBeInTheDocument();
+    await waitFor(() => expect(router.state.location.search).toBe('?de=2026-10-01&ate=2026-10-31'));
+    await waitFor(() =>
+      expect(
+        screen.getByRole('region', { name: 'Agendamentos por dia' }).closest('[aria-busy]'),
+      ).toHaveAttribute('aria-busy', 'true'),
+    );
+    expect(screen.getByRole('button', { name: 'Exportar em PDF' })).toBeDisabled();
   });
 
   it('refuses a custom period that ends before it starts', async () => {
     const { calls } = serve(() => ({ status: 200, body: report() }));
     const { user, router } = renderApp('/admin/relatorios?de=2026-03-01&ate=2026-03-31');
-    await section('Consultas');
+    await section('Agendamentos por dia');
     const requests = calls.length;
     const to = screen.getByLabelText('Até');
 
@@ -142,7 +108,7 @@ describe('admin reports', () => {
   it('reads a custom period from the URL and applies a new one', async () => {
     const { calls } = serve(() => ({ status: 200, body: report() }));
     const { user, router } = renderApp('/admin/relatorios?de=2026-01-01&ate=2026-03-31');
-    await section('Consultas');
+    await section('Agendamentos por dia');
     expect(lastQuery(calls)).toEqual({ from: '2026-01-01', to: '2026-03-31' });
     expect(screen.queryByRole('radio', { checked: true })).not.toBeInTheDocument();
     const from = screen.getByLabelText('De');
@@ -171,94 +137,57 @@ describe('admin reports', () => {
     await waitFor(() => expect(to).toHaveAccessibleDescription('O período tem no máximo 366 dias.'));
     expect(to).toHaveAttribute('aria-invalid', 'true');
     expect(to).toHaveFocus();
-    expect(screen.queryByRole('region', { name: 'Consultas' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Agendamentos por dia' })).not.toBeInTheDocument();
   });
 
-  it('shows the tiles and the breakdown for each kind', async () => {
+  it('shows the summary tiles for consultations and exams together', async () => {
     serve(() => ({ status: 200, body: report() }));
     renderApp('/admin/relatorios');
 
-    const appointments = await section('Consultas');
-    expect(appointments.getAllByRole('term').map((item) => item.textContent)).toEqual([
-      'Total',
-      'Concluídos',
-      'Cancelados',
-      'Taxa de faltas',
-      'Cancelamentos tardios',
-    ]);
-    expect(appointments.getAllByRole('definition').map((item) => item.textContent)).toEqual([
-      '40',
-      '18',
-      '6',
-      '10%',
-      '2',
-    ]);
-    const statuses = within(appointments.getByRole('list', { name: 'Consultas: por situação' }));
-    expect(statuses.getAllByRole('listitem').map((item) => item.textContent)).toEqual([
-      'Pendente3',
-      'Confirmado8',
-      'Aguardando registro2',
-      'Concluída18',
-      'Não compareceu2',
-      'Cancelada6',
-      'Não confirmada1',
-    ]);
-    const authors = within(appointments.getByRole('list', { name: 'Consultas: cancelamentos por autor' }));
-    expect(authors.getAllByRole('listitem').map((item) => item.textContent)).toEqual([
-      'Paciente4',
-      'Médico1',
-      'Administrador0',
-      'Sistema1',
-    ]);
-
-    const exams = await section('Exames');
-    expect(exams.getAllByRole('term').map((item) => item.textContent)).not.toContain('Taxa de faltas');
-    const examStatuses = within(exams.getByRole('list', { name: 'Exames: por situação' }));
-    expect(examStatuses.getAllByRole('listitem').map((item) => item.textContent)).toEqual([
-      'Confirmado8',
-      'Aguardando registro2',
-      'Concluída7',
-      'Cancelada6',
-    ]);
+    for (const [name, value] of [
+      ['Agendamentos', '52'],
+      ['Realizados', '25'],
+      ['Cancelados', '13'],
+      ['Faltas', '2'],
+      ['Comparecimento', '92,6%'],
+    ] as const) {
+      expect(await section(name)).toBeTruthy();
+      expect(screen.getByRole('region', { name })).toHaveTextContent(`${name}${value}`);
+    }
   });
 
-  it.each([
-    [0.125, '12,5%'],
-    [null, '—'],
-  ])('formats the no-show rate %s', async (noShowRate, text) => {
-    serve(() => ({ status: 200, body: report({ appointments: { ...counts, noShowRate } }) }));
-    renderApp('/admin/relatorios');
-
-    const appointments = await section('Consultas');
-    expect(appointments.getAllByRole('definition')[3]).toHaveTextContent(text);
-  });
-
-  it('offers the series as a table', async () => {
-    serve(() => ({ status: 200, body: report() }));
-    const { user } = renderApp('/admin/relatorios');
-    const chart = await section('Agendamentos por dia');
-    expect(
-      chart.getByRole('img', {
-        name: 'Agendamentos por dia. 2 intervalos; Concluídos: 8; Em aberto: 4; Não realizados: 4; maior total: 9 em 15/11/2026.',
+  it('shows a dash for the attendance without completed or missed bookings', async () => {
+    serve(() => ({
+      status: 200,
+      body: report({
+        appointments: { ...counts, completed: 0, noShow: 0, noShowRate: null },
+        exams: { ...counts, completed: 0, noShow: 0 },
       }),
-    ).toBeInTheDocument();
-    expect(chart.queryByRole('table')).not.toBeInTheDocument();
+    }));
+    renderApp('/admin/relatorios');
 
-    await user.click(chart.getByRole('button', { name: 'Ver tabela' }));
+    expect(await section('Comparecimento')).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Comparecimento' })).toHaveTextContent('Comparecimento—');
+  });
 
-    const table = chart.getByRole('table', { name: 'Agendamentos por dia' });
+  it('lists the series with the period and the totals', async () => {
+    serve(() => ({ status: 200, body: report() }));
+    renderApp('/admin/relatorios');
+
+    const series = await section('Agendamentos por dia');
+    expect(series.getByText('17/10/2026 a 15/11/2026')).toBeInTheDocument();
+    const table = series.getByRole('table', { name: 'Agendamentos por dia' });
     expect(
       within(table)
         .getAllByRole('columnheader')
         .map((cell) => cell.textContent),
-    ).toEqual(['Dia', 'Concluídos', 'Em aberto', 'Não realizados', 'Total']);
+    ).toEqual(['Dia', 'Total', 'Realizados', 'Em aberto', 'Cancelados', 'Faltas']);
     expect(
       within(table)
         .getAllByRole('row')
         .slice(1)
         .map((row) => row.textContent),
-    ).toEqual(['14/11/20263227', '15/11/20265229']);
-    expect(chart.getByRole('button', { name: 'Ocultar tabela' })).toHaveAttribute('aria-expanded', 'true');
+    ).toEqual(['14/11/202673211', '15/11/202695211', 'Total168422']);
   });
 
   it('labels weekly intervals', async () => {
@@ -266,13 +195,41 @@ describe('admin reports', () => {
       status: 200,
       body: report({ period: { from: '2025-11-16', to: '2026-11-15', granularity: 'week' } }),
     }));
-    const { user } = renderApp('/admin/relatorios?de=2025-11-16&ate=2026-11-15');
-    const chart = await section('Agendamentos por semana');
+    renderApp('/admin/relatorios?de=2025-11-16&ate=2026-11-15');
 
-    await user.click(chart.getByRole('button', { name: 'Ver tabela' }));
-
-    expect(chart.getByRole('rowheader', { name: 'Semana de 14/11/2026' })).toBeInTheDocument();
+    const series = await section('Agendamentos por semana');
+    expect(series.getByRole('rowheader', { name: 'Semana de 14/11/2026' })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: '12 meses' })).toBeChecked();
+  });
+
+  it('breaks the bookings down by status and by who cancelled', async () => {
+    serve(() => ({ status: 200, body: report() }));
+    renderApp('/admin/relatorios');
+
+    const rows = (name: string) =>
+      within(screen.getByRole('table', { name }))
+        .getAllByRole('row')
+        .slice(1)
+        .map((row) => row.textContent);
+    await section('Por situação');
+    expect(rows('Agendamentos por situação')).toEqual([
+      'Pendente3—',
+      'Confirmado88',
+      'Aguardando registro22',
+      'Concluída187',
+      'Não compareceu2—',
+      'Cancelada66',
+      'Não confirmada1—',
+      'Total4012',
+    ]);
+    expect(rows('Cancelamentos por autor')).toEqual([
+      'Paciente42',
+      'Médico10',
+      'Administrador01',
+      'Sistema10',
+      'Total66',
+    ]);
+    expect(screen.getByText('Cancelamentos tardios: 2 consultas e 1 exame.')).toBeInTheDocument();
   });
 
   it('lists the most requested specialties and exam types', async () => {
@@ -280,29 +237,70 @@ describe('admin reports', () => {
     renderApp('/admin/relatorios');
 
     const specialties = await section('Especialidades mais procuradas');
-    expect(specialties.getAllByRole('listitem').map((item) => item.textContent)).toEqual([
-      'Cardiologia12',
-      'Dermatologia7',
-    ]);
+    expect(
+      specialties
+        .getAllByRole('row')
+        .slice(1)
+        .map((row) => row.textContent),
+    ).toEqual(['Cardiologia12', 'Dermatologia7']);
     const exams = await section('Exames mais procurados');
-    expect(exams.getAllByRole('listitem').map((item) => item.textContent)).toEqual(['Hemograma9']);
+    expect(
+      exams
+        .getAllByRole('row')
+        .slice(1)
+        .map((row) => row.textContent),
+    ).toEqual(['Hemograma9']);
+  });
+
+  it.each([
+    ['Excel', 'xlsx'],
+    ['PDF', 'pdf'],
+  ])('exports the period in %s', async (label, format) => {
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:relatorio');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+    const { calls } = serve(
+      () => ({ status: 200, body: report() }),
+      () => ({ status: 200, body: 'file' }),
+    );
+    const { user } = renderApp('/admin/relatorios');
+    await section('Agendamentos por dia');
+
+    await user.click(screen.getByRole('button', { name: `Exportar em ${label}` }));
+
+    await waitFor(() => expect(click).toHaveBeenCalledOnce());
+    expect((click.mock.contexts[0] as HTMLAnchorElement).download).toBe(
+      `relatorio_2026-10-17_a_2026-11-15.${format}`,
+    );
+    const call = calls.find(({ url }) => url.pathname === '/api/admin/reports/export');
+    expect(Object.fromEntries(call?.url.searchParams ?? [])).toEqual({
+      from: '2026-10-17',
+      to: '2026-11-15',
+      format,
+    });
+    vi.restoreAllMocks();
+  });
+
+  it('warns when the file cannot be generated', async () => {
+    serve(
+      () => ({ status: 200, body: report() }),
+      () => ({ status: 500 }),
+    );
+    const { user } = renderApp('/admin/relatorios');
+    await section('Agendamentos por dia');
+
+    await user.click(screen.getByRole('button', { name: 'Exportar em PDF' }));
+
+    expect(await screen.findByText('Algo deu errado. Tente de novo em instantes.')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Exportar em PDF' })).toBeEnabled();
   });
 
   it('shows the empty state for a period without bookings', async () => {
-    const empty = { ...counts, total: 0, completed: 0, cancelled: 0 };
-    serve(() => ({
-      status: 200,
-      body: report({
-        appointments: { ...empty, noShowRate: null },
-        exams: empty,
-        topSpecialties: [],
-        topExamTypes: [],
-      }),
-    }));
+    serve(() => ({ status: 200, body: emptyReport() }));
     renderApp('/admin/relatorios');
 
     expect(await screen.findByText('Nenhum agendamento no período')).toBeInTheDocument();
-    expect(screen.queryByRole('region', { name: 'Consultas' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Agendamentos por dia' })).not.toBeInTheDocument();
     expect(screen.getByRole('radio', { name: '30 dias' })).toBeInTheDocument();
   });
 
@@ -315,6 +313,6 @@ describe('admin reports', () => {
 
     await user.click(retry);
 
-    expect(await section('Consultas')).toBeTruthy();
+    expect(await section('Agendamentos por dia')).toBeTruthy();
   });
 });
