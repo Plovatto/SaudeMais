@@ -121,9 +121,12 @@ export function Tabs<T extends string>({
           >
             {item.label}
             {variant === 'chip' && item.count !== undefined && (
-              <span className={cx('tabular-nums', selected ? 'opacity-85' : 'text-text-muted')}>
-                {item.count}
-              </span>
+              <>
+                {' '}
+                <span className={cx('tabular-nums', selected ? 'opacity-85' : 'text-text-muted')}>
+                  {item.count}
+                </span>
+              </>
             )}
           </button>
         );
