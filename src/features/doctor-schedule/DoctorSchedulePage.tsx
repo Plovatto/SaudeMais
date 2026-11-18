@@ -1,58 +1,97 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
-import { LuSave } from 'react-icons/lu';
+import { LuCheck, LuClock } from 'react-icons/lu';
 import { PageHeader } from '@components/layout/PageHeader';
-import { Button, FormAlert, QueryError, Skeleton, useToast } from '@components/ui';
+import {
+  Button,
+  CtaBar,
+  ctaButton,
+  FormAlert,
+  QueryError,
+  Skeleton,
+  stagger,
+  useToast,
+} from '@components/ui';
 import { areas } from '@constants/areas';
-import { WEEKDAYS } from '@constants/weekdays';
-import { formatDateTime } from '@lib/date';
+import { DESKTOP_QUERY, useMediaQuery } from '@hooks/useMediaQuery';
+import { cx } from '@lib/cx';
+import { plural } from '@lib/plural';
 import { queryKeys } from '@lib/query-keys';
 import { useFormSubmit } from '@lib/useFormSubmit';
 import { DayCard } from './DayCard';
-import { applyRangeErrors, firstRangeError, type RangePath } from './range-errors';
+import { DurationCard } from './DurationCard';
+import { applyRangeErrors, rangeErrorPaths, weekdayOf, type RangePath } from './range-errors';
 import { scheduleApi, type DoctorSchedule, type ScheduleWarning } from './schedule-api';
-import { scheduleSchema, toBody, toValues, unitFor, type ScheduleValues } from './schedule-schema';
-import { plural } from '@lib/plural';
+import { DAY_ORDER, scheduleSchema, toBody, toValues, unitFor, type ScheduleValues } from './schedule-schema';
+import { useWeeklySlots } from './useWeeklySlots';
+import { WarningAlert } from './WarningAlert';
+
+const SCHEDULE_FORM_ID = 'doctor-schedule-form';
 
 const scheduleMessages = {
   NOT_FOUND: 'Esta conta ainda não tem perfil médico. Peça a um administrador para concluir o cadastro.',
 } as const;
 
-const dayGrid = 'grid gap-5 lg:grid-cols-2 lg:items-start';
+const layout = 'grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-5';
 
-function warningText(warnings: ScheduleWarning[]): string {
-  const count = plural(warnings.length, 'consulta futura ficou', 'consultas futuras ficaram');
-  const dates = warnings.map((warning) => formatDateTime(warning.startsAt)).join('; ');
-  return `${count} fora das novas faixas: ${dates}. Nada foi cancelado; confira cada uma na sua agenda.`;
+const column = 'flex min-w-0 flex-col gap-3.5';
+
+function ScheduleHeader({ action }: { action?: ReactNode }) {
+  return (
+    <PageHeader
+      title="Horários de atendimento"
+      subtitle="Os pacientes só veem horários livres dentro destes períodos."
+      action={action}
+      back
+      backFallback={areas.doctor.base}
+    />
+  );
 }
 
 function ScheduleForm({ schedule }: { schedule: DoctorSchedule }) {
+  const desktop = useMediaQuery(DESKTOP_QUERY);
   const queryClient = useQueryClient();
   const { show } = useToast();
   const [warnings, setWarnings] = useState<ScheduleWarning[]>([]);
+  const [expanded, setExpanded] = useState<ReadonlySet<number>>(() => new Set());
+  const [focusTarget, setFocusTarget] = useState<RangePath>();
   const schema = useMemo(() => scheduleSchema(schedule.unitHours), [schedule.unitHours]);
   const form = useForm<ScheduleValues>({ resolver: zodResolver(schema), defaultValues: toValues(schedule) });
-  const { setError, setFocus, reset, subscribe, trigger } = form;
+  const { control, setError, setFocus, reset, subscribe, trigger } = form;
   const { isDirty, isSubmitting, submitCount } = form.formState;
-  const [focusTarget, setFocusTarget] = useState<RangePath>();
-  const { alert, run } = useFormSubmit(setError, [], (error) => {
-    const path = applyRangeErrors(error, setError);
-    setFocusTarget(path);
-    return path !== undefined;
-  });
+  const slots = useWeeklySlots(control);
+
+  const setDayExpanded = (weekday: number, open: boolean) =>
+    setExpanded((current) => {
+      const next = new Set(current);
+      if (open) next.add(weekday);
+      else next.delete(weekday);
+      return next;
+    });
+
+  const focusRanges = (paths: RangePath[]) => {
+    setFocusTarget(paths[0]);
+    setExpanded((current) => new Set([...current, ...paths.map(weekdayOf)]));
+    return paths.length > 0;
+  };
+
+  const { alert, run } = useFormSubmit(setError, [], (error) =>
+    focusRanges(applyRangeErrors(error, setError)),
+  );
+
   const onSubmit = form.handleSubmit(
     (values) =>
       run(async () => {
         setWarnings([]);
-        const { warnings: outside, ...saved } = await scheduleApi.save(toBody(values));
+        const { warnings: outside, ...saved } = await scheduleApi.save(toBody(values, schedule));
         queryClient.setQueryData(queryKeys.doctorSchedule, saved);
         reset(toValues(saved));
         setWarnings(outside);
-        show({ message: 'Agenda salva.', tone: 'success' });
+        show({ message: 'Horários salvos.', tone: 'success' });
       }),
-    (errors) => setFocusTarget(firstRangeError(errors)),
+    (errors) => focusRanges(rangeErrorPaths(errors)),
   );
 
   useEffect(() => {
@@ -70,40 +109,70 @@ function ScheduleForm({ schedule }: { schedule: DoctorSchedule }) {
     });
   }, [submitCount, subscribe, trigger]);
 
-  return (
-    <form
-      aria-label="Agenda semanal"
-      noValidate
-      onSubmit={(event) => {
-        setFocusTarget(undefined);
-        void onSubmit(event);
-      }}
-      className="flex flex-col gap-6"
+  const save = (label: string, className?: string) => (
+    <Button
+      type="submit"
+      form={SCHEDULE_FORM_ID}
+      icon={<LuCheck />}
+      loading={isSubmitting}
+      loadingLabel="Salvando"
+      className={className}
     >
-      <fieldset disabled={isSubmitting} className="min-w-0">
-        <legend className="sr-only">Dias da semana</legend>
-        <div className={dayGrid}>
-          {WEEKDAYS.map((name, weekday) => (
-            <DayCard key={name} form={form} weekday={weekday} unit={unitFor(schedule.unitHours, weekday)} />
-          ))}
-        </div>
-      </fieldset>
-      {warnings.length > 0 && <FormAlert tone="warning">{warningText(warnings)}</FormAlert>}
-      {alert && <FormAlert>{alert}</FormAlert>}
-      <div className="flex justify-end">
-        <Button
-          type="submit"
-          size="lg"
-          icon={<LuSave />}
-          disabled={!isDirty}
-          loading={isSubmitting}
-          loadingLabel="Salvando"
-          className="w-full lg:w-auto"
+      {label}
+    </Button>
+  );
+
+  return (
+    <>
+      <ScheduleHeader action={desktop && isDirty && save('Salvar horários')} />
+      <form
+        id={SCHEDULE_FORM_ID}
+        aria-label="Horários de atendimento"
+        noValidate
+        onSubmit={(event) => {
+          setFocusTarget(undefined);
+          void onSubmit(event);
+        }}
+        className="flex flex-col gap-4 lg:gap-5"
+      >
+        {warnings.length > 0 && (
+          <WarningAlert
+            warnings={warnings}
+            one="consulta futura ficou fora dos novos períodos"
+            many="consultas futuras ficaram fora dos novos períodos"
+          />
+        )}
+        {alert && <FormAlert>{alert}</FormAlert>}
+        <fieldset disabled={isSubmitting} className={cx(layout, 'min-w-0')}>
+          <legend className="sr-only">Dias e consultas</legend>
+          <div className={cx(column, stagger(0))}>
+            {DAY_ORDER.map((weekday) => (
+              <DayCard
+                key={weekday}
+                form={form}
+                weekday={weekday}
+                unit={unitFor(schedule.unitHours, weekday)}
+                expanded={expanded.has(weekday)}
+                onExpandedChange={(open) => setDayExpanded(weekday, open)}
+              />
+            ))}
+          </div>
+          <div className={cx('flex min-w-0 flex-col gap-4 lg:gap-5', stagger(1))}>
+            <DurationCard control={control} schedule={schedule} />
+          </div>
+        </fieldset>
+      </form>
+      {!desktop && isDirty && (
+        <CtaBar
+          aboveNav
+          icon={<LuClock />}
+          title="Seus horários"
+          sub={`${plural(slots, 'horário', 'horários')} por semana`}
         >
-          Salvar agenda
-        </Button>
-      </div>
-    </form>
+          {save('Salvar', ctaButton)}
+        </CtaBar>
+      )}
+    </>
   );
 }
 
@@ -114,14 +183,18 @@ export function DoctorSchedulePage() {
     staleTime: 0,
     refetchOnWindowFocus: false,
   });
+  if (schedule.data) return <ScheduleForm schedule={schedule.data} />;
   return (
     <>
-      <PageHeader title="Horários de atendimento" back backFallback={areas.doctor.base} />
+      <ScheduleHeader />
       {schedule.isPending && (
-        <div className={dayGrid} aria-busy>
-          {WEEKDAYS.map((name) => (
-            <Skeleton key={name} className="rounded-card h-36" />
-          ))}
+        <div className={layout} aria-busy>
+          <div className={column}>
+            {DAY_ORDER.map((weekday) => (
+              <Skeleton key={weekday} className="rounded-card h-[74px]" />
+            ))}
+          </div>
+          <Skeleton className="rounded-card h-48" />
         </div>
       )}
       {schedule.isError && (
@@ -131,7 +204,6 @@ export function DoctorSchedulePage() {
           onRetry={() => void schedule.refetch()}
         />
       )}
-      {schedule.data && <ScheduleForm schedule={schedule.data} />}
     </>
   );
 }
