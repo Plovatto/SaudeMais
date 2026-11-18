@@ -39,6 +39,17 @@ const row = (name: string, card?: string) =>
     name: new RegExp(`^${name}`),
   });
 
+const serveOffer = (routes: Parameters<typeof serve>[0] = {}) =>
+  serve({
+    '/api/admin/units': () => ({ status: 200, body: page([unit()]) }),
+    '/api/admin/exam-types': () => ({ status: 200, body: page([examType('e1', 'Raio-X')]) }),
+    '/api/admin/units/u1/exam-offers': () => ({
+      status: 200,
+      body: [{ examTypeId: 'e1', examTypeName: 'Raio-X', capacityPerSlot: 2, isActive: true }],
+    }),
+    ...routes,
+  });
+
 const findForm = (name: string) => screen.findByRole('form', { name });
 
 const requestUrls = (fetchMock: ReturnType<typeof serve>['fetchMock']) =>
@@ -486,14 +497,7 @@ describe('admin settings', () => {
   });
 
   it('disables saving a new offer when every active exam type is already offered', async () => {
-    serve({
-      '/api/admin/units': () => ({ status: 200, body: page([unit()]) }),
-      '/api/admin/exam-types': () => ({ status: 200, body: page([examType('e1', 'Raio-X')]) }),
-      '/api/admin/units/u1/exam-offers': () => ({
-        status: 200,
-        body: [{ examTypeId: 'e1', examTypeName: 'Raio-X', capacityPerSlot: 2, isActive: true }],
-      }),
-    });
+    serveOffer();
     const { user } = renderApp('/admin/configuracoes/ofertas?unidade=u1');
 
     expect(await screen.findByText('2 ao mesmo tempo')).toBeInTheDocument();
@@ -529,13 +533,7 @@ describe('admin settings', () => {
   });
 
   it('refreshes the units offering an exam after saving an offer', async () => {
-    serve({
-      '/api/admin/units': () => ({ status: 200, body: page([unit()]) }),
-      '/api/admin/exam-types': () => ({ status: 200, body: page([examType('e1', 'Raio-X')]) }),
-      '/api/admin/units/u1/exam-offers': () => ({
-        status: 200,
-        body: [{ examTypeId: 'e1', examTypeName: 'Raio-X', capacityPerSlot: 2, isActive: true }],
-      }),
+    serveOffer({
       '/api/admin/units/u1/exam-offers/e1': () => ({
         status: 200,
         body: { examTypeId: 'e1', examTypeName: 'Raio-X', capacityPerSlot: 3, isActive: true },
