@@ -24,7 +24,7 @@ export function MeterList({ label, items, max }: MeterListProps) {
           </div>
           <div aria-hidden className="bg-chart-1/15 h-2 overflow-hidden rounded-full">
             <div
-              className="bg-chart-1 h-full rounded-full"
+              className="bg-chart-1 motion-safe:animate-grow-x h-full origin-left rounded-full"
               style={{ width: `${max > 0 ? (value / max) * 100 : 0}%` }}
             />
           </div>

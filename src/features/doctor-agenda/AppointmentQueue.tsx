@@ -1,6 +1,7 @@
 import type { ReactNode, Ref } from 'react';
-import { Avatar, CountBadge, RowText, SectionCard, SectionLink } from '@components/ui';
+import { Avatar, CountBadge, RowText, SectionCard, SectionLink, stagger } from '@components/ui';
 import type { DoctorAppointment } from '@lib/api/models';
+import { cx } from '@lib/cx';
 
 export interface AppointmentQueueProps {
   title: string;
@@ -49,10 +50,13 @@ export function AppointmentQueue({
     >
       {items?.length ? (
         <ul className="divide-border divide-y">
-          {items.map((appointment) => (
+          {items.map((appointment, index) => (
             <li
               key={appointment.id}
-              className="flex flex-wrap items-center gap-x-3.5 gap-y-2.5 px-4 py-3 max-[560px]:gap-y-[22px] max-[560px]:pt-[18px] max-[560px]:pb-5 lg:px-5 lg:py-3.5"
+              className={cx(
+                'flex flex-wrap items-center gap-x-3.5 gap-y-2.5 px-4 py-3 max-[560px]:gap-y-[22px] max-[560px]:pt-[18px] max-[560px]:pb-5 lg:px-5 lg:py-3.5',
+                stagger(index),
+              )}
             >
               <button
                 type="button"

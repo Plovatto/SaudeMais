@@ -38,7 +38,7 @@ export function StatusDonut({
   return (
     <div className="flex flex-col gap-[18px]">
       <div role="img" aria-label={summary} className="relative size-[148px] shrink-0 self-center">
-        <svg viewBox="0 0 100 100" className="size-full -rotate-90">
+        <svg viewBox="0 0 100 100" className="motion-safe:animate-donut size-full -rotate-90">
           <circle r={RADIUS} cx="50" cy="50" fill="none" strokeWidth="12" stroke="var(--surface-strong)" />
           {arcs.map(({ key, stroke, value, length, offset: start }) =>
             stroke && value > 0 ? (
@@ -52,7 +52,6 @@ export function StatusDonut({
                 stroke={stroke}
                 strokeDasharray={`${length.toFixed(2)} ${(CIRCUMFERENCE - length).toFixed(2)}`}
                 strokeDashoffset={(-start).toFixed(2)}
-                className="motion-safe:animate-fade"
               />
             ) : null,
           )}

@@ -17,24 +17,35 @@ export function Segmented<T extends string>({
   className,
 }: SegmentedProps<T>) {
   const name = useId();
+  const selected = options.findIndex((option) => option.value === value);
   return (
     <div
       role="radiogroup"
       aria-label={label}
       className={cx(
-        'bg-surface-strong flex min-w-0 gap-0.5 overflow-hidden rounded-[10px] p-[3px]',
+        'bg-surface-strong relative flex min-w-0 gap-0.5 overflow-hidden rounded-[10px] p-[3px]',
         className,
       )}
     >
+      {selected >= 0 && (
+        <span
+          aria-hidden
+          className="bg-surface ease-out-quint absolute inset-y-[3px] start-[3px] rounded-lg shadow-[0_1px_2px_rgb(16_42_41/0.08),0_0_0_1px_var(--border)] transition-transform duration-180 forced-color-adjust-none forced-colors:bg-[Highlight]"
+          style={{
+            width: `calc((100% - 6px - ${(options.length - 1) * 2}px) / ${options.length})`,
+            transform: `translateX(calc(${selected} * (100% + 2px)))`,
+          }}
+        />
+      )}
       {options.map((option) => {
         const checked = option.value === value;
         return (
           <label
             key={option.value}
             className={cx(
-              'has-[:focus-visible]:outline-focus flex min-h-11 min-w-0 flex-1 cursor-pointer items-center justify-center rounded-lg px-2 text-[0.8125rem] font-semibold whitespace-nowrap transition-[background-color,color,box-shadow] duration-150 has-[:focus-visible]:outline-2 has-[:focus-visible]:-outline-offset-2 sm:px-3 lg:min-h-8',
+              'has-[:focus-visible]:outline-focus relative flex min-h-11 min-w-0 flex-1 cursor-pointer items-center justify-center rounded-lg px-2 text-[0.8125rem] font-semibold whitespace-nowrap transition-colors duration-150 has-[:focus-visible]:outline-2 has-[:focus-visible]:-outline-offset-2 sm:px-3 lg:min-h-8',
               checked
-                ? 'bg-surface text-text shadow-[0_1px_2px_rgb(16_42_41/0.08),0_0_0_1px_var(--border)]'
+                ? 'text-text forced-colors:text-[HighlightText] forced-colors:forced-color-adjust-none'
                 : 'text-text-secondary can-hover:text-text',
             )}
           >

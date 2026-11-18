@@ -1,7 +1,7 @@
 import { Fragment, type ReactNode } from 'react';
 import { bookingStatus, hasStarted } from '@components/bookings/booking-display';
 import { DateTile } from '@components/bookings/DateTile';
-import { ListRow, StatusChip } from '@components/ui';
+import { ListRow, stagger, StatusChip } from '@components/ui';
 import { groupHeader, overline } from '@components/ui/styles';
 import { visitTypeLabels } from '@constants/visit-types';
 import type { DoctorAppointment } from '@lib/api/models';
@@ -82,7 +82,7 @@ export function AgendaRows({ items, now, showNow, groupOf, row }: AgendaRowsProp
           <Fragment key={appointment.id}>
             {index === nowAt && <NowLine now={now} />}
             {position === 0 && key && <li className={cx(groupHeader, overline)}>{key}</li>}
-            <li className="@container">{row(appointment)}</li>
+            <li className={cx('@container', stagger(index))}>{row(appointment)}</li>
           </Fragment>
         )),
       )}

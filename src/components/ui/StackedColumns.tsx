@@ -95,7 +95,7 @@ export function StackedColumns<K extends string>({ label, rowHeader, series, row
                 )}
               >
                 <div
-                  className="flex w-full max-w-6 flex-col-reverse gap-0.5 overflow-hidden rounded-t-[4px]"
+                  className="motion-safe:animate-grow flex w-full max-w-6 origin-bottom flex-col-reverse gap-0.5 overflow-hidden rounded-t-[4px]"
                   style={{ height: `${((totals[index] ?? 0) / top) * 100}%` }}
                 >
                   {series.map(({ key, swatch }) =>
