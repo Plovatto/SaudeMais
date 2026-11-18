@@ -191,7 +191,6 @@
   --radius-card: 16px;
   --radius-sheet: 22px;
   --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
   --duration-fast: 120ms;
   --duration-base: 200ms;
   --duration-slow: 260ms;
