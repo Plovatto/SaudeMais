@@ -13,7 +13,7 @@ import {
   slotGroup,
   slotTimes,
 } from '@/test/booking-flow';
-import { apiError, renderApp, serveApi, type MockResponse } from '@/test/render-app';
+import { apiError, holdRequests, renderApp, serveApi, type MockResponse } from '@/test/render-app';
 
 const specialties = [
   { id: 's1', name: 'Cardiologia', council: 'CRM', appointmentDurationMin: 30, isActive: true },
@@ -265,16 +265,11 @@ describe('book appointment', { timeout: 20_000 }, () => {
   it('tells a later month is still loading its free slots', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-11-20T02:30:00.000Z'));
-    serve(undefined, { first: [[days[0] as Day]] });
+    const { fetchMock } = serve(undefined, { first: [[days[0] as Day]] });
     const { user } = await start();
     await user.click(screen.getByRole('radio', { name: /Carlos Mendes/ }));
     await waitFor(() => expect(openDays()).toEqual([MONDAY]));
-    const served = fetch;
-    const held: (() => void)[] = [];
-    vi.stubGlobal('fetch', async (...args: Parameters<typeof fetch>) => {
-      await new Promise<void>((resolve) => held.push(resolve));
-      return served(...args);
-    });
+    const held = holdRequests(fetchMock, () => true);
     const status = within(calendar()).getByRole('status');
     const grid = () => within(calendar()).getByRole('button', { name: /, 1 de janeiro/ }).parentElement;
     expect(status).toBeEmptyDOMElement();
@@ -284,7 +279,7 @@ describe('book appointment', { timeout: 20_000 }, () => {
 
     await waitFor(() => expect(status).toHaveTextContent('Carregando horários…'));
     expect(grid()).toHaveAttribute('aria-busy', 'true');
-    held.forEach((release) => release());
+    held.forEach((request) => request.release());
     await waitFor(() => expect(status).toBeEmptyDOMElement());
     expect(grid()).not.toHaveAttribute('aria-busy');
   });
