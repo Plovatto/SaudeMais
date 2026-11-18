@@ -287,6 +287,8 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     expect(first).toHaveAttribute('aria-current', 'true');
     expect(first).not.toHaveAttribute('aria-haspopup');
     const aside = screen.getByRole('complementary', { name: 'Detalhes do agendamento' });
+    expect(aside.parentElement).toHaveClass('grid');
+    expect(aside.parentElement).toContainElement(first);
     expect(await within(aside).findByRole('heading', { name: 'Dr. João Silveira' })).toBeVisible();
     expect(screen.queryByRole('dialog', { name: SHEET })).not.toBeInTheDocument();
     expect(screen.queryByText('Antes de ir')).not.toBeInTheDocument();

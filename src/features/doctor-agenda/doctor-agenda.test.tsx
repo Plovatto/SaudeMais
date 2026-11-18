@@ -257,6 +257,8 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     const first = await screen.findByRole('button', { name: /^Andreia Soares/ });
     expect(first).toHaveAttribute('aria-current', 'true');
     const aside = screen.getByRole('complementary', { name: 'Detalhes da consulta' });
+    expect(aside.parentElement).toHaveClass('grid');
+    expect(aside.parentElement).toContainElement(first);
     expect(within(aside).getByRole('heading', { level: 2, name: /Andreia Soares/ })).toBeVisible();
 
     await user.click(screen.getByRole('button', { name: /^Jair Oliveira/ }));
