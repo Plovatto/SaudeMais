@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import {
   addDays,
   daysBetween,
+  formatMonthName,
   dayTile,
   civilDateInSaoPaulo,
   formatDateTime,
@@ -63,6 +64,10 @@ describe.each([
   it('adds days to a civil date across months and years', () => {
     expect(addDays('2026-11-14', 30)).toBe('2026-12-14');
     expect(addDays('2026-12-31', 1)).toBe('2027-01-01');
+  });
+
+  it('names the month of a civil date', () => {
+    expect(formatMonthName('2026-10-31')).toBe('outubro');
   });
 
   it('counts the days between two civil dates', () => {

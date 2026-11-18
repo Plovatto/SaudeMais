@@ -173,6 +173,10 @@ export function formatLongDay(iso: string): string {
 
 const monthYear = new Intl.DateTimeFormat('pt-BR', { timeZone: TIME_ZONE, month: 'long', year: 'numeric' });
 
+const monthName = new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC', month: 'long' });
+
+export const formatMonthName = (date: string) => monthName.format(utcDay(date));
+
 export function formatMonth(iso: string): string {
   const part = partsOf(monthYear, new Date(iso));
   return `${capitalize(part('month'))} de ${part('year')}`;
