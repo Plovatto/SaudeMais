@@ -12,9 +12,6 @@ export function useListSelection<Item extends { id: string }>(
   const selected = chosen ?? (desktop && items ? fallback(items) : undefined);
   return {
     desktop,
-    selectedId,
-    setSelectedId,
-    chosen,
     selected,
     select: (item: Item) => setSelectedId(item.id),
     closeSheet: () => setSelectedId('', { replace: true }),
