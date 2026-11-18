@@ -1,26 +1,42 @@
 import { LuCheck } from 'react-icons/lu';
 import { SectionCard } from '@components/ui';
 import { cx } from '@lib/cx';
-import { setThemePreference, type ThemePreference } from '@lib/theme';
+import { setThemePreference, THEME_OPTIONS, type Theme, type ThemePreference } from '@lib/theme';
 import { useThemePreference } from '@lib/useTheme';
 
-const options: { value: ThemePreference; label: string; mock: string; bar: string; line: string }[] = [
-  { value: 'light', label: 'Claro', mock: 'bg-[#edf3f3]', bar: 'bg-[#0c7c7e]', line: 'bg-white' },
-  {
-    value: 'dark',
-    label: 'Escuro',
-    mock: 'border-[#223132] bg-[#0b1213]',
-    bar: 'bg-[#22bfc2]',
-    line: 'bg-[#162122]',
-  },
-  {
-    value: 'system',
-    label: 'Sistema',
-    mock: 'bg-[linear-gradient(115deg,#edf3f3_50%,#0b1213_50%)]',
-    bar: 'bg-[linear-gradient(90deg,#0c7c7e_50%,#22bfc2_50%)]',
-    line: 'bg-[linear-gradient(90deg,#fff_50%,#162122_50%)]',
-  },
-];
+const mockColors = {
+  light: { background: 'bg-surface-strong', line: 'bg-surface' },
+  dark: { background: 'bg-canvas', line: 'bg-surface-muted' },
+};
+
+function Mock({ theme, className }: { theme: Theme; className?: string }) {
+  return (
+    <span
+      data-theme={theme}
+      className={cx(
+        mockColors[theme].background,
+        'border-border absolute inset-0 flex flex-col gap-[5px] rounded-[9px] border p-[9px]',
+        className,
+      )}
+    >
+      <i className="bg-role block h-[7px] w-[38%] rounded" />
+      {[0, 1].map((line) => (
+        <b key={line} className={cx(mockColors[theme].line, 'block h-[11px] rounded')} />
+      ))}
+    </span>
+  );
+}
+
+function Preview({ value }: { value: ThemePreference }) {
+  return (
+    <span aria-hidden className="relative block h-[58px] sm:h-[68px]">
+      <Mock theme={value === 'dark' ? 'dark' : 'light'} />
+      {value === 'system' && (
+        <Mock theme="dark" className="[clip-path:polygon(65%_0,100%_0,100%_100%,35%_100%)]" />
+      )}
+    </span>
+  );
+}
 
 export function AppearanceSection() {
   const preference = useThemePreference();
@@ -28,7 +44,7 @@ export function AppearanceSection() {
     <SectionCard title="Aparência">
       <fieldset className="grid grid-cols-3 gap-2.5">
         <legend className="sr-only">Tema</legend>
-        {options.map((option) => {
+        {THEME_OPTIONS.map((option) => {
           const checked = preference === option.value;
           return (
             <label
@@ -48,17 +64,7 @@ export function AppearanceSection() {
                 onChange={() => setThemePreference(option.value)}
                 className="sr-only"
               />
-              <span
-                aria-hidden
-                className={cx(
-                  'border-border flex h-[58px] flex-col gap-[5px] rounded-[9px] border p-[9px] sm:h-[68px]',
-                  option.mock,
-                )}
-              >
-                <i className={cx('block h-[7px] w-[38%] rounded', option.bar)} />
-                <b className={cx('block h-[11px] rounded', option.line)} />
-                <b className={cx('block h-[11px] rounded', option.line)} />
-              </span>
+              <Preview value={option.value} />
               <span className="text-text flex items-center justify-between text-[0.8125rem] font-semibold sm:text-[0.84375rem]">
                 {option.label}
                 {checked && (

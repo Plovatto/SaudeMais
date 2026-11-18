@@ -4,6 +4,8 @@ import {
   confirmationMatches,
   hasLettersAndNumbers,
   newPasswordFields,
+  PASSWORD_MAX,
+  PASSWORD_MAX_MESSAGE,
   personalDataBody,
   personalDataSchema,
   personalDataValues,
@@ -12,10 +14,7 @@ import type { ProfileBody } from './profile-api';
 
 export const passwordSchema = z
   .object({
-    currentPassword: z
-      .string()
-      .min(1, 'Informe a senha atual.')
-      .max(128, 'A senha pode ter até 128 caracteres.'),
+    currentPassword: z.string().min(1, 'Informe a senha atual.').max(PASSWORD_MAX, PASSWORD_MAX_MESSAGE),
     ...newPasswordFields,
   })
   .refine(...confirmationMatches)

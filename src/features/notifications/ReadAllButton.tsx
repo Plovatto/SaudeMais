@@ -8,12 +8,8 @@ import {
   markAllNotificationsRead,
   unreadCountQuery,
 } from '@lib/api/notifications-api';
-import { isProtectedAccount } from '@lib/auth/protected-account';
 import { cx } from '@lib/cx';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
-
-const DEMO_MESSAGE =
-  'Esta é uma conta de demonstração: as notificações podem ser vistas, mas não marcadas como lidas.';
 
 const LABEL = 'Marcar todas como lidas';
 
@@ -38,11 +34,7 @@ export function ReadAllButton({ role, unread, focusAfter, compact = false }: Rea
     },
     onError: (error) => {
       refocus.current = false;
-      show(
-        isProtectedAccount(error)
-          ? { message: DEMO_MESSAGE, tone: 'info' }
-          : { message: errorMessage(error), tone: 'danger' },
-      );
+      show({ message: errorMessage(error), tone: 'danger' });
     },
   });
 

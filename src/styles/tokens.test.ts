@@ -25,10 +25,11 @@ function contrast(a: string | undefined, b: string | undefined): number {
   return (light! + 0.05) / (dark! + 0.05);
 }
 
-const LIGHT = ':root';
-const DARK = ":root[data-theme='dark']";
+const LIGHT = ":root,\n[data-theme='light']";
+const DARK_ROOT = ":root[data-theme='dark']";
+const DARK = `${DARK_ROOT},\n[data-theme='dark']`;
 const roleBlock = (theme: string, role: string) =>
-  theme === LIGHT ? `[data-role='${role}']` : `${DARK} [data-role='${role}']`;
+  theme === LIGHT ? `[data-role='${role}']` : `${DARK_ROOT} [data-role='${role}']`;
 const backgrounds = ['canvas', 'surface', 'surface-muted'];
 
 describe.each([

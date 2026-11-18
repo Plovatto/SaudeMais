@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
-import { LuArrowRight, LuBell, LuX } from 'react-icons/lu';
+import { LuArrowRight, LuBell } from 'react-icons/lu';
 import { Link, useLocation } from 'react-router';
-import { CountBadge, IconButton, IconLink, Popover } from '@components/ui';
+import { CloseButton, CountBadge, IconLink, Popover } from '@components/ui';
 import { NOTIFICATIONS_PATH, notificationsUrl, type Role } from '@constants/areas';
 import { notificationsQuery, unreadText, useUnreadCount } from '@lib/api/notifications-api';
 import { cx } from '@lib/cx';
@@ -39,9 +39,8 @@ function NotificationsPreview({ role, unread, close }: PreviewProps) {
             Tudo lido
           </span>
         )}
-        <IconButton
+        <CloseButton
           label="Fechar notificações"
-          icon={<LuX />}
           onClick={close}
           className="text-text-muted size-7 lg:size-7 [&_svg]:size-4"
         />

@@ -20,7 +20,6 @@ const person = (id: string, fullName: string, overrides: Partial<AdminUser> = {}
 
 const joao = person('joao', 'João Silveira', { roles: ['doctor'] });
 const ana = person('ana', 'Ana Ferreira', { phone: '+5511987654321' });
-const demo = person('demo', 'Conta Demonstração', { isProtected: true });
 const me = person(SELF_ID, 'Ana Maria Silva', { roles: ['admin'] });
 
 const cardiology = { specialtyId: 'cardio', specialtyName: 'Cardiologia', council: 'CRM' };
@@ -87,14 +86,13 @@ async function openActions(user: ReturnType<typeof renderApp>['user'], name: str
 
 describe('admin users list', () => {
   it('lists the accounts with their status and profiles in a table', async () => {
-    serve({ '/api/admin/users': listOf(joao, ana, demo, me) });
+    serve({ '/api/admin/users': listOf(joao, ana, me) });
     renderApp('/admin/usuarios');
 
     const table = await screen.findByRole('table', { name: 'Usuários' });
-    expect(within(table).getAllByRole('row')).toHaveLength(5);
+    expect(within(table).getAllByRole('row')).toHaveLength(4);
     expect(screen.getByText('45 usuários encontrados')).toBeInTheDocument();
     expect(within(await rowOf('João Silveira')).getByText('Médico')).toBeInTheDocument();
-    expect(within(await rowOf('Conta Demonstração')).getByText('Demonstração')).toBeInTheDocument();
     expect(within(await rowOf('Ana Maria Silva')).getByText('Você')).toBeInTheDocument();
   });
 
@@ -247,15 +245,9 @@ describe('admin users list', () => {
     );
   });
 
-  it('disables changes to protected accounts and to the own account', async () => {
-    serve({ '/api/admin/users': listOf(demo, me) });
+  it('disables changes to the own account', async () => {
+    serve({ '/api/admin/users': listOf(me) });
     const { user } = renderApp('/admin/usuarios');
-
-    const demoMenu = await openActions(user, 'Conta Demonstração');
-    for (const name of ['Tornar médico', 'Tornar admin', 'Desativar'])
-      expect(within(demoMenu).getByRole('menuitem', { name })).toHaveAttribute('aria-disabled', 'true');
-    expect(within(demoMenu).getByRole('menuitem', { name: 'Editar' })).not.toHaveAttribute('aria-disabled');
-    await user.keyboard('{Escape}');
 
     const myMenu = await openActions(user, 'Ana Maria Silva');
     expect(within(myMenu).getByRole('menuitem', { name: 'Desativar' })).toHaveAttribute(
@@ -347,16 +339,6 @@ describe('edit user', () => {
 
     expect(await screen.findByText('Conta de João Silveira reativada.')).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByRole('note')).not.toBeInTheDocument());
-  });
-
-  it('keeps a protected account read-only with an explanation', async () => {
-    serve({ '/api/admin/users/demo': () => ok(detail(demo)) });
-    renderApp('/admin/usuarios/demo');
-
-    expect(await screen.findByRole('note')).toHaveTextContent('conta de demonstração');
-    expect(screen.getByRole('textbox', { name: 'Nome completo' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Desativar conta' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Tornar admin' })).toBeDisabled();
   });
 
   it('tells when the account no longer exists', async () => {

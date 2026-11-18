@@ -1,12 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
-import type { RefObject } from 'react';
 import { useForm } from 'react-hook-form';
 import { LuCake, LuLock } from 'react-icons/lu';
 import { PersonalDataFields } from '@components/forms/PersonalDataFields';
 import { Avatar, Button, Drawer, DrawerBody, DrawerFooter, FormAlert, Input, useToast } from '@components/ui';
 import { areas, type Role } from '@constants/areas';
-import { handleProtectedAccount } from '@lib/auth/protected-account';
 import type { CurrentUser } from '@lib/auth/useSession';
 import { queryKeys } from '@lib/query-keys';
 import { useFormSubmit } from '@lib/useFormSubmit';
@@ -31,10 +29,9 @@ interface EditProfileFormProps {
   role: Role;
   withBirthDate: boolean;
   onClose: () => void;
-  onProtected: () => void;
 }
 
-function EditProfileForm({ user, role, withBirthDate, onClose, onProtected }: EditProfileFormProps) {
+function EditProfileForm({ user, role, withBirthDate, onClose }: EditProfileFormProps) {
   const queryClient = useQueryClient();
   const { show } = useToast();
   const {
@@ -43,11 +40,7 @@ function EditProfileForm({ user, role, withBirthDate, onClose, onProtected }: Ed
     setError,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<ProfileValues>({ resolver: zodResolver(profileSchema), defaultValues: profileValues(user) });
-  const { alert, run } = useFormSubmit(
-    setError,
-    ['fullName', 'phone', 'birthDate'],
-    handleProtectedAccount(onProtected, onClose),
-  );
+  const { alert, run } = useFormSubmit(setError, ['fullName', 'phone', 'birthDate']);
 
   const submit = handleSubmit((values) =>
     run(async () => {
@@ -83,7 +76,6 @@ function EditProfileForm({ user, role, withBirthDate, onClose, onProtected }: Ed
           fullName={register('fullName')}
           phone={register('phone')}
           errors={{ fullName: errors.fullName?.message, phone: errors.phone?.message }}
-          locked={false}
           ownAccount
         />
         {withBirthDate && (
@@ -122,12 +114,11 @@ function EditProfileForm({ user, role, withBirthDate, onClose, onProtected }: Ed
 
 export interface EditProfileDrawerProps extends EditProfileFormProps {
   open: boolean;
-  fallbackFocus: RefObject<HTMLElement | null>;
 }
 
-export function EditProfileDrawer({ open, fallbackFocus, ...props }: EditProfileDrawerProps) {
+export function EditProfileDrawer({ open, ...props }: EditProfileDrawerProps) {
   return (
-    <Drawer open={open} onClose={props.onClose} title="Editar perfil" fallbackFocus={fallbackFocus}>
+    <Drawer open={open} onClose={props.onClose} title="Editar perfil">
       {open && <EditProfileForm {...props} />}
     </Drawer>
   );

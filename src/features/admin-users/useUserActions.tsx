@@ -76,10 +76,10 @@ export function useUserActions(fallbackFocus?: RefObject<HTMLElement | null>) {
   const busyId = mutation.isPending ? mutation.variables.user.id : null;
 
   const itemsFor = (user: AdminUser): MenuItem[] => {
-    const { isProtected, isInactive, isSelf } = userLocks(user, currentUser.id);
+    const { isInactive, isSelf } = userLocks(user, currentUser.id);
     const isAdmin = user.roles.includes('admin');
     const busy = busyId === user.id;
-    const frozen = isProtected || isInactive || busy;
+    const frozen = isInactive || busy;
     return [
       {
         label: 'Editar',
@@ -102,14 +102,14 @@ export function useUserActions(fallbackFocus?: RefObject<HTMLElement | null>) {
         ? {
             label: 'Reativar',
             icon: <LuUserCheck />,
-            disabled: isProtected || busy,
+            disabled: busy,
             onSelect: () => request('reactivate', user),
           }
         : {
             label: 'Desativar',
             icon: <LuUserX />,
             tone: 'danger',
-            disabled: isProtected || isSelf || busy,
+            disabled: isSelf || busy,
             onSelect: () => request('deactivate', user),
           },
     ];

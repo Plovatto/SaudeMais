@@ -1,11 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
-import type { RefObject } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { NewPasswordFields } from '@components/forms/NewPasswordFields';
 import { PasswordStrength } from '@components/forms/PasswordStrength';
 import { Button, Drawer, DrawerBody, DrawerFooter, FormAlert, PasswordInput, useToast } from '@components/ui';
-import { handleProtectedAccount } from '@lib/auth/protected-account';
 import { queryKeys } from '@lib/query-keys';
 import { useFormSubmit } from '@lib/useFormSubmit';
 import { changePassword } from './profile-api';
@@ -15,10 +13,9 @@ const emptyPassword: PasswordValues = { currentPassword: '', password: '', passw
 
 interface PasswordFormProps {
   onClose: () => void;
-  onProtected: () => void;
 }
 
-function PasswordForm({ onClose, onProtected }: PasswordFormProps) {
+function PasswordForm({ onClose }: PasswordFormProps) {
   const queryClient = useQueryClient();
   const { show } = useToast();
   const {
@@ -30,11 +27,7 @@ function PasswordForm({ onClose, onProtected }: PasswordFormProps) {
   } = useForm<PasswordValues>({ resolver: zodResolver(passwordSchema), defaultValues: emptyPassword });
   const values = useWatch({ control });
   const canSubmit = passwordSchema.safeParse(values).success;
-  const { alert, run } = useFormSubmit(
-    setError,
-    ['currentPassword', 'password', 'passwordConfirmation'],
-    handleProtectedAccount(onProtected, onClose),
-  );
+  const { alert, run } = useFormSubmit(setError, ['currentPassword', 'password', 'passwordConfirmation']);
 
   const onSubmit = handleSubmit((values) =>
     run(async () => {
@@ -79,13 +72,9 @@ function PasswordForm({ onClose, onProtected }: PasswordFormProps) {
   );
 }
 
-export function PasswordDrawer({
-  open,
-  fallbackFocus,
-  ...props
-}: PasswordFormProps & { open: boolean; fallbackFocus: RefObject<HTMLElement | null> }) {
+export function PasswordDrawer({ open, ...props }: PasswordFormProps & { open: boolean }) {
   return (
-    <Drawer open={open} onClose={props.onClose} title="Alterar senha" fallbackFocus={fallbackFocus}>
+    <Drawer open={open} onClose={props.onClose} title="Alterar senha">
       {open && <PasswordForm {...props} />}
     </Drawer>
   );

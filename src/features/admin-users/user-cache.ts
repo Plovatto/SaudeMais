@@ -24,16 +24,14 @@ export function syncUser(queryClient: QueryClient, user: AdminUserDetail) {
 }
 
 export interface UserLocks {
-  isProtected: boolean;
   isInactive: boolean;
   isSelf: boolean;
 }
 
 export const userLocks = (
-  user: { id: string; isProtected: boolean; deactivatedAt: string | null },
+  user: { id: string; deactivatedAt: string | null },
   currentUserId: string,
 ): UserLocks => ({
-  isProtected: user.isProtected,
   isInactive: user.deactivatedAt !== null,
   isSelf: user.id === currentUserId,
 });

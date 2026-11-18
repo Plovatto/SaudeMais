@@ -1,6 +1,12 @@
 export type ThemePreference = 'light' | 'dark' | 'system';
 export type Theme = 'light' | 'dark';
 
+export const THEME_OPTIONS = [
+  { value: 'light', label: 'Claro', menuLabel: 'Tema claro' },
+  { value: 'dark', label: 'Escuro', menuLabel: 'Tema escuro' },
+  { value: 'system', label: 'Sistema', menuLabel: 'Tema do sistema' },
+] as const satisfies readonly { value: ThemePreference; label: string; menuLabel: string }[];
+
 export const THEME_STORAGE_KEY = 'saudemais:v1:theme';
 
 const DARK_QUERY = '(prefers-color-scheme: dark)';

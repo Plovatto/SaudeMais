@@ -1,6 +1,5 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { DEMO_DOCTOR, DEMO_PATIENT } from '@constants/demo-accounts';
 import { SESSION_STORAGE_KEY } from '@lib/auth/token-store';
 import { THEME_STORAGE_KEY } from '@lib/theme';
 import { passwordSchema } from './profile-schemas';
@@ -36,11 +35,6 @@ type ServedUser = Omit<ReturnType<typeof testUser>, 'phone'> & {
   phone: string | null;
   birthDate?: string | null;
   passwordChangedAt?: string | null;
-};
-
-const protectedError = {
-  status: 403,
-  body: { message: 'Esta é uma conta de demonstração e não pode ser alterada.', code: 'PROTECTED_ACCOUNT' },
 };
 
 function serve(user: ServedUser, routes: Record<string, Route> = {}) {
@@ -651,53 +645,5 @@ describe('sessions failures', () => {
     expect(screen.getAllByRole('alert').some((element) => element.textContent?.trim())).toBe(true);
     expect(router.state.location.pathname).toBe('/paciente/perfil');
     expect(sessionStorage.getItem(SESSION_STORAGE_KEY)).toBe(TEST_TOKEN);
-  });
-});
-
-describe('protected demo account', () => {
-  it.each([DEMO_PATIENT, DEMO_DOCTOR])(
-    'shows the $label account locked with an explanation',
-    async ({ email }) => {
-      serve({ ...testUser(), email });
-      openProfile();
-
-      expect(await screen.findByText(/conta de demonstração, compartilhada/)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Editar perfil' })).toBeDisabled();
-      expect(screen.getByRole('button', { name: 'Alterar senha' })).toBeDisabled();
-      expect(await screen.findByRole('switch', { name: 'Lembrete por e-mail' })).toBeDisabled();
-      expect(screen.getByRole('button', { name: 'Encerrar as outras' })).toBeDisabled();
-    },
-  );
-
-  it('locks the profile when the API refuses a change to a protected account', async () => {
-    serve(testUser(), { '/api/me': (method) => (method === 'PATCH' ? protectedError : undefined) });
-    const { user } = openProfile();
-
-    const drawer = await openDrawer(user, 'Editar perfil');
-    await user.type(drawer.getByLabelText('Nome completo'), ' Souza');
-    await user.click(drawer.getByRole('button', { name: 'Salvar alterações' }));
-
-    expect(await screen.findByText(/conta de demonstração, compartilhada/)).toBeInTheDocument();
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(screen.getByRole('button', { name: 'Editar perfil' })).toBeDisabled();
-    expect(screen.queryByText('Ana Maria Silva Souza')).not.toBeInTheDocument();
-    expect(
-      screen.queryByText('Esta é uma conta de demonstração e não pode ser alterada.'),
-    ).not.toBeInTheDocument();
-  });
-
-  it('locks the password change when the API refuses it for a protected account', async () => {
-    serve(testUser(), { '/api/me/password': () => protectedError });
-    const { user } = openProfile();
-
-    const drawer = await openDrawer(user, 'Alterar senha');
-    await user.type(drawer.getByLabelText('Senha atual'), 'senha-segura-123');
-    await user.type(drawer.getByLabelText('Nova senha'), 'nova-senha-456');
-    await user.type(drawer.getByLabelText('Confirmar nova senha'), 'nova-senha-456');
-    await user.click(drawer.getByRole('button', { name: 'Alterar senha' }));
-
-    expect(await screen.findByText(/conta de demonstração, compartilhada/)).toBeInTheDocument();
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(screen.getByRole('button', { name: 'Alterar senha' })).toBeDisabled();
   });
 });
