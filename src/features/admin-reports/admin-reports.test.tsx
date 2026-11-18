@@ -202,6 +202,10 @@ describe('admin reports', () => {
 
     const series = await section('Agendamentos por dia');
     expect(series.getByText('17/10/2026 a 15/11/2026')).toBeInTheDocument();
+    expect(series.getByRole('region', { name: 'Tabela: Agendamentos por dia' })).toHaveAttribute(
+      'tabindex',
+      '0',
+    );
     const table = series.getByRole('table', { name: 'Agendamentos por dia' });
     expect(
       within(table)
