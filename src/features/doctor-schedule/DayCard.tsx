@@ -57,6 +57,7 @@ function Subline({ day }: { day: ScheduleValues['days'][number] }) {
 export function DayCard({ form, weekday, unit, expanded, onExpandedChange }: DayCardProps) {
   const titleId = useId();
   const bodyId = useId();
+  const addHintId = useId();
   const sectionRef = useRef<HTMLElement>(null);
   const addRef = useRef<HTMLButtonElement>(null);
   const removedIndex = useRef<number | null>(null);
@@ -71,10 +72,12 @@ export function DayCard({ form, weekday, unit, expanded, onExpandedChange }: Day
   );
   const name = WEEKDAYS[weekday] ?? '';
   const lowerName = name.toLowerCase();
-  const next = fields.length < MAX_RANGES ? nextRange(day.ranges, unit) : null;
+  const full = fields.length >= MAX_RANGES;
+  const next = full ? null : nextRange(day.ranges, unit);
   const errors = fields.map((_field, index) => rangeError(formState.errors, weekday, index));
   const canExpand = day.isActive || errors.some(Boolean);
   const isOpen = expanded && canExpand;
+  const toggle = () => onExpandedChange(!isOpen);
 
   useEffect(() => {
     const index = removedIndex.current;
@@ -99,10 +102,17 @@ export function DayCard({ form, weekday, unit, expanded, onExpandedChange }: Day
           <span aria-hidden className={cx(tile, !day.isActive && softTones.neutral)}>
             <LuCalendar />
           </span>
-          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <div
+            onClick={canExpand ? toggle : undefined}
+            className={cx('flex min-w-0 flex-1 flex-col gap-0.5', canExpand && 'cursor-pointer')}
+          >
             <h2
               id={titleId}
-              className={cx('text-sm font-semibold', day.isActive ? 'text-text' : 'text-text-secondary')}
+              className={cx(
+                'text-sm font-semibold',
+                day.isActive ? 'text-text' : 'text-text-secondary',
+                canExpand && 'can-hover:text-role-text',
+              )}
             >
               {name}
             </h2>
@@ -128,13 +138,13 @@ export function DayCard({ form, weekday, unit, expanded, onExpandedChange }: Day
                 }}
                 label={servingLabel(weekday, lowerName)}
                 labelHidden
-                className="cursor-pointer"
+                className="min-w-11 cursor-pointer justify-center"
               />
             )}
           />
           {canExpand ? (
             <IconButton
-              label={`${isOpen ? 'Fechar' : 'Ver'} horários de ${lowerName}`}
+              label={`Horários de ${lowerName}`}
               icon={
                 <LuChevronDown
                   className={cx(
@@ -145,7 +155,7 @@ export function DayCard({ form, weekday, unit, expanded, onExpandedChange }: Day
               }
               aria-expanded={isOpen}
               aria-controls={isOpen ? bodyId : undefined}
-              onClick={() => onExpandedChange(!isOpen)}
+              onClick={toggle}
               className="aria-expanded:text-text-secondary -ms-1.5 cursor-pointer aria-expanded:bg-transparent"
             />
           ) : (
@@ -163,10 +173,7 @@ export function DayCard({ form, weekday, unit, expanded, onExpandedChange }: Day
                 : 'A unidade não abre neste dia.'}
             </p>
             {fields.length > 0 && (
-              <ul
-                aria-label={`Períodos de ${lowerName}`}
-                className={cx('flex flex-col gap-2.5', !day.isActive && 'opacity-75')}
-              >
+              <ul aria-label={`Períodos de ${lowerName}`} className="flex flex-col gap-2.5">
                 {fields.map((field, index) => (
                   <RangeRow
                     key={field.id}
@@ -185,15 +192,25 @@ export function DayCard({ form, weekday, unit, expanded, onExpandedChange }: Day
               </ul>
             )}
             {day.isActive && unit && (
-              <AddButton
-                ref={addRef}
-                disabled={!next}
-                onClick={() => {
-                  if (next) append(next, { focusName: `${rangePath(weekday, fields.length)}.startMin` });
-                }}
-              >
-                Adicionar período
-              </AddButton>
+              <>
+                <AddButton
+                  ref={addRef}
+                  disabled={!next}
+                  aria-describedby={next ? undefined : addHintId}
+                  onClick={() => {
+                    if (next) append(next, { focusName: `${rangePath(weekday, fields.length)}.startMin` });
+                  }}
+                >
+                  Adicionar período
+                </AddButton>
+                {!next && (
+                  <p id={addHintId} className="text-text-muted text-center text-xs">
+                    {full
+                      ? `Máximo de ${MAX_RANGES} períodos.`
+                      : 'Não cabe outro período no horário da unidade.'}
+                  </p>
+                )}
+              </>
             )}
           </div>
         )}

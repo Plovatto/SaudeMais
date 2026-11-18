@@ -82,7 +82,7 @@ const sectionOf = async (name: string) =>
 
 const expand = async (user: ReturnType<typeof renderApp>['user'], name: string) => {
   const card = await sectionOf(name);
-  await user.click(card.getByRole('button', { name: `Ver horários de ${name.toLowerCase()}` }));
+  await user.click(card.getByRole('button', { name: `Horários de ${name.toLowerCase()}` }));
   return card;
 };
 
@@ -148,14 +148,13 @@ describe('doctor schedule', { timeout: 15_000 }, () => {
     serve();
     const { user } = renderApp(PAGE);
     const monday = await sectionOf('Segunda-feira');
-    const toggle = monday.getByRole('button', { name: 'Ver horários de segunda-feira' });
+    const toggle = monday.getByRole('button', { name: 'Horários de segunda-feira' });
 
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     expect(monday.queryByRole('combobox')).not.toBeInTheDocument();
 
     await user.click(toggle);
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    expect(toggle).toHaveAccessibleName('Fechar horários de segunda-feira');
     expect(monday.getByRole('combobox', { name: 'Segunda-feira, início do período 1' })).toHaveValue('480');
     expect(monday.getByRole('combobox', { name: 'Segunda-feira, fim do período 1' })).toHaveValue('720');
     expect(monday.getByRole('button', { name: 'Remover período de 08:00 às 12:00' })).toBeInTheDocument();
@@ -164,6 +163,11 @@ describe('doctor schedule', { timeout: 15_000 }, () => {
     await user.click(toggle);
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     expect(monday.queryByRole('combobox')).not.toBeInTheDocument();
+
+    await user.click(monday.getByRole('heading', { level: 2, name: 'Segunda-feira' }));
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await user.click(monday.getByText(/08:00–12:00/));
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('turns a day on with a first period and saves it from the phone bar', async () => {
@@ -173,7 +177,7 @@ describe('doctor schedule', { timeout: 15_000 }, () => {
 
     await user.click(wednesday.getByRole('switch', { name: 'Atender às quartas-feiras' }));
 
-    expect(wednesday.getByRole('button', { name: 'Fechar horários de quarta-feira' })).toHaveAttribute(
+    expect(wednesday.getByRole('button', { name: 'Horários de quarta-feira' })).toHaveAttribute(
       'aria-expanded',
       'true',
     );
@@ -278,13 +282,13 @@ describe('doctor schedule', { timeout: 15_000 }, () => {
       monday.getByRole('combobox', { name: 'Segunda-feira, início do período 1' }),
       '780',
     );
-    await user.click(monday.getByRole('button', { name: 'Fechar horários de segunda-feira' }));
+    await user.click(monday.getByRole('button', { name: 'Horários de segunda-feira' }));
 
     await user.click(saveButton());
 
     const message = await monday.findByText('O fim precisa ser depois do início.');
     const start = monday.getByRole('combobox', { name: 'Segunda-feira, início do período 1' });
-    expect(monday.getByRole('button', { name: 'Fechar horários de segunda-feira' })).toHaveAttribute(
+    expect(monday.getByRole('button', { name: 'Horários de segunda-feira' })).toHaveAttribute(
       'aria-expanded',
       'true',
     );
@@ -324,7 +328,6 @@ describe('doctor schedule', { timeout: 15_000 }, () => {
     expect(thursday.getByRole('combobox', { name: 'Quinta-feira, início do período 1' })).not.toHaveAttribute(
       'aria-invalid',
     );
-    expect(thursday.getByRole('list', { name: 'Períodos de quinta-feira' })).toHaveClass('opacity-75');
   });
 
   it('maps an API error to the right row of an unsorted day', async () => {
@@ -389,6 +392,9 @@ describe('doctor schedule', { timeout: 15_000 }, () => {
     const monday = await expand(user, 'Segunda-feira');
 
     expect(monday.getByRole('button', { name: 'Adicionar período' })).toBeDisabled();
+    expect(monday.getByRole('button', { name: 'Adicionar período' })).toHaveAccessibleDescription(
+      'Não cabe outro período no horário da unidade.',
+    );
   });
 
   it('keeps stored periods of a closed unit day removable without offering new ones', async () => {
@@ -408,12 +414,17 @@ describe('doctor schedule', { timeout: 15_000 }, () => {
     serve({ loaded: withDays({ 5: { isActive: true, ranges: hourly(7, 12) } }) });
     const { user } = renderApp(PAGE);
     const friday = await expand(user, 'Sexta-feira');
-    expect(friday.getByRole('button', { name: 'Adicionar período' })).toBeDisabled();
+    expect(friday.getByRole('button', { name: 'Adicionar período' })).toHaveAccessibleDescription(
+      'Máximo de 12 períodos.',
+    );
 
     await user.click(friday.getByRole('button', { name: 'Remover período de 09:00 às 10:00' }));
 
     expect(friday.getAllByRole('button', { name: /^Remover período/ })).toHaveLength(11);
     expect(friday.getByRole('button', { name: 'Adicionar período' })).toBeDisabled();
+    expect(friday.getByRole('button', { name: 'Adicionar período' })).toHaveAccessibleDescription(
+      'Não cabe outro período no horário da unidade.',
+    );
     expect(friday.getByRole('button', { name: 'Remover período de 08:00 às 09:00' })).toHaveFocus();
   });
 
