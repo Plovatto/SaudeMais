@@ -53,7 +53,6 @@ export function WeekStrip({ days, selected, today, countOf, onSelect, onStep, on
               type="button"
               aria-pressed={on}
               aria-current={day === today ? 'date' : undefined}
-              aria-label={`${formatLongDay(middayOf(day))}${count === undefined ? '' : `, ${plural(count, 'consulta', 'consultas')}`}`}
               onClick={() => onSelect(day)}
               className={cx(
                 'rounded-tile flex min-h-16 cursor-pointer flex-col items-center justify-center gap-1 border px-1 py-2 transition-[background-color,border-color,box-shadow] duration-150',
@@ -72,8 +71,11 @@ export function WeekStrip({ days, selected, today, countOf, onSelect, onStep, on
                 )}
               >
                 {weekday}
-              </span>
+              </span>{' '}
               <b className="text-lg/none font-semibold tabular-nums">{number}</b>
+              <span className="sr-only">
+                {`, ${formatLongDay(middayOf(day))}${count === undefined ? '' : `, ${plural(count, 'consulta', 'consultas')}`}`}
+              </span>
               <i
                 aria-hidden
                 className={cx(
