@@ -17,13 +17,14 @@ import { areas } from '@constants/areas';
 import { AGENDA_TABS, doctorAgendaUrl } from '@constants/doctor-agenda';
 import { visitTypeLabels } from '@constants/visit-types';
 import { useNow } from '@hooks/useNow';
+import { doctorHomeQuery } from '@lib/api/home-api';
 import type { DoctorAppointment } from '@lib/api/models';
 import { civilDateInSaoPaulo, formatShortDay, formatTime, MINUTE_MS, whenText } from '@lib/date';
 import { cx } from '@lib/cx';
 import { AppointmentQueue } from './AppointmentQueue';
 import { COMPLETE, CONFIRM, NO_SHOW } from './decisions';
 import { ActionTarget, DecisionButton } from './DecisionButton';
-import { agendaRangeQuery, doctorHomeQuery, nextAppointmentQuery } from './doctor-api';
+import { agendaRangeQuery, nextAppointmentQuery } from './doctor-api';
 import { TodayAgenda } from './TodayAgenda';
 import { useAppointmentActions } from './useAppointmentActions';
 

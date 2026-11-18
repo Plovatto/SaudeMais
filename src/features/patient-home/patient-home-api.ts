@@ -8,10 +8,7 @@ export type ResultSummary = ResponseOf<'/api/patient/exam-results', 'get'>['item
 
 const RECENT_RESULTS = 3;
 
-export const patientHomeQuery = queryOptions({
-  queryKey: queryKeys.patient.home,
-  queryFn: ({ signal }) => apiFetch('get', '/api/patient/home', { signal }),
-});
+export { patientHomeQuery } from '@lib/api/home-api';
 
 export const recentResultsQuery = queryOptions({
   queryKey: queryKeys.patient.examResults({ page: 1, pageSize: RECENT_RESULTS }),
