@@ -115,7 +115,7 @@ export function DoctorPicker({
             })}
             {total > doctors.length && (
               <ListMessage>
-                {`Mostrando ${doctors.length} de ${total}. Busque pelo nome para encontrar os demais.`}
+                {`Mostrando ${doctors.length} de ${total}. ${searched ? 'Refine a busca para encontrar outros médicos.' : 'Busque pelo nome para encontrar os demais.'}`}
               </ListMessage>
             )}
           </>
