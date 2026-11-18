@@ -33,6 +33,20 @@ describe('weekly slots', () => {
     expect(weeklySlots({ days, appointmentDurationMin: 30 })).toBe(8);
     expect(weeklySlots({ days, appointmentDurationMin: 45 })).toBe(5);
   });
+
+  it('counts overlapping periods of a day only once', () => {
+    const overlapping = {
+      isActive: true,
+      ranges: [
+        { startMin: 600, endMin: 720 },
+        { startMin: 480, endMin: 660 },
+        { startMin: 540, endMin: 600 },
+        { startMin: 780, endMin: 840 },
+      ],
+    };
+    expect(dayMinutes(overlapping)).toBe(300);
+    expect(weeklySlots({ days: [overlapping], appointmentDurationMin: 60 })).toBe(5);
+  });
 });
 
 describe('schedule body', () => {
@@ -55,6 +69,13 @@ describe('schedule body', () => {
   it('sends a new duration and null to return to the specialty default', () => {
     expect(toBody(values(20), loaded)).toEqual({ days: [], appointmentDurationMin: 20 });
     expect(toBody(values(30), { ...loaded, appointmentDurationMin: 45, isSpecialtyDefault: false })).toEqual({
+      days: [],
+      appointmentDurationMin: null,
+    });
+  });
+
+  it('sends null to return to the specialty default when the own duration has the same value', () => {
+    expect(toBody(values(30), { ...loaded, isSpecialtyDefault: false })).toEqual({
       days: [],
       appointmentDurationMin: null,
     });
