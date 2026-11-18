@@ -3,30 +3,18 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { LuTrash2, LuUser } from 'react-icons/lu';
-import { useNavigate } from 'react-router';
-import { Button, FormAlert, Input, SectionCard, Select, Skeleton, useToast } from '@components/ui';
-import { UFS } from '@constants/ufs';
-import { useActiveSpecialties, useActiveUnits } from '@hooks/useActiveCatalog';
+import { FormShell } from '@components/forms/FormShell';
+import { Button, Input, useToast } from '@components/ui';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
-import { useFormSubmit } from '@lib/useFormSubmit';
-import { ImpactDialog } from './ImpactDialog';
 import { plural } from '@lib/plural';
-import { ADMIN_USERS_PATH, refreshUser, syncUser } from './user-cache';
+import { useFormSubmit } from '@lib/useFormSubmit';
+import { DoctorProfileFields } from './DoctorProfileFields';
+import { ImpactDialog } from './ImpactDialog';
+import { useDoctorCatalog } from './useDoctorCatalog';
+import { refreshUser, syncUser } from './user-cache';
 import { userMessages } from './user-messages';
-import { doctorProfileSchema, type DoctorProfileValues } from './user-schemas';
+import { DOCTOR_FIELDS, doctorProfileSchema, type DoctorProfileValues } from './user-schemas';
 import { usersApi, type AdminUserDetail, type DeactivationImpact } from './users-api';
-
-const FIELDS = ['specialtyId', 'registryNumber', 'registryUf', 'unitId'] as const;
-
-interface Choice {
-  id: string;
-  name: string;
-}
-
-const withCurrent = <T extends Choice>(active: T[], current: Choice | undefined): Choice[] =>
-  current && !active.some((item) => item.id === current.id)
-    ? [...active, { id: current.id, name: `${current.name} (desativada)` }]
-    : active;
 
 const describeRemoval = ({ futureAppointmentsAsDoctor }: DeactivationImpact) =>
   futureAppointmentsAsDoctor > 0
@@ -36,16 +24,14 @@ const describeRemoval = ({ futureAppointmentsAsDoctor }: DeactivationImpact) =>
 export interface DoctorProfileFormProps {
   user: AdminUserDetail;
   locked: boolean;
+  onBack: () => void;
 }
 
-export function DoctorProfileForm({ user, locked }: DoctorProfileFormProps) {
-  const navigate = useNavigate();
+export function DoctorProfileForm({ user, locked, onBack }: DoctorProfileFormProps) {
   const queryClient = useQueryClient();
   const { show } = useToast();
   const profile = user.doctorProfile;
   const [removing, setRemoving] = useState(false);
-  const specialties = useActiveSpecialties();
-  const units = useActiveUnits();
   const {
     register,
     control,
@@ -61,24 +47,20 @@ export function DoctorProfileForm({ user, locked }: DoctorProfileFormProps) {
       unitId: profile?.unitId ?? '',
     },
   });
-  const { alert, run } = useFormSubmit(setError, FIELDS, undefined, userMessages);
-  const specialtyId = useWatch({ control, name: 'specialtyId' });
-  const council =
-    specialties.data?.find((item) => item.id === specialtyId)?.council ??
-    (profile?.specialtyId === specialtyId ? profile.council : undefined);
+  const { alert, run } = useFormSubmit(setError, DOCTOR_FIELDS, undefined, userMessages);
+  const catalog = useDoctorCatalog(profile, useWatch({ control, name: 'specialtyId' }));
 
-  const backToUser = () => void navigate(`${ADMIN_USERS_PATH}/${user.id}`);
   const finish = (updated: AdminUserDetail, message: string) => {
     syncUser(queryClient, updated);
     show({ message, tone: 'success' });
-    backToUser();
+    onBack();
   };
 
   const onSubmit = handleSubmit((values) =>
     run(async () => {
       if (profile) {
         const changes = Object.fromEntries(
-          FIELDS.filter((field) => dirtyFields[field]).map((field) => [field, values[field]]),
+          DOCTOR_FIELDS.filter((field) => dirtyFields[field]).map((field) => [field, values[field]]),
         );
         finish(await usersApi.updateDoctorProfile(user.id, changes), 'Perfil de médico atualizado.');
       } else
@@ -99,105 +81,52 @@ export function DoctorProfileForm({ user, locked }: DoctorProfileFormProps) {
     onSettled: () => setRemoving(false),
   });
 
-  const catalogError = specialties.error ?? units.error;
-  const loading = specialties.isPending || units.isPending;
-  const disabled = locked || catalogError !== null;
-
   return (
-    <SectionCard
-      title={profile ? 'Dados profissionais' : 'Tornar médico'}
-      description={
-        profile
-          ? 'Mudar a especialidade ou a unidade só é possível sem consultas futuras.'
-          : 'Preencha os dados profissionais para dar o perfil de médico a esta conta.'
-      }
-    >
-      {loading && !catalogError ? (
-        <div aria-busy="true">
-          <Skeleton className="h-80" />
-        </div>
-      ) : (
-        <form noValidate onSubmit={(event) => void onSubmit(event)} className="flex flex-col gap-5">
-          <Input label="Nome" value={user.fullName} readOnly icon={<LuUser />} />
-          <Select
-            label="Especialidade"
-            placeholder="Escolha a especialidade"
-            disabled={disabled}
-            error={errors.specialtyId?.message}
-            {...register('specialtyId')}
+    <>
+      <FormShell
+        label={profile ? 'Dados profissionais' : 'Tornar médico'}
+        onSubmit={onSubmit}
+        alert={alert}
+        submitting={isSubmitting}
+        onCancel={onBack}
+        submitLabel={profile ? 'Salvar alterações' : 'Tornar médico'}
+        submitDisabled={locked || catalog.error !== null || (profile !== null && !isDirty)}
+      >
+        <p className="text-text-secondary text-sm">
+          {profile
+            ? 'Mudar a especialidade ou a unidade só é possível sem consultas futuras.'
+            : 'Preencha os dados profissionais para dar o perfil de médico a esta conta.'}
+        </p>
+        <Input label="Nome" value={user.fullName} readOnly icon={<LuUser />} />
+        <DoctorProfileFields
+          catalog={catalog}
+          fields={{
+            specialtyId: register('specialtyId'),
+            registryNumber: register('registryNumber'),
+            registryUf: register('registryUf'),
+            unitId: register('unitId'),
+          }}
+          errors={{
+            specialtyId: errors.specialtyId?.message,
+            registryNumber: errors.registryNumber?.message,
+            registryUf: errors.registryUf?.message,
+            unitId: errors.unitId?.message,
+          }}
+          disabled={locked}
+          autoFocus
+        />
+        {profile && (
+          <Button
+            variant="danger-outline"
+            icon={<LuTrash2 />}
+            disabled={locked}
+            onClick={() => setRemoving(true)}
+            className="self-start"
           >
-            {withCurrent(
-              specialties.data ?? [],
-              profile ? { id: profile.specialtyId, name: profile.specialtyName } : undefined,
-            ).map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </Select>
-          <div className="grid gap-5 sm:grid-cols-[1fr_8rem]">
-            <Input
-              label={council ? `Número do ${council}` : 'Número do registro profissional'}
-              inputMode="numeric"
-              autoComplete="off"
-              hint={council ? undefined : 'O conselho depende da especialidade escolhida.'}
-              disabled={disabled}
-              error={errors.registryNumber?.message}
-              {...register('registryNumber')}
-            />
-            <Select
-              label="UF"
-              placeholder="UF"
-              disabled={disabled}
-              error={errors.registryUf?.message}
-              {...register('registryUf')}
-            >
-              {UFS.map((uf) => (
-                <option key={uf} value={uf}>
-                  {uf}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <Select
-            label="Unidade"
-            placeholder="Escolha a unidade"
-            disabled={disabled}
-            error={errors.unitId?.message}
-            {...register('unitId')}
-          >
-            {withCurrent(
-              units.data ?? [],
-              profile ? { id: profile.unitId, name: profile.unitName } : undefined,
-            ).map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </Select>
-          {catalogError && <FormAlert>{errorMessage(catalogError)}</FormAlert>}
-          {alert && <FormAlert>{alert}</FormAlert>}
-          <div className="flex flex-wrap gap-3">
-            <Button
-              type="submit"
-              loading={isSubmitting}
-              disabled={disabled || (profile !== null && !isDirty)}
-            >
-              {profile ? 'Salvar alterações' : 'Tornar médico'}
-            </Button>
-            {profile && (
-              <Button
-                variant="danger"
-                icon={<LuTrash2 />}
-                disabled={locked}
-                onClick={() => setRemoving(true)}
-              >
-                Remover perfil de médico
-              </Button>
-            )}
-          </div>
-        </form>
-      )}
+            Remover perfil de médico
+          </Button>
+        )}
+      </FormShell>
       <ImpactDialog
         userId={removing ? user.id : null}
         title={`Remover o perfil de médico de ${user.fullName}?`}
@@ -207,6 +136,6 @@ export function DoctorProfileForm({ user, locked }: DoctorProfileFormProps) {
         onConfirm={() => remove.mutate()}
         onClose={() => setRemoving(false)}
       />
-    </SectionCard>
+    </>
   );
 }

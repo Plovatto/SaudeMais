@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react';
 import { redirect, type RouteObject } from 'react-router';
 import { RootFallback, RootRoute } from '@components/layout/RootRoute';
+import { adminUserUrl, DOCTOR_SECTION } from '@constants/admin-users';
 import { areas, NOTIFICATIONS_PATH, type Area } from '@constants/areas';
 import { ForbiddenPage, NotFoundPage, RouteError, RouteErrorBoundary } from '@features/errors';
 import { PublicOnly, RequireRole, RequireSession } from './guards';
@@ -50,8 +51,6 @@ const areaScreens: Record<string, typeof placeholder> = {
   perfil: lazyComponent(async () => (await import('@features/profile')).ProfilePage),
   agendamentos: lazyComponent(async () => (await import('@features/patient-bookings')).PatientBookingsPage),
   usuarios: lazyComponent(async () => (await import('@features/admin-users')).UsersPage),
-  'usuarios/:id': lazyComponent(async () => (await import('@features/admin-users')).EditUserPage),
-  'usuarios/:id/medico': lazyComponent(async () => (await import('@features/admin-users')).DoctorProfilePage),
   relatorios: lazyComponent(async () => (await import('@features/admin-reports')).AdminReportsPage),
   'configuracoes/*': lazyComponent(async () => (await import('@features/admin-settings')).AdminSettingsPage),
   agenda: lazyComponent(async () => (await import('@features/doctor-agenda')).DoctorAgendaPage),
@@ -76,6 +75,16 @@ const homeScreens: Partial<Record<Area['role'], typeof placeholder>> = {
   admin: lazyComponent(async () => (await import('@features/admin-home')).AdminHomePage),
 };
 
+const areaRedirects: Partial<Record<Area['role'], RouteObject[]>> = {
+  admin: [
+    { path: 'usuarios/:id', loader: ({ params }) => redirect(adminUserUrl(params.id ?? '')) },
+    {
+      path: 'usuarios/:id/medico',
+      loader: ({ params }) => redirect(adminUserUrl(params.id ?? '', DOCTOR_SECTION)),
+    },
+  ],
+};
+
 const screenFor = (area: Area, path: string) =>
   (path === '' ? homeScreens[area.role] : areaScreens[path]) ?? placeholder;
 
@@ -98,6 +107,7 @@ const areaRoute = (area: Area): RouteObject =>
       ...area.pages.map(({ path, title, crumb }) =>
         page(path, title, { lazy: screenFor(area, path), crumb }),
       ),
+      ...(areaRedirects[area.role] ?? []),
       notFound,
     ],
     area.role,
