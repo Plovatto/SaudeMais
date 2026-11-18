@@ -39,7 +39,6 @@ export const errorMessages: Record<string, string> = {
   UNAUTHENTICATED: 'Sua sessão expirou. Entre novamente.',
   FORBIDDEN: 'Você não tem acesso a esta área.',
   FORBIDDEN_NO_LINK: NO_LINK_MESSAGE,
-  PROTECTED_ACCOUNT: 'Esta é uma conta de demonstração e não pode ser alterada.',
   INVALID_STATE: 'Este agendamento mudou ou não pode mais ser alterado. Confira a lista atualizada.',
   NOT_STARTED: 'Esta consulta ainda não começou. Registre o desfecho a partir do horário de início.',
   INVALID_CURRENT_PASSWORD: 'A senha atual está incorreta.',

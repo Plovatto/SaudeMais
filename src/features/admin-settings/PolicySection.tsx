@@ -24,6 +24,11 @@ const leadTime = (minutes: number) => {
   return plural(minutes / 60, 'hora', 'horas');
 };
 
+const activeLimit = (one: string, many: string) => ({
+  label: (count: number) => plural(count, one, many),
+  presets: [[1], [2], [3], [5, 'Recomendado'], [10], [20], [50, 'Máximo']] as const,
+});
+
 const ROWS: readonly PolicyRow[] = [
   {
     name: 'minLeadMinutes',
@@ -80,6 +85,24 @@ const ROWS: readonly PolicyRow[] = [
     description: 'Quantas vezes o paciente pode trocar o horário de um mesmo agendamento.',
     label: (times) => (times === 0 ? 'Não permitir' : plural(times, 'vez', 'vezes')),
     presets: [[0, 'Só cancelando e agendando de novo'], [1], [2], [3], [5]],
+  },
+  {
+    name: 'maxActiveBookings',
+    title: 'Agendamentos ativos por paciente',
+    description: 'Quantas consultas e exames futuros, somados, cada paciente pode ter ao mesmo tempo.',
+    ...activeLimit('agendamento', 'agendamentos'),
+  },
+  {
+    name: 'maxActiveAppointments',
+    title: 'Consultas ativas por paciente',
+    description: 'Quantas consultas futuras cada paciente pode ter ao mesmo tempo.',
+    ...activeLimit('consulta', 'consultas'),
+  },
+  {
+    name: 'maxActiveExams',
+    title: 'Exames ativos por paciente',
+    description: 'Quantos exames futuros cada paciente pode ter ao mesmo tempo.',
+    ...activeLimit('exame', 'exames'),
   },
 ];
 
