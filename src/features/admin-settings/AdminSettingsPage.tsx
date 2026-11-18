@@ -1,10 +1,12 @@
-import { useEffect } from 'react';
+import { useIsFetching, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
 import { LuCheck, LuSlidersHorizontal } from 'react-icons/lu';
 import { Navigate, useParams } from 'react-router';
 import { PageHeader } from '@components/layout/PageHeader';
 import { Button, CtaBar, ctaButton, stagger } from '@components/ui';
 import { DESKTOP_QUERY, useMediaQuery } from '@hooks/useMediaQuery';
 import { cx } from '@lib/cx';
+import { queryKeys } from '@lib/query-keys';
 import { ExamTypesSection } from './ExamTypesSection';
 import { IntegrationsSection } from './IntegrationsSection';
 import { OffersSection } from './OffersSection';
@@ -23,12 +25,23 @@ export function AdminSettingsPage() {
   const section = useParams()['*'] ?? '';
   const known = section === '' || SECTIONS.includes(section);
 
+  const queryClient = useQueryClient();
+  const loading = useIsFetching({ queryKey: queryKeys.catalog.all });
+  const scrollPending = useRef(false);
+
   useEffect(() => {
     const card = section === '' ? null : document.getElementById(section);
     if (!card) return;
     card.focus({ preventScroll: true });
-    if ('scrollIntoView' in card) card.scrollIntoView({ block: 'start' });
+    card.scrollIntoView({ block: 'start' });
+    scrollPending.current = true;
   }, [section]);
+
+  useEffect(() => {
+    if (!scrollPending.current || queryClient.isFetching({ queryKey: queryKeys.catalog.all }) > 0) return;
+    scrollPending.current = false;
+    document.getElementById(section)?.scrollIntoView({ block: 'start' });
+  }, [loading, section, queryClient]);
 
   if (!known) return <Navigate to="/admin/configuracoes" replace />;
 

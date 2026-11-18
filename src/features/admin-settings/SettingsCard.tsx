@@ -8,7 +8,10 @@ export function SettingsCard({ flush = true, className, ...props }: SectionCardP
     <SectionCard
       flush={flush}
       tabIndex={-1}
-      className={cx('scroll-mt-4 focus:outline-none', className)}
+      className={cx(
+        'scroll-mt-[calc(84px+env(safe-area-inset-top))] focus:outline-none lg:scroll-mt-4',
+        className,
+      )}
       {...props}
     />
   );
