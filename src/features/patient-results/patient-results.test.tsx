@@ -60,7 +60,9 @@ describe('patient results for the doctor', { timeout: 15_000 }, () => {
     expect(screen.getByRole('button', { name: /^Glicemia/ })).toBeVisible();
 
     await user.click(screen.getByRole('button', { name: /^Hemograma/ }));
-    expect(screen.getByRole('table', { name: 'Itens do exame' })).toBeVisible();
+    const table = screen.getByRole('table', { name: 'Itens do exame' });
+    expect(table).toBeVisible();
+    expect(table.parentElement).toHaveClass('overflow-x-auto');
     expect(screen.getByRole('rowheader', { name: 'Hemoglobina' })).toBeVisible();
   });
 

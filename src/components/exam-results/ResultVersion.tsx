@@ -58,41 +58,43 @@ export function ResultVersion({
     );
   }
   return (
-    <table className="w-full text-sm">
-      <caption className="text-text pb-2 text-start text-sm font-semibold">{label}</caption>
-      <thead>
-        <tr className="text-text-secondary text-xs font-semibold">
-          {columns.map(({ label: column, className }) => (
-            <th key={column} scope="col" className={cx(cell, 'text-start', className)}>
-              {column}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody className="text-text">
-        {items.map((item, index) => (
-          <tr key={`${index}-${item.name}`}>
-            <th scope="row" className={`${cell} text-start font-medium`}>
-              {item.name}
-            </th>
-            <td className={cell}>
-              <span className="font-semibold tabular-nums">{formatResultValue(item.value)}</span>
-              {item.unit && <span className="text-text-secondary"> {item.unit}</span>}
-              {item.referenceRange && (
-                <span className="text-text-secondary block text-xs lg:hidden print:hidden">
-                  Referência: {item.referenceRange}
-                </span>
-              )}
-            </td>
-            <td className={cx(cell, wideOnly, 'text-text-secondary tabular-nums')}>
-              {item.referenceRange ?? '—'}
-            </td>
-            <td className={cell}>
-              <FlagChip flag={item.flag} />
-            </td>
+    <div className="min-w-0 overflow-x-auto">
+      <table className="w-full text-sm">
+        <caption className="text-text pb-2 text-start text-sm font-semibold">{label}</caption>
+        <thead>
+          <tr className="text-text-secondary text-xs font-semibold">
+            {columns.map(({ label: column, className }) => (
+              <th key={column} scope="col" className={cx(cell, 'text-start', className)}>
+                {column}
+              </th>
+            ))}
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody className="text-text">
+          {items.map((item, index) => (
+            <tr key={`${index}-${item.name}`}>
+              <th scope="row" className={`${cell} text-start font-medium`}>
+                {item.name}
+              </th>
+              <td className={cell}>
+                <span className="font-semibold tabular-nums">{formatResultValue(item.value)}</span>
+                {item.unit && <span className="text-text-secondary"> {item.unit}</span>}
+                {item.referenceRange && (
+                  <span className="text-text-secondary block text-xs lg:hidden print:hidden">
+                    Referência: {item.referenceRange}
+                  </span>
+                )}
+              </td>
+              <td className={cx(cell, wideOnly, 'text-text-secondary tabular-nums')}>
+                {item.referenceRange ?? '—'}
+              </td>
+              <td className={cell}>
+                <FlagChip flag={item.flag} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
