@@ -121,7 +121,7 @@ describe('Figma colors', () => {
 });
 
 describe('interaction variants', () => {
-  const unavailable = /@custom-variant unavailable \((.+)\);/.exec(css)?.[1]?.replace('&', 'button') ?? '';
+  const unavailable = /@custom-variant unavailable \((.+)\);/.exec(css)?.[1]?.replaceAll('&', 'button') ?? '';
 
   function button(attributes: Record<string, string>): HTMLButtonElement {
     const element = document.createElement('button');
