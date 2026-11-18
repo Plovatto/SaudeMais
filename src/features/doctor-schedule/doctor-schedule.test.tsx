@@ -498,6 +498,11 @@ describe('doctor time off', { timeout: 15_000 }, () => {
         name: 'Remover bloqueio de Sexta, 25 de dezembro',
       }),
     ).toBeInTheDocument();
+    expect(
+      within(rows[0] as HTMLElement).getByRole('button', {
+        name: 'Remover bloqueio de Quinta, 24 de dezembro (Véspera de Natal)',
+      }),
+    ).toBeInTheDocument();
   });
 
   it('says when no day is blocked', async () => {
@@ -588,27 +593,178 @@ describe('doctor time off', { timeout: 15_000 }, () => {
     expect(calls.some((call) => call.method === 'POST')).toBe(false);
   });
 
-  it('removes a block right away', async () => {
+  const removeRoute =
+    (respond: () => MockResponse, onDelete: () => void = () => undefined): ApiRoute =>
+    (method) => {
+      if (method !== 'DELETE') return undefined;
+      onDelete();
+      return respond();
+    };
+
+  it('asks before removing a block and removes it once confirmed', async () => {
     let list = blocked;
     const { calls } = serve({
       timeOff: () => ({ status: 200, body: list }),
       extra: {
-        [`${TIME_OFF}/2026-12-24`]: (method) => {
-          if (method !== 'DELETE') return undefined;
-          list = blocked.slice(1);
-          return { status: 204 };
-        },
+        [`${TIME_OFF}/2026-12-24`]: removeRoute(
+          () => ({ status: 204 }),
+          () => {
+            list = blocked.slice(1);
+          },
+        ),
       },
     });
     const { user } = renderApp(PAGE);
     const card = await timeOffCard();
 
-    await user.click(await card.findByRole('button', { name: 'Remover bloqueio de Véspera de Natal' }));
+    await user.click(
+      await card.findByRole('button', {
+        name: 'Remover bloqueio de Quinta, 24 de dezembro (Véspera de Natal)',
+      }),
+    );
+    const dialog = within(await screen.findByRole('dialog', { name: 'Desbloquear quinta, 24 de dezembro?' }));
+    expect(calls.some((call) => call.method === 'DELETE')).toBe(false);
+    await user.click(dialog.getByRole('button', { name: 'Desbloquear' }));
 
     expect(await screen.findByText('Bloqueio removido.')).toBeInTheDocument();
     expect(calls.some((call) => call.method === 'DELETE')).toBe(true);
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(card.queryByText('Véspera de Natal')).not.toBeInTheDocument();
-    expect(card.getByRole('button', { name: 'Bloquear uma data' })).toHaveFocus();
+    await waitFor(() => expect(card.getByRole('button', { name: 'Bloquear uma data' })).toHaveFocus());
     expect(screen.queryByRole('button', { name: 'Salvar' })).not.toBeInTheDocument();
+  });
+
+  it('keeps the block when the doctor cancels the confirmation', async () => {
+    const { calls } = serve({ timeOff: () => ({ status: 200, body: blocked }) });
+    const { user } = renderApp(PAGE);
+    const card = await timeOffCard();
+    const remove = await card.findByRole('button', { name: 'Remover bloqueio de Sexta, 25 de dezembro' });
+
+    await user.click(remove);
+    await user.click(
+      within(await screen.findByRole('dialog', { name: 'Desbloquear sexta, 25 de dezembro?' })).getByRole(
+        'button',
+        { name: 'Cancelar' },
+      ),
+    );
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(calls.some((call) => call.method === 'DELETE')).toBe(false);
+    expect(remove).toHaveFocus();
+  });
+
+  it.each([
+    [404, 'NOT_FOUND', 'Bloqueio não encontrado.', 'Bloqueio não encontrado.'],
+    [422, 'PAST_DATE', 'Data no passado.', 'Esta data já passou e não pode mais ser desbloqueada.'],
+  ])('refreshes the list when removing fails with %i %s', async (status, code, message, shown) => {
+    let list = blocked;
+    const { calls } = serve({
+      timeOff: () => ({ status: 200, body: list }),
+      extra: {
+        [`${TIME_OFF}/2026-12-24`]: removeRoute(
+          () => ({ status, body: { code, message } }),
+          () => {
+            list = blocked.slice(1);
+          },
+        ),
+      },
+    });
+    const { user } = renderApp(PAGE);
+    const card = await timeOffCard();
+
+    await user.click(
+      await card.findByRole('button', { name: /^Remover bloqueio de Quinta, 24 de dezembro/ }),
+    );
+    await user.click(
+      within(await screen.findByRole('dialog', { name: /^Desbloquear/ })).getByRole('button', {
+        name: 'Desbloquear',
+      }),
+    );
+
+    expect(await screen.findByText(shown)).toBeInTheDocument();
+    await waitFor(() => expect(card.queryByText('Véspera de Natal')).not.toBeInTheDocument());
+    expect(
+      calls.filter((call) => call.method === 'GET' && call.url.pathname === TIME_OFF).length,
+    ).toBeGreaterThan(1);
+    await waitFor(() => expect(card.getByRole('button', { name: 'Bloquear uma data' })).toHaveFocus());
+  });
+
+  it('keeps the drawer open while the block is being saved', async () => {
+    const { fetchMock } = serve({
+      timeOff: createRoute((body) => ({ status: 201, body: { ...(body as object), warnings: [] } })),
+    });
+    const respond = fetchMock.getMockImplementation();
+    let release = () => {};
+    fetchMock.mockImplementation(async (url, init) => {
+      if (init?.method === 'POST') await new Promise<void>((resolve) => (release = resolve));
+      return (respond as NonNullable<typeof respond>)(url, init);
+    });
+    const { user } = renderApp(PAGE);
+    const drawer = await openDrawer(user);
+
+    await user.type(drawer.getByLabelText('Data'), soon);
+    await user.click(drawer.getByRole('button', { name: 'Bloquear data' }));
+
+    await waitFor(() => expect(drawer.queryByRole('button', { name: 'Fechar' })).not.toBeInTheDocument());
+    await user.keyboard('{Escape}');
+    expect(screen.getByRole('dialog', { name: 'Bloquear uma data' })).toBeInTheDocument();
+
+    release();
+    expect(await screen.findByText('Data bloqueada.')).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('clears the warnings only when the day they belong to is unblocked', async () => {
+    let list = [...blocked];
+    serve({
+      timeOff: (method, body) => {
+        if (method !== 'POST') return { status: 200, body: list };
+        list = [...list, { date: soon, reason: null }];
+        return {
+          status: 201,
+          body: {
+            ...(body as object),
+            warnings: [{ appointmentId: 'a1', startsAt: `${soon}T12:00:00.000Z` }],
+          },
+        };
+      },
+      extra: {
+        [`${TIME_OFF}/2026-12-24`]: removeRoute(
+          () => ({ status: 204 }),
+          () => {
+            list = list.filter((item) => item.date !== '2026-12-24');
+          },
+        ),
+        [`${TIME_OFF}/${soon}`]: removeRoute(
+          () => ({ status: 204 }),
+          () => {
+            list = list.filter((item) => item.date !== soon);
+          },
+        ),
+      },
+    });
+    const { user } = renderApp(PAGE);
+    const drawer = await openDrawer(user);
+    await user.type(drawer.getByLabelText('Data'), soon);
+    await user.click(drawer.getByRole('button', { name: 'Bloquear data' }));
+    const card = await timeOffCard();
+    const warning = /^1 consulta já estava marcada nesta data/;
+    expect(await card.findByText(warning)).toBeInTheDocument();
+
+    const confirmRemoval = async (name: RegExp) => {
+      await user.click(await card.findByRole('button', { name }));
+      await user.click(
+        within(await screen.findByRole('dialog', { name: /^Desbloquear/ })).getByRole('button', {
+          name: 'Desbloquear',
+        }),
+      );
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    };
+
+    await confirmRemoval(/\(Véspera de Natal\)$/);
+    expect(card.getByText(warning)).toBeInTheDocument();
+
+    await confirmRemoval(new RegExp(`^Remover bloqueio de .* ${Number(soon.slice(8))} de `));
+    expect(card.queryByText(warning)).not.toBeInTheDocument();
   });
 });
