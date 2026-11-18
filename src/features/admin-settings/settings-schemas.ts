@@ -23,6 +23,7 @@ export const specialtySchema = z.object({
     .toUpperCase()
     .regex(/^[A-Z]{3,10}$/, 'Use a sigla do conselho, com 3 a 10 letras (ex.: CRM).'),
   appointmentDurationMin: fiveMinuteSteps(10, 240),
+  isActive: z.boolean(),
 });
 
 const dayHours = z
@@ -47,6 +48,7 @@ export const unitSchema = z.object({
   address: boundedText(5, 200, 'Informe o endereço (5 a 200 caracteres).'),
   phone: phoneField.refine((value) => value !== '', 'Informe o telefone com DDD.'),
   hours: z.array(dayHours).length(WEEKDAYS.length),
+  isActive: z.boolean(),
 });
 
 export const examTypeSchema = z.object({
@@ -61,6 +63,7 @@ export const examTypeSchema = z.object({
   kind: z.enum(['lab', 'imaging'], { error: 'Escolha o tipo.' }),
   durationMin: fiveMinuteSteps(5, 240),
   preparationNotes: z.string().trim().max(1000, 'Use até 1000 caracteres.'),
+  isActive: z.boolean(),
 });
 
 export const offerSchema = z.object({

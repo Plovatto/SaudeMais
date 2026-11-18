@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { LuPlus } from 'react-icons/lu';
-import { Button, Input } from '@components/ui';
+import { useEffect, useRef, useState } from 'react';
+import { LuKeyRound, LuPlus } from 'react-icons/lu';
+import { Button, Input, SettingRow, StatusChip } from '@components/ui';
+import { softTones, tile } from '@components/ui/styles';
+import { cx } from '@lib/cx';
 import { formatDateTime, formatRelative } from '@lib/date';
 import { queryKeys } from '@lib/query-keys';
 import { ApiKeyDialog } from './ApiKeyDialog';
@@ -10,8 +12,7 @@ import { ItemList } from './ItemList';
 import { PagedList } from './PagedList';
 import { integrationsApi, type IntegrationClient } from './settings-api';
 import { integrationSchema } from './settings-schemas';
-import { SettingsRow } from './SettingsRow';
-import { SettingsSection } from './SettingsSection';
+import { SettingsCard } from './SettingsCard';
 import { useCatalogEditor } from './useCatalogEditor';
 import { useCatalogForm } from './useCatalogForm';
 import { useConfirmedAction } from './useConfirmedAction';
@@ -63,28 +64,27 @@ function IntegrationForm({
   );
 }
 
+const separated = "not-first:before:text-text-muted not-first:before:me-1.5 not-first:before:content-['·']";
+
 function ClientDetails({ client }: { client: IntegrationClient }) {
-  const rows: [string, ReactNode][] = [
-    ['Chave', <span className="text-text font-mono">{`slab_${client.keyPrefix}_…`}</span>],
-    ['Criada em', formatDateTime(client.createdAt)],
-    ['Último uso', client.lastUsedAt ? formatRelative(client.lastUsedAt) : 'Nunca usada'],
-  ];
-  if (client.revokedAt) rows.push(['Revogada em', formatDateTime(client.revokedAt)]);
   return (
-    <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
-      {rows.map(([term, value]) => (
-        <div key={term} className="contents">
-          <dt>{term}</dt>
-          <dd className="min-w-0 break-words">{value}</dd>
-        </div>
-      ))}
-    </dl>
+    <span className="flex flex-wrap gap-x-1.5">
+      <span className={cx(separated, 'text-text font-mono')}>{`slab_${client.keyPrefix}_…`}</span>
+      <span className={separated}>Criada em {formatDateTime(client.createdAt)}</span>
+      {client.revokedAt ? (
+        <span className={separated}>Revogada em {formatDateTime(client.revokedAt)}</span>
+      ) : (
+        <span className={separated}>
+          Último uso: <span>{client.lastUsedAt ? formatRelative(client.lastUsedAt) : 'Nunca usada'}</span>
+        </span>
+      )}
+    </span>
   );
 }
 
 export function IntegrationsSection() {
-  const headingRef = useRef<HTMLHeadingElement>(null);
-  const editor = useCatalogEditor<null>(headingRef);
+  const cardRef = useRef<HTMLElement>(null);
+  const editor = useCatalogEditor<null>(cardRef);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const revoke = useConfirmedAction<IntegrationClient>({
@@ -102,49 +102,60 @@ export function IntegrationsSection() {
   });
 
   return (
-    <SettingsSection
+    <SettingsCard
+      id="integracoes"
+      ref={cardRef}
       title="Integrações"
-      description="Chaves de API para o laboratório enviar resultados de exame. A chave completa aparece só uma vez, ao criar a integração."
-      headingRef={headingRef}
-      action={
-        <Button icon={<LuPlus />} onClick={editor.create}>
-          {CREATE_LABEL}
-        </Button>
-      }
+      description="Chaves de API para o laboratório enviar resultados de exame."
     >
       <PagedList
+        param="pagina-integracoes"
+        label="Páginas de integrações"
         queryKey={queryKeys.catalog.integrations}
         load={integrationsApi.list}
         messages={integrationMessages}
+        footer={
+          <Button variant="secondary" size="sm" icon={<LuPlus />} onClick={editor.create}>
+            Adicionar integração
+          </Button>
+        }
       >
         {(items) => (
           <ItemList
             items={items}
             keyOf={idOf}
-            empty={{
-              title: 'Nenhuma integração criada',
-              description: 'As integrações aparecem aqui, com o começo da chave para identificá-las.',
-              actionLabel: CREATE_LABEL,
-              onCreate: editor.create,
-            }}
+            empty="Nenhuma integração criada."
             renderItem={(client) => (
-              <SettingsRow
-                name={client.name}
-                details={<ClientDetails client={client} />}
-                status={client.revokedAt ? 'Revogada' : 'Ativa'}
-                tone={client.revokedAt ? 'neutral' : 'success'}
-              >
-                {!client.revokedAt && (
-                  <Button
-                    variant="danger-outline"
-                    aria-label={`Revogar ${client.name}`}
-                    loading={revoke.isBusy(client)}
-                    onClick={() => revoke.ask(client)}
-                  >
-                    Revogar
-                  </Button>
-                )}
-              </SettingsRow>
+              <SettingRow
+                className="flex-wrap gap-x-3.5 gap-y-2 px-4 py-3.5 lg:px-5"
+                leading={
+                  <span aria-hidden className={cx(tile, client.revokedAt && softTones.neutral)}>
+                    <LuKeyRound />
+                  </span>
+                }
+                title={client.name}
+                titleClassName="break-words"
+                meta={<ClientDetails client={client} />}
+                metaClassName="tabular-nums"
+                trailing={
+                  <span className="flex items-center gap-2.5 max-sm:basis-full max-sm:ps-[50px]">
+                    <StatusChip tone={client.revokedAt ? 'neutral' : 'success'}>
+                      {client.revokedAt ? 'Revogada' : 'Ativa'}
+                    </StatusChip>
+                    {!client.revokedAt && (
+                      <Button
+                        variant="danger-outline"
+                        size="sm"
+                        aria-label={`Revogar ${client.name}`}
+                        loading={revoke.isBusy(client)}
+                        onClick={() => revoke.ask(client)}
+                      >
+                        Revogar
+                      </Button>
+                    )}
+                  </span>
+                }
+              />
             )}
           />
         )}
@@ -164,7 +175,7 @@ export function IntegrationsSection() {
         !creating,
       )}
       {revoke.confirmation}
-      <ApiKeyDialog apiKey={apiKey} onClose={() => setApiKey(null)} fallbackFocus={headingRef} />
-    </SettingsSection>
+      <ApiKeyDialog apiKey={apiKey} onClose={() => setApiKey(null)} fallbackFocus={cardRef} />
+    </SettingsCard>
   );
 }

@@ -1,6 +1,8 @@
-import { Input, Select, Textarea } from '@components/ui';
+import { LuFlaskConical } from 'react-icons/lu';
+import { Input, Textarea } from '@components/ui';
 import { queryKeys } from '@lib/query-keys';
-import { CatalogList } from './CatalogList';
+import { CatalogCard } from './CatalogCard';
+import { ActiveField, FormDropdown } from './FormFields';
 import { FormShell } from './FormShell';
 import { examTypesApi, type ExamType } from './settings-api';
 import { examTypeSchema, type ExamTypeValues } from './settings-schemas';
@@ -8,12 +10,18 @@ import { useCatalogForm } from './useCatalogForm';
 
 const KIND_LABELS: Record<ExamType['kind'], string> = { lab: 'Laboratorial', imaging: 'Imagem' };
 
+const KIND_OPTIONS = [
+  { value: 'lab', label: KIND_LABELS.lab, hint: 'Coleta e análise de amostras' },
+  { value: 'imaging', label: KIND_LABELS.imaging, hint: 'Raio-X, ultrassom e tomografia' },
+];
+
 const valuesOf = (examType: ExamType | null): ExamTypeValues => ({
   code: examType?.code ?? '',
   name: examType?.name ?? '',
   kind: examType?.kind ?? 'lab',
   durationMin: examType?.durationMin ?? 15,
   preparationNotes: examType?.preparationNotes ?? '',
+  isActive: examType?.isActive ?? true,
 });
 
 const toBody = ({ preparationNotes, ...values }: ExamTypeValues) => ({
@@ -26,8 +34,7 @@ function ExamTypeForm({ examType, onDone }: { examType: ExamType | null; onDone:
     schema: examTypeSchema,
     defaultValues: valuesOf(examType),
     fields: ['code', 'name', 'kind', 'durationMin', 'preparationNotes'],
-    save: (values) =>
-      examType ? examTypesApi.update(examType.id, toBody(values)) : examTypesApi.create(toBody(values)),
+    save: (values) => examTypesApi.save(examType?.id ?? null, toBody(values)),
     invalidate: queryKeys.catalog.examTypes,
     success: examType ? 'Tipo de exame atualizado.' : 'Tipo de exame criado.',
     onDone,
@@ -49,13 +56,13 @@ function ExamTypeForm({ examType, onDone }: { examType: ExamType | null; onDone:
         error={errors.code?.message}
         {...form.register('code')}
       />
-      <Select label="Tipo" error={errors.kind?.message} {...form.register('kind')}>
-        {Object.entries(KIND_LABELS).map(([value, label]) => (
-          <option key={value} value={value}>
-            {label}
-          </option>
-        ))}
-      </Select>
+      <FormDropdown
+        control={form.control}
+        name="kind"
+        label="Tipo"
+        placeholder="Escolha o tipo"
+        options={KIND_OPTIONS}
+      />
       <Input
         label="Duração (minutos)"
         type="number"
@@ -71,25 +78,35 @@ function ExamTypeForm({ examType, onDone }: { examType: ExamType | null; onDone:
         error={errors.preparationNotes?.message}
         {...form.register('preparationNotes')}
       />
+      {examType && (
+        <ActiveField
+          control={form.control}
+          name="isActive"
+          label="Tipo de exame ativo"
+          hint="Desativado, deixa de aparecer para quem agenda."
+        />
+      )}
     </FormShell>
   );
 }
 
 export function ExamTypesSection() {
   return (
-    <CatalogList<ExamType>
+    <CatalogCard<ExamType>
+      id="exames"
       title="Tipos de exame"
-      description="Exames que as unidades podem oferecer, com duração e orientações de preparo."
+      icon={<LuFlaskConical />}
+      addLabel="Adicionar tipo de exame"
       createLabel="Novo tipo de exame"
       editLabel="Editar tipo de exame"
-      emptyTitle="Nenhum tipo de exame cadastrado"
+      empty="Nenhum tipo de exame cadastrado."
+      statusLabels={['Ativo', 'Inativo']}
       queryKey={queryKeys.catalog.examTypes}
       load={examTypesApi.list}
       describe={(item) => ({
         name: item.name,
         details: `${KIND_LABELS[item.kind]} · ${item.durationMin} min · código ${item.code}`,
       })}
-      setActive={(item, isActive) => examTypesApi.update(item.id, { isActive })}
       renderForm={(item, close) => <ExamTypeForm examType={item} onDone={close} />}
     />
   );

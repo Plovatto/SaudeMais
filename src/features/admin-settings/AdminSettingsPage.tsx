@@ -1,50 +1,73 @@
-import type { ComponentType } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router';
+import { useEffect } from 'react';
+import { LuCheck, LuSlidersHorizontal } from 'react-icons/lu';
+import { Navigate, useParams } from 'react-router';
 import { PageHeader } from '@components/layout/PageHeader';
-import { TabPanel, Tabs } from '@components/ui';
+import { Button, CtaBar, ctaButton, stagger } from '@components/ui';
+import { DESKTOP_QUERY, useMediaQuery } from '@hooks/useMediaQuery';
+import { cx } from '@lib/cx';
 import { ExamTypesSection } from './ExamTypesSection';
 import { IntegrationsSection } from './IntegrationsSection';
 import { OffersSection } from './OffersSection';
-import { PolicySection } from './PolicySection';
+import { POLICY_FORM_ID, PolicySection, usePolicySettings } from './PolicySection';
 import { SpecialtiesSection } from './SpecialtiesSection';
 import { UnitsSection } from './UnitsSection';
 
-const SECTIONS = [
-  { value: 'especialidades', label: 'Especialidades', Component: SpecialtiesSection },
-  { value: 'unidades', label: 'Unidades', Component: UnitsSection },
-  { value: 'exames', label: 'Exames', Component: ExamTypesSection },
-  { value: 'ofertas', label: 'Exames por unidade', Component: OffersSection },
-  { value: 'politica', label: 'Política', Component: PolicySection },
-  { value: 'integracoes', label: 'Integrações', Component: IntegrationsSection },
-] as const satisfies readonly { value: string; label: string; Component: ComponentType }[];
+const SECTIONS = ['unidades', 'ofertas', 'integracoes', 'politica', 'especialidades', 'exames'];
 
-type SectionValue = (typeof SECTIONS)[number]['value'];
-
-const TABS_ID = 'admin-settings';
-const BASE = '/admin/configuracoes';
+const column = 'flex min-w-0 flex-col gap-4 lg:gap-5';
 
 export function AdminSettingsPage() {
-  const navigate = useNavigate();
-  const current = useParams()['*'] ?? '';
-  const section = SECTIONS.find((item) => item.value === current);
-  if (!section) return <Navigate to={`${BASE}/${SECTIONS[0].value}`} replace />;
-  const { Component } = section;
+  const desktop = useMediaQuery(DESKTOP_QUERY);
+  const policy = usePolicySettings();
+  const section = useParams()['*'] ?? '';
+  const known = section === '' || SECTIONS.includes(section);
+
+  useEffect(() => {
+    const card = section === '' ? null : document.getElementById(section);
+    if (!card) return;
+    card.focus({ preventScroll: true });
+    if ('scrollIntoView' in card) card.scrollIntoView({ block: 'start' });
+  }, [section]);
+
+  if (!known) return <Navigate to="/admin/configuracoes" replace />;
+
+  const save = (label: string, className?: string) => (
+    <Button
+      type="submit"
+      form={POLICY_FORM_ID}
+      icon={<LuCheck />}
+      loading={policy.submitting}
+      loadingLabel="Salvando"
+      className={className}
+    >
+      {label}
+    </Button>
+  );
+
   return (
     <>
-      <PageHeader title="Configurações" />
-      <div className="flex flex-col gap-6">
-        <Tabs<SectionValue>
-          id={TABS_ID}
-          label="Seções das configurações"
-          items={SECTIONS}
-          value={section.value}
-          onValueChange={(value) => void navigate(`${BASE}/${value}`)}
-          className="flex-wrap"
-        />
-        <TabPanel tabsId={TABS_ID} value={section.value}>
-          <Component />
-        </TabPanel>
+      <PageHeader
+        title="Configurações"
+        subtitle="Regras que valem para toda a clínica."
+        action={desktop && policy.dirty && save('Salvar configurações')}
+      />
+      <div className="grid items-start gap-4 lg:grid-cols-2 lg:gap-5">
+        <div className={cx(column, stagger(0))}>
+          <UnitsSection />
+          <OffersSection />
+          <IntegrationsSection />
+        </div>
+        <div className={cx(column, stagger(1))}>
+          <PolicySection policy={policy} />
+          <SpecialtiesSection />
+          <ExamTypesSection />
+        </div>
       </div>
+      {!desktop && policy.dirty && (
+        <CtaBar aboveNav icon={<LuSlidersHorizontal />} title="Configurações" sub="Valem para toda a clínica">
+          {save('Salvar', ctaButton)}
+        </CtaBar>
+      )}
     </>
   );
 }

@@ -1,89 +1,174 @@
-import { catalogMessages } from './catalog-messages';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { Card, Input, Skeleton, QueryError } from '@components/ui';
+import { FormAlert, QueryError, SettingRow, Skeleton, type DropdownOption } from '@components/ui';
+import { plural } from '@lib/plural';
 import { queryKeys } from '@lib/query-keys';
-import { FormShell } from './FormShell';
+import { catalogMessages } from './catalog-messages';
+import { FormDropdown } from './FormFields';
 import { policyApi, type Policy } from './settings-api';
 import { policySchema, type PolicyValues } from './settings-schemas';
-import { SettingsSection } from './SettingsSection';
+import { SettingsCard } from './SettingsCard';
 import { useCatalogForm } from './useCatalogForm';
 
-const FIELDS: { name: keyof PolicyValues; label: string; hint: string }[] = [
+export const POLICY_FORM_ID = 'politica-agendamento';
+
+interface PolicyRow {
+  name: keyof PolicyValues;
+  title: string;
+  description: string;
+  label: (value: number) => string;
+  presets: readonly (readonly [value: number, hint?: string])[];
+}
+
+const hoursBefore = (hours: number) =>
+  hours === 0 ? 'Sem prazo' : `${plural(hours, 'hora', 'horas')} antes`;
+
+const leadTime = (minutes: number) => {
+  if (minutes === 0) return 'Sem antecedência';
+  if (minutes % 60 !== 0) return plural(minutes, 'minuto', 'minutos');
+  return plural(minutes / 60, 'hora', 'horas');
+};
+
+const ROWS: readonly PolicyRow[] = [
+  {
+    name: 'minLeadMinutes',
+    title: 'Antecedência mínima',
+    description: 'Quanto tempo antes o paciente precisa agendar.',
+    label: leadTime,
+    presets: [
+      [0, 'Até o último horário livre'],
+      [30, 'Meia hora antes'],
+      [60, 'Uma hora antes'],
+      [120, 'Para encaixes do mesmo dia'],
+      [720, 'Meio dia antes'],
+      [1440, 'Um dia antes'],
+      [2880, 'Dois dias antes'],
+    ],
+  },
+  {
+    name: 'bookingHorizonDays',
+    title: 'Agenda aberta',
+    description: 'Até quantos dias à frente o paciente consegue agendar.',
+    label: (days) => plural(days, 'dia', 'dias'),
+    presets: [
+      [30, 'Um mês'],
+      [60, 'Dois meses'],
+      [90, 'Três meses'],
+      [180, 'Seis meses'],
+      [365, 'Um ano'],
+    ],
+  },
   {
     name: 'appointmentLateWindowHours',
-    label: 'Janela de cancelamento de consultas (horas)',
-    hint: 'Abaixo dessa antecedência, cancelar é tardio e reagendar fica bloqueado. De 0 a 168.',
+    title: 'Prazo para cancelar consultas',
+    description:
+      'Depois disso, o cancelamento fica registrado como tardio e a consulta não pode ser reagendada.',
+    label: hoursBefore,
+    presets: [
+      [0, 'Até o horário marcado'],
+      [12, 'Mais flexível'],
+      [24, 'Recomendado'],
+      [48, 'Mais rígido'],
+    ],
   },
   {
     name: 'examLateWindowHours',
-    label: 'Janela de cancelamento de exames (horas)',
-    hint: 'O mesmo, para exames. De 0 a 168.',
+    title: 'Prazo para cancelar exames',
+    description:
+      'Depois disso, o cancelamento fica registrado como tardio e o exame não pode ser reagendado.',
+    label: hoursBefore,
+    presets: [[0, 'Até o horário marcado'], [2, 'Recomendado'], [12], [24], [48, 'Mais rígido']],
   },
-  { name: 'maxReschedules', label: 'Reagendamentos por agendamento', hint: 'De 0 a 10.' },
-  { name: 'bookingHorizonDays', label: 'Agendar até (dias à frente)', hint: 'De 1 a 365.' },
   {
-    name: 'minLeadMinutes',
-    label: 'Antecedência mínima para agendar (minutos)',
-    hint: 'De 0 a 10080 (7 dias).',
+    name: 'maxReschedules',
+    title: 'Reagendamentos',
+    description: 'Quantas vezes o paciente pode trocar o horário de um mesmo agendamento.',
+    label: (times) => (times === 0 ? 'Não permitir' : plural(times, 'vez', 'vezes')),
+    presets: [[0, 'Só cancelando e agendando de novo'], [1], [2], [3], [5]],
   },
 ];
 
-const valuesOf = ({ updatedAt: _updatedAt, ...values }: Policy): PolicyValues => values;
-
-function PolicyForm({ policy }: { policy: Policy }) {
-  const form = useCatalogForm({
-    schema: policySchema,
-    defaultValues: valuesOf(policy),
-    fields: FIELDS.map((field) => field.name),
-    save: (body) => policyApi.update(body),
-    invalidate: queryKeys.catalog.policy,
-    success: 'Política atualizada.',
-  });
-  const { reset } = form;
-  useEffect(() => {
-    reset(valuesOf(policy));
-  }, [policy, reset]);
-  const { errors, isSubmitting } = form.formState;
-  return (
-    <Card>
-      <FormShell
-        label="Política de agendamento"
-        onSubmit={form.onSubmit}
-        alert={form.alert}
-        submitting={isSubmitting}
-      >
-        {FIELDS.map(({ name, label, hint }) => (
-          <Input
-            key={name}
-            label={label}
-            hint={hint}
-            type="number"
-            inputMode="numeric"
-            error={errors[name]?.message}
-            {...form.register(name, { valueAsNumber: true })}
-          />
-        ))}
-      </FormShell>
-    </Card>
-  );
+function optionsOf({ label, presets }: PolicyRow, current: number): DropdownOption[] {
+  const values = presets.some(([value]) => value === current) ? presets : [...presets, [current] as const];
+  return [...values]
+    .sort(([a], [b]) => a - b)
+    .map(([value, hint]) => ({ value: String(value), label: label(value), hint }));
 }
 
-export function PolicySection() {
-  const policy = useQuery({
+const valuesOf = ({ updatedAt: _updatedAt, ...values }: Policy): PolicyValues => values;
+
+export function usePolicySettings() {
+  const queryClient = useQueryClient();
+  const query = useQuery({
     queryKey: queryKeys.catalog.policy,
     queryFn: ({ signal }) => policyApi.get(signal),
   });
+  const form = useCatalogForm<PolicyValues>({
+    schema: policySchema,
+    defaultValues: query.data && valuesOf(query.data),
+    fields: ROWS.map((row) => row.name),
+    save: async (body) => queryClient.setQueryData(queryKeys.catalog.policy, await policyApi.update(body)),
+    invalidate: queryKeys.catalog.policy,
+    success: 'Configurações salvas.',
+  });
+  const { reset } = form;
+  useEffect(() => {
+    if (query.data) reset(valuesOf(query.data));
+  }, [query.data, reset]);
+  return {
+    query,
+    form,
+    dirty: query.data !== undefined && form.formState.isDirty,
+    submitting: form.formState.isSubmitting,
+  };
+}
+
+export type PolicySettings = ReturnType<typeof usePolicySettings>;
+
+export function PolicySection({ policy: { query, form } }: { policy: PolicySettings }) {
+  const saved = query.data;
   return (
-    <SettingsSection
-      title="Política de agendamento"
-      description="Regras de cancelamento, reagendamento e antecedência. As mudanças valem para os próximos agendamentos."
-    >
-      {policy.isPending && <Skeleton className="h-96" />}
-      {policy.isError && (
-        <QueryError error={policy.error} messages={catalogMessages} onRetry={() => void policy.refetch()} />
+    <SettingsCard id="politica" title="Agendamento" flush={false}>
+      {query.isPending && <Skeleton className="h-80" />}
+      {query.isError && (
+        <QueryError error={query.error} messages={catalogMessages} onRetry={() => void query.refetch()} />
       )}
-      {policy.data && <PolicyForm policy={policy.data} />}
-    </SettingsSection>
+      {saved && (
+        <form
+          id={POLICY_FORM_ID}
+          aria-label="Agendamento"
+          noValidate
+          onSubmit={(event) => void form.onSubmit(event)}
+          className="-mt-1 -mb-1.5 flex flex-col"
+        >
+          {ROWS.map((row) => (
+            <SettingRow
+              key={row.name}
+              className="border-border flex-wrap gap-x-4 gap-y-2.5 py-3.5 not-first:border-t lg:flex-nowrap"
+              title={row.title}
+              meta={row.description}
+              trailing={
+                <div className="w-full shrink-0 lg:w-[210px]">
+                  <FormDropdown
+                    control={form.control}
+                    name={row.name}
+                    numeric
+                    label={row.title}
+                    labelHidden
+                    placeholder={row.title}
+                    options={optionsOf(row, saved[row.name])}
+                  />
+                </div>
+              }
+            />
+          ))}
+          {form.alert && (
+            <div className="pt-1 pb-4">
+              <FormAlert>{form.alert}</FormAlert>
+            </div>
+          )}
+        </form>
+      )}
+    </SettingsCard>
   );
 }

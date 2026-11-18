@@ -1,5 +1,5 @@
 import { useCallback, useState, type ReactNode, type RefObject } from 'react';
-import { Dialog } from '@components/ui';
+import { Drawer } from '@components/ui';
 
 type Editing<T> = { item: T | null } | null;
 
@@ -11,16 +11,15 @@ export function useCatalogEditor<T>(fallbackFocus: RefObject<HTMLElement | null>
     formOf: (item: T | null, close: () => void) => ReactNode,
     dismissible = true,
   ) => (
-    <Dialog
+    <Drawer
       open={editing !== null}
       onClose={close}
-      placement="side"
       dismissible={dismissible}
       title={editing ? titleOf(editing.item) : ''}
       fallbackFocus={fallbackFocus}
     >
       {editing && formOf(editing.item, close)}
-    </Dialog>
+    </Drawer>
   );
   return { create: () => setEditing({ item: null }), edit: (item: T) => setEditing({ item }), panel };
 }

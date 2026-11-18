@@ -1,18 +1,26 @@
+import { LuStethoscope } from 'react-icons/lu';
 import { Input } from '@components/ui';
 import { queryKeys } from '@lib/query-keys';
-import { CatalogList } from './CatalogList';
+import { CatalogCard } from './CatalogCard';
+import { ActiveField } from './FormFields';
 import { FormShell } from './FormShell';
 import { specialtiesApi, type Specialty } from './settings-api';
 import { specialtySchema } from './settings-schemas';
 import { useCatalogForm } from './useCatalogForm';
 
+const valuesOf = (specialty: Specialty | null) => ({
+  name: specialty?.name ?? '',
+  council: specialty?.council ?? 'CRM',
+  appointmentDurationMin: specialty?.appointmentDurationMin ?? 30,
+  isActive: specialty?.isActive ?? true,
+});
+
 function SpecialtyForm({ specialty, onDone }: { specialty: Specialty | null; onDone: () => void }) {
   const form = useCatalogForm({
     schema: specialtySchema,
-    defaultValues: specialty ?? { name: '', council: 'CRM', appointmentDurationMin: 30 },
+    defaultValues: valuesOf(specialty),
     fields: ['name', 'council', 'appointmentDurationMin'],
-    save: (values) =>
-      specialty ? specialtiesApi.update(specialty.id, values) : specialtiesApi.create(values),
+    save: (values) => specialtiesApi.save(specialty?.id ?? null, values),
     invalidate: queryKeys.catalog.specialties,
     success: specialty ? 'Especialidade atualizada.' : 'Especialidade criada.',
     onDone,
@@ -43,25 +51,35 @@ function SpecialtyForm({ specialty, onDone }: { specialty: Specialty | null; onD
         error={errors.appointmentDurationMin?.message}
         {...form.register('appointmentDurationMin', { valueAsNumber: true })}
       />
+      {specialty && (
+        <ActiveField
+          control={form.control}
+          name="isActive"
+          label="Especialidade ativa"
+          hint="Desativada, deixa de aparecer para quem agenda."
+        />
+      )}
     </FormShell>
   );
 }
 
 export function SpecialtiesSection() {
   return (
-    <CatalogList<Specialty>
+    <CatalogCard<Specialty>
+      id="especialidades"
       title="Especialidades"
-      description="Áreas de atendimento, com o conselho profissional e a duração padrão da consulta."
+      icon={<LuStethoscope />}
+      addLabel="Adicionar especialidade"
       createLabel="Nova especialidade"
       editLabel="Editar especialidade"
-      emptyTitle="Nenhuma especialidade cadastrada"
+      empty="Nenhuma especialidade cadastrada."
+      statusLabels={['Ativa', 'Inativa']}
       queryKey={queryKeys.catalog.specialties}
       load={specialtiesApi.list}
       describe={(item) => ({
         name: item.name,
         details: `${item.council} · consultas de ${item.appointmentDurationMin} min`,
       })}
-      setActive={(item, isActive) => specialtiesApi.update(item.id, { isActive })}
       renderForm={(item, close) => <SpecialtyForm specialty={item} onDone={close} />}
     />
   );

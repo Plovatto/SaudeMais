@@ -1,16 +1,17 @@
-import { LuMapPin, LuPhone } from 'react-icons/lu';
+import { LuBuilding2, LuMapPin, LuPhone } from 'react-icons/lu';
 import { Input } from '@components/ui';
 import { WEEKDAYS } from '@constants/weekdays';
 import { formatPhone } from '@lib/phone';
+import { plural } from '@lib/plural';
 import { queryKeys } from '@lib/query-keys';
 import { fromMinutes, toMinutes } from '@lib/time-of-day';
-import { CatalogList } from './CatalogList';
+import { CatalogCard } from './CatalogCard';
+import { ActiveField } from './FormFields';
 import { FormShell } from './FormShell';
 import { HoursEditor } from './HoursEditor';
 import { unitsApi, type Unit } from './settings-api';
 import { unitSchema, type UnitValues } from './settings-schemas';
 import { useCatalogForm } from './useCatalogForm';
-import { plural } from '@lib/plural';
 
 function valuesOf(unit: Unit | null): UnitValues {
   return {
@@ -23,6 +24,7 @@ function valuesOf(unit: Unit | null): UnitValues {
         ? { open: true, start: fromMinutes(day.openMin), end: fromMinutes(day.closeMin) }
         : { open: false, start: '08:00', end: '18:00' };
     }),
+    isActive: unit?.isActive ?? true,
   };
 }
 
@@ -40,7 +42,7 @@ function UnitForm({ unit, onDone }: { unit: Unit | null; onDone: () => void }) {
     schema: unitSchema,
     defaultValues: valuesOf(unit),
     fields: ['name', 'address', 'phone'],
-    save: (values) => (unit ? unitsApi.update(unit.id, toBody(values)) : unitsApi.create(toBody(values))),
+    save: (values) => unitsApi.save(unit?.id ?? null, toBody(values)),
     invalidate: queryKeys.catalog.units,
     success: unit ? 'Unidade atualizada.' : 'Unidade criada.',
     onDone,
@@ -72,6 +74,14 @@ function UnitForm({ unit, onDone }: { unit: Unit | null; onDone: () => void }) {
         {...form.register('phone')}
       />
       <HoursEditor control={form.control} register={form.register} errors={errors} />
+      {unit && (
+        <ActiveField
+          control={form.control}
+          name="isActive"
+          label="Unidade ativa"
+          hint="Desativada, deixa de aparecer para quem agenda."
+        />
+      )}
     </FormShell>
   );
 }
@@ -83,16 +93,18 @@ const openDays = (unit: Unit) => {
 
 export function UnitsSection() {
   return (
-    <CatalogList<Unit>
+    <CatalogCard<Unit>
+      id="unidades"
       title="Unidades"
-      description="Locais de atendimento, com endereço, telefone e horário de cada dia da semana."
+      icon={<LuBuilding2 />}
+      addLabel="Adicionar unidade"
       createLabel="Nova unidade"
       editLabel="Editar unidade"
-      emptyTitle="Nenhuma unidade cadastrada"
+      empty="Nenhuma unidade cadastrada."
+      statusLabels={['Ativa', 'Inativa']}
       queryKey={queryKeys.catalog.units}
       load={unitsApi.list}
       describe={(item) => ({ name: item.name, details: `${item.address} · ${openDays(item)}` })}
-      setActive={(item, isActive) => unitsApi.update(item.id, { isActive })}
       renderForm={(item, close) => <UnitForm unit={item} onDone={close} />}
     />
   );

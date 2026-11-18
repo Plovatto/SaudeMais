@@ -1,26 +1,29 @@
-import { LuPencil } from 'react-icons/lu';
-import { IconButton, Switch } from '@components/ui';
-import { SettingsRow } from './SettingsRow';
+import type { ReactNode } from 'react';
+import { ListRow, StatusChip } from '@components/ui';
+import { softTones, tile } from '@components/ui/styles';
+import { cx } from '@lib/cx';
 
 export interface CatalogRowProps {
+  icon: ReactNode;
   name: string;
   details: string;
   isActive: boolean;
-  busy: boolean;
-  onToggle: (isActive: boolean) => void;
+  status: string;
   onEdit: () => void;
 }
 
-export function CatalogRow({ name, details, isActive, busy, onToggle, onEdit }: CatalogRowProps) {
+export function CatalogRow({ icon, name, details, isActive, status, onEdit }: CatalogRowProps) {
   return (
-    <SettingsRow
-      name={name}
-      details={details}
-      status={isActive ? 'Ativo' : 'Inativo'}
-      tone={isActive ? 'success' : 'neutral'}
-    >
-      <Switch checked={isActive} onCheckedChange={onToggle} label={`${name} ativo`} labelHidden busy={busy} />
-      <IconButton label={`Editar ${name}`} icon={<LuPencil />} onClick={onEdit} />
-    </SettingsRow>
+    <ListRow
+      leading={
+        <span aria-hidden className={cx(tile, !isActive && softTones.neutral)}>
+          {icon}
+        </span>
+      }
+      title={name}
+      meta={details}
+      trailing={<StatusChip tone={isActive ? 'success' : 'neutral'}>{status}</StatusChip>}
+      onClick={onEdit}
+    />
   );
 }

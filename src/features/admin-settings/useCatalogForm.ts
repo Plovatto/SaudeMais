@@ -9,7 +9,7 @@ import { catalogMessages } from './catalog-messages';
 
 export interface CatalogFormOptions<T extends FieldValues> {
   schema: z.ZodType<T, FieldValues>;
-  defaultValues: DefaultValues<T>;
+  defaultValues: DefaultValues<T> | undefined;
   fields: readonly Path<T>[];
   save: (values: T) => Promise<unknown>;
   invalidate: QueryKey;
@@ -30,7 +30,10 @@ export function useCatalogForm<T extends FieldValues>({
 }: CatalogFormOptions<T>) {
   const queryClient = useQueryClient();
   const { show } = useToast();
-  const form = useForm<T>({ resolver: zodResolver(schema) as Resolver<T>, defaultValues });
+  const form = useForm<T>({
+    resolver: zodResolver(schema) as Resolver<T>,
+    ...(defaultValues && { defaultValues }),
+  });
   const { alert, run } = useFormSubmit(form.setError, fields, undefined, messages);
   const onSubmit = form.handleSubmit((values) =>
     run(async () => {
