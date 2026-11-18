@@ -3,7 +3,7 @@
   "info": {
     "title": "Saúde+ API",
     "version": "0.1.0",
-    "description": "API do **Saúde+**, sistema de agendamento de consultas e exames com três perfis: paciente, médico e administrador.\n\nAs rotas de negócio ficam sob `/api`. Nesta versão existem o cadastro, o login, o logout, a redefinição de senha, o perfil da própria conta, o catálogo com a administração dele, a administração de usuários, a agenda semanal do médico, a lista de médicos com as vagas livres de cada um, o pedido de consulta com o detalhe, a confirmação, o cancelamento, a conclusão e o registro de falta dela, o início e os agendamentos do paciente, o início e a agenda do médico, as notificações e a integração com o laboratório, além de `/health` e desta documentação. Cada rota lista o que realmente pode devolver.\n\n## Erros\n\nToda resposta de erro tem o mesmo formato:\n\n```json\n{\n  \"message\": \"Dados inválidos.\",\n  \"code\": \"VALIDATION_ERROR\",\n  \"fields\": { \"email\": \"E-mail inválido.\" }\n}\n```\n\n- `message` é um texto em português, pronto para exibir.\n- `code` é estável e serve para o cliente decidir o que fazer ou escolher o próprio texto.\n- `fields` aparece em erros de validação e nos de regra ligados a um campo, com uma mensagem por campo.\n\n| Status | Quando acontece |\n|---|---|\n| `400` | Corpo, parâmetros ou JSON inválidos |\n| `401` | Sem sessão, sessão expirada, credenciais incorretas ou chave de API inválida |\n| `403` | Conta desativada ou sem o perfil exigido |\n| `404` | Rota, método ou registro inexistente |\n| `409` | Conflito com o estado atual, como e-mail já cadastrado |\n| `422` | Regra de negócio não atendida, como senha atual incorreta |\n| `413` | Corpo maior que 100 KB |\n| `415` | Charset ou codificação do corpo não suportados |\n| `429` | Limite de tentativas atingido; o cabeçalho `RateLimit` diz quando tentar de novo |\n| `500` | Erro interno; os detalhes ficam só nos logs |\n| `503` | Servidor ocupado conferindo senhas; tente de novo em instantes |\n\nUm agendamento de outra pessoa responde `404`, como se não existisse, e um horário já ocupado responde `409`.\n\n## Códigos de erro\n\nCódigos comuns a todas as rotas. Cada rota lista também os códigos específicos dela.\n\n| Código | Status | Significado |\n|---|---|---|\n| `VALIDATION_ERROR` | 400 | Algum campo não passou na validação; veja `fields` |\n| `INVALID_JSON` | 400 | O corpo não é um JSON válido ou não é um objeto ou array |\n| `BAD_REQUEST` | 400 ou 415 | Requisição malformada, como parâmetro de URL inválido, charset ou codificação não suportados |\n| `UNAUTHENTICATED` | 401 | Rota exige login e o token falta, é inválido ou expirou |\n| `FORBIDDEN` | 403 | A conta não tem o perfil exigido pela rota |\n| `INVALID_API_KEY` | 401 | Rota do laboratório sem a chave `X-Api-Key` ou com chave inválida ou revogada |\n| `INVALID_RESET_TOKEN` | 400 | Link de redefinição de senha inválido, usado ou vencido |\n| `INVALID_CURRENT_PASSWORD` | 422 | A senha atual informada na troca de senha está errada |\n| `NOT_FOUND` | 404 | O registro pedido não existe |\n| `NAME_TAKEN` | 409 | Já existe um cadastro com esse nome, sem distinguir maiúsculas |\n| `CODE_TAKEN` | 409 | Já existe um tipo de exame com esse código |\n| `EXAM_TYPE_INACTIVE` | 409 | O tipo de exame está inativo e não pode ter oferta ativa |\n| `IN_USE` | 409 | Há agendamento futuro ativo ligado ao cadastro; ele não pode ser desativado, nem a oferta pode ter a capacidade reduzida abaixo de um lugar ocupado |\n| `COUNCIL_IN_USE` | 409 | A especialidade tem médicos; o conselho não pode mudar |\n| `SELF_OR_LAST_ADMIN` | 409 | O administrador não pode desativar nem rebaixar a si mesmo nem deixar o sistema sem administradores |\n| `USER_INACTIVE` | 403 ou 409 | Conta desativada: login recusado (403) ou ação que exige conta ativa (409) |\n| `REGISTRY_TAKEN` | 409 | O registro profissional já pertence a outro médico |\n| `DOCTOR_PROFILE_EXISTS` | 409 | A conta já tem perfil médico |\n| `HAS_FUTURE_APPOINTMENTS` | 409 | O médico tem consultas futuras que impedem a mudança |\n| `RESET_NOT_SENT` | 409 | Um link de redefinição foi enviado há pouco ou o limite do dia foi atingido |\n| `SLOT_TAKEN` | 409 | O horário escolhido acabou de ser ocupado na agenda do médico |\n| `NO_CAPACITY` | 409 | Não há mais lugares na vaga de exame escolhida |\n| `PATIENT_CONFLICT` | 409 | O paciente já tem um agendamento ativo que coincide com o horário |\n| `RESCHEDULE_WINDOW_CLOSED` | 409 | O agendamento confirmado está dentro da janela da política e só pode ser cancelado, não reagendado |\n| `RESCHEDULE_LIMIT` | 409 | O agendamento já foi reagendado o máximo de vezes da política |\n| `INVALID_STATE` | 409 | O agendamento mudou, já foi confirmado, já começou ou já foi encerrado desde que foi exibido; atualize e tente de novo |\n| `NOT_STARTED` | 409 | A consulta confirmada ainda não começou; conclusão e falta só valem a partir do horário de início |\n| `RESULT_FINAL` | 409 | O exame já tem resultado com outro conteúdo; a correção precisa vir com `status` `amended` |\n| `RESULT_EXISTS` | 409 | O exame já tem resultado com outro `externalId` |\n| `EXTERNAL_ID_TAKEN` | 409 | O `externalId` já foi usado no resultado de outro exame |\n| `SPECIALTY_UNAVAILABLE`, `UNIT_UNAVAILABLE` | 422 | A especialidade ou a unidade escolhida está inativa ou não existe |\n| `OVERLAP` | 422 | Faixas de horário do mesmo dia se sobrepõem; veja `fields` |\n| `OUTSIDE_UNIT_HOURS` | 422 | A faixa de horário fica fora do horário da unidade; veja `fields` |\n| `OUTSIDE_AVAILABILITY` | 422 | O horário não é uma vaga gerada pela agenda do médico ou, no exame, pelo horário da unidade |\n| `SAME_SLOT` | 422 | O novo horário pedido no reagendamento é o horário atual |\n| `ACTIVE_LIMIT` | 422 | O paciente já tem 5 agendamentos ativos futuros |\n| `SPECIALTY_MISMATCH` | 422 | O médico escolhido não atende a especialidade escolhida |\n| `SELF_BOOKING` | 422 | O médico tentou marcar consulta consigo mesmo |\n| `REASON_REQUIRED` | 422 | O médico precisa informar o motivo ao cancelar uma consulta |\n| `NOT_ELIGIBLE` | 422 | O exame foi cancelado ou ainda não começou, então não recebe resultado |\n| `ISSUED_IN_FUTURE` | 422 | A data de emissão do resultado passa de 5 minutos à frente do relógio da API |\n| `WRONG_RESULT_FORMAT` | 422 | Exame laboratorial recebe `items`; exame de imagem, `report` |\n| `ROUTE_NOT_FOUND` | 404 | A rota ou o método não existe |\n| `PAYLOAD_TOO_LARGE` | 413 | O corpo passou de 100 KB |\n| `TOO_MANY_REQUESTS` | 429 | Muitas requisições do mesmo IP (300 por minuto) ou limite próprio da rota |\n| `INTERNAL_ERROR` | 500 | Erro inesperado no servidor |\n| `SERVER_BUSY` | 503 | Muitas senhas sendo conferidas ao mesmo tempo |\n\n## Autenticação\n\nCrie uma conta em `POST /api/users/register` e entre em `POST /api/users/login` para receber o token. As rotas que exigem login mostram um cadeado e recebem o token no cabeçalho:\n\n```http\nAuthorization: Bearer <token>\n```\n\nSem \"Lembrar de mim\", a sessão expira após 12 horas sem uso; com ele, dura 7 dias. Nenhuma sessão passa de 7 dias, e `POST /api/users/logout` encerra a sessão na hora. Quando a sessão não vale mais, a rota responde `401` com `UNAUTHENTICATED`.\n\nO botão **Authorize** desta página envia o token em todas as chamadas de teste. Fora de produção, o token fica salvo neste navegador até você clicar em **Logout**.\n\n## Integração com o laboratório\n\nO laboratório parceiro usa uma chave de API criada pelo administrador em `POST /api/admin/integration-clients`. A chave aparece uma única vez, a API guarda só o hash, e o administrador pode revogá-la a qualquer momento. As rotas do laboratório recebem a chave no cabeçalho, sem sessão:\n\n```http\nX-Api-Key: slab_<prefixo>_<segredo>\n```\n\n`GET /api/integrations/lab/worklist` lista, só pelo código público, os exames do dia que aguardam resultado, e `POST /api/integrations/lab/results` publica o resultado de um deles. Reenviar o mesmo conteúdo não muda nada, e uma correção (`amended`) cria uma nova versão. Cada chave tem um limite próprio de 60 requisições por minuto.\n\n## Conta de demonstração\n\nPara testar sem criar conta, entre com uma das contas de demonstração. As credenciais são públicas e servem só para demonstração:\n\n- Paciente: `paciente@saudemais.test`, senha `paciente-demo-123`.\n- Médico, que também é paciente e passa pela escolha de perfil: `medico@saudemais.test`, senha `medico-demo-123`.\n\nOs dados delas são de exemplo e podem ser alterados. Esses e-mails não podem ser usados em um cadastro novo. Uma vez por dia, a rotina de manutenção devolve as contas ao estado de exemplo (senha documentada, nome, conta ativa e perfis) e os agendamentos voltam ao exemplo inicial.\n\n## Rotinas automáticas\n\nUma rotina de manutenção grava o que o tempo já decidiu. Ela aproveita quando o banco já está ativo, no máximo de hora em hora, e roda no mínimo uma vez por dia; por isso, uma mudança abaixo pode levar até um dia para aparecer:\n\n- Pedido de consulta `pending` cujo horário chegou passa a `expired`, e o paciente recebe a notificação `appointment_expired`. Antes disso, as listas já o mostram como `expired`.\n- Exame `confirmed` cujo horário terminou passa a `completed`.\n- Consulta `confirmed` que começou há 72 horas sem registro do médico passa a `completed`, com o sistema como autor no histórico.\n- Sessões vencidas são apagadas, assim como links de redefinição de senha com mais de 48 horas, notificações com mais de 90 dias e registros de auditoria com mais de 180 dias.\n\n## Datas\n\n- Data e hora, como o início de uma vaga, em ISO 8601 e UTC: `2026-11-20T13:30:00.000Z`.\n- Datas sem horário, como `from` e `to` das vagas, em `YYYY-MM-DD`, no fuso de São Paulo (`America/Sao_Paulo`).\n- Para agendar, envie de volta o `startsAt` recebido na lista de vagas, sem montar o horário no cliente.\n\n## Paginação\n\nAs listas paginadas recebem `page` (a partir de 1) e `pageSize` (até 50) e respondem:\n\n```json\n{ \"items\": [], \"page\": 1, \"pageSize\": 20, \"total\": 0 }\n```",
+    "description": "API do **Saúde+**, sistema de agendamento de consultas e exames com três perfis: paciente, médico e administrador.\n\nAs rotas de negócio ficam sob `/api`. Nesta versão existem o cadastro, o login, o logout, a redefinição de senha, o perfil da própria conta, o catálogo com a administração dele, a administração de usuários, a agenda semanal do médico, a lista de médicos com as vagas livres de cada um, o pedido de consulta com o detalhe, a confirmação, o cancelamento, a conclusão e o registro de falta dela, o início e os agendamentos do paciente, o início e a agenda do médico, as notificações e a integração com o laboratório, além de `/health` e desta documentação. Cada rota lista o que realmente pode devolver.\n\n## Erros\n\nToda resposta de erro tem o mesmo formato:\n\n```json\n{\n  \"message\": \"Dados inválidos.\",\n  \"code\": \"VALIDATION_ERROR\",\n  \"fields\": { \"email\": \"E-mail inválido.\" }\n}\n```\n\n- `message` é um texto em português, pronto para exibir.\n- `code` é estável e serve para o cliente decidir o que fazer ou escolher o próprio texto.\n- `fields` aparece em erros de validação e nos de regra ligados a um campo, com uma mensagem por campo.\n\n| Status | Quando acontece |\n|---|---|\n| `400` | Corpo, parâmetros ou JSON inválidos |\n| `401` | Sem sessão, sessão expirada, credenciais incorretas ou chave de API inválida |\n| `403` | Conta desativada ou sem o perfil exigido |\n| `404` | Rota, método ou registro inexistente |\n| `409` | Conflito com o estado atual, como e-mail já cadastrado |\n| `422` | Regra de negócio não atendida, como senha atual incorreta |\n| `413` | Corpo maior que 100 KB |\n| `415` | Charset ou codificação do corpo não suportados |\n| `429` | Limite de tentativas atingido; o cabeçalho `RateLimit` diz quando tentar de novo |\n| `500` | Erro interno; os detalhes ficam só nos logs |\n| `503` | Servidor ocupado conferindo senhas; tente de novo em instantes |\n\nUm agendamento de outra pessoa responde `404`, como se não existisse, e um horário já ocupado responde `409`.\n\n## Códigos de erro\n\nCódigos comuns a todas as rotas. Cada rota lista também os códigos específicos dela.\n\n| Código | Status | Significado |\n|---|---|---|\n| `VALIDATION_ERROR` | 400 | Algum campo não passou na validação; veja `fields` |\n| `INVALID_JSON` | 400 | O corpo não é um JSON válido ou não é um objeto ou array |\n| `BAD_REQUEST` | 400 ou 415 | Requisição malformada, como parâmetro de URL inválido, charset ou codificação não suportados |\n| `UNAUTHENTICATED` | 401 | Rota exige login e o token falta, é inválido ou expirou |\n| `FORBIDDEN` | 403 | A conta não tem o perfil exigido pela rota |\n| `INVALID_API_KEY` | 401 | Rota do laboratório sem a chave `X-Api-Key` ou com chave inválida ou revogada |\n| `INVALID_RESET_TOKEN` | 400 | Link de redefinição de senha inválido, usado ou vencido |\n| `INVALID_CURRENT_PASSWORD` | 422 | A senha atual informada na troca de senha está errada |\n| `NOT_FOUND` | 404 | O registro pedido não existe |\n| `EMAIL_TAKEN` | 409 | O e-mail já pertence a outra conta, sem distinguir maiúsculas |\n| `NAME_TAKEN` | 409 | Já existe um cadastro com esse nome, sem distinguir maiúsculas |\n| `CODE_TAKEN` | 409 | Já existe um tipo de exame com esse código |\n| `EXAM_TYPE_INACTIVE` | 409 | O tipo de exame está inativo e não pode ter oferta ativa |\n| `IN_USE` | 409 | Há agendamento futuro ativo ligado ao cadastro; ele não pode ser desativado, nem a oferta pode ter a capacidade reduzida abaixo de um lugar ocupado |\n| `COUNCIL_IN_USE` | 409 | A especialidade tem médicos; o conselho não pode mudar |\n| `SELF_OR_LAST_ADMIN` | 409 | O administrador não pode desativar nem rebaixar a si mesmo nem deixar o sistema sem administradores |\n| `USER_INACTIVE` | 403 ou 409 | Conta desativada: login recusado (403) ou ação que exige conta ativa (409) |\n| `REGISTRY_TAKEN` | 409 | O registro profissional já pertence a outro médico |\n| `DOCTOR_PROFILE_EXISTS` | 409 | A conta já tem perfil médico |\n| `HAS_FUTURE_APPOINTMENTS` | 409 | O médico tem consultas futuras que impedem a mudança |\n| `RESET_NOT_SENT` | 409 | Um link de redefinição foi enviado há pouco ou o limite do dia foi atingido |\n| `SLOT_TAKEN` | 409 | O horário escolhido acabou de ser ocupado na agenda do médico |\n| `NO_CAPACITY` | 409 | Não há mais lugares na vaga de exame escolhida |\n| `PATIENT_CONFLICT` | 409 | O paciente já tem um agendamento ativo que coincide com o horário |\n| `RESCHEDULE_WINDOW_CLOSED` | 409 | O agendamento confirmado está dentro da janela da política e só pode ser cancelado, não reagendado |\n| `RESCHEDULE_LIMIT` | 409 | O agendamento já foi reagendado o máximo de vezes da política |\n| `INVALID_STATE` | 409 | O agendamento mudou, já foi confirmado, já começou ou já foi encerrado desde que foi exibido; atualize e tente de novo |\n| `NOT_STARTED` | 409 | A consulta confirmada ainda não começou; conclusão e falta só valem a partir do horário de início |\n| `RESULT_FINAL` | 409 | O exame já tem resultado com outro conteúdo; a correção precisa vir com `status` `amended` |\n| `RESULT_EXISTS` | 409 | O exame já tem resultado com outro `externalId` |\n| `EXTERNAL_ID_TAKEN` | 409 | O `externalId` já foi usado no resultado de outro exame |\n| `SPECIALTY_UNAVAILABLE`, `UNIT_UNAVAILABLE` | 422 | A especialidade ou a unidade escolhida está inativa ou não existe |\n| `OVERLAP` | 422 | Faixas de horário do mesmo dia se sobrepõem; veja `fields` |\n| `OUTSIDE_UNIT_HOURS` | 422 | A faixa de horário fica fora do horário da unidade; veja `fields` |\n| `OUTSIDE_AVAILABILITY` | 422 | O horário não é uma vaga gerada pela agenda do médico ou, no exame, pelo horário da unidade |\n| `SAME_SLOT` | 422 | O novo horário pedido no reagendamento é o horário atual |\n| `ACTIVE_LIMIT` | 422 | O paciente já tem 5 agendamentos ativos futuros |\n| `SPECIALTY_MISMATCH` | 422 | O médico escolhido não atende a especialidade escolhida |\n| `SELF_BOOKING` | 422 | O médico tentou marcar consulta consigo mesmo |\n| `REASON_REQUIRED` | 422 | O médico precisa informar o motivo ao cancelar uma consulta |\n| `NOT_ELIGIBLE` | 422 | O exame foi cancelado ou ainda não começou, então não recebe resultado |\n| `ISSUED_IN_FUTURE` | 422 | A data de emissão do resultado passa de 5 minutos à frente do relógio da API |\n| `WRONG_RESULT_FORMAT` | 422 | Exame laboratorial recebe `items`; exame de imagem, `report` |\n| `ROUTE_NOT_FOUND` | 404 | A rota ou o método não existe |\n| `PAYLOAD_TOO_LARGE` | 413 | O corpo passou de 100 KB |\n| `TOO_MANY_REQUESTS` | 429 | Muitas requisições do mesmo IP (300 por minuto) ou limite próprio da rota |\n| `INTERNAL_ERROR` | 500 | Erro inesperado no servidor |\n| `SERVER_BUSY` | 503 | Muitas senhas sendo conferidas ao mesmo tempo |\n\n## Autenticação\n\nCrie uma conta em `POST /api/users/register` e entre em `POST /api/users/login` para receber o token. As rotas que exigem login mostram um cadeado e recebem o token no cabeçalho:\n\n```http\nAuthorization: Bearer <token>\n```\n\nSem \"Lembrar de mim\", a sessão expira após 12 horas sem uso; com ele, dura 7 dias. Nenhuma sessão passa de 7 dias, e `POST /api/users/logout` encerra a sessão na hora. Quando a sessão não vale mais, a rota responde `401` com `UNAUTHENTICATED`.\n\nO botão **Authorize** desta página envia o token em todas as chamadas de teste. Fora de produção, o token fica salvo neste navegador até você clicar em **Logout**.\n\n## Integração com o laboratório\n\nO laboratório parceiro usa uma chave de API criada pelo administrador em `POST /api/admin/integration-clients`. A chave aparece uma única vez, a API guarda só o hash, e o administrador pode revogá-la a qualquer momento. As rotas do laboratório recebem a chave no cabeçalho, sem sessão:\n\n```http\nX-Api-Key: slab_<prefixo>_<segredo>\n```\n\n`GET /api/integrations/lab/worklist` lista, só pelo código público, os exames do dia que aguardam resultado, e `POST /api/integrations/lab/results` publica o resultado de um deles. Reenviar o mesmo conteúdo não muda nada, e uma correção (`amended`) cria uma nova versão. Cada chave tem um limite próprio de 60 requisições por minuto.\n\n## Conta de demonstração\n\nPara testar sem criar conta, entre com uma das contas de demonstração. As credenciais são públicas e servem só para demonstração:\n\n- Paciente: `paciente@saudemais.test`, senha `paciente-demo-123`.\n- Médico, que também é paciente e passa pela escolha de perfil: `medico@saudemais.test`, senha `medico-demo-123`.\n\nOs dados delas são de exemplo e podem ser alterados. Esses e-mails não podem ser usados em um cadastro novo. Uma vez por dia, a rotina de manutenção devolve as contas ao estado de exemplo (senha documentada, nome, conta ativa e perfis) e os agendamentos voltam ao exemplo inicial.\n\n## Rotinas automáticas\n\nUma rotina de manutenção grava o que o tempo já decidiu. Ela aproveita quando o banco já está ativo, no máximo de hora em hora, e roda no mínimo uma vez por dia; por isso, uma mudança abaixo pode levar até um dia para aparecer:\n\n- Pedido de consulta `pending` cujo horário chegou passa a `expired`, e o paciente recebe a notificação `appointment_expired`. Antes disso, as listas já o mostram como `expired`.\n- Exame `confirmed` cujo horário terminou passa a `completed`.\n- Consulta `confirmed` que começou há 72 horas sem registro do médico passa a `completed`, com o sistema como autor no histórico.\n- Sessões vencidas são apagadas, assim como links de redefinição de senha com mais de 48 horas, notificações com mais de 90 dias e registros de auditoria com mais de 180 dias.\n\n## Datas\n\n- Data e hora, como o início de uma vaga, em ISO 8601 e UTC: `2026-11-20T13:30:00.000Z`.\n- Datas sem horário, como `from` e `to` das vagas, em `YYYY-MM-DD`, no fuso de São Paulo (`America/Sao_Paulo`).\n- Para agendar, envie de volta o `startsAt` recebido na lista de vagas, sem montar o horário no cliente.\n\n## Paginação\n\nAs listas paginadas recebem `page` (a partir de 1) e `pageSize` (até 50) e respondem:\n\n```json\n{ \"items\": [], \"page\": 1, \"pageSize\": 20, \"total\": 0 }\n```",
     "contact": {
       "name": "Plovatto",
       "url": "https://github.com/Plovatto"
@@ -1045,6 +1045,75 @@
           "registryUf"
         ],
         "additionalProperties": false
+      },
+      "CreateUserInput": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Nome completo, de 2 a 120 caracteres.",
+            "example": "Ana Maria Silva"
+          },
+          "email": {
+            "type": "string",
+            "example": "ana.silva@email.com"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  ""
+                ]
+              },
+              {
+                "type": "string",
+                "minLength": 1
+              }
+            ],
+            "description": "Telefone com DDD. Números brasileiros sem código do país ganham `+55`; é gravado em E.164.",
+            "example": "(11) 98765-4321"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "patient",
+              "doctor",
+              "admin"
+            ],
+            "description": "Perfil da nova conta. Toda conta também é paciente; `doctor` e `admin` somam o próprio perfil ao de paciente.",
+            "example": "doctor"
+          },
+          "doctorProfile": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DoctorProfileInput"
+              },
+              {
+                "description": "Especialidade, unidade e registro. Obrigatório quando `role` é `doctor`; proibido nos outros perfis."
+              }
+            ]
+          }
+        },
+        "required": [
+          "fullName",
+          "email",
+          "role"
+        ],
+        "additionalProperties": false,
+        "example": {
+          "fullName": "Carla Mendes",
+          "email": "carla.mendes@email.com",
+          "phone": "(11) 98765-4321",
+          "role": "doctor",
+          "doctorProfile": {
+            "specialtyId": "0190f6a1-0000-7000-8000-000000000001",
+            "unitId": "0190f6a1-0000-7000-8000-000000000002",
+            "registryNumber": "123456",
+            "registryUf": "SP"
+          }
+        }
       },
       "UpdateDoctorProfileInput": {
         "type": "object",
@@ -2743,7 +2812,7 @@
               "awaiting",
               "history"
             ],
-            "description": "Totais das abas da agenda, sem os filtros."
+            "description": "Totais das abas da agenda, sem os filtros `from`, `to` e `search`."
           }
         },
         "required": [
@@ -2876,7 +2945,7 @@
               "awaiting",
               "history"
             ],
-            "description": "Totais das abas da agenda, sem os filtros."
+            "description": "Totais das abas da agenda, sem os filtros `from`, `to` e `search`."
           },
           "lastNotification": {
             "anyOf": [
@@ -5168,6 +5237,161 @@
                 "example": {
                   "message": "Erro interno do servidor.",
                   "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "adminCreateUser",
+        "summary": "Cadastrar usuário",
+        "description": "Cria uma conta de paciente, médico ou administrador. Toda conta também é paciente; para `doctor`, envie `doctorProfile` (o conselho vem da especialidade). A conta nasce sem senha utilizável: entrar antes de criar a senha responde `INVALID_CREDENTIALS`. Depois de salvar, a pessoa recebe por e-mail um link válido por 72 horas para criar a senha em `POST /api/password-reset/confirm`; esse link conta nos limites por conta de `POST /api/admin/users/{id}/password-reset`. Fica no registro de auditoria (`user.created`) e, ao contrário do autocadastro, não gera o aviso `user_registered` para os administradores.",
+        "tags": [
+          "Administração"
+        ],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Usuário cadastrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Dados inválidos.",
+                  "code": "VALIDATION_ERROR",
+                  "fields": {
+                    "email": "Informe um e-mail válido."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada (`UNAUTHENTICATED`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Sua sessão expirou. Entre novamente.",
+                  "code": "UNAUTHENTICATED"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A conta não tem o perfil exigido (`FORBIDDEN`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Você não tem acesso a esta área.",
+                  "code": "FORBIDDEN"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito com o estado atual (`EMAIL_TAKEN`, `REGISTRY_TAKEN`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Este e-mail já está cadastrado.",
+                  "code": "EMAIL_TAKEN",
+                  "fields": {
+                    "email": "Este e-mail já está cadastrado."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Especialidade ou unidade inativa ou inexistente (`SPECIALTY_UNAVAILABLE`, `UNIT_UNAVAILABLE`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Escolha uma especialidade ativa.",
+                  "code": "SPECIALTY_UNAVAILABLE",
+                  "fields": {
+                    "doctorProfile.specialtyId": "Escolha uma especialidade ativa."
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                  "code": "TOO_MANY_REQUESTS"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado no servidor (`INTERNAL_ERROR`).",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Erro interno do servidor.",
+                  "code": "INTERNAL_ERROR"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Servidor ocupado conferindo outras senhas (`SERVER_BUSY`). Tente de novo em instantes.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "O servidor está ocupado. Tente de novo em instantes.",
+                  "code": "SERVER_BUSY"
                 },
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
@@ -9871,7 +10095,7 @@
       "get": {
         "operationId": "listDoctorAppointments",
         "summary": "Listar a agenda do médico",
-        "description": "Consultas do médico logado na aba escolhida em `tab`, a partir do dia `from`, com o paciente (nome e telefone), a especialidade, a unidade e as observações. O médico só vê as próprias consultas. Cada item traz o que o médico pode fazer (`actions`), para o cliente não repetir as regras. `counts` traz os totais das abas, sem os filtros. Limite: 120 requisições por minuto por IP.",
+        "description": "Consultas do médico logado na aba escolhida em `tab`, com o paciente (nome e telefone), a especialidade, a unidade e as observações. A aba `all` traz todas as consultas, em qualquer situação, em ordem de horário, para montar a semana e a lista do dia. Os filtros se combinam: `from` e `to` limitam aos dias do período, incluídos, no fuso de São Paulo, e `search` procura no nome do paciente, sem distinguir acentos nem maiúsculas. `to` anterior a `from` responde 400. O médico só vê as próprias consultas. Cada item traz o que o médico pode fazer (`actions`), para o cliente não repetir as regras. `counts` traz os totais das abas sem os filtros `from`, `to` e `search`, os mesmos em qualquer aba. Limite: 120 requisições por minuto por IP.",
         "tags": [
           "Médico"
         ],
@@ -9909,13 +10133,14 @@
                 "pending",
                 "confirmed",
                 "awaiting",
-                "history"
+                "history",
+                "all"
               ],
               "default": "pending",
-              "description": "Aba da agenda: a confirmar (`pending`, pedidos pendentes que ainda não começaram) e confirmadas (`confirmed`, confirmadas que ainda não começaram) e aguardando registro (`awaiting`, confirmadas que já começaram), das mais próximas para as mais distantes; histórico (`history`, todo o resto, inclusive as confirmadas que já começaram e aguardam registro), das mais recentes para as mais antigas."
+              "description": "Aba da agenda: a confirmar (`pending`, pedidos pendentes que ainda não começaram) e confirmadas (`confirmed`, confirmadas que ainda não começaram) e aguardando registro (`awaiting`, confirmadas que já começaram), das mais próximas para as mais distantes; histórico (`history`, todo o resto, inclusive as confirmadas que já começaram e aguardam registro), das mais recentes para as mais antigas; todas (`all`, em qualquer situação), das mais antigas para as mais recentes."
             },
             "required": false,
-            "description": "Aba da agenda: a confirmar (`pending`, pedidos pendentes que ainda não começaram) e confirmadas (`confirmed`, confirmadas que ainda não começaram) e aguardando registro (`awaiting`, confirmadas que já começaram), das mais próximas para as mais distantes; histórico (`history`, todo o resto, inclusive as confirmadas que já começaram e aguardam registro), das mais recentes para as mais antigas.",
+            "description": "Aba da agenda: a confirmar (`pending`, pedidos pendentes que ainda não começaram) e confirmadas (`confirmed`, confirmadas que ainda não começaram) e aguardando registro (`awaiting`, confirmadas que já começaram), das mais próximas para as mais distantes; histórico (`history`, todo o resto, inclusive as confirmadas que já começaram e aguardam registro), das mais recentes para as mais antigas; todas (`all`, em qualquer situação), das mais antigas para as mais recentes.",
             "name": "tab",
             "in": "query"
           },
@@ -9929,6 +10154,30 @@
             "required": false,
             "description": "Só consultas que começam neste dia ou depois, no fuso de São Paulo.",
             "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Só consultas que começam neste dia ou antes, incluído, no fuso de São Paulo. Não pode ser anterior a `from`.",
+              "example": "2026-11-29"
+            },
+            "required": false,
+            "description": "Só consultas que começam neste dia ou antes, incluído, no fuso de São Paulo. Não pode ser anterior a `from`.",
+            "name": "to",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 120,
+              "description": "Parte do nome do paciente, sem distinguir acentos nem maiúsculas.",
+              "example": "joao"
+            },
+            "required": false,
+            "description": "Parte do nome do paciente, sem distinguir acentos nem maiúsculas.",
+            "name": "search",
             "in": "query"
           }
         ],
@@ -13212,7 +13461,7 @@
           "Contas"
         ],
         "summary": "Criar uma nova senha com o link",
-        "description": "Troca a senha usando o token do link. O token vale uma vez só; depois da troca, todas as sessões da conta são encerradas. Limite: 20 tentativas por IP a cada 15 minutos.",
+        "description": "Troca a senha usando o token do link, seja o de redefinição ou o de criação de senha enviado quando um administrador cadastra a conta. O token vale uma vez só; depois da troca, todas as sessões da conta são encerradas. Limite: 20 tentativas por IP a cada 15 minutos.",
         "requestBody": {
           "content": {
             "application/json": {
