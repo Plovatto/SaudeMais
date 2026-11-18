@@ -87,7 +87,7 @@ export const formatCivilDate = (iso: string, options?: { year?: boolean }) =>
 const relativeTime = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto', style: 'short' });
 const relativeSpan = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'always' });
 
-const MINUTE_MS = 60_000;
+export const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
 const RELATIVE_DAYS = 7;
@@ -161,6 +161,6 @@ export function formatMonth(iso: string): string {
 }
 
 export function formatDuration(startsAt: string, endsAt: string): string {
-  const minutes = Math.round((new Date(endsAt).getTime() - new Date(startsAt).getTime()) / 60_000);
+  const minutes = Math.round((new Date(endsAt).getTime() - new Date(startsAt).getTime()) / MINUTE_MS);
   return plural(minutes, 'minuto', 'minutos');
 }
