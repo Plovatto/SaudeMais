@@ -41,8 +41,8 @@ describe('admin reports', () => {
       calls.some(
         ({ url }) =>
           url.pathname === '/api/admin/reports' &&
-          url.searchParams.get('from') === '2026-10-17' &&
-          url.searchParams.get('to') === '2026-11-15',
+          url.searchParams.get('from') === '2026-10-16' &&
+          url.searchParams.get('to') === '2026-11-14',
       ),
     ).toBe(true);
     expect(screen.getByRole('radio', { name: '30 dias' })).toBeChecked();
@@ -56,15 +56,15 @@ describe('admin reports', () => {
     await user.click(screen.getByRole('radio', { name: '7 dias' }));
 
     await waitFor(() => expect(router.state.location.search).toBe('?periodo=7'));
-    await waitFor(() => expect(lastQuery(calls)).toEqual({ from: '2026-11-09', to: '2026-11-15' }));
+    await waitFor(() => expect(lastQuery(calls)).toEqual({ from: '2026-11-08', to: '2026-11-14' }));
     expect(screen.getByRole('radio', { name: '7 dias' })).toBeChecked();
     expect(router.state.historyAction).toBe('REPLACE');
   });
 
   it.each([
-    ['Este mês', '?periodo=mes'],
-    ['Hoje', '?periodo=hoje'],
-  ])('keeps %s chosen on the first day of the month', async (name, search) => {
+    ['Este mês', '?periodo=mes', { from: '2026-10-01', to: '2026-10-31' }],
+    ['Hoje', '?periodo=hoje', { from: '2026-11-01', to: '2026-11-01' }],
+  ])('keeps %s chosen on the first day of the month', async (name, search, period) => {
     vi.setSystemTime(new Date('2026-11-01T15:00:00.000Z'));
     const { calls } = serve(() => ({ status: 200, body: report() }));
     const { user, router } = renderApp('/admin/relatorios');
@@ -74,11 +74,11 @@ describe('admin reports', () => {
 
     await waitFor(() => expect(router.state.location.search).toBe(search));
     expect(screen.getByRole('radio', { name })).toBeChecked();
-    await waitFor(() => expect(lastQuery(calls)).toEqual({ from: '2026-11-01', to: '2026-11-01' }));
+    await waitFor(() => expect(lastQuery(calls)).toEqual(period));
   });
 
   it('prefers the calendar preset for a matching custom period', async () => {
-    vi.setSystemTime(new Date('2026-11-07T15:00:00.000Z'));
+    vi.setSystemTime(new Date('2026-11-08T15:00:00.000Z'));
     serve(() => ({ status: 200, body: report() }));
     renderApp('/admin/relatorios?de=2026-11-01&ate=2026-11-07');
     await section('Agendamentos por dia');
@@ -94,7 +94,7 @@ describe('admin reports', () => {
 
     await section('Agendamentos por dia');
 
-    expect(lastQuery(calls)).toEqual({ from: '2026-10-17', to: '2026-11-15' });
+    expect(lastQuery(calls)).toEqual({ from: '2026-10-16', to: '2026-11-14' });
   });
 
   it('dims the previous period while the next one loads', async () => {
@@ -223,9 +223,9 @@ describe('admin reports', () => {
   it('labels weekly intervals', async () => {
     serve(() => ({
       status: 200,
-      body: report({ period: { from: '2025-11-16', to: '2026-11-15', granularity: 'week' } }),
+      body: report({ period: { from: '2025-11-01', to: '2026-10-31', granularity: 'week' } }),
     }));
-    renderApp('/admin/relatorios?de=2025-11-16&ate=2026-11-15');
+    renderApp('/admin/relatorios?de=2025-11-01&ate=2026-10-31');
 
     const series = await section('Agendamentos por semana');
     expect(series.getByRole('rowheader', { name: 'Semana de 14/11/2026' })).toBeInTheDocument();

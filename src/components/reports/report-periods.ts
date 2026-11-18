@@ -3,13 +3,23 @@ import type { Period } from './reports-api';
 
 const monthStart = (date: string) => `${date.slice(0, 8)}01`;
 
-const lastDays = (days: number) => (today: string) => ({ from: addDays(today, 1 - days), to: today });
+const yearBefore = (date: string) => `${Number(date.slice(0, 4)) - 1}${date.slice(4)}`;
+
+const untilYesterday = (period: (yesterday: string) => Period) => (today: string) =>
+  period(addDays(today, -1));
+
+const lastDays = (days: number) =>
+  untilYesterday((yesterday) => ({ from: addDays(yesterday, 1 - days), to: yesterday }));
 
 export const PERIOD_PRESETS = [
-  { value: 'hoje', label: 'Hoje', period: lastDays(1) },
+  { value: 'hoje', label: 'Hoje', period: (today: string) => ({ from: today, to: today }) },
   { value: '7', label: '7 dias', period: lastDays(7) },
   { value: '30', label: '30 dias', period: lastDays(30) },
-  { value: 'mes', label: 'Este mês', period: (today: string) => ({ from: monthStart(today), to: today }) },
+  {
+    value: 'mes',
+    label: 'Este mês',
+    period: untilYesterday((yesterday) => ({ from: monthStart(yesterday), to: yesterday })),
+  },
   {
     value: 'mes-passado',
     label: 'Mês passado',
@@ -18,7 +28,14 @@ export const PERIOD_PRESETS = [
       return { from: monthStart(end), to: end };
     },
   },
-  { value: '365', label: '12 meses', period: lastDays(365) },
+  {
+    value: '365',
+    label: '12 meses',
+    period: (today: string) => {
+      const start = monthStart(today);
+      return { from: yearBefore(start), to: addDays(start, -1) };
+    },
+  },
 ] as const satisfies readonly { value: string; label: string; period: (today: string) => Period }[];
 
 export type PeriodPreset = (typeof PERIOD_PRESETS)[number]['value'];
@@ -29,20 +46,8 @@ export const PANEL_PRESETS = ['7', '30', 'mes', '365'] as const satisfies readon
 
 export type PanelPreset = (typeof PANEL_PRESETS)[number];
 
-const yearBefore = (date: string) => `${Number(date.slice(0, 4)) - 1}${date.slice(4)}`;
-
-const PANEL_PERIODS: Record<PanelPreset, (yesterday: string) => Period> = {
-  '7': lastDays(7),
-  '30': lastDays(30),
-  mes: (yesterday) => ({ from: monthStart(yesterday), to: yesterday }),
-  '365': (yesterday) => {
-    const start = monthStart(addDays(yesterday, 1));
-    return { from: yearBefore(start), to: addDays(start, -1) };
-  },
-};
-
 export const panelPeriod = (preset: PanelPreset, today = todayInSaoPaulo()): Period =>
-  PANEL_PERIODS[preset](addDays(today, -1));
+  presetPeriod(preset, today);
 
 const TIE_ORDER: readonly PeriodPreset[] = ['mes', 'mes-passado', 'hoje', '7', '30', '365'];
 
