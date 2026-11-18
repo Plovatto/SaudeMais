@@ -1,7 +1,8 @@
 import { screen, waitFor, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { todayInSaoPaulo } from '@lib/date';
 import {
+  calendar,
   dropdown,
   openDays,
   pick,
@@ -140,6 +141,10 @@ const submit = (user: User) => user.click(screen.getByRole('button', { name: 'Ag
 const unitCalls = (calls: ReturnType<typeof serve>['calls']) =>
   calls.filter((call) => call.url.pathname === '/api/units').length;
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe('book exam', { timeout: 20_000 }, () => {
   it('lists the units of the chosen exam and shows the free days after both', async () => {
     const { calls } = serve();
@@ -167,6 +172,28 @@ describe('book exam', { timeout: 20_000 }, () => {
     const availability = calls.filter((call) => call.url.pathname === '/api/exam-availability');
     expect(availability.at(-1)?.url.searchParams.get('unitId')).toBe('u2');
     expect(availability.at(-1)?.url.searchParams.get('examTypeId')).toBe('e1');
+  });
+
+  it('shows the first free month again when going back to a unit already loaded', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-20T02:30:00.000Z'));
+    serve();
+    const { user } = await start();
+    await pick(user, 'Exame', 'Hemograma');
+    await waitFor(() => expect(dropdown('Unidade')).toBeEnabled());
+    await pick(user, 'Unidade', 'Unidade Central');
+    await waitFor(() => expect(openDays()).toEqual([MONDAY]));
+    await pick(user, 'Unidade', 'Unidade Sul');
+    await waitFor(() => expect(openDays()).toEqual([MONDAY]));
+    for (let step = 0; step < 3; step += 1) {
+      await user.click(within(calendar()).getByRole('button', { name: 'Próximo mês' }));
+    }
+    expect(within(calendar()).getByText(/fevereiro/i)).toBeVisible();
+
+    await pick(user, 'Unidade', 'Unidade Central');
+
+    await waitFor(() => expect(openDays()).toEqual([MONDAY]));
+    expect(within(calendar()).getByText(/novembro/i)).toBeVisible();
   });
 
   it('shows the preparation of each exam and the address of each unit', async () => {

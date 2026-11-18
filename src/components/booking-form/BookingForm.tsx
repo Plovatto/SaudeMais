@@ -42,7 +42,8 @@ export function WhenCard({
   hint,
   current,
 }: WhenCardProps) {
-  const { days, slots, loading, failure, retry, empty, reach, showUntil, messages } = booking.slots;
+  const { days, slots, loading, failure, retry, empty, reach, showUntil, sourceKey, messages } =
+    booking.slots;
   const error = booking.errors.date ?? booking.errors.startsAt;
   const errorId = useId();
   return (
@@ -71,6 +72,7 @@ export function WhenCard({
         <div className={whenGrid}>
           <div className={cx('min-w-0', sectionPad)}>
             <MonthCalendar
+              key={sourceKey}
               available={days.map((day) => day.date)}
               selected={booking.date}
               onSelect={booking.pickDate}
