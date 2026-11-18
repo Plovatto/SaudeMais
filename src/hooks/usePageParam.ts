@@ -13,8 +13,8 @@ export interface PageMeta {
   pageSize: number;
 }
 
-export function usePageParam() {
-  const [raw, setRaw] = useSearchParam('pagina', '1');
+export function usePageParam(name = 'pagina') {
+  const [raw, setRaw] = useSearchParam(name, '1');
   const page = Math.max(1, Math.trunc(Number(raw)) || 1);
   const setPage = useCallback(
     (next: number, options?: { replace?: boolean }) => setRaw(String(next), options),

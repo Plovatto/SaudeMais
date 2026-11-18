@@ -1,6 +1,9 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { renderApp, serveApi, type ApiRoute } from '@/test/render-app';
+import { stubMatchMedia } from '@/test/match-media';
+import { renderApp } from '@/test/render-app';
+import { DESKTOP_QUERY } from '@hooks/useMediaQuery';
+import { page, policy, serveSettings as serve } from './settings-fixtures';
 
 const specialty = (index: number, overrides: Record<string, unknown> = {}) => ({
   id: `spec-${index}`,
@@ -9,13 +12,6 @@ const specialty = (index: number, overrides: Record<string, unknown> = {}) => ({
   appointmentDurationMin: 30,
   isActive: true,
   ...overrides,
-});
-
-const page = <T,>(items: T[], total = items.length, current = 1) => ({
-  items,
-  page: current,
-  pageSize: 20,
-  total,
 });
 
 const unit = (overrides: Record<string, unknown> = {}) => ({
@@ -38,16 +34,12 @@ const examType = (id: string, name: string, isActive = true) => ({
   isActive,
 });
 
-const policy = {
-  appointmentLateWindowHours: 24,
-  examLateWindowHours: 2,
-  maxReschedules: 2,
-  bookingHorizonDays: 60,
-  minLeadMinutes: 60,
-  updatedAt: '2026-11-20T12:00:00.000Z',
-};
+const row = (name: string, card?: string) =>
+  within(card ? (document.getElementById(card) as HTMLElement) : document.body).getByRole('button', {
+    name: new RegExp(`^${name}`),
+  });
 
-const serve = (routes: Record<string, ApiRoute>) => serveApi(['admin'], routes);
+const findForm = (name: string) => screen.findByRole('form', { name });
 
 const requestUrls = (fetchMock: ReturnType<typeof serve>['fetchMock']) =>
   fetchMock.mock.calls.map(([url]) => String(url instanceof Request ? url.url : url));
@@ -57,89 +49,70 @@ afterEach(() => {
 });
 
 describe('admin settings', () => {
-  it('opens the specialties section by default with details and pages', async () => {
+  it('shows every section on one page with details, statuses and pages per card', async () => {
     const { fetchMock } = serve({
       '/api/admin/specialties': () => ({
         status: 200,
         body: page([specialty(1), specialty(2, { isActive: false, council: 'CRN' })], 45),
       }),
+      '/api/admin/units': () => ({ status: 200, body: page([unit()]) }),
     });
     const { user, router } = renderApp('/admin/configuracoes');
 
     expect(await screen.findByText('Especialidade 1')).toBeInTheDocument();
-    expect(router.state.location.pathname).toBe('/admin/configuracoes/especialidades');
-    expect(screen.getByRole('tab', { name: 'Especialidades' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByText('CRN · consultas de 30 min')).toBeInTheDocument();
-    expect(screen.getByText('Inativo')).toBeInTheDocument();
+    expect(within(row('Especialidade 2')).getByText('Inativa')).toBeInTheDocument();
+    expect(await screen.findByText('Rua A, 1 · sem horário definido')).toBeInTheDocument();
+    for (const title of ['Unidades', 'Exames por unidade', 'Integrações', 'Agendamento', 'Tipos de exame']) {
+      expect(screen.getByRole('heading', { name: title })).toBeInTheDocument();
+    }
 
     await user.click(screen.getByRole('button', { name: 'Página 2' }));
 
     await waitFor(() => expect(requestUrls(fetchMock).some((url) => url.includes('page=2'))).toBe(true));
-    expect(router.state.location.search).toBe('?pagina=2');
+    expect(router.state.location.search).toBe('?pagina-especialidades=2');
   });
 
-  it('reads the page from the URL and moves back to the last page when it is past the end', async () => {
+  it('reads the page of a card from the URL and moves back to the last page when it is past the end', async () => {
     const { fetchMock } = serve({
       '/api/admin/specialties': () => ({ status: 200, body: page([specialty(1)], 45) }),
     });
-    const { router } = renderApp('/admin/configuracoes/especialidades?pagina=9');
+    const { router } = renderApp('/admin/configuracoes?pagina-especialidades=9');
 
-    await waitFor(() => expect(router.state.location.search).toBe('?pagina=3'));
+    await waitFor(() => expect(router.state.location.search).toBe('?pagina-especialidades=3'));
     expect(requestUrls(fetchMock).some((url) => url.includes('page=9'))).toBe(true);
     await waitFor(() => expect(requestUrls(fetchMock).some((url) => url.includes('page=3'))).toBe(true));
   });
 
-  it('marks only the item being changed as busy', async () => {
-    const { fetchMock } = serve({
-      '/api/admin/specialties': () => ({
-        status: 200,
-        body: page([specialty(1, { isActive: false }), specialty(2, { isActive: false })]),
-      }),
-    });
-    const { user } = renderApp('/admin/configuracoes/especialidades');
-    const first = await screen.findByRole('switch', { name: 'Especialidade 1 ativo' });
-    fetchMock.mockImplementationOnce(() => new Promise<Response>(() => undefined));
+  it('focuses the card of a deep link and leaves unknown sections', async () => {
+    serve({});
+    const { router } = renderApp('/admin/configuracoes/exames');
 
-    await user.click(first);
+    await waitFor(() => expect(document.getElementById('exames')).toHaveFocus());
 
-    await waitFor(() => expect(first).toHaveAttribute('aria-busy', 'true'));
-    expect(screen.getByRole('switch', { name: 'Especialidade 2 ativo' })).not.toHaveAttribute(
-      'aria-busy',
-      'true',
-    );
+    await router.navigate('/admin/configuracoes/desconhecida');
+    await waitFor(() => expect(router.state.location.pathname).toBe('/admin/configuracoes'));
   });
 
-  it('explains a removed item and an item still in use when changing it', async () => {
-    serve({
-      '/api/admin/specialties': () => ({
-        status: 200,
-        body: page([specialty(1, { isActive: false }), specialty(2)]),
-      }),
-      '/api/admin/specialties/spec-1': () => ({
-        status: 404,
-        body: { message: 'Specialty not found.', code: 'NOT_FOUND' },
-      }),
-      '/api/admin/specialties/spec-2': () => ({ status: 409, body: { message: 'Em uso.', code: 'IN_USE' } }),
+  it('scrolls to a deep linked card again once the cards above it have loaded', async () => {
+    const unitLoaded: boolean[] = [];
+    vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(function (this: Element) {
+      if (this.id === 'exames')
+        unitLoaded.push(screen.queryByText('Rua A, 1 · sem horário definido') !== null);
     });
-    const { user } = renderApp('/admin/configuracoes/especialidades');
+    serve({ '/api/admin/units': () => ({ status: 200, body: page([unit()]) }) });
+    renderApp('/admin/configuracoes/exames');
 
-    await user.click(await screen.findByRole('switch', { name: 'Especialidade 1 ativo' }));
-    expect(await screen.findByText('Este item não existe mais. Atualize a lista.')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('switch', { name: 'Especialidade 2 ativo' }));
-    await user.click(
-      within(await screen.findByRole('dialog', { name: 'Desativar Especialidade 2?' })).getByRole('button', {
-        name: 'Desativar',
-      }),
-    );
-    expect(await screen.findByText(/Há agendamentos futuros ligados a este item/)).toBeInTheDocument();
+    await waitFor(() => expect(unitLoaded.at(-1)).toBe(true));
+    expect(unitLoaded[0]).toBe(false);
   });
 
   it('shows an empty state for a list without items', async () => {
-    serve({ '/api/admin/exam-types': () => ({ status: 200, body: page([]) }) });
-    renderApp('/admin/configuracoes/exames');
+    serve({});
+    renderApp('/admin/configuracoes');
 
-    expect(await screen.findByText('Nenhum tipo de exame cadastrado')).toBeInTheDocument();
+    expect(await screen.findByText('Nenhum tipo de exame cadastrado.')).toBeInTheDocument();
+    expect(screen.getByText('Escolha uma unidade para ver os exames que ela faz.')).toBeInTheDocument();
   });
 
   it('validates a new exam type and sends empty preparation notes as null', async () => {
@@ -153,9 +126,9 @@ describe('admin settings', () => {
           : { status: 201, body: { id: 'e1', isActive: true, ...(body as object) } };
       },
     });
-    const { user } = renderApp('/admin/configuracoes/exames');
-    await user.click((await screen.findAllByRole('button', { name: 'Novo tipo de exame' }))[0]!);
-    const form = await screen.findByRole('form', { name: 'Tipo de exame' });
+    const { user } = renderApp('/admin/configuracoes');
+    await user.click(await screen.findByRole('button', { name: 'Adicionar tipo de exame' }));
+    const form = await findForm('Tipo de exame');
     const duration = within(form).getByLabelText('Duração (minutos)');
 
     await user.type(within(form).getByLabelText('Nome'), 'Hemograma');
@@ -197,10 +170,11 @@ describe('admin settings', () => {
             }
           : { status: 200, body: page([]) },
     });
-    const { user } = renderApp('/admin/configuracoes/especialidades');
-    await user.click((await screen.findAllByRole('button', { name: 'Nova especialidade' }))[0]!);
-    const form = await screen.findByRole('form', { name: 'Especialidade' });
+    const { user } = renderApp('/admin/configuracoes');
+    await user.click(await screen.findByRole('button', { name: 'Adicionar especialidade' }));
+    const form = await findForm('Especialidade');
 
+    expect(within(form).queryByRole('switch')).not.toBeInTheDocument();
     await user.type(within(form).getByLabelText('Nome'), 'Cardiologia');
     await user.clear(within(form).getByLabelText('Conselho profissional'));
     await user.type(within(form).getByLabelText('Conselho profissional'), 'cr');
@@ -226,51 +200,51 @@ describe('admin settings', () => {
     });
   });
 
-  it('asks before deactivating and sends the change only when confirmed', async () => {
+  it('deactivates an item from its drawer and explains an item still in use', async () => {
+    let saves = 0;
     const { calls } = serve({
       '/api/admin/specialties': () => ({ status: 200, body: page([specialty(1)]) }),
-      '/api/admin/specialties/spec-1': () => ({ status: 200, body: specialty(1, { isActive: false }) }),
+      '/api/admin/specialties/spec-1': () => {
+        saves += 1;
+        return saves === 1
+          ? { status: 409, body: { message: 'Em uso.', code: 'IN_USE' } }
+          : { status: 200, body: specialty(1, { isActive: false }) };
+      },
     });
-    const { user } = renderApp('/admin/configuracoes/especialidades');
-    const toggle = await screen.findByRole('switch', { name: 'Especialidade 1 ativo' });
+    const { user } = renderApp('/admin/configuracoes');
+    await screen.findByText('Especialidade 1');
+    await user.click(row('Especialidade 1'));
+    const form = await findForm('Especialidade');
+    const active = within(form).getByRole('switch', { name: 'Especialidade ativa' });
 
-    await user.click(toggle);
-    const dialog = await screen.findByRole('dialog', { name: 'Desativar Especialidade 1?' });
-    await user.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
-    expect(calls.some((call) => call.method === 'PATCH')).toBe(false);
+    expect(active).toBeChecked();
+    await user.click(active);
+    await user.click(within(form).getByRole('button', { name: 'Salvar' }));
 
-    await user.click(toggle);
-    await user.click(
-      within(await screen.findByRole('dialog', { name: 'Desativar Especialidade 1?' })).getByRole('button', {
-        name: 'Desativar',
-      }),
-    );
+    expect(await within(form).findByText(/Há agendamentos futuros ligados a este item/)).toBeInTheDocument();
+    expect(calls.find((call) => call.method === 'PATCH')?.body).toEqual({
+      name: 'Especialidade 1',
+      council: 'CRM',
+      appointmentDurationMin: 30,
+      isActive: false,
+    });
 
+    await user.click(within(form).getByRole('button', { name: 'Salvar' }));
+
+    expect(await screen.findByText('Especialidade atualizada.')).toBeInTheDocument();
     await waitFor(() =>
-      expect(calls.find((call) => call.method === 'PATCH')?.body).toEqual({ isActive: false }),
+      expect(screen.queryByRole('form', { name: 'Especialidade' })).not.toBeInTheDocument(),
     );
   });
 
   it('checks unit hours and sends only the open days in minutes', async () => {
     const { calls } = serve({
       '/api/admin/units': (method) =>
-        method === 'POST'
-          ? {
-              status: 201,
-              body: {
-                id: 'u1',
-                name: 'Central',
-                address: 'Rua A, 1',
-                phone: '+5511333344444',
-                isActive: true,
-                hours: [],
-              },
-            }
-          : { status: 200, body: page([]) },
+        method === 'POST' ? { status: 201, body: unit() } : { status: 200, body: page([]) },
     });
-    const { user } = renderApp('/admin/configuracoes/unidades');
-    await user.click((await screen.findAllByRole('button', { name: 'Nova unidade' }))[0]!);
-    const form = await screen.findByRole('form', { name: 'Unidade' });
+    const { user } = renderApp('/admin/configuracoes');
+    await user.click(await screen.findByRole('button', { name: 'Adicionar unidade' }));
+    const form = await findForm('Unidade');
 
     await user.type(within(form).getByLabelText('Nome'), 'Unidade Central');
     await user.type(within(form).getByLabelText('Endereço'), 'Rua das Flores, 123');
@@ -312,9 +286,10 @@ describe('admin settings', () => {
         body: { message: 'Nome em uso.', code: 'NAME_TAKEN' },
       }),
     });
-    const { user } = renderApp('/admin/configuracoes/unidades');
-    await user.click(await screen.findByRole('button', { name: 'Editar Central' }));
-    const form = await screen.findByRole('form', { name: 'Unidade' });
+    const { user } = renderApp('/admin/configuracoes');
+    await screen.findByText('Rua A, 1 · aberta 1 dia por semana');
+    await user.click(row('Central'));
+    const form = await findForm('Unidade');
 
     expect(within(form).getByLabelText('Telefone')).toHaveValue('(11) 3333-4444');
     expect(within(form).getByLabelText('Abre (Segunda-feira)')).toHaveValue('08:00');
@@ -329,34 +304,98 @@ describe('admin settings', () => {
     });
   });
 
-  it('keeps the policy within its ranges', async () => {
+  it('saves a changed policy from the bar above the navigation on the phone', async () => {
     const { calls } = serve({
       '/api/admin/policy': (method, body) =>
         method === 'PUT'
           ? { status: 200, body: { ...policy, ...(body as object) } }
           : { status: 200, body: policy },
     });
-    const { user } = renderApp('/admin/configuracoes/politica');
-    const reschedules = await screen.findByLabelText('Reagendamentos por agendamento');
+    const { user } = renderApp('/admin/configuracoes');
+    await user.click(await screen.findByRole('button', { name: /^Reagendamentos 2 vezes/ }));
 
-    await user.clear(reschedules);
-    await user.type(reschedules, '11');
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
-    expect(await screen.findByText('Use de 0 a 10.')).toBeInTheDocument();
-
-    await user.clear(reschedules);
-    await user.type(reschedules, '3');
+    expect(screen.queryByRole('button', { name: 'Salvar' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('option', { name: /^3 vezes/ }));
     await user.click(screen.getByRole('button', { name: 'Salvar' }));
 
-    await waitFor(() =>
-      expect(calls.find((call) => call.method === 'PUT')?.body).toEqual({
-        appointmentLateWindowHours: 24,
-        examLateWindowHours: 2,
-        maxReschedules: 3,
-        bookingHorizonDays: 60,
-        minLeadMinutes: 60,
+    expect(await screen.findByText('Configurações salvas.')).toBeInTheDocument();
+    expect(calls.find((call) => call.method === 'PUT')?.body).toEqual({
+      appointmentLateWindowHours: 24,
+      examLateWindowHours: 2,
+      maxReschedules: 3,
+      bookingHorizonDays: 60,
+      minLeadMinutes: 60,
+    });
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Salvar' })).not.toBeInTheDocument());
+  });
+
+  it('saves a changed policy from the page header on the desktop', async () => {
+    stubMatchMedia((query) => query === DESKTOP_QUERY);
+    const { calls } = serve({
+      '/api/admin/policy': (method, body) =>
+        method === 'PUT'
+          ? { status: 200, body: { ...policy, ...(body as object) } }
+          : { status: 200, body: policy },
+    });
+    const { user } = renderApp('/admin/configuracoes');
+    await user.click(await screen.findByRole('button', { name: /^Agenda aberta 60 dias/ }));
+    await user.click(screen.getByRole('option', { name: /^90 dias/ }));
+    await user.click(screen.getByRole('button', { name: 'Salvar configurações' }));
+
+    expect(await screen.findByText('Configurações salvas.')).toBeInTheDocument();
+    expect(calls.find((call) => call.method === 'PUT')?.body).toMatchObject({ bookingHorizonDays: 90 });
+    await waitFor(() => expect(document.getElementById('politica')).toHaveFocus());
+    expect(screen.queryByRole('button', { name: 'Salvar configurações' })).not.toBeInTheDocument();
+  });
+
+  it('keeps the changes and the save bar when saving the policy fails', async () => {
+    serve({
+      '/api/admin/policy': (method) =>
+        method === 'PUT'
+          ? { status: 503, body: { message: 'Indisponível.', code: 'SERVICE_UNAVAILABLE' } }
+          : { status: 200, body: policy },
+    });
+    const { user } = renderApp('/admin/configuracoes');
+    await user.click(await screen.findByRole('button', { name: /^Reagendamentos 2 vezes/ }));
+    await user.click(screen.getByRole('option', { name: /^3 vezes/ }));
+    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+
+    expect(
+      await within(screen.getByRole('form', { name: 'Agendamento' })).findByRole('alert'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Salvar' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Reagendamentos 3 vezes/ })).toBeInTheDocument();
+  });
+
+  it('explains an item that no longer exists when saving it', async () => {
+    serve({
+      '/api/admin/specialties': () => ({ status: 200, body: page([specialty(1)]) }),
+      '/api/admin/specialties/spec-1': () => ({
+        status: 404,
+        body: { message: 'Specialty not found.', code: 'NOT_FOUND' },
       }),
-    );
+    });
+    const { user } = renderApp('/admin/configuracoes');
+    await screen.findByText('Especialidade 1');
+    await user.click(row('Especialidade 1'));
+    const form = await findForm('Especialidade');
+    await user.click(within(form).getByRole('button', { name: 'Salvar' }));
+
+    expect(await within(form).findByText('Este item não existe mais. Atualize a lista.')).toBeInTheDocument();
+  });
+
+  it('opens the offers of the unit in the URL', async () => {
+    serve({
+      '/api/admin/units': () => ({ status: 200, body: page([unit()]) }),
+      '/api/admin/units/u1/exam-offers': () => ({
+        status: 200,
+        body: [{ examTypeId: 'e1', examTypeName: 'Raio-X', capacityPerSlot: 2, isActive: false }],
+      }),
+    });
+    renderApp('/admin/configuracoes/ofertas?unidade=u1');
+
+    expect(await screen.findByText('2 ao mesmo tempo')).toBeInTheDocument();
+    expect(within(row('Raio-X', 'ofertas')).getByText('Inativo')).toBeInTheDocument();
   });
 
   it('offers only active exam types not yet offered and edits an existing offer', async () => {
@@ -379,22 +418,25 @@ describe('admin settings', () => {
         body: { message: 'Inativo.', code: 'EXAM_TYPE_INACTIVE' },
       }),
     });
-    const { user, router } = renderApp('/admin/configuracoes/ofertas');
+    const { user, router } = renderApp('/admin/configuracoes');
 
-    await screen.findByRole('option', { name: 'Central' });
-    await user.selectOptions(screen.getByLabelText('Unidade'), 'u1');
+    await user.click(await screen.findByRole('button', { name: /^Unidade Escolha a unidade/ }));
+    await user.click(await screen.findByRole('option', { name: /^Central/ }));
     expect(router.state.location.search).toBe('?unidade=u1');
     expect(await screen.findByText('2 ao mesmo tempo')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Oferecer exame' }));
-    const create = await screen.findByRole('form', { name: 'Oferta' });
-    const options = within(within(create).getByLabelText('Exame')).getAllByRole('option');
-    expect(options.map((option) => option.textContent)).toEqual(['Escolha o exame', 'Ultrassom']);
+    const create = await findForm('Oferta');
+    await user.click(within(create).getByRole('button', { name: /^Exame Escolha o exame/ }));
+    const options = within(await screen.findByRole('listbox', { name: 'Exame' })).getAllByRole('option');
+    expect(options).toHaveLength(1);
+    expect(options[0]).toHaveAccessibleName(/^Ultrassom/);
+    await user.keyboard('{Escape}');
     await user.click(within(create).getByRole('button', { name: 'Cancelar' }));
     await waitFor(() => expect(screen.queryByRole('form', { name: 'Oferta' })).not.toBeInTheDocument());
 
-    await user.click(screen.getByRole('button', { name: 'Editar Raio-X' }));
-    const edit = await screen.findByRole('form', { name: 'Oferta' });
+    await user.click(row('Raio-X', 'ofertas'));
+    const edit = await findForm('Oferta');
     expect(within(edit).getByLabelText('Exame')).toHaveValue('Raio-X');
     const capacity = within(edit).getByLabelText('Exames ao mesmo tempo');
     await user.clear(capacity);

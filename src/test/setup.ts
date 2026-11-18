@@ -9,6 +9,10 @@ configure({ asyncUtilTimeout: 3000 });
 
 beforeEach(() => stubMatchMedia());
 
+if (!('scrollIntoView' in Element.prototype)) {
+  Object.assign(Element.prototype, { scrollIntoView: () => undefined });
+}
+
 if (!('showModal' in HTMLDialogElement.prototype)) {
   Object.assign(HTMLDialogElement.prototype, {
     showModal(this: HTMLDialogElement) {

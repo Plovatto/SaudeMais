@@ -40,9 +40,16 @@ function catalogResource<L extends keyof CatalogTypes>(listPath: L) {
   return {
     list: (page: number, signal: AbortSignal, pageSize = PAGE_SIZE) =>
       send<Page<Types['item']>>('get', listPath, { query: { page, pageSize }, signal }),
-    create: (body: Types['create']) => send<Types['item']>('post', listPath, { body }),
-    update: (id: string, body: Types['update']) =>
-      send<Types['item']>('patch', `${listPath}/{id}`, { params: { id }, body }),
+    save: (
+      id: string | null,
+      { isActive, ...body }: Types['create'] & Required<Pick<Types['update'], 'isActive'>>,
+    ) =>
+      id === null
+        ? send<Types['item']>('post', listPath, { body })
+        : send<Types['item']>('patch', `${listPath}/{id}`, {
+            params: { id },
+            body: { ...body, isActive } satisfies Types['update'],
+          }),
   };
 }
 

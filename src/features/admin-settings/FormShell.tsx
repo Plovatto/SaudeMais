@@ -1,12 +1,12 @@
 import type { FormEvent, ReactNode } from 'react';
-import { Button, FormAlert } from '@components/ui';
+import { Button, DrawerBody, DrawerFooter, FormAlert } from '@components/ui';
 
 export interface FormShellProps {
   label: string;
   onSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   alert: string | null;
   submitting: boolean;
-  onCancel?: () => void;
+  onCancel: () => void;
   submitLabel?: string;
   children: ReactNode;
 }
@@ -25,20 +25,20 @@ export function FormShell({
       aria-label={label}
       noValidate
       onSubmit={(event) => void onSubmit(event)}
-      className="flex flex-col gap-5"
+      className="flex flex-1 flex-col"
     >
-      {children}
-      {alert && <FormAlert>{alert}</FormAlert>}
-      <div className="flex flex-wrap justify-end gap-3">
-        {onCancel && (
-          <Button variant="secondary" disabled={submitting} onClick={onCancel}>
-            Cancelar
-          </Button>
-        )}
+      <DrawerBody>
+        {children}
+        {alert && <FormAlert>{alert}</FormAlert>}
+      </DrawerBody>
+      <DrawerFooter>
+        <Button variant="secondary" disabled={submitting} onClick={onCancel}>
+          Cancelar
+        </Button>
         <Button type="submit" loading={submitting}>
           {submitLabel}
         </Button>
-      </div>
+      </DrawerFooter>
     </form>
   );
 }

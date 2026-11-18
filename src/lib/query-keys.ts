@@ -44,6 +44,7 @@ export const queryKeys = {
       ['doctor', 'patient-results', patientId, page] as const,
   },
   catalog: {
+    all: ['catalog'] as const,
     specialties: ['catalog', 'specialties'] as const,
     units: ['catalog', 'units'] as const,
     examTypes: ['catalog', 'exam-types'] as const,

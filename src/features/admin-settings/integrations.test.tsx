@@ -1,6 +1,7 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { renderApp, serveApi, type ApiRoute } from '@/test/render-app';
+import { renderApp } from '@/test/render-app';
+import { page, serveSettings as serve } from './settings-fixtures';
 
 const API_KEY = 'slab_ab12cd34_q3Zp1vQx8n0rT2bYc4dEf6gHi8jKl0mNo2pQr4sTu6v';
 const PATH = '/admin/configuracoes/integracoes';
@@ -15,16 +16,12 @@ const client = (id: string, overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-const page = (items: unknown[]) => ({ items, page: 1, pageSize: 20, total: items.length });
-
-const serve = (routes: Record<string, ApiRoute>) => serveApi(['admin'], routes);
-
 const listCalls = (calls: ReturnType<typeof serve>['calls']) =>
   calls.filter((call) => call.method === 'GET' && call.url.pathname === '/api/admin/integration-clients');
 
 async function createIntegration(name: string) {
   const { user, ...rest } = renderApp(PATH);
-  await user.click(await screen.findByRole('button', { name: 'Nova integração' }));
+  await user.click(await screen.findByRole('button', { name: 'Adicionar integração' }));
   const panel = await screen.findByRole('dialog', { name: 'Nova integração' });
   await user.type(within(panel).getByLabelText('Nome'), name);
   await user.click(within(panel).getByRole('button', { name: 'Criar integração' }));
@@ -39,6 +36,7 @@ describe('admin integrations', () => {
         body: page([
           client('A', { lastUsedAt: new Date(Date.now() - 5 * 60_000).toISOString() }),
           client('B', { revokedAt: '2026-11-12T12:00:00.000Z' }),
+          client('C'),
         ]),
       }),
     });
@@ -48,12 +46,16 @@ describe('admin integrations', () => {
     const revoked = screen.getByText('Laboratório B').closest('li');
     if (!active || !revoked) throw new Error('rows not found');
 
-    expect(screen.getByRole('tab', { name: 'Integrações' })).toHaveAttribute('aria-selected', 'true');
+    await waitFor(() => expect(document.getElementById('integracoes')).toHaveFocus());
     expect(within(active).getByText('slab_ab12cd34_…')).toBeInTheDocument();
     expect(within(active).getByText('há 5 min.')).toBeInTheDocument();
     expect(within(active).getByText('Ativa')).toBeInTheDocument();
     expect(within(active).getByRole('button', { name: 'Revogar Laboratório A' })).toBeInTheDocument();
-    expect(within(revoked).getByText('Nunca usada')).toBeInTheDocument();
+    expect(within(revoked).getByText(/^Revogada em /)).toBeInTheDocument();
+    expect(within(revoked).queryByText('Nunca usada')).not.toBeInTheDocument();
+    expect(
+      within(screen.getByText('Laboratório C').closest('li') as HTMLElement).getByText('Nunca usada'),
+    ).toBeInTheDocument();
     expect(within(revoked).getByText('Revogada')).toBeInTheDocument();
     expect(within(revoked).queryByRole('button', { name: /Revogar/ })).not.toBeInTheDocument();
   });
@@ -134,7 +136,7 @@ describe('admin integrations', () => {
       '/api/admin/integration-clients': () => ({ status: 200, body: page([]) }),
     });
     const { user } = renderApp(PATH);
-    await user.click(await screen.findByRole('button', { name: 'Nova integração' }));
+    await user.click(await screen.findByRole('button', { name: 'Adicionar integração' }));
     const panel = await screen.findByRole('dialog', { name: 'Nova integração' });
     await user.type(within(panel).getByLabelText('Nome'), 'Laboratório Central');
     fetchMock.mockImplementationOnce(() => new Promise<Response>(() => undefined));
@@ -228,7 +230,7 @@ describe('admin integrations', () => {
     );
 
     expect(await screen.findByText('Esta integração não existe mais. Atualize a lista.')).toBeInTheDocument();
-    expect(await screen.findByText('Nenhuma integração criada')).toBeInTheDocument();
+    expect(await screen.findByText('Nenhuma integração criada.')).toBeInTheDocument();
     expect(listCalls(calls).length).toBeGreaterThan(1);
   });
 });
