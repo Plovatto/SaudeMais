@@ -1,7 +1,7 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { renderApp } from '@/test/render-app';
-import { page, serveSettings as serve } from './settings-fixtures';
+import { page, serveSettings as serve } from '@/test/settings-fixtures';
 
 const API_KEY = 'slab_ab12cd34_q3Zp1vQx8n0rT2bYc4dEf6gHi8jKl0mNo2pQr4sTu6v';
 const PATH = '/admin/configuracoes/integracoes';

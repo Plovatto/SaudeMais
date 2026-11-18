@@ -16,7 +16,7 @@ import {
   posts,
   serve,
   unrecorded,
-} from './doctor-fixtures';
+} from '@/test/doctor-fixtures';
 
 const NOW = '2030-01-10T12:42:00.000Z';
 const EARLY = '2030-01-10T11:00:00.000Z';

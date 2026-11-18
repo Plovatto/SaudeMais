@@ -1,9 +1,9 @@
 import { screen, within } from '@testing-library/react';
-import type { renderApp } from '@/test/render-app';
-import { serveApi, type ApiCall, type MockResponse } from '@/test/render-app';
+import type { renderApp } from './render-app';
+import { serveApi, type ApiCall, type MockResponse } from './render-app';
 import type { DoctorAppointment } from '@lib/api/models';
 import { civilDateInSaoPaulo } from '@lib/date';
-import type { AgendaTab, DoctorHome } from './doctor-api';
+import type { AgendaTab, DoctorHome } from '@features/doctor-agenda/doctor-api';
 
 export const FUTURE = '2030-01-10T13:00:00.000Z';
 export const PAST = '2020-01-10T13:00:00.000Z';

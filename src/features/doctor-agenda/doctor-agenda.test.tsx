@@ -22,7 +22,7 @@ import {
   serve,
   unrecorded,
   type User,
-} from './doctor-fixtures';
+} from '@/test/doctor-fixtures';
 
 const DAY = '2030-01-10';
 const NEXT_DAY = '2030-01-11T02:30:00.000Z';

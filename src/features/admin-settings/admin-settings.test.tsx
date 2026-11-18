@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { stubMatchMedia } from '@/test/match-media';
 import { renderApp } from '@/test/render-app';
 import { DESKTOP_QUERY } from '@hooks/useMediaQuery';
-import { page, policy, serveSettings as serve } from './settings-fixtures';
+import { page, policy, serveSettings as serve } from '@/test/settings-fixtures';
 
 const specialty = (index: number, overrides: Record<string, unknown> = {}) => ({
   id: `spec-${index}`,
