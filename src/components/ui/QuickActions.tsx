@@ -26,7 +26,7 @@ export function QuickActions({ label, actions }: QuickActionsProps) {
             key={to}
             to={to}
             className={cx(
-              'group can-hover:-translate-y-px flex flex-col items-start gap-3 rounded-[18px] border p-4 transition-[translate,box-shadow,border-color] duration-150 @min-[560px]:flex-row @min-[560px]:items-center @min-[560px]:gap-4 @min-[560px]:px-[22px] @min-[560px]:py-5',
+              'group can-hover:-translate-y-px flex min-w-0 flex-col items-start gap-3 rounded-[18px] border p-4 transition-[translate,box-shadow,border-color] duration-150 @min-[560px]:flex-row @min-[560px]:items-center @min-[560px]:gap-4 @min-[560px]:px-[22px] @min-[560px]:py-5',
               primary
                 ? 'border-role-strong bg-role-strong text-on-role shadow-[0_14px_30px_-16px_var(--role-strong)]'
                 : 'border-border bg-surface text-text shadow-card can-hover:border-role-soft-strong can-hover:shadow-raised',
@@ -41,7 +41,7 @@ export function QuickActions({ label, actions }: QuickActionsProps) {
               <Icon aria-hidden className="size-[22px]" />
             </span>
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span className="text-[0.96875rem] font-[650] tracking-[-0.01em] @min-[560px]:text-[1.0625rem]">
+              <span className="text-[0.96875rem] font-[650] tracking-[-0.01em] wrap-break-word @min-[560px]:text-[1.0625rem]">
                 {title}
               </span>
               <span

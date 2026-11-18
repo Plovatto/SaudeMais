@@ -52,12 +52,12 @@ export function NextCard({ label, query, next, empty }: NextCardProps) {
   }
   const className = cx(
     cardClass,
-    'shadow-raised group can-hover:border-role-soft-strong w-full text-start transition-[border-color,box-shadow] duration-150',
+    'shadow-raised group can-hover:border-role-soft-strong w-full min-w-0 text-start transition-[border-color,box-shadow] duration-150',
   );
   const content = (
     <>
-      <span className="flex items-center justify-between gap-3">
-        <span className={nextLabel}>{label}</span>
+      <span className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+        <span className={cx(nextLabel, 'min-w-0 wrap-break-word')}>{label}</span>
         {next.tag}
       </span>
       <span className="flex items-center gap-3.5 min-[561px]:gap-[18px]">
