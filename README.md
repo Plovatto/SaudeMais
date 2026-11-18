@@ -37,9 +37,9 @@ Interface do Saúde+, uma SPA desenvolvida com React, TypeScript e Vite para age
   </tr>
 </table>
 
-## Contas de demonstração
+## Contas de exemplo
 
-Na tela de login, os botões de **Contas de exemplo** preenchem o e-mail e a senha das contas abaixo. Elas são compartilhadas e têm os dados restaurados todo dia.
+Na tela de login, os botões de **Contas de exemplo** preenchem o e-mail e a senha das contas abaixo. Elas são compartilhadas e seguem as mesmas regras de qualquer conta, então os dados podem mudar a qualquer momento.
 
 | Perfil   | E-mail                    | Senha               |
 | -------- | ------------------------- | ------------------- |
