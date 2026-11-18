@@ -8,6 +8,7 @@ export interface FormShellProps {
   submitting: boolean;
   onCancel: () => void;
   submitLabel?: string;
+  submitDisabled?: boolean;
   children: ReactNode;
 }
 
@@ -18,6 +19,7 @@ export function FormShell({
   submitting,
   onCancel,
   submitLabel = 'Salvar',
+  submitDisabled = false,
   children,
 }: FormShellProps) {
   return (
@@ -35,7 +37,7 @@ export function FormShell({
         <Button variant="secondary" disabled={submitting} onClick={onCancel}>
           Cancelar
         </Button>
-        <Button type="submit" loading={submitting}>
+        <Button type="submit" loading={submitting} disabled={submitDisabled}>
           {submitLabel}
         </Button>
       </DrawerFooter>

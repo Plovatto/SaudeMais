@@ -1,13 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, type RefObject } from 'react';
-import { LuPencil, LuShieldCheck, LuShieldOff, LuStethoscope, LuUserCheck, LuUserX } from 'react-icons/lu';
-import { useNavigate } from 'react-router';
-import { ConfirmDialog, useToast, type MenuItem } from '@components/ui';
-import { useCurrentUser } from '@lib/auth/useSession';
+import { ConfirmDialog, useToast } from '@components/ui';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
 import { ImpactDialog } from './ImpactDialog';
 import { plural } from '@lib/plural';
-import { ADMIN_USERS_PATH, refreshUser, syncUser, userLocks } from './user-cache';
+import { refreshUser, syncUser } from './user-cache';
 import { userMessages } from './user-messages';
 import { usersApi, type AdminUser, type DeactivationImpact } from './users-api';
 
@@ -49,10 +46,8 @@ const describeDeactivation = ({
 };
 
 export function useUserActions(fallbackFocus?: RefObject<HTMLElement | null>) {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { show } = useToast();
-  const currentUser = useCurrentUser();
   const [pending, setPending] = useState<Pending | null>(null);
 
   const mutation = useMutation({
@@ -73,47 +68,10 @@ export function useUserActions(fallbackFocus?: RefObject<HTMLElement | null>) {
     else setPending({ action, user });
   };
 
-  const busyId = mutation.isPending ? mutation.variables.user.id : null;
-
-  const itemsFor = (user: AdminUser): MenuItem[] => {
-    const { isInactive, isSelf } = userLocks(user, currentUser.id);
-    const isAdmin = user.roles.includes('admin');
-    const busy = busyId === user.id;
-    const frozen = isInactive || busy;
-    return [
-      {
-        label: 'Editar',
-        icon: <LuPencil />,
-        onSelect: () => void navigate(`${ADMIN_USERS_PATH}/${user.id}`),
-      },
-      {
-        label: user.roles.includes('doctor') ? 'Perfil de médico' : 'Tornar médico',
-        icon: <LuStethoscope />,
-        disabled: frozen,
-        onSelect: () => void navigate(`${ADMIN_USERS_PATH}/${user.id}/medico`),
-      },
-      {
-        label: isAdmin ? 'Remover admin' : 'Tornar admin',
-        icon: isAdmin ? <LuShieldOff /> : <LuShieldCheck />,
-        disabled: frozen || (isAdmin && isSelf),
-        onSelect: () => request(isAdmin ? 'revokeAdmin' : 'grantAdmin', user),
-      },
-      isInactive
-        ? {
-            label: 'Reativar',
-            icon: <LuUserCheck />,
-            disabled: busy,
-            onSelect: () => request('reactivate', user),
-          }
-        : {
-            label: 'Desativar',
-            icon: <LuUserX />,
-            tone: 'danger',
-            disabled: isSelf || busy,
-            onSelect: () => request('deactivate', user),
-          },
-    ];
-  };
+  const isBusy = (user: AdminUser, ...actions: UserAction[]) =>
+    mutation.isPending &&
+    mutation.variables.user.id === user.id &&
+    actions.includes(mutation.variables.action);
 
   const close = () => setPending(null);
   const confirm = () => pending && mutation.mutate(pending);
@@ -155,5 +113,5 @@ export function useUserActions(fallbackFocus?: RefObject<HTMLElement | null>) {
     </>
   );
 
-  return { itemsFor, request, dialogs, busyId };
+  return { request, dialogs, isBusy };
 }

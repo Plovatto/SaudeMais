@@ -28,16 +28,21 @@ test('the admin makes a user a doctor and patients can book the new free slots',
   await openFromNav(page, 'Usuários');
   await page.getByRole('searchbox', { name: 'Buscar usuários' }).fill(person.fullName);
   await expect(page.getByText('1 usuário encontrado')).toBeVisible();
-  await page.getByRole('button', { name: `Ações de ${person.fullName}` }).click();
+  await page.getByRole('button', { name: person.fullName }).click();
+  const panel = page.getByRole('dialog', { name: 'Editar usuário' });
+  await expect(panel.getByRole('textbox', { name: 'Nome completo' })).toHaveValue(person.fullName);
   await expectAccessible(page);
-  await page.getByRole('menuitem', { name: 'Tornar médico' }).click();
+  await panel.getByRole('button', { name: 'Tornar médico' }).click();
 
-  await page.getByRole('combobox', { name: 'Especialidade' }).selectOption({ label: 'Dermatologia' });
-  await page.getByRole('textbox', { name: 'Número do CRM' }).fill(String(randomInt(100_000, 1_000_000)));
-  await page.getByRole('combobox', { name: 'UF' }).selectOption('SP');
-  await page.getByRole('combobox', { name: 'Unidade' }).selectOption({ label: 'Unidade Sul' });
+  const doctorForm = page.getByRole('dialog', { name: 'Tornar médico' });
+  await doctorForm.getByRole('combobox', { name: 'Especialidade' }).selectOption({ label: 'Dermatologia' });
+  await doctorForm
+    .getByRole('textbox', { name: 'Número do CRM' })
+    .fill(String(randomInt(100_000, 1_000_000)));
+  await doctorForm.getByRole('combobox', { name: 'UF' }).selectOption('SP');
+  await doctorForm.getByRole('combobox', { name: 'Unidade' }).selectOption({ label: 'Unidade Sul' });
   await expectAccessible(page);
-  await page.getByRole('button', { name: 'Tornar médico' }).click();
+  await doctorForm.getByRole('button', { name: 'Tornar médico' }).click();
   await expect(page.getByText(`${person.fullName} agora tem perfil de médico.`)).toBeVisible();
 
   await api.saveSchedule(await api.login(person), {

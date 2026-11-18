@@ -1,3 +1,4 @@
+import { ADMIN_USERS_PATH, adminUserUrl } from '@constants/admin-users';
 import { areas, examResultUrl, PATIENT_BOOKINGS_PATH, PATIENT_PAST_PATH, type Role } from '@constants/areas';
 import { AGENDA_TABS, doctorAgendaUrl } from '@constants/doctor-agenda';
 import type { PatientBooking, UserNotification } from '@lib/api/models';
@@ -79,7 +80,7 @@ export function notificationText({
 
 const doctorHistory = doctorAgendaUrl(AGENDA_TABS.history);
 
-export function notificationTarget({ type, bookingId }: UserNotification, role: Role): string {
+export function notificationTarget({ type, bookingId, params }: UserNotification, role: Role): string {
   switch (type) {
     case 'appointment_requested':
     case 'appointment_rescheduled':
@@ -95,7 +96,7 @@ export function notificationTarget({ type, bookingId }: UserNotification, role: 
     case 'exam_result_available':
       return bookingId ? examResultUrl(bookingId) : PATIENT_PAST_PATH;
     case 'user_registered':
-      return `${areas.admin.base}/usuarios`;
+      return typeof params.userId === 'string' ? adminUserUrl(params.userId) : ADMIN_USERS_PATH;
     default:
       return areas[role].base;
   }
