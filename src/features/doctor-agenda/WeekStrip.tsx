@@ -31,7 +31,7 @@ export function WeekStrip({ days, selected, today, countOf, onSelect, onStep, on
             className={stepButton}
             onClick={() => onStep(-1)}
           />
-          <Button variant="secondary" size="sm" className="min-h-11 lg:min-h-9" onClick={onToday}>
+          <Button variant="secondary" size="sm" className="lg:min-h-9" onClick={onToday}>
             Hoje
           </Button>
           <IconButton

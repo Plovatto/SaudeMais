@@ -86,6 +86,9 @@ export function addDays(date: string, days: number): string {
   return value.toISOString().slice(0, 10);
 }
 
+export const daysBetween = (from: string, to: string) =>
+  Math.round((utcDay(to).getTime() - utcDay(from).getTime()) / DAY_MS);
+
 export function formatDate(date: string, { year = true } = {}): string {
   return (year ? fullDate : shortDate).format(utcDay(date));
 }
@@ -177,6 +180,10 @@ export function formatLongDay(iso: string): string {
 }
 
 const monthYear = new Intl.DateTimeFormat('pt-BR', { timeZone: TIME_ZONE, month: 'long', year: 'numeric' });
+
+const monthName = new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC', month: 'long' });
+
+export const formatMonthName = (date: string) => monthName.format(utcDay(date));
 
 export function formatMonth(iso: string): string {
   const part = partsOf(monthYear, new Date(iso));

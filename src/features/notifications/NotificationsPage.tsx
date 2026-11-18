@@ -22,10 +22,10 @@ const subtitles: Record<Role, string> = {
 
 function UnreadSummary({ role }: { role: Role }) {
   const unread = useQuery(unreadCountQuery(role)).data;
-  const summaryRef = useRef<HTMLParagraphElement>(null);
+  const summaryRef = useRef<HTMLDivElement>(null);
   return (
     <div className={cx(headerBar, 'border-border border-b py-2.5')}>
-      <p ref={summaryRef} tabIndex={-1} className="text-text-secondary min-w-0 flex-1 text-[0.8125rem]">
+      <div ref={summaryRef} tabIndex={-1} className="text-text-secondary min-w-0 flex-1 text-[0.8125rem]">
         {unread === undefined ? (
           <Skeleton className="h-4 w-20" />
         ) : unread > 0 ? (
@@ -35,7 +35,7 @@ function UnreadSummary({ role }: { role: Role }) {
         ) : (
           'Tudo lido'
         )}
-      </p>
+      </div>
       <ReadAllButton role={role} unread={unread} focusAfter={summaryRef} />
     </div>
   );

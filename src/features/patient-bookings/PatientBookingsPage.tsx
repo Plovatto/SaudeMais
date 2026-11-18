@@ -194,6 +194,7 @@ export function PatientBookingsPage() {
         {desktop && selected && (
           <aside
             key={selected.id}
+            aria-label="Detalhes do agendamento"
             className="rounded-card border-border bg-surface shadow-raised motion-safe:animate-pop sticky top-4 border"
           >
             <BookingDetail booking={selected} titleId={detailId} onCancel={setCancelling} />
