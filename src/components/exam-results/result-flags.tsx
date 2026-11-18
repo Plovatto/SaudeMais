@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { LuOctagonAlert } from 'react-icons/lu';
 import type { StatusChipProps } from '@components/ui';
 import { formatMeasurement } from '@lib/number';
+import { plural } from '@lib/plural';
 import type { ResultItem } from './ResultVersion';
 
 type Flag = ResultItem['flag'];
@@ -29,7 +30,7 @@ export const flags: Record<Flag, FlagDisplay> = {
 
 export const FLAG_ORDER = Object.keys(flags) as Flag[];
 
-export const flagCount = (flag: Flag, count: number) => `${count} ${flags[flag].count[count === 1 ? 0 : 1]}`;
+export const flagCount = (flag: Flag, count: number) => plural(count, ...flags[flag].count);
 
 export const formatResultValue = (value: ResultItem['value']) =>
   typeof value === 'number' ? formatMeasurement(value) : value;

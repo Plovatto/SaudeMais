@@ -10,6 +10,7 @@ import { RangeRow } from './RangeRow';
 import type { UnitHours } from './schedule-api';
 import { DAY_END, MAX_RANGES, nextRange, rangePath, STEP, type ScheduleValues } from './schedule-schema';
 import { timeOptions } from './time-options';
+import { plural } from '@lib/plural';
 
 interface DayCardProps {
   form: UseFormReturn<ScheduleValues>;
@@ -19,7 +20,7 @@ interface DayCardProps {
 
 function summary(count: number, isActive: boolean): string {
   if (count === 0) return 'Nenhum horário configurado';
-  const ranges = count === 1 ? '1 horário configurado' : `${count} horários configurados`;
+  const ranges = plural(count, 'horário configurado', 'horários configurados');
   return isActive ? ranges : `${ranges} · não gera vagas`;
 }
 

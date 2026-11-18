@@ -1,5 +1,6 @@
 import { useId, type ComponentProps, type ReactNode } from 'react';
 import { cx } from '@lib/cx';
+import { headerBar } from './styles';
 
 export interface SectionCardProps extends Omit<ComponentProps<'section'>, 'title'> {
   title: string;
@@ -30,7 +31,7 @@ export function SectionCard({
       )}
       {...props}
     >
-      <header className="flex min-h-14 flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3.5 lg:px-5">
+      <header className={cx(headerBar, 'flex-wrap gap-y-1 py-3.5')}>
         <div className="flex min-w-0 flex-1 basis-40 flex-col gap-0.5">
           <h2 id={titleId} className="text-text text-[0.9375rem]/[1.35] font-semibold tracking-[-0.01em]">
             {title}

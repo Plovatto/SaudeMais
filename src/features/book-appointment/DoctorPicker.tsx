@@ -1,8 +1,17 @@
 import { useId, type Ref } from 'react';
-import { Avatar, FieldError, SearchInput, SectionCard, Skeleton } from '@components/ui';
+import {
+  Avatar,
+  FieldError,
+  SearchInput,
+  ListMessage,
+  ListSkeleton,
+  RowText,
+  SectionCard,
+} from '@components/ui';
 import type { ResponseOf } from '@lib/api/api-fetch';
 import { cx } from '@lib/cx';
 import { moveFocus } from '@lib/roving-index';
+import { plural } from '@lib/plural';
 
 export type Doctor = ResponseOf<'/api/doctors', 'get'>['items'][number];
 
@@ -17,7 +26,7 @@ export interface DoctorPickerProps {
   focusRef?: Ref<HTMLDivElement>;
 }
 
-const countText = (count: number) => (count === 1 ? '1 disponível' : `${count} disponíveis`);
+const countText = (count: number) => plural(count, 'disponível', 'disponíveis');
 
 export function DoctorPicker({
   doctors,
@@ -63,14 +72,11 @@ export function DoctorPicker({
         )}
       >
         {!doctors ? (
-          <div className="flex flex-col gap-3 p-4 lg:p-5">
-            <Skeleton className="h-12" />
-            <Skeleton className="h-12" />
-          </div>
+          <ListSkeleton />
         ) : doctors.length === 0 ? (
-          <p className="text-text-muted px-4 py-6 text-center text-[0.8125rem] lg:px-5">
+          <ListMessage>
             {searched ? `Nenhum médico encontrado para "${searched}".` : 'Nenhum médico disponível.'}
-          </p>
+          </ListMessage>
         ) : (
           doctors.map((doctor, index) => {
             const selected = doctor.id === value;
@@ -97,10 +103,12 @@ export function DoctorPicker({
                   )}
                 />
                 <Avatar name={doctor.fullName} seed={doctor.id} />
-                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="text-text truncate text-sm font-semibold">{doctor.fullName}</span>
-                  <span className="text-text-secondary truncate text-[0.8125rem]">{doctor.unit.name}</span>
-                </span>
+                <RowText
+                  title={doctor.fullName}
+                  meta={doctor.unit.name}
+                  titleClassName="truncate"
+                  metaClassName="truncate"
+                />
               </button>
             );
           })

@@ -2,6 +2,7 @@ import { LuArrowRight, LuFlaskConical, LuStethoscope } from 'react-icons/lu';
 import { Link } from 'react-router';
 import { areas } from '@constants/areas';
 import { cx } from '@lib/cx';
+import { softTones } from '@components/ui/styles';
 
 const PATIENT = areas.patient.base;
 
@@ -39,7 +40,7 @@ export function QuickActions() {
             <span
               className={cx(
                 '@min-[560px]:rounded-card grid size-11 shrink-0 place-items-center rounded-[13px] @min-[560px]:size-[52px]',
-                primary ? 'text-on-role bg-white/16' : 'bg-role-soft text-role-text',
+                primary ? 'text-on-role bg-white/16' : softTones.info,
               )}
             >
               <Icon aria-hidden className="size-[22px]" />

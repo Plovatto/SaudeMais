@@ -1,8 +1,10 @@
 import { useState, type Ref } from 'react';
 import { cx } from '@lib/cx';
+import { softTones } from '@components/ui/styles';
 import { moveFocus } from '@lib/roving-index';
 import { formatLongDay, formatTime, middayOf } from '@lib/date';
 import type { Slot } from './availability';
+import { plural } from '@lib/plural';
 
 const FEW_PLACES = 3;
 
@@ -52,7 +54,7 @@ export function SlotPicker({ date, slots, value, onPick, current, focusRef, desc
       <div className="flex flex-col gap-0.5">
         <p className="text-text text-sm font-semibold">{formatLongDay(middayOf(date))}</p>
         <p className="text-text-muted text-[0.8125rem] tabular-nums">
-          {free === 1 ? '1 horário livre' : `${free} horários livres`}
+          {plural(free, 'horário livre', 'horários livres')}
         </p>
       </div>
       {groups.length > 1 && (
@@ -78,7 +80,7 @@ export function SlotPicker({ date, slots, value, onPick, current, focusRef, desc
               <span
                 className={cx(
                   'inline-grid h-[18px] min-w-[18px] place-items-center rounded-full px-[5px] text-[0.6875rem] font-semibold tabular-nums @max-[11rem]:sr-only',
-                  period.id === active?.id ? 'bg-role-soft text-role-text' : 'bg-surface text-text-muted',
+                  period.id === active?.id ? softTones.info : 'bg-surface text-text-muted',
                 )}
               >
                 {period.slots.length}

@@ -5,20 +5,23 @@ import {
   Button,
   ConfirmDialog,
   FormAlert,
-  ListPlaceholder,
+  ListSkeleton,
+  SettingRow,
   SectionCard,
   StatusChip,
   useToast,
 } from '@components/ui';
-import { tile } from '@components/ui/styles';
+import { footerBar, sectionPad, tile } from '@components/ui/styles';
+import { cx } from '@lib/cx';
 import { useSignOut } from '@lib/auth/useSignOut';
 import { formatDateTime } from '@lib/date';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
+import { plural } from '@lib/plural';
 import { queryKeys } from '@lib/query-keys';
 import { describeUserAgent, isMobileUserAgent } from '@lib/user-agent';
 import { endAllSessions, endOtherSessions, endSession, listSessions } from './profile-api';
 
-const devicesText = (count: number) => (count === 1 ? '1 aparelho' : `${count} aparelhos`);
+const devicesText = (count: number) => plural(count, 'aparelho', 'aparelhos');
 
 export function SessionsSection() {
   const signOut = useSignOut();
@@ -71,7 +74,7 @@ export function SessionsSection() {
       action={list && <span className="text-text-muted text-[0.8125rem]">{devicesText(list.length)}</span>}
     >
       {sessions.isError && (
-        <div className="p-4 lg:p-5">
+        <div className={sectionPad}>
           <FormAlert>{errorMessage(sessions.error)}</FormAlert>
         </div>
       )}
@@ -80,40 +83,45 @@ export function SessionsSection() {
           {list.map((session) => {
             const device = describeUserAgent(session.userAgent);
             return (
-              <li key={session.id} className="flex items-center gap-3.5 px-4 py-3.5 lg:px-5">
-                <span aria-hidden className={tile}>
-                  {isMobileUserAgent(session.userAgent) ? <LuSmartphone /> : <LuMonitor />}
-                </span>
-                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <p className="text-text truncate text-sm font-semibold">{device}</p>
-                  <p className="text-text-secondary text-[0.8125rem] tabular-nums">
-                    Último acesso em {formatDateTime(session.lastUsedAt)}
-                  </p>
-                </div>
-                {session.current ? (
-                  <StatusChip tone="info" dot={false}>
-                    Esta sessão
-                  </StatusChip>
-                ) : (
-                  <Button
-                    variant="danger-outline"
-                    size="sm"
-                    aria-label={`Encerrar sessão: ${device}`}
-                    disabled={endOne.isPending && endOne.variables !== session.id}
-                    loading={endOne.isPending && endOne.variables === session.id}
-                    onClick={() => endOne.mutate(session.id)}
-                  >
-                    Encerrar
-                  </Button>
-                )}
-              </li>
+              <SettingRow
+                key={session.id}
+                as="li"
+                className="gap-3.5 px-4 py-3.5 lg:px-5"
+                leading={
+                  <span aria-hidden className={tile}>
+                    {isMobileUserAgent(session.userAgent) ? <LuSmartphone /> : <LuMonitor />}
+                  </span>
+                }
+                title={device}
+                titleClassName="truncate"
+                meta={`Último acesso em ${formatDateTime(session.lastUsedAt)}`}
+                metaClassName="tabular-nums"
+                trailing={
+                  session.current ? (
+                    <StatusChip tone="info" dot={false}>
+                      Esta sessão
+                    </StatusChip>
+                  ) : (
+                    <Button
+                      variant="danger-outline"
+                      size="sm"
+                      aria-label={`Encerrar sessão: ${device}`}
+                      disabled={endOne.isPending && endOne.variables !== session.id}
+                      loading={endOne.isPending && endOne.variables === session.id}
+                      onClick={() => endOne.mutate(session.id)}
+                    >
+                      Encerrar
+                    </Button>
+                  )
+                }
+              />
             );
           })}
         </ul>
       ) : (
-        !sessions.isError && <ListPlaceholder pending message="" />
+        !sessions.isError && <ListSkeleton />
       )}
-      <div className="border-border bg-surface-muted rounded-b-card flex flex-wrap items-center gap-3 border-t px-4 py-3 lg:px-5">
+      <div className={cx(footerBar, 'flex flex-wrap items-center gap-3 px-4 py-3 lg:px-5')}>
         <p className="text-text-muted min-w-0 flex-1 basis-56 text-xs">
           Se não reconhecer um aparelho, encerre a sessão e troque a senha.
         </p>

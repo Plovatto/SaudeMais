@@ -4,9 +4,11 @@ import { PageColumn } from '@components/layout/PageColumn';
 import { PageHeader } from '@components/layout/PageHeader';
 import { useAreaRole } from '@components/layout/route-handle';
 import { Card, Pagination, Skeleton } from '@components/ui';
+import { headerBar } from '@components/ui/styles';
 import { areas, type Role } from '@constants/areas';
 import { useClampedPage, usePageParam } from '@hooks/usePageParam';
 import { notificationsQuery, unreadCountQuery, unreadNoun } from '@lib/api/notifications-api';
+import { cx } from '@lib/cx';
 import { NotificationList } from './NotificationList';
 import { ReadAllButton } from './ReadAllButton';
 
@@ -22,7 +24,7 @@ function UnreadSummary({ role }: { role: Role }) {
   const unread = useQuery(unreadCountQuery(role)).data;
   const summaryRef = useRef<HTMLParagraphElement>(null);
   return (
-    <div className="border-border flex min-h-14 items-center gap-3 border-b px-4 py-2.5 lg:px-5">
+    <div className={cx(headerBar, 'border-border border-b py-2.5')}>
       <p ref={summaryRef} tabIndex={-1} className="text-text-secondary min-w-0 flex-1 text-[0.8125rem]">
         {unread === undefined ? (
           <Skeleton className="h-4 w-20" />

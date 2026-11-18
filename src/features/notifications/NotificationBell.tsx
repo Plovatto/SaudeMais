@@ -5,15 +5,17 @@ import { Link, useLocation } from 'react-router';
 import { CloseButton, CountBadge, IconLink, Popover } from '@components/ui';
 import { NOTIFICATIONS_PATH, notificationsUrl, type Role } from '@constants/areas';
 import { notificationsQuery, unreadText, useUnreadCount } from '@lib/api/notifications-api';
+import { footerBar } from '@components/ui/styles';
 import { cx } from '@lib/cx';
 import { NotificationList } from './NotificationList';
 import { ReadAllButton } from './ReadAllButton';
+import { plural } from '@lib/plural';
 
 const PREVIEW_SIZE = 6;
 const PER_GROUP = 3;
 const BADGE_MAX = 9;
 
-const newText = (count: number) => `${count} ${count === 1 ? 'nova' : 'novas'}`;
+const newText = (count: number) => plural(count, 'nova', 'novas');
 
 interface PreviewProps {
   role: Role;
@@ -50,7 +52,10 @@ function NotificationsPreview({ role, unread, close }: PreviewProps) {
       </div>
       <Link
         to={notificationsUrl(role)}
-        className="border-border bg-surface-muted text-role-text can-hover:bg-surface-strong rounded-b-card flex items-center justify-center gap-1.5 border-t p-2.5 text-[0.78125rem] font-semibold transition-colors duration-150"
+        className={cx(
+          footerBar,
+          'text-role-text can-hover:bg-surface-strong flex items-center justify-center gap-1.5 p-2.5 text-[0.78125rem] font-semibold transition-colors duration-150',
+        )}
       >
         Ver todas as notificações
         <LuArrowRight aria-hidden className="size-3.5" />

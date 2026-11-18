@@ -2,6 +2,7 @@ import { useEffect, useEffectEvent, useId, useRef, type ReactNode, type RefObjec
 import { useMediaQuery } from '@hooks/useMediaQuery';
 import { SHEET_QUERY, useSheetDrag } from '@hooks/useSheetDrag';
 import { cx } from '@lib/cx';
+import { softTones } from './styles';
 import { CloseButton } from './CloseButton';
 import { IconSlot } from './IconSlot';
 import { SheetGrab } from './SheetGrab';
@@ -128,7 +129,7 @@ export function Dialog({
             <IconSlot
               className={cx(
                 'size-12 justify-center rounded-full text-[22px]',
-                tone === 'danger' ? 'bg-danger-soft text-danger-text' : 'bg-role-soft text-role-text',
+                softTones[tone === 'danger' ? 'danger' : 'info'],
               )}
             >
               {icon}

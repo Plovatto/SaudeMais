@@ -4,7 +4,7 @@ import { BookingRow } from '@components/bookings/BookingRow';
 import { PagedResults } from '@components/bookings/PagedResults';
 import { PageHeader } from '@components/layout/PageHeader';
 import { Button, ButtonLink, Dialog, EmptyState, TabPanel, Tabs } from '@components/ui';
-import { overline } from '@components/ui/styles';
+import { groupHeader, overline } from '@components/ui/styles';
 import { areas, BOOKING_PARAM } from '@constants/areas';
 import { DESKTOP_QUERY, useMediaQuery } from '@hooks/useMediaQuery';
 import { resetPageAnd } from '@hooks/usePageParam';
@@ -13,6 +13,7 @@ import { useTabbedList } from '@hooks/useTabbedList';
 import type { PatientBooking } from '@lib/api/models';
 import { cx } from '@lib/cx';
 import { formatMonth } from '@lib/date';
+import { groupConsecutive } from '@lib/group';
 import { queryKeys } from '@lib/query-keys';
 import { BookingDetail } from './BookingDetail';
 import {
@@ -25,6 +26,7 @@ import {
 import { BookingsFilter } from './BookingsFilter';
 import { listBookings, type BookingListParams } from './bookings-api';
 import { CancelDialog } from './CancelDialog';
+import { plural } from '@lib/plural';
 
 const BOOK_URL = `${areas.patient.base}/consultas/nova`;
 const TABS_ID = 'patient-bookings';
@@ -50,18 +52,7 @@ const TABS = [
 
 type TabValue = (typeof TABS)[number]['value'];
 
-const count = (total: number) => (total === 1 ? '1 agendamento' : `${total} agendamentos`);
-
-function byMonth(items: PatientBooking[]) {
-  const groups: { label: string; items: PatientBooking[] }[] = [];
-  for (const booking of items) {
-    const label = formatMonth(booking.startsAt);
-    const last = groups.at(-1);
-    if (last?.label === label) last.items.push(booking);
-    else groups.push({ label, items: [booking] });
-  }
-  return groups;
-}
+const count = (total: number) => plural(total, 'agendamento', 'agendamentos');
 
 export function PatientBookingsPage() {
   const [tipo] = useSearchParam('tipo');
@@ -179,16 +170,9 @@ export function PatientBookingsPage() {
                 aria-label="Lista de agendamentos"
                 className="rounded-card border-border bg-surface shadow-card overflow-hidden border"
               >
-                {byMonth(items).map((group) => (
-                  <div key={group.label}>
-                    <p
-                      className={cx(
-                        overline,
-                        'border-border bg-surface-muted border-b px-4 py-2.5 not-first:border-t lg:px-5',
-                      )}
-                    >
-                      {group.label}
-                    </p>
+                {groupConsecutive(items, (booking) => formatMonth(booking.startsAt)).map((group) => (
+                  <div key={group.key}>
+                    <p className={cx(groupHeader, overline, 'not-first:border-t')}>{group.key}</p>
                     <ul className="divide-border divide-y">
                       {group.items.map((booking) => (
                         <li key={booking.id}>

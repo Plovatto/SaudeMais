@@ -14,8 +14,9 @@ import {
   StatusChip,
   type InfoItem,
 } from '@components/ui';
-import { overline } from '@components/ui/styles';
+import { footerBar, headerBar, overline } from '@components/ui/styles';
 import { areas, examResultUrl } from '@constants/areas';
+import { cx } from '@lib/cx';
 import type { PatientBooking } from '@lib/api/models';
 import { formatDuration, formatLongDay, formatTime } from '@lib/date';
 import { blockedNotes } from './booking-text';
@@ -132,7 +133,7 @@ export function BookingDetail({ booking, titleId, onCancel, onClose, tips = fals
 
   return (
     <article aria-labelledby={titleId} className="flex flex-col">
-      <header className="flex min-h-14 items-center gap-3 px-4 py-3.5 lg:px-5">
+      <header className={cx(headerBar, 'py-3.5')}>
         <StatusChip tone={status.tone}>{status.label}</StatusChip>
         <span className="flex-1" />
         {onClose && <CloseButton onClick={onClose} />}
@@ -163,7 +164,7 @@ export function BookingDetail({ booking, titleId, onCancel, onClose, tips = fals
         {tips && <Tips id={tipsId} {...tipsFor(booking)} />}
       </div>
       {(actions.canCancel || actions.canReschedule || booking.hasResult) && (
-        <footer className="border-border bg-surface-muted rounded-b-card flex flex-wrap gap-x-2.5 gap-y-2 border-t px-4 pt-[22px] pb-4 lg:px-5">
+        <footer className={cx(footerBar, 'flex flex-wrap gap-x-2.5 gap-y-2 px-4 pt-[22px] pb-4 lg:px-5')}>
           {actions.canCancel && (
             <Button variant="danger-soft-outline" onClick={() => onCancel(booking)} className={footerButton}>
               Cancelar

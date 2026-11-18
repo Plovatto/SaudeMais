@@ -14,6 +14,7 @@ import { DayCard } from './DayCard';
 import { applyRangeErrors, firstRangeError, type RangePath } from './range-errors';
 import { scheduleApi, type DoctorSchedule, type ScheduleWarning } from './schedule-api';
 import { scheduleSchema, toBody, toValues, unitFor, type ScheduleValues } from './schedule-schema';
+import { plural } from '@lib/plural';
 
 const scheduleMessages = {
   NOT_FOUND: 'Esta conta ainda não tem perfil médico. Peça a um administrador para concluir o cadastro.',
@@ -22,8 +23,7 @@ const scheduleMessages = {
 const dayGrid = 'grid gap-5 lg:grid-cols-2 lg:items-start';
 
 function warningText(warnings: ScheduleWarning[]): string {
-  const count =
-    warnings.length === 1 ? '1 consulta futura ficou' : `${warnings.length} consultas futuras ficaram`;
+  const count = plural(warnings.length, 'consulta futura ficou', 'consultas futuras ficaram');
   const dates = warnings.map((warning) => formatDateTime(warning.startsAt)).join('; ');
   return `${count} fora das novas faixas: ${dates}. Nada foi cancelado; confira cada uma na sua agenda.`;
 }

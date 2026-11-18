@@ -1,5 +1,6 @@
 import { formatDate, formatSince, todayInSaoPaulo } from '@lib/date';
 import { formatPhone } from '@lib/phone';
+import { plural } from '@lib/plural';
 
 function ageOf(birthDate: string, today = todayInSaoPaulo()): number {
   const years = Number(today.slice(0, 4)) - Number(birthDate.slice(0, 4));
@@ -8,7 +9,7 @@ function ageOf(birthDate: string, today = todayInSaoPaulo()): number {
 
 export const ageText = (birthDate: string) => {
   const age = ageOf(birthDate);
-  return age === 1 ? '1 ano' : `${age} anos`;
+  return plural(age, 'ano', 'anos');
 };
 
 export const birthDateText = (birthDate: string) => `${formatDate(birthDate)} · ${ageText(birthDate)}`;

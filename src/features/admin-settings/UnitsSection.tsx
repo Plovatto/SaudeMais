@@ -10,6 +10,7 @@ import { HoursEditor } from './HoursEditor';
 import { unitsApi, type Unit } from './settings-api';
 import { unitSchema, type UnitValues } from './settings-schemas';
 import { useCatalogForm } from './useCatalogForm';
+import { plural } from '@lib/plural';
 
 function valuesOf(unit: Unit | null): UnitValues {
   return {
@@ -77,7 +78,7 @@ function UnitForm({ unit, onDone }: { unit: Unit | null; onDone: () => void }) {
 
 const openDays = (unit: Unit) => {
   const count = unit.hours.length;
-  return count === 0 ? 'sem horário definido' : `aberta ${count} ${count === 1 ? 'dia' : 'dias'} por semana`;
+  return count === 0 ? 'sem horário definido' : `aberta ${plural(count, 'dia', 'dias')} por semana`;
 };
 
 export function UnitsSection() {

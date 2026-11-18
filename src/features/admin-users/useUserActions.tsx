@@ -6,7 +6,7 @@ import { ConfirmDialog, useToast, type MenuItem } from '@components/ui';
 import { useCurrentUser } from '@lib/auth/useSession';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
 import { ImpactDialog } from './ImpactDialog';
-import { countOf } from './user-text';
+import { plural } from '@lib/plural';
 import { ADMIN_USERS_PATH, refreshUser, syncUser, userLocks } from './user-cache';
 import { userMessages } from './user-messages';
 import { usersApi, type AdminUser, type DeactivationImpact } from './users-api';
@@ -38,9 +38,9 @@ const describeDeactivation = ({
 }: DeactivationImpact) => {
   const parts = [
     futureAppointmentsAsPatient > 0 &&
-      `${countOf(futureAppointmentsAsPatient, 'agendamento futuro', 'agendamentos futuros')} como paciente`,
+      `${plural(futureAppointmentsAsPatient, 'agendamento futuro', 'agendamentos futuros')} como paciente`,
     futureAppointmentsAsDoctor > 0 &&
-      `${countOf(futureAppointmentsAsDoctor, 'consulta futura', 'consultas futuras')} como médico`,
+      `${plural(futureAppointmentsAsDoctor, 'consulta futura', 'consultas futuras')} como médico`,
   ].filter(Boolean);
   const bookings = parts.length
     ? `Serão cancelados: ${parts.join(' e ')}.`

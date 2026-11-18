@@ -7,7 +7,7 @@ import type { DoctorAppointment } from '@lib/api/models';
 import { formatDateTime } from '@lib/date';
 import { queryKeys } from '@lib/query-keys';
 import { AppointmentCard } from './AppointmentCard';
-import { groupByDay } from './day-groups';
+import { groupByAppointmentDay } from './day-groups';
 import { useDecisions } from './useDecisions';
 
 const GRID = 'grid items-start gap-3 @3xl:grid-cols-2';
@@ -41,7 +41,7 @@ export function AppointmentList({ items, grouped = false, fallbackFocus }: Appoi
     <div className="@container">
       {grouped ? (
         <div className={GRID}>
-          {groupByDay(items).map(({ date, label, items: day }) => (
+          {groupByAppointmentDay(items).map(({ date, label, items: day }) => (
             <Fragment key={date}>
               <h2 className="text-text-secondary col-span-full text-sm font-medium not-first:mt-2">
                 {label}

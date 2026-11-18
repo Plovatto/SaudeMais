@@ -7,7 +7,7 @@ import { Dialog } from './Dialog';
 import type { FieldProps } from './field-props';
 import { FieldControl } from './FieldControl';
 import { IconSlot } from './IconSlot';
-import { floatingPanel } from './styles';
+import { floatingPanel, softTones } from './styles';
 import { useFloating } from './useFloating';
 
 export interface DropdownOption {
@@ -144,7 +144,7 @@ export function Dropdown({
             className="flex min-h-[inherit] w-full min-w-0 items-center gap-2.5 px-3 text-start focus-visible:outline-none disabled:cursor-not-allowed"
           >
             {icon && (
-              <IconSlot className="bg-role-soft text-role-text size-7 justify-center rounded-[8px] text-base">
+              <IconSlot className={cx(softTones.info, 'size-7 justify-center rounded-[8px] text-base')}>
                 {icon}
               </IconSlot>
             )}

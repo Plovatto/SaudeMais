@@ -3,6 +3,7 @@ import { LuChevronRight } from 'react-icons/lu';
 import { Link } from 'react-router';
 import { cx } from '@lib/cx';
 import { Skeleton } from './Skeleton';
+import { sectionPad } from './styles';
 
 export function Chevron({ className }: { className?: string }) {
   return (
@@ -13,6 +14,39 @@ export function Chevron({ className }: { className?: string }) {
         className,
       )}
     />
+  );
+}
+
+interface RowTextProps {
+  title: ReactNode;
+  meta: ReactNode;
+  titleClassName?: string;
+  metaClassName?: string;
+}
+
+export function RowText({ title, meta, titleClassName, metaClassName }: RowTextProps) {
+  return (
+    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+      <span className={cx('text-text text-sm font-semibold', titleClassName)}>{title}</span>
+      <span className={cx('text-text-secondary text-[0.8125rem]', metaClassName)}>{meta}</span>
+    </span>
+  );
+}
+
+type SettingRowProps = RowTextProps & {
+  as?: 'div' | 'li';
+  leading?: ReactNode;
+  trailing?: ReactNode;
+  className?: string;
+};
+
+export function SettingRow({ as: Tag = 'div', leading, trailing, className, ...text }: SettingRowProps) {
+  return (
+    <Tag className={cx('flex items-center', className)}>
+      {leading}
+      <RowText {...text} />
+      {trailing}
+    </Tag>
   );
 }
 
@@ -50,10 +84,12 @@ export function ListRow({
   const content = (
     <>
       {leading}
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="text-text text-sm/[1.35] font-semibold break-words">{title}</span>
-        <span className="text-text-secondary text-[0.8125rem] break-words tabular-nums">{meta}</span>
-      </span>
+      <RowText
+        title={title}
+        meta={meta}
+        titleClassName="text-sm/[1.35] break-words"
+        metaClassName="break-words tabular-nums"
+      />
       {trailing}
       <Chevron />
     </>
@@ -78,13 +114,19 @@ export function ListRow({
   );
 }
 
-export function ListPlaceholder({ pending, message }: { pending: boolean; message: string }) {
-  return pending ? (
-    <div className="flex flex-col gap-3 p-4 lg:p-5">
+export function ListSkeleton() {
+  return (
+    <div className={cx('flex flex-col gap-3', sectionPad)}>
       <Skeleton className="h-12" />
       <Skeleton className="h-12" />
     </div>
-  ) : (
-    <p className="text-text-muted px-4 py-6 text-center text-[0.8125rem] lg:px-5">{message}</p>
   );
+}
+
+export function ListMessage({ children }: { children: ReactNode }) {
+  return <p className="text-text-muted px-4 py-6 text-center text-[0.8125rem] lg:px-5">{children}</p>;
+}
+
+export function ListPlaceholder({ pending, message }: { pending: boolean; message: string }) {
+  return pending ? <ListSkeleton /> : <ListMessage>{message}</ListMessage>;
 }
