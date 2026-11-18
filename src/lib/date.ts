@@ -73,10 +73,6 @@ export function addDays(date: string, days: number): string {
   return value.toISOString().slice(0, 10);
 }
 
-export function formatDay(date: string): string {
-  return dayLabel.format(utcDay(date));
-}
-
 export function formatDate(date: string, { year = true } = {}): string {
   return (year ? fullDate : shortDate).format(utcDay(date));
 }

@@ -5,7 +5,6 @@ import {
   civilDateInSaoPaulo,
   formatDateTime,
   formatDate,
-  formatDay,
   formatDuration,
   formatLongDay,
   formatMonth,
@@ -59,10 +58,6 @@ describe.each([
   it('adds days to a civil date across months and years', () => {
     expect(addDays('2026-11-14', 30)).toBe('2026-12-14');
     expect(addDays('2026-12-31', 1)).toBe('2027-01-01');
-  });
-
-  it('labels a civil date without shifting the day', () => {
-    expect(formatDay('2026-11-20')).toBe('sex., 20/11');
   });
 
   it('formats a civil date with and without the year', () => {
