@@ -1,17 +1,15 @@
 import { PageHeader } from '@components/layout/PageHeader';
 import { Card } from '@components/ui';
+import { formatLongDate } from '@lib/date';
 import { privacyPolicy, termsOfUse, type LegalDocument } from './legal-content';
 
-const versionDate = (version: string) =>
-  new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(version));
-
-function LegalPage({ document }: { document: LegalDocument }) {
+function LegalPage({ legal }: { legal: LegalDocument }) {
   return (
     <>
-      <PageHeader title={document.title} back backFallback="/cadastro" />
+      <PageHeader title={legal.title} back backFallback="/cadastro" />
       <Card className="flex flex-col gap-5">
-        <p className="text-text-secondary text-sm">Versão de {versionDate(document.version)}</p>
-        {document.sections.map((section) => (
+        <p className="text-text-secondary text-sm">Versão de {formatLongDate(legal.version)}</p>
+        {legal.sections.map((section) => (
           <section key={section.heading} className="flex flex-col gap-2">
             <h2 className="text-text text-base font-semibold">{section.heading}</h2>
             {section.paragraphs.map((paragraph) => (
@@ -27,9 +25,9 @@ function LegalPage({ document }: { document: LegalDocument }) {
 }
 
 export function TermsPage() {
-  return <LegalPage document={termsOfUse} />;
+  return <LegalPage legal={termsOfUse} />;
 }
 
 export function PrivacyPage() {
-  return <LegalPage document={privacyPolicy} />;
+  return <LegalPage legal={privacyPolicy} />;
 }

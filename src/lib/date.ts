@@ -42,6 +42,10 @@ const fullDate = new Intl.DateTimeFormat('pt-BR', {
   year: 'numeric',
 });
 
+const longDate = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long', timeZone: 'UTC' });
+
+export const formatLongDate = (date: string) => longDate.format(new Date(date));
+
 const utcDay = (date: string) => new Date(`${date}T00:00:00.000Z`);
 
 export function formatDateTime(iso: string): string {
