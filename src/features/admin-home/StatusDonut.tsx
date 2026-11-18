@@ -36,8 +36,8 @@ export function StatusDonut({
     .join(', ');
 
   return (
-    <div className="flex flex-wrap items-center gap-5">
-      <div role="img" aria-label={summary} className="relative size-[132px] shrink-0">
+    <div className="flex flex-col gap-[18px]">
+      <div role="img" aria-label={summary} className="relative size-[148px] shrink-0 self-center">
         <svg viewBox="0 0 100 100" className="size-full -rotate-90">
           <circle r={RADIUS} cx="50" cy="50" fill="none" strokeWidth="12" stroke="var(--surface-strong)" />
           {arcs.map(({ key, stroke, value, length, offset: start }) =>
@@ -59,12 +59,12 @@ export function StatusDonut({
         </svg>
         <div aria-hidden className="absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-text text-2xl/[1.1] font-[650] tabular-nums">
-            {formatPercent(Math.round(share(first?.value ?? 0, total) * 100) / 100)}
+            {formatPercent(share(first?.value ?? 0, total))}
           </span>
           <span className="text-text-muted text-[0.71875rem]">{center}</span>
         </div>
       </div>
-      <ul className="flex min-w-40 flex-1 flex-col gap-2.5 text-[0.84375rem]">
+      <ul className="flex flex-col gap-2.5 text-[0.84375rem]">
         {parts.map(({ key, label, value, swatch }) => (
           <li key={key} className="flex items-center gap-2.5">
             <span aria-hidden className={cx('size-2.5 shrink-0 rounded-[3px]', swatch)} />

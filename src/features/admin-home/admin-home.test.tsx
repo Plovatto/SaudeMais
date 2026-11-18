@@ -108,6 +108,7 @@ describe('admin panel', () => {
     expect(
       status.getByRole('img', { name: 'Realizados: 48,1%, Cancelados: 25%, Faltas: 3,8%, Em aberto: 44,2%' }),
     ).toBeInTheDocument();
+    expect(status.getByText('48,1%', { selector: 'div[aria-hidden] > span' })).toBeInTheDocument();
     expect(status.getAllByRole('listitem').map((item) => item.textContent)).toEqual([
       'Realizados2548,1%',
       'Cancelados1325%',
