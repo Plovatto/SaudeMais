@@ -4,6 +4,7 @@ import { Avatar, CountBadge } from '@components/ui';
 import { profileUrl, type Area } from '@constants/areas';
 import { useCurrentUser } from '@lib/auth/useSession';
 import { cx } from '@lib/cx';
+import { Brand, brandSurface } from './Brand';
 import { ariaCurrent, badgeText, countLabel, type NavItem } from './useNavItems';
 
 function SideLink({ item }: { item: NavItem }) {
@@ -61,16 +62,13 @@ function NavGroup({ label, items }: { label: string; items: NavItem[] }) {
 export function Sidebar({ area, menu, account }: { area: Area; menu: NavItem[]; account: NavItem[] }) {
   const user = useCurrentUser();
   return (
-    <aside className="bg-role-deep sticky top-0 hidden h-dvh w-[272px] shrink-0 [scrollbar-width:none] flex-col gap-7 overflow-y-auto bg-[radial-gradient(120%_60%_at_0%_0%,rgb(255_255_255/0.08),transparent_60%),radial-gradient(circle,rgb(255_255_255/0.06)_1px,transparent_1.4px)] bg-size-[100%_100%,18px_18px] px-4 pt-[22px] pb-4 text-white shadow-[inset_-1px_0_0_rgb(0_0_0/0.2)] [--focus:#fff] lg:flex dark:bg-[color-mix(in_oklab,var(--role-deep)_70%,#000)] dark:shadow-[inset_-1px_0_0_var(--border)] print:hidden">
-      <div className="flex items-center gap-3 px-2 py-0.5">
-        <span className="text-role-strong dark:bg-role dark:text-role-deep rounded-tile grid size-10 shrink-0 place-items-center bg-white shadow-[0_6px_16px_-6px_rgb(0_0_0/0.45),inset_0_-2px_0_rgb(0_0_0/0.06)]">
-          <area.icon aria-hidden className="size-[22px]" />
-        </span>
-        <div>
-          <p className="text-lg leading-[1.15] font-bold tracking-[-0.02em]">Saúde+</p>
-          <p className="text-xs font-medium text-white/60">{area.title}</p>
-        </div>
-      </div>
+    <aside
+      className={cx(
+        brandSurface,
+        'sticky top-0 hidden h-dvh w-[272px] shrink-0 [scrollbar-width:none] flex-col gap-7 overflow-y-auto px-4 pt-[22px] pb-4 shadow-[inset_-1px_0_0_rgb(0_0_0/0.2)] lg:flex dark:shadow-[inset_-1px_0_0_var(--border)] print:hidden',
+      )}
+    >
+      <Brand icon={area.icon} subtitle={area.title} />
       <NavGroup label="Menu" items={menu} />
       <NavGroup label="Conta" items={account} />
       <Link
