@@ -13,6 +13,20 @@ export const patientHomeQuery = queryOptions({
   queryFn: ({ signal }) => apiFetch('get', '/api/patient/home', { signal }),
 });
 
+const firstUpcoming = (status: 'confirmed' | 'pending') =>
+  queryOptions({
+    queryKey: queryKeys.patient.bookings({ scope: 'upcoming', status, page: 1, pageSize: 1 }),
+    queryFn: ({ signal }) =>
+      apiFetch('get', '/api/patient/bookings', {
+        query: { scope: 'upcoming', status, page: 1, pageSize: 1 },
+        signal,
+      }),
+  });
+
+export const nextConfirmedQuery = firstUpcoming('confirmed');
+
+export const pendingBookingsQuery = firstUpcoming('pending');
+
 export const recentResultsQuery = queryOptions({
   queryKey: queryKeys.patient.examResults({ page: 1, pageSize: RECENT_RESULTS }),
   queryFn: ({ signal }) =>

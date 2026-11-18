@@ -215,6 +215,48 @@ describe('patient home', { timeout: 15_000 }, () => {
     expect(region.getByText(text)).toBeVisible();
   });
 
+  it('finds the next confirmed booking and the real pending total beyond the first upcoming ones', async () => {
+    const pending = [1, 2, 3].map((index) => booking(`p${index}`, { status: 'pending' }));
+    const { calls } = serveApi(['patient'], {
+      '/api/patient/home': () => ({
+        status: 200,
+        body: { ...homeBody({ upcoming: pending }), counts: { upcoming: 6, past: 0 } },
+      }),
+      '/api/patient/exam-results': () => ({ status: 200, body: resultsBody() }),
+      '/api/patient/bookings': (_method, _body, url) =>
+        url.searchParams.get('status') === 'confirmed'
+          ? { status: 200, body: { items: [booking('c1')], page: 1, pageSize: 1, total: 1 } }
+          : { status: 200, body: { items: [pending[0]], page: 1, pageSize: 1, total: 5 } },
+    });
+    renderApp('/paciente');
+
+    const next = await screen.findByRole('link', { name: /^Próximo compromisso\s*Confirmado/ });
+    expect(next).toHaveAttribute('href', '/paciente/agendamentos?id=c1');
+    const request = calls.find(({ url }) => url.pathname === '/api/patient/bookings')?.url;
+    expect(request?.searchParams.get('scope')).toBe('upcoming');
+    expect(request?.searchParams.get('pageSize')).toBe('1');
+  });
+
+  it('counts every pending request when the home lists only the first ones', async () => {
+    const pending = [1, 2, 3].map((index) => booking(`p${index}`, { status: 'pending' }));
+    serveApi(['patient'], {
+      '/api/patient/home': () => ({
+        status: 200,
+        body: { ...homeBody({ upcoming: pending }), counts: { upcoming: 5, past: 0 } },
+      }),
+      '/api/patient/exam-results': () => ({ status: 200, body: resultsBody() }),
+      '/api/patient/bookings': (_method, _body, url) =>
+        url.searchParams.get('status') === 'confirmed'
+          ? { status: 200, body: { items: [], page: 1, pageSize: 1, total: 0 } }
+          : { status: 200, body: { items: [pending[0]], page: 1, pageSize: 1, total: 5 } },
+    });
+    renderApp('/paciente');
+
+    const region = within(await screen.findByRole('region', { name: 'Próximo compromisso' }));
+    expect(await region.findByText('5 pedidos aguardam a confirmação do médico.')).toBeVisible();
+    expect(region.getByText('Nenhum compromisso confirmado')).toBeVisible();
+  });
+
   it('lists what comes after the next booking with a link to everything', async () => {
     serveHome({
       upcoming: [

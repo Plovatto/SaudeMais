@@ -12,7 +12,7 @@ import { formatShortDay, formatTime } from '@lib/date';
 import { plural } from '@lib/plural';
 import { HealthSummary } from './HealthSummary';
 import { LaterBookings } from './LaterBookings';
-import { patientHomeQuery } from './patient-home-api';
+import { nextConfirmedQuery, patientHomeQuery, pendingBookingsQuery } from './patient-home-api';
 import { RecentResults } from './RecentResults';
 
 const PATIENT = areas.patient.base;
@@ -53,8 +53,14 @@ function nextItem(booking: PatientBooking) {
 export function PatientHomePage() {
   const query = useQuery(patientHomeQuery);
   const upcoming = query.data?.upcoming ?? [];
-  const next = upcoming.find((booking) => booking.status === 'confirmed');
-  const later = upcoming.filter((booking) => booking !== next);
+  const partial = query.data !== undefined && query.data.counts.upcoming > upcoming.length;
+  const shownNext = upcoming.find((booking) => booking.status === 'confirmed');
+  const shownPending = upcoming.filter((booking) => booking.status === 'pending').length;
+  const confirmed = useQuery({ ...nextConfirmedQuery, enabled: partial && !shownNext });
+  const pending = useQuery({ ...pendingBookingsQuery, enabled: partial });
+  const next = shownNext ?? confirmed.data?.items[0];
+  const later = upcoming.filter((booking) => booking.id !== next?.id);
+  const pendingCount = partial ? (pending.data?.total ?? shownPending) : shownPending;
   const notification = query.data?.lastNotification;
 
   return (
@@ -67,11 +73,11 @@ export function PatientHomePage() {
             <div className={stagger(0)}>
               <NextCard
                 label="Próximo compromisso"
-                query={query}
+                query={confirmed.isLoading ? confirmed : query}
                 next={next && nextItem(next)}
                 empty={{
                   title: 'Nenhum compromisso confirmado',
-                  text: waitingText(upcoming.filter((booking) => booking.status === 'pending').length),
+                  text: waitingText(pendingCount),
                 }}
               />
             </div>
