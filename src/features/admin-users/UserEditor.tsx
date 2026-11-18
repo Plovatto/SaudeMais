@@ -19,7 +19,7 @@ import { syncUser, type UserLocks } from './user-cache';
 import { userMessages } from './user-messages';
 import { UserBadges } from './UserBadges';
 import { usersApi, type AdminUserDetail } from './users-api';
-import { useReportSubmitting } from './useReportSubmitting';
+import { useReportSubmitting } from '@hooks/useReportSubmitting';
 import type { useUserActions } from './useUserActions';
 
 type UserActions = ReturnType<typeof useUserActions>;
