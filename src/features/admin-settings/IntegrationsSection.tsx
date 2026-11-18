@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { LuKeyRound, LuPlus } from 'react-icons/lu';
 import { FormShell } from '@components/forms/FormShell';
 import { Button, Input, SettingRow, StatusChip } from '@components/ui';
 import { softTones, tile } from '@components/ui/styles';
+import { useReportSubmitting } from '@hooks/useReportSubmitting';
 import { cx } from '@lib/cx';
 import { formatDateTime, formatRelative } from '@lib/date';
 import { queryKeys } from '@lib/query-keys';
@@ -40,10 +41,7 @@ function IntegrationForm({
     messages: integrationMessages,
   });
   const { errors, isSubmitting } = form.formState;
-  useEffect(() => {
-    onSubmittingChange(isSubmitting);
-    return () => onSubmittingChange(false);
-  }, [isSubmitting, onSubmittingChange]);
+  useReportSubmitting(isSubmitting, onSubmittingChange);
   return (
     <FormShell
       label="Integração"

@@ -62,7 +62,7 @@ describe('role areas', () => {
   it.each([
     ['/paciente/consultas/1/reagendar', 'Meus agendamentos'],
     ['/paciente/exames/1/resultado', 'Meus agendamentos'],
-    ['/admin/usuarios/1', 'Usuários'],
+    ['/medico/pacientes/1/exames', 'Agenda'],
     ['/admin/configuracoes/especialidades', 'Configurações'],
   ])('marks the section of %s without calling it the current page', async (path, label) => {
     renderAt(path);
@@ -72,14 +72,18 @@ describe('role areas', () => {
     expect(item).toHaveAttribute('aria-current', 'true');
   });
 
-  it('keeps the ids of the current address in the link to the parent page', async () => {
-    renderAt('/admin/usuarios/42/medico');
+  it('links the crumb of a page with an id to its parent', async () => {
+    renderAt('/medico/pacientes/42/exames');
 
     const crumbs = await navigation('Você está em');
-    expect(crumbs.getByRole('link', { name: 'Editar usuário' })).toHaveAttribute(
-      'href',
-      '/admin/usuarios/42',
-    );
+    expect(crumbs.getByRole('link', { name: 'Agenda' })).toHaveAttribute('href', '/medico/agenda');
+  });
+
+  it('sends the old user links to the list with the user panel open', async () => {
+    const { router } = renderAt('/admin/usuarios/42/medico');
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/admin/usuarios'));
+    expect(router.state.location.search).toBe('?usuario=42&secao=medico');
   });
 
   it('shows where the page sits and links back to its parent', async () => {
