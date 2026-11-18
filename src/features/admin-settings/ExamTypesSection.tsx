@@ -1,9 +1,9 @@
 import { LuFlaskConical } from 'react-icons/lu';
+import { ActiveField, FormDropdown } from '@components/forms/FormFields';
+import { FormShell } from '@components/forms/FormShell';
 import { Input, Textarea } from '@components/ui';
 import { queryKeys } from '@lib/query-keys';
 import { CatalogCard } from './CatalogCard';
-import { ActiveField, FormDropdown } from './FormFields';
-import { FormShell } from './FormShell';
 import { examTypesApi, type ExamType } from './settings-api';
 import { examTypeSchema, type ExamTypeValues } from './settings-schemas';
 import { useCatalogForm } from './useCatalogForm';

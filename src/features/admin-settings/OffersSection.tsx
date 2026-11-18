@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRef } from 'react';
 import { LuBuilding2, LuFlaskConical, LuPlus } from 'react-icons/lu';
+import { ActiveField, FormDropdown } from '@components/forms/FormFields';
+import { FormShell } from '@components/forms/FormShell';
 import { Button, Dropdown, Input, ListMessage, ListSkeleton, QueryError } from '@components/ui';
 import { sectionPad } from '@components/ui/styles';
 import { useSearchParam } from '@hooks/useSearchParam';
@@ -8,8 +10,6 @@ import { cx } from '@lib/cx';
 import { queryKeys } from '@lib/query-keys';
 import { catalogMessages } from './catalog-messages';
 import { CatalogRow } from './CatalogRow';
-import { ActiveField, FormDropdown } from './FormFields';
-import { FormShell } from './FormShell';
 import { ItemList } from './ItemList';
 import {
   examTypesApi,

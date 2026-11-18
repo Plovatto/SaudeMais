@@ -6,6 +6,7 @@ export const queryKeys = {
   adminHome: ['admin-home'] as const,
   adminReport: (period: object) => ['admin-report', period] as const,
   doctorSchedule: ['doctor-schedule'] as const,
+  doctorTimeOff: ['doctor-time-off'] as const,
   adminUsers: {
     all: ['admin-users'] as const,
     lists: ['admin-users', 'list'] as const,

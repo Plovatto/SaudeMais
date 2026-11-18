@@ -1,7 +1,6 @@
 import type { FieldErrors, UseFormSetError } from 'react-hook-form';
-import { WEEKDAYS } from '@constants/weekdays';
 import { ApiError } from '@lib/api/api-error';
-import { MAX_RANGES, rangePath, type ScheduleValues } from './schedule-schema';
+import { DAY_ORDER, MAX_RANGES, rangePath, type ScheduleValues } from './schedule-schema';
 
 const RANGE_FIELD = /^days\.(\d+)\.ranges\.(\d+)(?:\.(?:startMin|endMin))?$/;
 
@@ -11,20 +10,21 @@ export function rangeError(errors: FieldErrors<ScheduleValues>, weekday: number,
   return errors.days?.[weekday]?.ranges?.[index]?.message;
 }
 
-export function firstRangeError(errors: FieldErrors<ScheduleValues>): RangePath | undefined {
-  for (let weekday = 0; weekday < WEEKDAYS.length; weekday += 1) {
-    for (let index = 0; index < MAX_RANGES; index += 1) {
-      if (rangeError(errors, weekday, index)) return rangePath(weekday, index);
-    }
-  }
-  return undefined;
+export const weekdayOf = (path: RangePath) => Number(path.split('.')[1]);
+
+const position = (path: RangePath) =>
+  DAY_ORDER.indexOf(weekdayOf(path)) * MAX_RANGES + Number(path.split('.')[3]);
+
+export function rangeErrorPaths(errors: FieldErrors<ScheduleValues>): RangePath[] {
+  return DAY_ORDER.flatMap((weekday) =>
+    Array.from({ length: MAX_RANGES }, (_value, index) => index)
+      .filter((index) => rangeError(errors, weekday, index))
+      .map((index) => rangePath(weekday, index)),
+  );
 }
 
-export function applyRangeErrors(
-  error: unknown,
-  setError: UseFormSetError<ScheduleValues>,
-): RangePath | undefined {
-  if (!(error instanceof ApiError)) return undefined;
+export function applyRangeErrors(error: unknown, setError: UseFormSetError<ScheduleValues>): RangePath[] {
+  if (!(error instanceof ApiError)) return [];
   const paths: RangePath[] = Object.entries(error.fields).flatMap(([key, message]) => {
     const match = RANGE_FIELD.exec(key);
     if (!match) return [];
@@ -32,5 +32,5 @@ export function applyRangeErrors(
     setError(path, { type: 'server', message });
     return [path];
   });
-  return paths.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))[0];
+  return paths.sort((a, b) => position(a) - position(b));
 }
