@@ -3,7 +3,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useForm, useWatch } from 'react-hook-form';
 import { NewPasswordFields } from '@components/forms/NewPasswordFields';
 import { PasswordStrength } from '@components/forms/PasswordStrength';
-import { Button, Drawer, DrawerBody, DrawerFooter, FormAlert, PasswordInput, useToast } from '@components/ui';
+import { FormShell } from '@components/forms/FormShell';
+import { Drawer, PasswordInput, useToast } from '@components/ui';
 import { queryKeys } from '@lib/query-keys';
 import { useFormSubmit } from '@lib/useFormSubmit';
 import { changePassword } from './profile-api';
@@ -40,35 +41,30 @@ function PasswordForm({ onClose }: PasswordFormProps) {
   );
 
   return (
-    <form noValidate onSubmit={(event) => void onSubmit(event)} className="flex flex-1 flex-col">
-      <DrawerBody>
-        <PasswordInput
-          label="Senha atual"
-          autoComplete="current-password"
-          error={errors.currentPassword?.message}
-          {...register('currentPassword')}
-        />
-        <NewPasswordFields
-          password={register('password')}
-          confirmation={register('passwordConfirmation')}
-          errors={{ password: errors.password?.message, confirmation: errors.passwordConfirmation?.message }}
-          showHint={false}
-        />
-        <PasswordStrength password={values.password ?? ''} current={values.currentPassword ?? ''} />
-        <p className="text-text-muted text-xs">
-          Ao trocar a senha, as outras sessões da conta são encerradas.
-        </p>
-        {alert && <FormAlert>{alert}</FormAlert>}
-      </DrawerBody>
-      <DrawerFooter>
-        <Button variant="secondary" onClick={onClose}>
-          Cancelar
-        </Button>
-        <Button type="submit" loading={isSubmitting} disabled={!canSubmit}>
-          Alterar senha
-        </Button>
-      </DrawerFooter>
-    </form>
+    <FormShell
+      label="Alterar senha"
+      onSubmit={onSubmit}
+      alert={alert}
+      submitting={isSubmitting}
+      onCancel={onClose}
+      submitLabel="Alterar senha"
+      submitDisabled={!canSubmit}
+    >
+      <PasswordInput
+        label="Senha atual"
+        autoComplete="current-password"
+        error={errors.currentPassword?.message}
+        {...register('currentPassword')}
+      />
+      <NewPasswordFields
+        password={register('password')}
+        confirmation={register('passwordConfirmation')}
+        errors={{ password: errors.password?.message, confirmation: errors.passwordConfirmation?.message }}
+        showHint={false}
+      />
+      <PasswordStrength password={values.password ?? ''} current={values.currentPassword ?? ''} />
+      <p className="text-text-muted text-xs">Ao trocar a senha, as outras sessões da conta são encerradas.</p>
+    </FormShell>
   );
 }
 

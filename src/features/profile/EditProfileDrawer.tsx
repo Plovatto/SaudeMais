@@ -2,8 +2,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { LuCake, LuLock } from 'react-icons/lu';
+import { FormShell } from '@components/forms/FormShell';
 import { PersonalDataFields } from '@components/forms/PersonalDataFields';
-import { Avatar, Button, Drawer, DrawerBody, DrawerFooter, FormAlert, Input, useToast } from '@components/ui';
+import { Avatar, Drawer, Input, useToast } from '@components/ui';
 import { areas, type Role } from '@constants/areas';
 import type { CurrentUser } from '@lib/auth/useSession';
 import { queryKeys } from '@lib/query-keys';
@@ -52,63 +53,56 @@ function EditProfileForm({ user, role, withBirthDate, onClose }: EditProfileForm
   );
 
   return (
-    <form
-      noValidate
-      onSubmit={(event) => {
+    <FormShell
+      label="Editar perfil"
+      onSubmit={async (event) => {
         if (hasIncompleteBirthDate(event.currentTarget)) {
           event.preventDefault();
           setError('birthDate', { message: INCOMPLETE_BIRTH_DATE }, { shouldFocus: true });
           return;
         }
-        void submit(event);
+        await submit(event);
       }}
-      className="flex flex-1 flex-col"
+      alert={alert}
+      submitting={isSubmitting}
+      onCancel={onClose}
+      submitLabel="Salvar alterações"
+      submitDisabled={!isDirty}
     >
-      <DrawerBody>
-        <div className="flex items-center gap-3">
-          <Avatar name={user.fullName} seed={user.id} size="lg" />
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <p className="text-text truncate text-sm font-semibold">{user.fullName}</p>
-            <p className="text-text-secondary text-[0.8125rem]">{areas[role].label}</p>
-          </div>
+      <div className="flex items-center gap-3">
+        <Avatar name={user.fullName} seed={user.id} size="lg" />
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <p className="text-text truncate text-sm font-semibold">{user.fullName}</p>
+          <p className="text-text-secondary text-[0.8125rem]">{areas[role].label}</p>
         </div>
-        <PersonalDataFields
-          fullName={register('fullName')}
-          phone={register('phone')}
-          errors={{ fullName: errors.fullName?.message, phone: errors.phone?.message }}
-          ownAccount
-        />
-        {withBirthDate && (
-          <Input
-            label="Data de nascimento"
-            type="date"
-            autoComplete="bday"
-            icon={<LuCake />}
-            hint="Opcional. Deixe em branco para remover."
-            {...birthDateLimits()}
-            error={errors.birthDate?.message}
-            {...register('birthDate')}
-          />
-        )}
+      </div>
+      <PersonalDataFields
+        fullName={register('fullName')}
+        phone={register('phone')}
+        errors={{ fullName: errors.fullName?.message, phone: errors.phone?.message }}
+        ownAccount
+      />
+      {withBirthDate && (
         <Input
-          label="E-mail"
-          type="email"
-          value={user.email}
-          readOnly
-          end={<LuLock aria-hidden className="text-text-muted me-3.5 shrink-0" />}
-          hint="Usado para entrar. Para trocar, fale com a administração."
+          label="Data de nascimento"
+          type="date"
+          autoComplete="bday"
+          icon={<LuCake />}
+          hint="Opcional. Deixe em branco para remover."
+          {...birthDateLimits()}
+          error={errors.birthDate?.message}
+          {...register('birthDate')}
         />
-        {alert && <FormAlert>{alert}</FormAlert>}
-      </DrawerBody>
-      <DrawerFooter>
-        <Button variant="secondary" onClick={onClose}>
-          Cancelar
-        </Button>
-        <Button type="submit" loading={isSubmitting} disabled={!isDirty}>
-          Salvar alterações
-        </Button>
-      </DrawerFooter>
-    </form>
+      )}
+      <Input
+        label="E-mail"
+        type="email"
+        value={user.email}
+        readOnly
+        end={<LuLock aria-hidden className="text-text-muted me-3.5 shrink-0" />}
+        hint="Usado para entrar. Para trocar, fale com a administração."
+      />
+    </FormShell>
   );
 }
 
