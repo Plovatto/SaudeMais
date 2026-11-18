@@ -484,4 +484,47 @@ describe('admin settings', () => {
     ).toBeInTheDocument();
     expect(calls.find((call) => call.method === 'PUT')?.body).toEqual({ capacityPerSlot: 3, isActive: true });
   });
+
+  it('disables saving a new offer when every active exam type is already offered', async () => {
+    serve({
+      '/api/admin/units': () => ({ status: 200, body: page([unit()]) }),
+      '/api/admin/exam-types': () => ({ status: 200, body: page([examType('e1', 'Raio-X')]) }),
+      '/api/admin/units/u1/exam-offers': () => ({
+        status: 200,
+        body: [{ examTypeId: 'e1', examTypeName: 'Raio-X', capacityPerSlot: 2, isActive: true }],
+      }),
+    });
+    const { user } = renderApp('/admin/configuracoes/ofertas?unidade=u1');
+
+    expect(await screen.findByText('2 ao mesmo tempo')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Oferecer exame' }));
+    const create = await findForm('Oferta');
+
+    expect(
+      within(create).getByText('Todos os tipos de exame ativos já são oferecidos nesta unidade.'),
+    ).toBeInTheDocument();
+    expect(within(create).getByRole('button', { name: 'Salvar' })).toBeDisabled();
+  });
+
+  it('refreshes the active catalog used by booking after saving an item', async () => {
+    serve({
+      '/api/admin/specialties': (method) =>
+        method === 'POST' ? { status: 201, body: specialty(1) } : { status: 200, body: page([]) },
+    });
+    const { user, queryClient } = renderApp('/admin/configuracoes');
+    queryClient.setQueryData(['catalog', 'active-specialties'], []);
+    queryClient.setQueryData(['catalog', 'active-units', 'e1'], []);
+    queryClient.setQueryData(['catalog', 'active-exam-types'], []);
+
+    await user.click(await screen.findByRole('button', { name: 'Adicionar especialidade' }));
+    const form = await findForm('Especialidade');
+    await user.type(within(form).getByLabelText('Nome'), 'Cardiologia');
+    await user.click(within(form).getByRole('button', { name: 'Salvar' }));
+
+    await waitFor(() =>
+      expect(queryClient.getQueryState(['catalog', 'active-specialties'])?.isInvalidated).toBe(true),
+    );
+    expect(queryClient.getQueryState(['catalog', 'active-units', 'e1'])?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(['catalog', 'active-exam-types'])?.isInvalidated).toBe(true);
+  });
 });

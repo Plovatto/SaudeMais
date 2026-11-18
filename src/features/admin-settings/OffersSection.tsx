@@ -52,6 +52,7 @@ function OfferForm({ unitId, offer, choices, onDone }: OfferFormProps) {
       onSubmit={form.onSubmit}
       alert={form.alert}
       submitting={isSubmitting}
+      submitDisabled={!offer && choices.length === 0}
       onCancel={onDone}
     >
       {offer ? (
