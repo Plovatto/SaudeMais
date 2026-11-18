@@ -61,7 +61,7 @@ describe('forgot password', () => {
   it('is reached from the login screen', async () => {
     const { router, user } = renderApp('/login');
 
-    await user.click(await screen.findByRole('link', { name: 'Esqueceu a senha?' }));
+    await user.click(await screen.findByRole('link', { name: 'Esqueci a senha' }));
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/esqueci-senha'));
   });

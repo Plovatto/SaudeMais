@@ -180,26 +180,39 @@ describe('route guards', () => {
 });
 
 describe('role choice', () => {
-  it('lists only the roles of the account, in the app order', async () => {
+  it('greets the person and lists only the roles of the account, in the app order', async () => {
     renderApp('/perfis', { signedInAs: ['doctor', 'patient'] });
 
-    const links = within(await screen.findByRole('list')).getAllByRole('link');
-    expect(links.map((link) => link.textContent)).toEqual([
-      'PacienteAgendar consultas e gerenciar minha saúde',
-      'MédicoGerenciar agenda e atender pacientes',
+    expect(await screen.findByText('Olá, Ana! Sua conta tem 2 perfis.')).toBeInTheDocument();
+    expect(screen.getByText('Um acesso, vários perfis.')).toBeInTheDocument();
+    const links = within(screen.getByRole('list', { name: 'Perfis da conta' })).getAllByRole('link');
+    expect(links.map((link) => [link.textContent, link.getAttribute('href')])).toEqual([
+      ['PacienteAgende consultas e exames e veja seus resultados.', '/paciente'],
+      ['MédicoConfirme pedidos e organize sua agenda.', '/medico'],
     ]);
+  });
+
+  it('opens the chosen area', async () => {
+    const { router, user } = renderApp('/perfis', { signedInAs: ['admin', 'doctor', 'patient'] });
+
+    expect(await screen.findByText('Olá, Ana! Sua conta tem 3 perfis.')).toBeInTheDocument();
+    await user.click(screen.getByRole('link', { name: /^Administrador/ }));
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/admin'));
   });
 
   it('explains when the account has no active role', async () => {
     renderApp('/perfis', { signedInAs: [] });
 
     expect(await screen.findByText('Nenhum perfil ativo')).toBeInTheDocument();
+    expect(screen.getByText('Olá, Ana!')).toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: 'Perfis da conta' })).not.toBeInTheDocument();
   });
 
-  it('says that "Voltar" ends the session', async () => {
+  it('says that "Entrar com outra conta" ends the session', async () => {
     renderApp('/perfis', { signedInAs: ['doctor', 'patient'] });
 
-    expect(await screen.findByRole('button', { name: 'Voltar' })).toHaveAccessibleDescription(
+    expect(await screen.findByRole('button', { name: 'Entrar com outra conta' })).toHaveAccessibleDescription(
       'Encerra a sessão e volta para o login.',
     );
   });
@@ -210,11 +223,11 @@ describe('role choice', () => {
     await waitFor(() => expect(router.state.location.pathname).toBe('/paciente'));
   });
 
-  it('signs out with "Voltar"', async () => {
+  it('signs out with "Entrar com outra conta"', async () => {
     const fetchMock = mockApi({ status: 204 });
     const { router, user } = renderApp('/perfis', { signedInAs: ['doctor', 'patient'] });
 
-    await user.click(await screen.findByRole('button', { name: 'Voltar' }));
+    await user.click(await screen.findByRole('button', { name: 'Entrar com outra conta' }));
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/login'));
     expect(fetchMock.mock.calls[0]?.[0]).toBe('http://localhost:3001/api/users/logout');
@@ -234,7 +247,7 @@ describe('signing out', () => {
     vi.stubGlobal('fetch', fetchMock);
     const { router, user } = renderApp('/perfis', { signedInAs: ['doctor', 'patient'] });
 
-    await user.click(await screen.findByRole('button', { name: 'Voltar' }));
+    await user.click(await screen.findByRole('button', { name: 'Entrar com outra conta' }));
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/login'));
     expect(router.state.location.search).toBe('');

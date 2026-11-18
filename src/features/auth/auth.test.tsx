@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import type userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Role } from '@constants/areas';
@@ -26,7 +26,7 @@ describe('login', () => {
   it('sends the root address to the login screen', async () => {
     const { router } = renderAt('/');
 
-    expect(await screen.findByRole('heading', { name: 'Saúde+' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Entrar' })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/login');
   });
 
@@ -42,16 +42,31 @@ describe('login', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it('shows the brand art, the sign-up link and the example accounts', async () => {
+    renderAt('/login');
+
+    expect(await screen.findByText('Sua saúde, seus horários, em um só lugar.')).toBeInTheDocument();
+    expect(screen.getByText('Use seu e-mail e senha da clínica.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Cadastre-se' })).toHaveAttribute('href', '/cadastro');
+    expect(screen.getByRole('link', { name: 'Esqueci a senha' })).toHaveAttribute('href', '/esqueci-senha');
+    const examples = within(screen.getByRole('region', { name: 'Contas de exemplo' })).getAllByRole('button');
+    expect(examples.map((button) => button.textContent)).toEqual(['Paciente 1 perfil', 'Médico 2 perfis']);
+    expect(examples[0]).toHaveAccessibleDescription('Preenche o e-mail e a senha da conta.');
+  });
+
   it.each([
-    ['paciente', DEMO_PATIENT],
-    ['médico', DEMO_DOCTOR],
-  ])('fills in the demo %s account', async (label, account) => {
+    ['Paciente 1 perfil', DEMO_PATIENT],
+    ['Médico 2 perfis', DEMO_DOCTOR],
+  ])('fills in the example account %s and marks it', async (name, account) => {
     const { user } = renderAt('/login');
 
-    await user.click(await screen.findByRole('button', { name: `Preencher com a conta de ${label}` }));
+    const chip = await screen.findByRole('button', { name });
+    expect(chip).not.toHaveClass('bg-role-soft');
+    await user.click(chip);
 
     expect(screen.getByLabelText('E-mail')).toHaveValue(account.email);
     expect(screen.getByLabelText('Senha')).toHaveValue(account.password);
+    expect(chip).toHaveClass('bg-role-soft');
   });
 
   it('logs a patient in and opens the patient area', async () => {
@@ -163,6 +178,8 @@ describe('register', () => {
     renderAt('/cadastro');
 
     expect(await screen.findByRole('note')).toHaveTextContent('Ambiente de demonstração');
+    expect(screen.getByRole('heading', { level: 1, name: 'Criar conta' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Entrar' })).toHaveAttribute('href', '/login');
     const terms = screen.getByRole('link', { name: /^termos de uso.*abre em nova aba/ });
     expect(terms).toHaveAttribute('href', '/termos');
     expect(terms).toHaveAttribute('target', '_blank');
