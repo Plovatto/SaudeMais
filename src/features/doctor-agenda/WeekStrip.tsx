@@ -31,7 +31,7 @@ export function WeekStrip({ days, selected, today, countOf, onSelect, onStep, on
             className={stepButton}
             onClick={() => onStep(-1)}
           />
-          <Button variant="secondary" size="sm" onClick={onToday}>
+          <Button variant="secondary" size="sm" className="min-h-11 lg:min-h-9" onClick={onToday}>
             Hoje
           </Button>
           <IconButton
@@ -42,7 +42,7 @@ export function WeekStrip({ days, selected, today, countOf, onSelect, onStep, on
           />
         </div>
       </div>
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-1.5">
         {days.map((day) => {
           const count = countOf(day);
           const on = day === selected;
@@ -56,14 +56,24 @@ export function WeekStrip({ days, selected, today, countOf, onSelect, onStep, on
               aria-label={`${formatLongDay(middayOf(day))}${count === undefined ? '' : `, ${plural(count, 'consulta', 'consultas')}`}`}
               onClick={() => onSelect(day)}
               className={cx(
-                'rounded-tile flex min-h-16 cursor-pointer flex-col items-center justify-center gap-1 transition-colors duration-150',
-                on ? 'bg-role-strong text-on-role' : 'text-text-secondary can-hover:bg-surface-muted',
+                'rounded-tile flex min-h-16 cursor-pointer flex-col items-center justify-center gap-1 border px-1 py-2 transition-[background-color,border-color,box-shadow] duration-150',
+                on
+                  ? 'border-role-strong bg-role-strong text-on-role shadow-[0_8px_18px_-10px_var(--color-role-strong)]'
+                  : cx(
+                      'bg-surface-muted can-hover:border-border-strong',
+                      day === today ? 'border-role-strong text-role-text' : 'border-border text-text',
+                    ),
               )}
             >
-              <span className="text-[0.6875rem] font-semibold uppercase">{weekday}</span>
-              <b className={cx('text-lg/none tabular-nums', !on && day === today && 'text-role-text')}>
-                {number}
-              </b>
+              <span
+                className={cx(
+                  'text-[0.65625rem] font-semibold tracking-[0.04em] uppercase',
+                  !on && day !== today && 'text-text-muted',
+                )}
+              >
+                {weekday}
+              </span>
+              <b className="text-lg/none font-semibold tabular-nums">{number}</b>
               <i
                 aria-hidden
                 className={cx(

@@ -70,8 +70,8 @@ export function AgendaRows({ items, now, showNow, label, row }: AgendaRowsProps)
     <ul className="divide-border divide-y">
       {items.map((appointment, index) => (
         <Fragment key={appointment.id}>
-          {label?.(appointment, items[index - 1])}
           {index === nowAt && <NowLine now={now} />}
+          {label?.(appointment, items[index - 1])}
           <li>{row(appointment)}</li>
         </Fragment>
       ))}

@@ -26,7 +26,7 @@ const listLayout: Record<NonNullable<TabsProps<string>['variant']>, string> = {
   pill: 'gap-3',
   tile: 'gap-3',
   line: 'border-border gap-1 border-b',
-  chip: 'flex-wrap gap-2',
+  chip: '-mx-1 gap-2 overflow-x-auto px-1 pb-1 lg:flex-wrap lg:overflow-visible lg:pb-0',
 };
 
 const safe = (value: string) => encodeURIComponent(value).replace(/%/g, '_');
@@ -115,7 +115,7 @@ export function Tabs<T extends string>({
             {...tab}
             className={cx(
               pill.base,
-              variant === 'chip' ? 'inline-flex items-center gap-2' : 'flex-1',
+              variant === 'chip' ? 'inline-flex shrink-0 items-center gap-2 whitespace-nowrap' : 'flex-1',
               selected ? pill.selected : pill.idle,
             )}
           >
