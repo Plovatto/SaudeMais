@@ -146,6 +146,17 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     expect(screen.getByRole('tab', { name: 'A confirmar 1' })).toBeVisible();
   });
 
+  it('counts on the appointments tab only what the list from today shows', async () => {
+    serve({
+      lists: { pending: [appointment('a1')], all: [appointment('a1'), confirmed('a2')] },
+      totals: { history: 5 },
+    });
+    renderApp('/medico/agenda');
+
+    const consultas = await screen.findByRole('tab', { name: /^Consultas/ });
+    await waitFor(() => expect(consultas).toHaveTextContent('Consultas2'));
+  });
+
   it('opens the awaiting status from the URL', async () => {
     const { calls } = serve({ lists: { awaiting: [unrecorded('a1')] } });
     renderApp(AWAITING_URL);

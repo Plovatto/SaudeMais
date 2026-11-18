@@ -106,7 +106,12 @@ export function DoctorAgendaPage() {
     AGENDA_STATUS_PARAM,
   );
   const counts = list.lastData?.counts;
-  const allCount = counts ? counts.pending + counts.confirmed + counts.history : undefined;
+  const allParams: AgendaParams = { tab: 'all', page: 1, from: today };
+  const allCount = useQuery({
+    queryKey: queryKeys.doctor.appointments(allParams),
+    queryFn: ({ signal }) => doctorApi.list(allParams, signal),
+    select: ({ total }) => total,
+  }).data;
 
   const visible = current === AGENDA_VIEWS.week ? dayItems : list.items;
   const { desktop, selected, select, closeSheet } = useListSelection(
