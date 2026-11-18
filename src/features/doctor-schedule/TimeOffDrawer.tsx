@@ -24,7 +24,7 @@ function TimeOffForm({ loading, onSubmit, onClose }: TimeOffFormProps) {
     register,
     handleSubmit,
     setError,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<TimeOffValues>({
     resolver: zodResolver(timeOffSchema),
     defaultValues: { date: '', reason: '' },
@@ -37,7 +37,7 @@ function TimeOffForm({ loading, onSubmit, onClose }: TimeOffFormProps) {
       label="Bloquear uma data"
       onSubmit={submit}
       alert={alert}
-      submitting={loading}
+      submitting={loading || isSubmitting}
       onCancel={onClose}
       submitLabel="Bloquear data"
     >
