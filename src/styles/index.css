@@ -191,12 +191,21 @@
   --radius-card: 16px;
   --radius-sheet: 22px;
   --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
-  --animate-rise: rise 200ms var(--ease-out-quint) backwards;
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 260ms;
+  --animate-rise: rise var(--duration-base) var(--ease-out-quint) backwards;
   --animate-fade: fade 180ms ease-out both;
+  --animate-fade-out: fade-out 160ms ease-out both;
   --animate-drop: drop 160ms ease-out both;
-  --animate-pop: pop 200ms var(--ease-out-quint) both;
-  --animate-sheet: sheet 260ms var(--ease-out-quint) both;
+  --animate-pop: pop var(--duration-base) var(--ease-out-quint) both;
+  --animate-sheet: sheet var(--duration-slow) var(--ease-out-quint) both;
   --animate-slide: slide 240ms var(--ease-out-quint) both;
+  --animate-shimmer: shimmer 1.4s linear infinite;
+  --animate-grow: grow 400ms var(--ease-out-quint) both;
+  --animate-grow-x: grow-x 400ms var(--ease-out-quint) both;
+  --animate-donut: donut 400ms var(--ease-out-quint) both;
 
   @keyframes rise {
     from {
@@ -234,6 +243,42 @@
   @keyframes slide {
     from {
       transform: translateX(100%);
+    }
+  }
+
+  @keyframes fade-out {
+    to {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+  }
+
+  @keyframes shimmer {
+    from {
+      transform: translateX(-100%);
+    }
+
+    to {
+      transform: translateX(100%);
+    }
+  }
+
+  @keyframes grow {
+    from {
+      transform: scaleY(0);
+    }
+  }
+
+  @keyframes grow-x {
+    from {
+      transform: scaleX(0);
+    }
+  }
+
+  @keyframes donut {
+    from {
+      opacity: 0;
+      transform: rotate(-40deg) scale(0.96);
     }
   }
 }
