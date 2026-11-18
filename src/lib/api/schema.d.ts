@@ -2784,7 +2784,7 @@ export interface components {
             /**
              * @description Duração de cada consulta do médico, em minutos: 15, 20, 30, 45 ou 60. `null` volta para a duração padrão da especialidade; sem o campo, a duração atual fica como está.
              * @example 30
-             * @enum {number|null}
+             * @enum {integer|null}
              */
             appointmentDurationMin?: 15 | 20 | 30 | 45 | 60 | null;
         };

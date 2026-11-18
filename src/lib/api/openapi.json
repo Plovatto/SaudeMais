@@ -3027,7 +3027,7 @@
           },
           "appointmentDurationMin": {
             "type": [
-              "number",
+              "integer",
               "null"
             ],
             "enum": [
