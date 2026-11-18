@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { LuCalendarDays, LuChartColumn, LuCheck, LuUsers, LuX } from 'react-icons/lu';
+import { LuCalendarDays, LuCheck, LuUsers, LuX } from 'react-icons/lu';
 import { PageHeader } from '@components/layout/PageHeader';
 import { countDelta, rateDelta } from '@components/reports/report-deltas';
 import {
@@ -10,16 +10,17 @@ import {
   type Outcomes,
 } from '@components/reports/report-outcomes';
 import {
+  comparison,
   DEFAULT_PRESET,
   PERIOD_PRESETS,
   presetPeriod,
-  previousPeriod,
   type PeriodPreset,
 } from '@components/reports/report-periods';
+import { NoBookings } from '@components/reports/NoBookings';
+import { seriesCopy, TOP_LISTS } from '@components/reports/report-copy';
 import { fetchAdminReport, type AdminReport } from '@components/reports/reports-api';
 import {
   Card,
-  EmptyState,
   MeterList,
   QueryError,
   SectionCard,
@@ -53,23 +54,21 @@ const SERIES: readonly ChartSeries<Group>[] = [
   { key: 'noShow', label: 'Faltas', swatch: 'bg-chart-4' },
 ];
 
-const TOP_LISTS = [
-  { key: 'topSpecialties', title: 'Especialidades mais procuradas', empty: 'Nenhuma consulta no período.' },
-  { key: 'topExamTypes', title: 'Exames mais procurados', empty: 'Nenhum exame no período.' },
-] as const;
-
 const rate = (value: number | null) => (value === null ? '—' : formatPercent(value));
 
 const isPanelPreset = (value: string): value is PeriodPreset =>
   PANEL_PRESETS.some((preset) => preset === value);
 
+const present = (values: readonly (number | null)[]) =>
+  values.filter((value): value is number => value !== null);
+
 function chartRows({ series, period }: AdminReport): ChartRow<Group>[] {
-  const weekly = period.granularity === 'week';
+  const { rowLabel } = seriesCopy(period.granularity);
   return series.map((point) => {
     const { completed, cancelled, noShow } = outcomesOf(point);
     return {
       key: point.start,
-      label: weekly ? `Semana de ${formatDate(point.start)}` : formatDate(point.start),
+      label: rowLabel(point.start),
       axisLabel: formatDate(point.start, { year: false }),
       values: { completed, cancelled, noShow },
     };
@@ -101,19 +100,25 @@ interface StatsProps {
   outcomes: Outcomes | undefined;
   previous: Outcomes | undefined;
   report: AdminReport | undefined;
+  versus: string;
 }
 
-function PanelStats({ outcomes, previous, report }: StatsProps) {
+function PanelStats({ outcomes, previous, report, versus }: StatsProps) {
   const points = report?.series.map(outcomesOf) ?? [];
-  const foot = previous && 'vs. período anterior';
+  const done = outcomes && countDelta(outcomes.completed, previous?.completed);
+  const attendance = outcomes && previous && rateDelta(attendanceRate(outcomes), attendanceRate(previous));
+  const cancelled =
+    outcomes &&
+    previous &&
+    rateDelta(cancellationRate(outcomes), cancellationRate(previous), { higherIsBetter: false });
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
       <StatTile
         label="Realizados"
         icon={<LuCheck />}
         value={outcomes && formatCount(outcomes.completed)}
-        delta={outcomes && countDelta(outcomes.completed, previous?.completed)}
-        foot={foot}
+        delta={done}
+        foot={done && versus}
         trend={points.map((point) => point.completed)}
         className={stagger(0)}
       />
@@ -121,22 +126,18 @@ function PanelStats({ outcomes, previous, report }: StatsProps) {
         label="Comparecimento"
         icon={<LuUsers />}
         value={outcomes && rate(attendanceRate(outcomes))}
-        delta={outcomes && previous && rateDelta(attendanceRate(outcomes), attendanceRate(previous))}
-        foot={foot}
-        trend={points.map((point) => attendanceRate(point) ?? 0)}
+        delta={attendance}
+        foot={attendance && versus}
+        trend={present(points.map(attendanceRate))}
         className={stagger(1)}
       />
       <StatTile
         label="Cancelamentos"
         icon={<LuX />}
         value={outcomes && rate(cancellationRate(outcomes))}
-        delta={
-          outcomes &&
-          previous &&
-          rateDelta(cancellationRate(outcomes), cancellationRate(previous), { higherIsBetter: false })
-        }
-        foot={foot}
-        trend={points.map((point) => cancellationRate(point) ?? 0)}
+        delta={cancelled}
+        foot={cancelled && versus}
+        trend={present(points.map(cancellationRate))}
         className={stagger(2)}
       />
       <TodayTile />
@@ -164,7 +165,7 @@ function PanelCharts({
   outcomes: Outcomes;
   previous?: Outcomes | undefined;
 }) {
-  const weekly = report.period.granularity === 'week';
+  const copy = seriesCopy(report.period.granularity);
   const delta = countDelta(outcomes.total, previous?.total);
   const average = outcomes.total / Math.max(report.series.length, 1);
   return (
@@ -183,12 +184,12 @@ function PanelCharts({
           </div>
           <p className="text-text-secondary text-[0.8125rem]">
             média de <b className="text-text tabular-nums">{formatCount(Math.round(average))}</b> por{' '}
-            {weekly ? 'semana' : 'dia'}
+            {copy.unit}
           </p>
         </div>
         <StackedColumns
-          label={weekly ? 'Agendamentos por semana' : 'Agendamentos por dia'}
-          rowHeader={weekly ? 'Semana' : 'Dia'}
+          label={copy.title}
+          rowHeader={copy.rowHeader}
           series={SERIES}
           rows={chartRows(report)}
         />
@@ -256,7 +257,7 @@ export function AdminHomePage() {
   const [presetParam, setPreset] = useSearchParam('periodo', DEFAULT_PRESET);
   const preset = isPanelPreset(presetParam) ? presetParam : DEFAULT_PRESET;
   const period = presetPeriod(preset);
-  const before = previousPeriod(period);
+  const { period: before, label: versus } = comparison(preset, period);
   const current = useQuery({
     queryKey: queryKeys.adminReport(period),
     queryFn: ({ signal }) => fetchAdminReport(period, signal),
@@ -290,17 +291,11 @@ export function AdminHomePage() {
         </Card>
       ) : (
         <div className="flex flex-col gap-4 lg:gap-5">
-          <PanelStats outcomes={outcomes} previous={previous} report={report} />
+          <PanelStats outcomes={outcomes} previous={previous} report={report} versus={versus} />
           {!report || !outcomes ? (
             <PanelSkeleton />
           ) : outcomes.total === 0 ? (
-            <Card className="motion-safe:animate-rise">
-              <EmptyState
-                icon={<LuChartColumn />}
-                title="Nenhum agendamento no período"
-                description="Escolha outro período para ver os números."
-              />
-            </Card>
+            <NoBookings />
           ) : (
             <PanelCharts report={report} outcomes={outcomes} previous={previous} />
           )}

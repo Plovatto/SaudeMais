@@ -53,7 +53,7 @@ describe('admin panel', () => {
     const done = await tile('Realizados');
     expect(await done.findByText('25')).toBeInTheDocument();
     expect(await done.findByText('+47,1%')).toBeInTheDocument();
-    expect(done.getByText('vs. período anterior')).toBeInTheDocument();
+    expect(done.getByText('vs. 30 dias anteriores')).toBeInTheDocument();
     const attendance = await tile('Comparecimento');
     expect(attendance.getByText('92,6%')).toBeInTheDocument();
     expect(attendance.getByText('+3,1 p.p.')).toBeInTheDocument();
@@ -83,12 +83,52 @@ describe('admin panel', () => {
     );
   });
 
-  it('starts this month on its first day', async () => {
-    const { calls } = serve();
+  it('compares this month with the same days of the month before', async () => {
+    const { calls } = serve({ report: () => ({ status: 200, body: adminReport() }) });
     renderApp('/admin?periodo=mes');
 
-    expect(await screen.findByRole('button', { name: 'Este mês' })).toHaveAttribute('aria-pressed', 'true');
-    await waitFor(() => expect(reportQueries(calls)).toContain('2026-11-01|2026-11-15'));
+    await waitFor(() =>
+      expect(reportQueries(calls)).toEqual(
+        expect.arrayContaining(['2026-11-01|2026-11-15', '2026-10-01|2026-10-15']),
+      ),
+    );
+    expect(await (await tile('Comparecimento')).findByText('vs. outubro')).toBeInTheDocument();
+  });
+
+  it('ends the month before on its last day when it is shorter', async () => {
+    vi.setSystemTime(new Date('2026-03-31T15:00:00.000Z'));
+    const { calls } = serve({ report: () => ({ status: 200, body: adminReport() }) });
+    renderApp('/admin?periodo=mes');
+
+    await waitFor(() =>
+      expect(reportQueries(calls)).toEqual(
+        expect.arrayContaining(['2026-03-01|2026-03-31', '2026-02-01|2026-02-28']),
+      ),
+    );
+    expect(await (await tile('Realizados')).findByText('vs. fevereiro')).toBeInTheDocument();
+  });
+
+  it('draws the rate trends without the days that had no bookings', async () => {
+    const quiet = {
+      start: '2026-11-13',
+      total: 0,
+      pending: 0,
+      confirmed: 0,
+      awaitingRecord: 0,
+      completed: 0,
+      noShow: 0,
+      cancelled: 0,
+      expired: 0,
+    };
+    serve({
+      report: () => ({ status: 200, body: adminReport({ series: [quiet, ...adminReport().series] }) }),
+    });
+    renderApp('/admin');
+
+    const attendance = await screen.findByRole('region', { name: 'Comparecimento' });
+    await screen.findByRole('region', { name: 'Volume de agendamentos' });
+    const line = attendance.querySelector('path[fill="none"]')?.getAttribute('d') ?? '';
+    expect(line.match(/[MC]/g)).toEqual(['M', 'C']);
   });
 
   it('shows the volume chart, the status split and the most requested lists', async () => {
@@ -157,6 +197,7 @@ describe('admin panel', () => {
     expect(await done.findByText('25')).toBeInTheDocument();
     await screen.findByRole('region', { name: 'Volume de agendamentos' });
     expect(done.queryByText(/%$/)).not.toBeInTheDocument();
+    expect(done.queryByText('vs. 30 dias anteriores')).not.toBeInTheDocument();
   });
 
   it('marks the tiles as busy while the report loads', async () => {
