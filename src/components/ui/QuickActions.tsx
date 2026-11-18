@@ -2,7 +2,7 @@ import type { IconType } from 'react-icons';
 import { LuArrowRight } from 'react-icons/lu';
 import { Link } from 'react-router';
 import { cx } from '@lib/cx';
-import { softTones } from './styles';
+import { lift, softTones } from './styles';
 
 export interface QuickAction {
   to: string;
@@ -26,7 +26,8 @@ export function QuickActions({ label, actions }: QuickActionsProps) {
             key={to}
             to={to}
             className={cx(
-              'group can-hover:-translate-y-px flex min-w-0 flex-col items-start gap-3 rounded-[18px] border p-4 transition-[translate,box-shadow,border-color] duration-150 @min-[560px]:flex-row @min-[560px]:items-center @min-[560px]:gap-4 @min-[560px]:px-[22px] @min-[560px]:py-5',
+              lift,
+              'group flex min-w-0 flex-col items-start gap-3 rounded-[18px] border p-4 @min-[560px]:flex-row @min-[560px]:items-center @min-[560px]:gap-4 @min-[560px]:px-[22px] @min-[560px]:py-5',
               primary
                 ? 'border-role-strong bg-role-strong text-on-role shadow-[0_14px_30px_-16px_var(--role-strong)]'
                 : 'border-border bg-surface text-text shadow-card can-hover:border-role-soft-strong can-hover:shadow-raised',

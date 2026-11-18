@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { LuCalendar } from 'react-icons/lu';
 import { Link } from 'react-router';
 import { Chevron, IconSlot, QueryError, Skeleton } from '@components/ui';
-import { overline } from '@components/ui/styles';
+import { lift, overline } from '@components/ui/styles';
 import { cx } from '@lib/cx';
 import { DateTile } from './DateTile';
 
@@ -52,7 +52,8 @@ export function NextCard({ label, query, next, empty }: NextCardProps) {
   }
   const className = cx(
     cardClass,
-    'shadow-raised group can-hover:border-role-soft-strong w-full min-w-0 text-start transition-[border-color,box-shadow] duration-150',
+    lift,
+    'shadow-raised group can-hover:border-role-soft-strong can-hover:shadow-overlay w-full min-w-0 text-start',
   );
   const content = (
     <>
