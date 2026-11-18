@@ -8,10 +8,10 @@ import { IdentityHeader } from '@components/forms/IdentityHeader';
 import { PersonalDataFields, ReadOnlyEmailField } from '@components/forms/PersonalDataFields';
 import { Drawer, Input, useToast } from '@components/ui';
 import { areas, type Role } from '@constants/areas';
+import { useFormSubmit } from '@hooks/useFormSubmit';
 import { useReportSubmitting } from '@hooks/useReportSubmitting';
 import type { CurrentUser } from '@lib/auth/useSession';
 import { queryKeys } from '@lib/query-keys';
-import { useFormSubmit } from '@hooks/useFormSubmit';
 import { updateProfile } from './profile-api';
 import {
   birthDateLimits,

@@ -4,9 +4,9 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { isStale } from '@components/bookings/stale-appointment';
 import { Button, Dialog, FormAlert, Input } from '@components/ui';
+import { useFormSubmit } from '@hooks/useFormSubmit';
 import type { DoctorAppointment, HealthMetricsInput } from '@lib/api/models';
 import { formatDateTime } from '@lib/date';
-import { useFormSubmit } from '@hooks/useFormSubmit';
 import { optionalNumber } from '@lib/validation/number';
 
 const metricsSchema = z.object({

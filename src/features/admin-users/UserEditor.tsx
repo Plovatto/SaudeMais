@@ -7,9 +7,10 @@ import { FormShell } from '@components/forms/FormShell';
 import { IdentityHeader } from '@components/forms/IdentityHeader';
 import { PersonalDataFields, ReadOnlyEmailField } from '@components/forms/PersonalDataFields';
 import { Button, FormAlert, SettingRow, Switch, useToast } from '@components/ui';
+import { useFormSubmit } from '@hooks/useFormSubmit';
+import { useReportSubmitting } from '@hooks/useReportSubmitting';
 import { formatCivilDate } from '@lib/date';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
-import { useFormSubmit } from '@hooks/useFormSubmit';
 import {
   personalDataBody,
   personalDataSchema,
@@ -20,7 +21,6 @@ import { syncUser, type UserLocks } from './user-cache';
 import { userMessages } from './user-messages';
 import { UserBadges } from './UserBadges';
 import { usersApi, type AdminUserDetail } from './users-api';
-import { useReportSubmitting } from '@hooks/useReportSubmitting';
 import type { useUserActions } from './useUserActions';
 
 type UserActions = ReturnType<typeof useUserActions>;

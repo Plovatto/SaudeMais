@@ -6,9 +6,9 @@ import { NewPasswordFields } from '@components/forms/NewPasswordFields';
 import { PasswordStrength } from '@components/forms/PasswordStrength';
 import { FormShell } from '@components/forms/FormShell';
 import { Drawer, PasswordInput, useToast } from '@components/ui';
+import { useFormSubmit } from '@hooks/useFormSubmit';
 import { useReportSubmitting } from '@hooks/useReportSubmitting';
 import { queryKeys } from '@lib/query-keys';
-import { useFormSubmit } from '@hooks/useFormSubmit';
 import { changePassword } from './profile-api';
 import { passwordSchema, type PasswordValues } from './profile-schemas';
 
