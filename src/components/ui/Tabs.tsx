@@ -68,7 +68,7 @@ function LineIndicator({ box }: { box: IndicatorBox }) {
       aria-hidden
       data-tab-indicator
       className={cx(
-        'bg-role-strong pointer-events-none absolute start-0 -bottom-px h-0.5 w-px origin-left',
+        'bg-role-strong pointer-events-none absolute start-0 -bottom-px h-0.5 w-px origin-left forced-color-adjust-none forced-colors:bg-[Highlight]',
         box.animate && 'ease-out-quint transition-transform duration-180',
       )}
       style={{ transform: `translateX(${box.left}px) scaleX(${box.width})` }}
@@ -123,7 +123,7 @@ export function Tabs<T extends string>({
               type="button"
               {...tab}
               className={cx(
-                '-mb-px inline-flex min-h-11 items-center gap-2 border-b-2 border-transparent px-3 text-sm font-semibold whitespace-nowrap transition-colors duration-150',
+                '-mb-px inline-flex min-h-11 items-center gap-2 border-b-2 border-transparent px-3 text-sm font-semibold whitespace-nowrap transition-colors duration-150 forced-colors:border-transparent',
                 selected ? 'text-role-text' : 'text-text-secondary can-hover:text-text',
               )}
             >

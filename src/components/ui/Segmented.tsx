@@ -30,7 +30,7 @@ export function Segmented<T extends string>({
       {selected >= 0 && (
         <span
           aria-hidden
-          className="bg-surface ease-out-quint absolute inset-y-[3px] start-[3px] rounded-lg shadow-[0_1px_2px_rgb(16_42_41/0.08),0_0_0_1px_var(--border)] transition-transform duration-180"
+          className="bg-surface ease-out-quint absolute inset-y-[3px] start-[3px] rounded-lg shadow-[0_1px_2px_rgb(16_42_41/0.08),0_0_0_1px_var(--border)] transition-transform duration-180 forced-color-adjust-none forced-colors:bg-[Highlight]"
           style={{
             width: `calc((100% - 6px - ${(options.length - 1) * 2}px) / ${options.length})`,
             transform: `translateX(calc(${selected} * (100% + 2px)))`,
@@ -44,7 +44,9 @@ export function Segmented<T extends string>({
             key={option.value}
             className={cx(
               'has-[:focus-visible]:outline-focus relative flex min-h-11 min-w-0 flex-1 cursor-pointer items-center justify-center rounded-lg px-2 text-[0.8125rem] font-semibold whitespace-nowrap transition-colors duration-150 has-[:focus-visible]:outline-2 has-[:focus-visible]:-outline-offset-2 sm:px-3 lg:min-h-8',
-              checked ? 'text-text' : 'text-text-secondary can-hover:text-text',
+              checked
+                ? 'text-text forced-colors:text-[HighlightText] forced-colors:forced-color-adjust-none'
+                : 'text-text-secondary can-hover:text-text',
             )}
           >
             <input
