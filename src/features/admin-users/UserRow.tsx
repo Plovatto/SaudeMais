@@ -1,5 +1,4 @@
 import { Avatar, ListRow } from '@components/ui';
-import { cx } from '@lib/cx';
 import { RoleChips, StatusBadge } from './UserBadges';
 import type { AdminUser } from './users-api';
 
@@ -16,7 +15,7 @@ export function UserRow({ user, isSelf, onOpen }: UserRowProps) {
       onClick={() => onOpen(user)}
       aria-haspopup="dialog"
       className="cursor-pointer"
-      leading={<Avatar name={user.fullName} seed={user.id} className={cx(inactive && 'opacity-60')} />}
+      leading={<Avatar name={user.fullName} seed={user.id} muted={inactive} />}
       title={user.fullName}
       meta={isSelf ? `Você · ${user.email}` : user.email}
       trailing={
