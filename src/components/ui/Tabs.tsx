@@ -1,4 +1,4 @@
-import type { KeyboardEvent, ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
 import { cx } from '@lib/cx';
 import { rovingIndex } from '@lib/roving-index';
 import { CountBadge } from './CountBadge';
@@ -33,6 +33,49 @@ const safe = (value: string) => encodeURIComponent(value).replace(/%/g, '_');
 const tabId = (id: string, value: string) => `${id}-tab-${safe(value)}`;
 const panelId = (id: string, value: string) => `${id}-panel-${safe(value)}`;
 
+interface IndicatorBox {
+  left: number;
+  width: number;
+  animate: boolean;
+}
+
+function useIndicator(listRef: RefObject<HTMLDivElement | null>, value: string, enabled: boolean) {
+  const [box, setBox] = useState<IndicatorBox | null>(null);
+
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (!enabled || !list) return;
+    const measure = () => {
+      const tab = list.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]');
+      setBox((previous) =>
+        tab ? { left: tab.offsetLeft, width: tab.offsetWidth, animate: previous !== null } : null,
+      );
+    };
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(list);
+    list.querySelectorAll('[role="tab"]').forEach((tab) => observer.observe(tab));
+    return () => observer.disconnect();
+  }, [listRef, value, enabled]);
+
+  return box;
+}
+
+function LineIndicator({ box }: { box: IndicatorBox }) {
+  return (
+    <span
+      aria-hidden
+      data-tab-indicator
+      className={cx(
+        'bg-role-strong pointer-events-none absolute start-0 -bottom-px h-0.5 w-px origin-left',
+        box.animate && 'ease-out-quint transition-transform duration-180',
+      )}
+      style={{ transform: `translateX(${box.left}px) scaleX(${box.width})` }}
+    />
+  );
+}
+
 export function Tabs<T extends string>({
   id,
   label,
@@ -42,6 +85,8 @@ export function Tabs<T extends string>({
   variant = 'pill',
   className,
 }: TabsProps<T>) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const indicator = useIndicator(listRef, value, variant === 'line');
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const current = items.findIndex((item) => item.value === value);
     const next = rovingIndex(event.key, current, items.length, 'horizontal');
@@ -54,11 +99,13 @@ export function Tabs<T extends string>({
 
   return (
     <div
+      ref={listRef}
       role="tablist"
       aria-label={label}
       onKeyDown={onKeyDown}
-      className={cx('flex', listLayout[variant], className)}
+      className={cx('flex', variant === 'line' && 'relative', listLayout[variant], className)}
     >
+      {variant === 'line' && indicator && <LineIndicator box={indicator} />}
       {items.map((item) => {
         const selected = item.value === value;
         const tab = {
@@ -76,10 +123,8 @@ export function Tabs<T extends string>({
               type="button"
               {...tab}
               className={cx(
-                '-mb-px inline-flex min-h-11 items-center gap-2 border-b-2 px-3 text-sm font-semibold whitespace-nowrap transition-colors duration-150',
-                selected
-                  ? 'border-role-strong text-role-text'
-                  : 'text-text-secondary can-hover:text-text border-transparent',
+                '-mb-px inline-flex min-h-11 items-center gap-2 border-b-2 border-transparent px-3 text-sm font-semibold whitespace-nowrap transition-colors duration-150',
+                selected ? 'text-role-text' : 'text-text-secondary can-hover:text-text',
               )}
             >
               {item.label}
