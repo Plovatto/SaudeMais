@@ -290,6 +290,12 @@
     scroll-padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
   }
 
+  @media (width < 1024px) {
+    html:has([data-cta-bar]) {
+      scroll-padding-bottom: calc(15rem + env(safe-area-inset-bottom));
+    }
+  }
+
   @media (width >= 1024px) {
     html {
       scroll-padding-bottom: 0;
