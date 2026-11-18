@@ -66,6 +66,15 @@ const conflict = (code: string, fields?: Record<string, string>, status = 409) =
 });
 
 const serve = (routes: Record<string, ApiRoute>) => serveApi(['admin'], routes);
+const holdSpecialties = ({ fetchMock }: ReturnType<typeof serve>) => {
+  const respond = fetchMock.getMockImplementation();
+  fetchMock.mockImplementation((url, init) => {
+    const path = new URL(url instanceof Request ? url.url : url).pathname;
+    return path === '/api/specialties' || !respond
+      ? new Promise<Response>(() => undefined)
+      : respond(url, init);
+  });
+};
 const listOf =
   (...items: unknown[]): ApiRoute =>
   () =>
@@ -722,6 +731,21 @@ describe('doctor profile', () => {
     expect(await screen.findByText('Esta conta já tem perfil de médico.')).toBeInTheDocument();
   });
 
+  it('keeps the submit disabled while the catalog loads', async () => {
+    holdSpecialties(
+      serve({
+        '/api/units': () => ok(units),
+        '/api/admin/users': listOf(ana),
+        '/api/admin/users/ana': () => ok(detail(ana)),
+      }),
+    );
+    renderApp('/admin/usuarios?usuario=ana&secao=medico');
+
+    const dialog = await panel('Tornar médico');
+    expect(await within(dialog).findByRole('button', { name: 'Tornar médico' })).toBeDisabled();
+    expect(within(dialog).queryByRole('combobox', { name: 'Especialidade' })).not.toBeInTheDocument();
+  });
+
   it('keeps the form disabled when the catalog cannot be loaded', async () => {
     serve({
       '/api/specialties': () => ({ status: 500 }),
@@ -850,6 +874,20 @@ describe('create user', () => {
       role: 'doctor',
       doctorProfile: { specialtyId: 'cardio', registryNumber: '123456', registryUf: 'SP', unitId: 'norte' },
     });
+  });
+
+  it('keeps the submit disabled for a doctor while the catalog loads', async () => {
+    const api = serve({ '/api/units': () => ok(units), '/api/admin/users': listOf(ana) });
+    holdSpecialties(api);
+    const { user } = renderApp('/admin/usuarios?usuario=novo');
+    const form = await panel('Novo usuário');
+    const submit = within(form).getByRole('button', { name: 'Criar usuário' });
+    expect(submit).toBeEnabled();
+
+    await chooseRole(user, form, 'Médico');
+
+    expect(submit).toBeDisabled();
+    expect(within(form).queryByRole('combobox', { name: 'Especialidade' })).not.toBeInTheDocument();
   });
 
   it('checks the required fields before calling the API', async () => {

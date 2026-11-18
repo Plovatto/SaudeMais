@@ -70,7 +70,7 @@ export function DoctorProfileForm({ user, locked, onBack, onRemove }: DoctorProf
       submitting={isSubmitting}
       onCancel={onBack}
       submitLabel={profile ? 'Salvar alterações' : 'Tornar médico'}
-      submitDisabled={locked || catalog.error !== null || (profile !== null && !isDirty)}
+      submitDisabled={locked || catalog.loading || catalog.error !== null || (profile !== null && !isDirty)}
     >
       <p className="text-text-secondary text-sm">
         {profile
