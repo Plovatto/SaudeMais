@@ -26,10 +26,11 @@ export function DemoAccounts({ selected, onFill }: DemoAccountsProps) {
             key={account.email}
             type="button"
             aria-describedby="demo-accounts-hint"
+            aria-pressed={selected === account.email}
             onClick={() => onFill(account)}
             className={cx(
               pill.base,
-              'inline-flex items-center gap-2 px-3.5 text-[0.8125rem] lg:min-h-9',
+              'inline-flex items-center gap-2 px-3.5 text-[0.8125rem]',
               selected === account.email
                 ? 'border-role-strong bg-role-soft text-role-text'
                 : 'border-border bg-surface text-text-secondary can-hover:border-border-strong',
