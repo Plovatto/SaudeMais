@@ -8,7 +8,8 @@ import { cx } from '@lib/cx';
 import { ExamTypesSection } from './ExamTypesSection';
 import { IntegrationsSection } from './IntegrationsSection';
 import { OffersSection } from './OffersSection';
-import { POLICY_FORM_ID, PolicySection, usePolicySettings } from './PolicySection';
+import { PolicySection } from './PolicySection';
+import { POLICY_FORM_ID, usePolicySettings } from './usePolicySettings';
 import { SpecialtiesSection } from './SpecialtiesSection';
 import { UnitsSection } from './UnitsSection';
 

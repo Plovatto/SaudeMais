@@ -1,16 +1,10 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
 import { FormAlert, QueryError, SettingRow, Skeleton, type DropdownOption } from '@components/ui';
 import { plural } from '@lib/plural';
-import { queryKeys } from '@lib/query-keys';
 import { catalogMessages } from './catalog-messages';
 import { FormDropdown } from './FormFields';
-import { policyApi, type Policy } from './settings-api';
-import { policySchema, type PolicyValues } from './settings-schemas';
+import type { PolicyValues } from './settings-schemas';
 import { SettingsCard } from './SettingsCard';
-import { useCatalogForm } from './useCatalogForm';
-
-export const POLICY_FORM_ID = 'politica-agendamento';
+import { POLICY_FORM_ID, type PolicySettings } from './usePolicySettings';
 
 interface PolicyRow {
   name: keyof PolicyValues;
@@ -94,36 +88,6 @@ function optionsOf({ label, presets }: PolicyRow, current: number): DropdownOpti
     .sort(([a], [b]) => a - b)
     .map(([value, hint]) => ({ value: String(value), label: label(value), hint }));
 }
-
-const valuesOf = ({ updatedAt: _updatedAt, ...values }: Policy): PolicyValues => values;
-
-export function usePolicySettings() {
-  const queryClient = useQueryClient();
-  const query = useQuery({
-    queryKey: queryKeys.catalog.policy,
-    queryFn: ({ signal }) => policyApi.get(signal),
-  });
-  const form = useCatalogForm<PolicyValues>({
-    schema: policySchema,
-    defaultValues: query.data && valuesOf(query.data),
-    fields: ROWS.map((row) => row.name),
-    save: async (body) => queryClient.setQueryData(queryKeys.catalog.policy, await policyApi.update(body)),
-    invalidate: queryKeys.catalog.policy,
-    success: 'Configurações salvas.',
-  });
-  const { reset } = form;
-  useEffect(() => {
-    if (query.data) reset(valuesOf(query.data));
-  }, [query.data, reset]);
-  return {
-    query,
-    form,
-    dirty: query.data !== undefined && form.formState.isDirty,
-    submitting: form.formState.isSubmitting,
-  };
-}
-
-export type PolicySettings = ReturnType<typeof usePolicySettings>;
 
 export function PolicySection({ policy: { query, form } }: { policy: PolicySettings }) {
   const saved = query.data;
