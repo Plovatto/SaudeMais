@@ -3,6 +3,8 @@ import { LuCalendar, LuCheck } from 'react-icons/lu';
 import { PageHeader } from '@components/layout/PageHeader';
 import {
   Button,
+  CtaBar,
+  ctaButton,
   FieldError,
   FormAlert,
   ListMessage,
@@ -11,7 +13,7 @@ import {
   Skeleton,
   Textarea,
 } from '@components/ui';
-import { footerBar, sectionPad, tile } from '@components/ui/styles';
+import { footerBar, sectionPad } from '@components/ui/styles';
 import { cx } from '@lib/cx';
 import { DESKTOP_QUERY, useMediaQuery } from '@hooks/useMediaQuery';
 import { FREE_TEXT_MAX } from '@lib/validation/text';
@@ -196,26 +198,20 @@ export function BookingForm({
               </div>
             </SectionCard>
           ) : (
-            <div className="border-border bg-surface motion-safe:animate-sheet fixed inset-x-0 bottom-0 z-30 flex flex-wrap items-center gap-x-3.5 gap-y-5 rounded-t-[26px] border-t px-5 pt-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] shadow-[0_-2px_6px_rgb(16_42_41/0.06),0_-22px_44px_-16px_rgb(16_42_41/0.4)] print:hidden">
-              <span aria-hidden className={cx(tile, 'size-12 rounded-[14px] [&_svg]:size-[22px]')}>
-                <LuCalendar />
-              </span>
-              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <p
-                  className={cx(
-                    'truncate text-[1.09375rem] font-bold tabular-nums',
-                    summary.line ? 'text-text' : 'text-text-muted',
-                  )}
-                >
-                  {summary.line ?? 'Escolha dia e horário'}
-                </p>
-                <p className="text-text-secondary truncate text-[0.84375rem]">{summary.sub}</p>
-              </div>
+            <CtaBar
+              icon={<LuCalendar />}
+              title={summary.line ?? 'Escolha dia e horário'}
+              muted={!summary.line}
+              sub={summary.sub}
+            >
               {submit(
                 shortLabel,
-                'h-[54px] w-full rounded-[15px] text-base font-bold data-[ready=false]:border-transparent data-[ready=false]:bg-surface-strong data-[ready=false]:text-text-secondary data-[ready=false]:opacity-100',
+                cx(
+                  ctaButton,
+                  'data-[ready=false]:border-transparent data-[ready=false]:bg-surface-strong data-[ready=false]:text-text-secondary data-[ready=false]:opacity-100',
+                ),
               )}
-            </div>
+            </CtaBar>
           )}
         </div>
       </form>
