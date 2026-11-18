@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { LuKeyRound, LuPlus } from 'react-icons/lu';
+import { FormShell } from '@components/forms/FormShell';
 import { Button, Input, SettingRow, StatusChip } from '@components/ui';
 import { softTones, tile } from '@components/ui/styles';
 import { cx } from '@lib/cx';
@@ -7,7 +8,6 @@ import { formatDateTime, formatRelative } from '@lib/date';
 import { queryKeys } from '@lib/query-keys';
 import { ApiKeyDialog } from './ApiKeyDialog';
 import { integrationMessages } from './catalog-messages';
-import { FormShell } from './FormShell';
 import { ItemList } from './ItemList';
 import { PagedList } from './PagedList';
 import { integrationsApi, type IntegrationClient } from './settings-api';
