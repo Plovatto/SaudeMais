@@ -1,11 +1,12 @@
 import { hasStarted } from '@components/bookings/booking-display';
 import { RESULTS_WINDOW_DAYS } from '@constants/patient-results';
 import type { DoctorAppointment } from '@lib/api/models';
+import { DAY_MS } from '@lib/date';
 import { DECISIONS } from './decisions';
 
 const REVIEWABLE: ReadonlySet<DoctorAppointment['status']> = new Set(['confirmed', 'completed']);
 
-const WINDOW_MS = RESULTS_WINDOW_DAYS * 86_400_000;
+const WINDOW_MS = RESULTS_WINDOW_DAYS * DAY_MS;
 
 const canReviewResults = ({ visitType, status, startsAt }: DoctorAppointment, now = Date.now()) =>
   visitType === 'exam_review' &&

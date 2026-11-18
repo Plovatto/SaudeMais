@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '@lib/api/api-fetch';
+import { MINUTE_MS } from '@lib/date';
 import { queryKeys } from '@lib/query-keys';
 
-const CATALOG_STALE_TIME = 10 * 60_000;
+const CATALOG_STALE_TIME = 10 * MINUTE_MS;
 
 const onlyActive = <T extends { isActive: boolean }>(items: T[]) => items.filter((item) => item.isActive);
 
