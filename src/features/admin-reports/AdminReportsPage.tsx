@@ -29,6 +29,10 @@ const EXPORTS: readonly { format: ReportFormat; label: string; icon: ReactNode; 
   { format: 'pdf', label: 'PDF', icon: <LuFileText />, primary: true },
 ];
 
+const TILE_GRID = 'grid grid-cols-2 gap-3 min-[1281px]:grid-cols-5 sm:grid-cols-3 lg:gap-4';
+
+const LAST_TILE = 'max-sm:col-span-2';
+
 function SummaryTiles({ report }: { report: AdminReport }) {
   const outcomes = reportOutcomes(report);
   const attendance = attendanceRate(outcomes);
@@ -40,14 +44,14 @@ function SummaryTiles({ report }: { report: AdminReport }) {
     { label: 'Comparecimento', value: attendance === null ? '—' : formatPercent(attendance) },
   ];
   return (
-    <div className="grid grid-cols-2 gap-3 min-[1281px]:grid-cols-5 sm:grid-cols-3 lg:gap-4">
+    <div className={TILE_GRID}>
       {tiles.map(({ label, value }, index) => (
         <StatTile
           key={label}
           compact
           label={label}
           value={value}
-          className={cx(stagger(index), index === tiles.length - 1 && 'max-sm:col-span-2')}
+          className={cx(stagger(index), index === tiles.length - 1 && LAST_TILE)}
         />
       ))}
     </div>
@@ -57,9 +61,9 @@ function SummaryTiles({ report }: { report: AdminReport }) {
 function ReportSkeleton() {
   return (
     <div aria-busy="true" className="flex flex-col gap-4 lg:gap-5">
-      <div className="grid grid-cols-2 gap-3 min-[1281px]:grid-cols-5 sm:grid-cols-3 lg:gap-4">
+      <div className={TILE_GRID}>
         {[0, 1, 2, 3, 4].map((index) => (
-          <Skeleton key={index} className={cx('h-[88px]', index === 4 && 'max-sm:col-span-2')} />
+          <Skeleton key={index} className={cx('h-[88px]', index === 4 && LAST_TILE)} />
         ))}
       </div>
       <Skeleton className="h-72" />
@@ -121,8 +125,7 @@ export function AdminReportsPage() {
             <QueryError error={error} onRetry={() => void query.refetch()} />
           </Card>
         )}
-        {empty && <NoBookings />}
-        {data && !empty && (
+        {data && (
           <div
             aria-busy={query.isPlaceholderData}
             className={cx(
@@ -130,8 +133,14 @@ export function AdminReportsPage() {
               query.isPlaceholderData && 'opacity-60',
             )}
           >
-            <SummaryTiles report={data} />
-            <ReportTables report={data} />
+            {empty ? (
+              <NoBookings />
+            ) : (
+              <>
+                <SummaryTiles report={data} />
+                <ReportTables report={data} />
+              </>
+            )}
           </div>
         )}
       </div>
