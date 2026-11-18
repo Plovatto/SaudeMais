@@ -7,7 +7,7 @@ import { errorMessage, type MessageOverrides } from '@lib/messages/errors.pt-BR'
 export interface ConfirmedActionOptions<P> {
   keyOf: (payload: P) => string;
   run: (payload: P) => Promise<unknown>;
-  invalidate: QueryKey;
+  invalidate: readonly QueryKey[];
   success: (payload: P) => string;
   confirm: (payload: P | null) => { title: string; description: string; confirmLabel: string };
   messages: MessageOverrides;
@@ -24,16 +24,17 @@ export function useConfirmedAction<P>({
   const queryClient = useQueryClient();
   const { show } = useToast();
   const [pending, setPending] = useState<P | null>(null);
+  const refresh = () =>
+    Promise.all(invalidate.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
   const mutation = useMutation({
     mutationFn: run,
     onSuccess: async (_result, payload) => {
-      await queryClient.invalidateQueries({ queryKey: invalidate });
+      await refresh();
       show({ message: success(payload), tone: 'success' });
     },
     onError: (error) => {
       show({ message: errorMessage(error, messages), tone: 'danger' });
-      if (error instanceof ApiError && error.code === 'NOT_FOUND')
-        void queryClient.invalidateQueries({ queryKey: invalidate });
+      if (error instanceof ApiError && error.code === 'NOT_FOUND') void refresh();
     },
     onSettled: () => setPending(null),
   });

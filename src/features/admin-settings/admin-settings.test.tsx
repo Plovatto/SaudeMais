@@ -506,7 +506,7 @@ describe('admin settings', () => {
     expect(within(create).getByRole('button', { name: 'Salvar' })).toBeDisabled();
   });
 
-  it('refreshes the active catalog used by booking after saving an item', async () => {
+  it('refreshes only the matching active catalog used by booking after saving an item', async () => {
     serve({
       '/api/admin/specialties': (method) =>
         method === 'POST' ? { status: 201, body: specialty(1) } : { status: 200, body: page([]) },
@@ -524,7 +524,35 @@ describe('admin settings', () => {
     await waitFor(() =>
       expect(queryClient.getQueryState(['catalog', 'active-specialties'])?.isInvalidated).toBe(true),
     );
-    expect(queryClient.getQueryState(['catalog', 'active-units', 'e1'])?.isInvalidated).toBe(true);
-    expect(queryClient.getQueryState(['catalog', 'active-exam-types'])?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(['catalog', 'active-units', 'e1'])?.isInvalidated).toBe(false);
+    expect(queryClient.getQueryState(['catalog', 'active-exam-types'])?.isInvalidated).toBe(false);
+  });
+
+  it('refreshes the units offering an exam after saving an offer', async () => {
+    serve({
+      '/api/admin/units': () => ({ status: 200, body: page([unit()]) }),
+      '/api/admin/exam-types': () => ({ status: 200, body: page([examType('e1', 'Raio-X')]) }),
+      '/api/admin/units/u1/exam-offers': () => ({
+        status: 200,
+        body: [{ examTypeId: 'e1', examTypeName: 'Raio-X', capacityPerSlot: 2, isActive: true }],
+      }),
+      '/api/admin/units/u1/exam-offers/e1': () => ({
+        status: 200,
+        body: { examTypeId: 'e1', examTypeName: 'Raio-X', capacityPerSlot: 3, isActive: true },
+      }),
+    });
+    const { user, queryClient } = renderApp('/admin/configuracoes/ofertas?unidade=u1');
+    queryClient.setQueryData(['catalog', 'active-units', 'e1'], []);
+    queryClient.setQueryData(['catalog', 'active-specialties'], []);
+
+    expect(await screen.findByText('2 ao mesmo tempo')).toBeInTheDocument();
+    await user.click(row('Raio-X', 'ofertas'));
+    const edit = await findForm('Oferta');
+    await user.click(within(edit).getByRole('button', { name: 'Salvar' }));
+
+    await waitFor(() =>
+      expect(queryClient.getQueryState(['catalog', 'active-units', 'e1'])?.isInvalidated).toBe(true),
+    );
+    expect(queryClient.getQueryState(['catalog', 'active-specialties'])?.isInvalidated).toBe(false);
   });
 });

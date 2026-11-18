@@ -43,7 +43,7 @@ function UnitForm({ unit, onDone }: { unit: Unit | null; onDone: () => void }) {
     defaultValues: valuesOf(unit),
     fields: ['name', 'address', 'phone'],
     save: (values) => unitsApi.save(unit?.id ?? null, toBody(values)),
-    invalidate: queryKeys.catalog.all,
+    invalidate: [queryKeys.catalog.units, queryKeys.catalog.activeUnits],
     success: unit ? 'Unidade atualizada.' : 'Unidade criada.',
     onDone,
   });
