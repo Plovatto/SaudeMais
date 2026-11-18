@@ -90,9 +90,9 @@ export function toBody(
   loaded: DoctorSchedule,
 ): ScheduleBody {
   const body = { days: days.map((entry, weekday) => ({ weekday, ...entry })) };
-  if (appointmentDurationMin === loaded.specialtyDurationMin)
-    return loaded.isSpecialtyDefault ? body : { ...body, appointmentDurationMin: null };
   if (appointmentDurationMin === loaded.appointmentDurationMin) return body;
+  if (appointmentDurationMin === loaded.specialtyDurationMin)
+    return { ...body, appointmentDurationMin: null };
   const duration = durationOf(appointmentDurationMin);
   return duration === undefined ? body : { ...body, appointmentDurationMin: duration };
 }

@@ -74,10 +74,7 @@ describe('schedule body', () => {
     });
   });
 
-  it('sends null to return to the specialty default when the own duration has the same value', () => {
-    expect(toBody(values(30), { ...loaded, isSpecialtyDefault: false })).toEqual({
-      days: [],
-      appointmentDurationMin: null,
-    });
+  it('keeps an own duration equal to the specialty one while it is untouched', () => {
+    expect(toBody(values(30), { ...loaded, isSpecialtyDefault: false })).toEqual({ days: [] });
   });
 });
