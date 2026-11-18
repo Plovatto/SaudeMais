@@ -18,7 +18,7 @@ interface ListSource<Result> {
 export function useTabbedList<Tabs extends TabList, Result extends ListPage>(
   tabs: Tabs,
   source: (tab: Tabs[number], page: number) => ListSource<Result>,
-  resetOnTab: readonly string[] = [],
+  resetOnChange: readonly string[] = [],
   tabParamName = TAB_PARAM,
 ) {
   const [page, setPage] = usePageParam();
@@ -39,9 +39,9 @@ export function useTabbedList<Tabs extends TabList, Result extends ListPage>(
 
   return {
     tab,
-    selectTab: (value: string) => setTabParam(value, resetPageAnd(resetOnTab)),
+    selectTab: (value: string) => setTabParam(value, resetPageAnd(resetOnChange)),
     page,
-    setPage,
+    setPage: (next: number) => setPage(next, { reset: resetOnChange }),
     lastPage,
     query,
     lastData: query.data ?? lastData,

@@ -93,9 +93,11 @@ export function PatientBookingsPage() {
     enabled: settled && selectedId !== '' && !listed,
   });
   const extra = !listed && loaded.data?.id === selectedId ? loaded.data : undefined;
+  const resolving = selectedId !== '' && !listed && !extra;
+  const candidates = extra && list.items ? [...list.items, extra] : list.items;
   const { desktop, selected, select, closeSheet } = useListSelection(
     BOOKING_PARAM,
-    extra && list.items ? [...list.items, extra] : list.items,
+    resolving ? undefined : candidates,
   );
 
   useEffect(() => {
