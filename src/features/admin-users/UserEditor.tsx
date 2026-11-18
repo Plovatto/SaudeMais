@@ -67,6 +67,8 @@ function RolesSection({
   const isAdmin = user.roles.includes('admin');
   const profile = user.doctorProfile;
   const frozen = locks.isInactive;
+  const ownAdmin = isAdmin && locks.isSelf;
+  const ownAdminHint = useId();
   return (
     <PanelSection title="Perfis" description="O que esta conta pode fazer no Saúde+.">
       {profile && (
@@ -95,15 +97,16 @@ function RolesSection({
         <Button
           variant="secondary"
           icon={isAdmin ? <LuShieldOff /> : <LuShieldCheck />}
-          disabled={frozen || (isAdmin && locks.isSelf)}
+          disabled={frozen || ownAdmin}
+          aria-describedby={ownAdmin ? ownAdminHint : undefined}
           loading={actions.isBusy(user, 'grantAdmin', 'revokeAdmin')}
           onClick={() => actions.request(isAdmin ? 'revokeAdmin' : 'grantAdmin', user)}
         >
           {isAdmin ? 'Remover admin' : 'Tornar admin'}
         </Button>
       </div>
-      {isAdmin && locks.isSelf && (
-        <p className="text-text-secondary text-sm">
+      {ownAdmin && (
+        <p id={ownAdminHint} className="text-text-secondary text-sm">
           Você não pode remover o perfil de administrador da própria conta.
         </p>
       )}
@@ -138,6 +141,7 @@ function PasswordResetSection({ user, locks }: SectionProps) {
 }
 
 function AccessSection({ user, locks, actions }: SectionProps & { actions: UserActions }) {
+  const selfHint = useId();
   return (
     <PanelSection title="Acesso">
       <SettingRow
@@ -154,13 +158,16 @@ function AccessSection({ user, locks, actions }: SectionProps & { actions: UserA
             labelHidden
             checked={!locks.isInactive}
             disabled={locks.isSelf && !locks.isInactive}
+            ariaDescribedBy={locks.isSelf ? selfHint : undefined}
             busy={actions.isBusy(user, 'deactivate', 'reactivate')}
             onCheckedChange={(active) => actions.request(active ? 'reactivate' : 'deactivate', user)}
           />
         }
       />
       {locks.isSelf && (
-        <p className="text-text-secondary text-sm">Você não pode desativar a própria conta.</p>
+        <p id={selfHint} className="text-text-secondary text-sm">
+          Você não pode desativar a própria conta.
+        </p>
       )}
     </PanelSection>
   );

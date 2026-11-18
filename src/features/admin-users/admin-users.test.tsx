@@ -491,9 +491,14 @@ describe('edit user', () => {
     });
     renderApp(`/admin/usuarios?usuario=${SELF_ID}`);
 
-    expect(await screen.findByRole('switch', { name: 'Acesso ativo' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Remover admin' })).toBeDisabled();
-    expect(screen.getByText('Você não pode desativar a própria conta.')).toBeInTheDocument();
+    const access = await screen.findByRole('switch', { name: 'Acesso ativo' });
+    expect(access).toBeDisabled();
+    expect(access).toHaveAccessibleDescription('Você não pode desativar a própria conta.');
+    const revoke = screen.getByRole('button', { name: 'Remover admin' });
+    expect(revoke).toBeDisabled();
+    expect(revoke).toHaveAccessibleDescription(
+      'Você não pode remover o perfil de administrador da própria conta.',
+    );
   });
 });
 
