@@ -63,7 +63,8 @@ export function AppointmentForm({ onBooked }: { onBooked: (appointment: Appointm
   });
   const [chosen, setChosen] = useState<Doctor | null>(null);
   const doctor =
-    doctors.data?.find((item) => item.id === doctorId) ?? (chosen?.id === doctorId ? chosen : undefined);
+    doctors.data?.items.find((item) => item.id === doctorId) ??
+    (chosen?.id === doctorId ? chosen : undefined);
   const specialty = specialties.data?.find((item) => item.id === specialtyId);
   const catalogError = specialties.error ?? doctors.error;
   const pickDoctor = (next: Doctor) => {
@@ -182,7 +183,8 @@ export function AppointmentForm({ onBooked }: { onBooked: (appointment: Appointm
         name="doctorId"
         render={({ field, fieldState }) => (
           <DoctorPicker
-            doctors={doctors.data}
+            doctors={doctors.data?.items}
+            total={doctors.data?.total}
             value={field.value}
             onPick={pickDoctor}
             search={search}

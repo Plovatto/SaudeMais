@@ -173,6 +173,19 @@ describe('book appointment', { timeout: 20_000 }, () => {
     ).toBeVisible();
   });
 
+  it('shows the total of doctors and how to find the ones beyond the first page', async () => {
+    serveApi(['patient'], {
+      '/api/specialties': () => ({ status: 200, body: specialties }),
+      '/api/doctors': () => ({ status: 200, body: { items: doctors, page: 1, pageSize: 50, total: 120 } }),
+    });
+    await start();
+
+    expect(screen.getByText('120 disponíveis')).toBeVisible();
+    expect(
+      within(doctorList()).getByText('Mostrando 2 de 120. Busque pelo nome para encontrar os demais.'),
+    ).toBeVisible();
+  });
+
   it('searches the doctors by name in the API', async () => {
     const { calls } = serve();
     const { user } = await start();
