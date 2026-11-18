@@ -119,7 +119,7 @@ export const areas: Record<Role, Area> = {
       },
       {
         path: 'disponibilidade',
-        title: 'Gerenciar agenda',
+        title: 'Horários de atendimento',
         parent: '',
         nav: { label: 'Horários de atendimento', short: 'Horários', icon: LuClock },
       },

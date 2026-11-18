@@ -57,7 +57,9 @@ describe('doctor schedule', { timeout: 15_000 }, () => {
     serve();
     renderApp('/medico/disponibilidade');
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Gerenciar agenda' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Horários de atendimento' }),
+    ).toBeInTheDocument();
     expect(await screen.findAllByRole('switch')).toHaveLength(7);
     expect(screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)).toEqual([
       'Domingo',
