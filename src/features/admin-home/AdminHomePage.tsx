@@ -13,8 +13,8 @@ import {
   comparison,
   DEFAULT_PRESET,
   PERIOD_PRESETS,
-  presetPeriod,
   PANEL_PRESETS,
+  panelPeriod,
   type PanelPreset,
 } from '@components/reports/report-periods';
 import { NoBookings } from '@components/reports/NoBookings';
@@ -255,7 +255,7 @@ function PanelCharts({
 export function AdminHomePage() {
   const [presetParam, setPreset] = useSearchParam('periodo', DEFAULT_PRESET);
   const preset = isPanelPreset(presetParam) ? presetParam : DEFAULT_PRESET;
-  const period = presetPeriod(preset);
+  const period = panelPeriod(preset);
   const { period: before, label: versus } = comparison(preset, period);
   const current = useQuery({
     queryKey: queryKeys.adminReport(period),

@@ -5,7 +5,7 @@ import { renderApp, serveApi, type MockResponse } from '@/test/render-app';
 
 const counts = { patients: 1234, doctors: 61, appointmentsToday: 24 };
 
-const CURRENT_FROM = '2026-10-17';
+const CURRENT_FROM = '2026-10-16';
 
 const previousReport = adminReport({ appointments: { ...reportCounts, completed: 10, noShowRate: 0.2 } });
 
@@ -19,7 +19,7 @@ const serve = ({ report, home }: Responders = {}) =>
     '/api/admin/home': () => home?.() ?? { status: 200, body: counts },
     '/api/admin/reports': (_method, _body, url) =>
       report?.(url) ??
-      (url.searchParams.get('from') === CURRENT_FROM || url.searchParams.get('from') === '2026-11-09'
+      (url.searchParams.get('from') === CURRENT_FROM || url.searchParams.get('from') === '2026-11-08'
         ? { status: 200, body: adminReport() }
         : { status: 200, body: previousReport }),
   });
@@ -42,12 +42,12 @@ afterEach(() => {
 });
 
 describe('admin panel', () => {
-  it('shows the last 30 days against the 30 days before', async () => {
+  it('shows the last 30 full days against the 30 days before', async () => {
     const { calls } = serve();
     renderApp('/admin');
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Painel' })).toBeInTheDocument();
-    expect(screen.getByText('Visão geral da clínica · 17/10/2026 a 15/11/2026')).toBeInTheDocument();
+    expect(screen.getByText('Visão geral da clínica · 16/10/2026 a 14/11/2026')).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: '30 dias' })).toBeChecked();
 
     const done = await tile('Realizados');
@@ -61,7 +61,7 @@ describe('admin panel', () => {
     expect(cancelled.getByText('25%')).toBeInTheDocument();
     expect(cancelled.getByText('0 p.p.')).toBeInTheDocument();
     expect(reportQueries(calls)).toEqual(
-      expect.arrayContaining(['2026-10-17|2026-11-15', '2026-09-17|2026-10-16']),
+      expect.arrayContaining(['2026-10-16|2026-11-14', '2026-09-16|2026-10-15']),
     );
   });
 
@@ -75,10 +75,10 @@ describe('admin panel', () => {
     await waitFor(() => expect(router.state.location.search).toBe('?periodo=7'));
     expect(router.state.historyAction).toBe('REPLACE');
     expect(screen.getByRole('radio', { name: '7 dias' })).toBeChecked();
-    expect(screen.getByText('Visão geral da clínica · 09/11/2026 a 15/11/2026')).toBeInTheDocument();
+    expect(screen.getByText('Visão geral da clínica · 08/11/2026 a 14/11/2026')).toBeInTheDocument();
     await waitFor(() =>
       expect(reportQueries(calls)).toEqual(
-        expect.arrayContaining(['2026-11-09|2026-11-15', '2026-11-02|2026-11-08']),
+        expect.arrayContaining(['2026-11-08|2026-11-14', '2026-11-01|2026-11-07']),
       ),
     );
   });
@@ -102,7 +102,7 @@ describe('admin panel', () => {
 
     await waitFor(() =>
       expect(reportQueries(calls)).toEqual(
-        expect.arrayContaining(['2026-11-01|2026-11-15', '2026-10-01|2026-10-15']),
+        expect.arrayContaining(['2026-11-01|2026-11-14', '2026-10-01|2026-10-14']),
       ),
     );
     expect(await (await tile('Comparecimento')).findByText('vs. outubro')).toBeInTheDocument();
@@ -115,10 +115,36 @@ describe('admin panel', () => {
 
     await waitFor(() =>
       expect(reportQueries(calls)).toEqual(
-        expect.arrayContaining(['2026-03-01|2026-03-31', '2026-02-01|2026-02-28']),
+        expect.arrayContaining(['2026-03-01|2026-03-30', '2026-02-01|2026-02-28']),
       ),
     );
     expect(await (await tile('Realizados')).findByText('vs. fevereiro')).toBeInTheDocument();
+  });
+
+  it('shows the whole month before on the first day of a month', async () => {
+    vi.setSystemTime(new Date('2026-11-01T15:00:00.000Z'));
+    const { calls } = serve({ report: () => ({ status: 200, body: adminReport() }) });
+    renderApp('/admin?periodo=mes');
+
+    await waitFor(() =>
+      expect(reportQueries(calls)).toEqual(
+        expect.arrayContaining(['2026-10-01|2026-10-31', '2026-09-01|2026-09-30']),
+      ),
+    );
+    expect(await (await tile('Realizados')).findByText('vs. setembro')).toBeInTheDocument();
+  });
+
+  it('compares the last 12 full months with the 12 months before', async () => {
+    const { calls } = serve({ report: () => ({ status: 200, body: adminReport() }) });
+    renderApp('/admin?periodo=365');
+
+    expect(await screen.findByText('Visão geral da clínica · 01/11/2025 a 31/10/2026')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(reportQueries(calls)).toEqual(
+        expect.arrayContaining(['2025-11-01|2026-10-31', '2024-11-01|2025-10-31']),
+      ),
+    );
+    expect(await (await tile('Realizados')).findByText('vs. ano anterior')).toBeInTheDocument();
   });
 
   it('draws the rate trends without the days that had no bookings', async () => {

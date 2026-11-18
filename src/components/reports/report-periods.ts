@@ -29,6 +29,21 @@ export const PANEL_PRESETS = ['7', '30', 'mes', '365'] as const satisfies readon
 
 export type PanelPreset = (typeof PANEL_PRESETS)[number];
 
+const yearBefore = (date: string) => `${Number(date.slice(0, 4)) - 1}${date.slice(4)}`;
+
+const PANEL_PERIODS: Record<PanelPreset, (yesterday: string) => Period> = {
+  '7': lastDays(7),
+  '30': lastDays(30),
+  mes: (yesterday) => ({ from: monthStart(yesterday), to: yesterday }),
+  '365': (yesterday) => {
+    const start = monthStart(addDays(yesterday, 1));
+    return { from: yearBefore(start), to: addDays(start, -1) };
+  },
+};
+
+export const panelPeriod = (preset: PanelPreset, today = todayInSaoPaulo()): Period =>
+  PANEL_PERIODS[preset](addDays(today, -1));
+
 const TIE_ORDER: readonly PeriodPreset[] = ['mes', 'mes-passado', 'hoje', '7', '30', '365'];
 
 export const isPeriodPreset = (value: string | null): value is PeriodPreset =>
@@ -65,6 +80,12 @@ export function comparison(preset: PanelPreset, period: Period): { period: Perio
     return {
       period: { from: start, to: sameDay < end ? sameDay : end },
       label: `vs. ${formatMonthName(start)}`,
+    };
+  }
+  if (preset === '365') {
+    return {
+      period: { from: yearBefore(period.from), to: addDays(period.from, -1) },
+      label: COMPARISON_LABELS[preset],
     };
   }
   return { period: previousPeriod(period), label: COMPARISON_LABELS[preset] };
