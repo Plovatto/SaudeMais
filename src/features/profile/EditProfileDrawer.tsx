@@ -3,8 +3,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { LuCake, LuLock } from 'react-icons/lu';
 import { FormShell } from '@components/forms/FormShell';
+import { IdentityHeader } from '@components/forms/IdentityHeader';
 import { PersonalDataFields } from '@components/forms/PersonalDataFields';
-import { Avatar, Drawer, Input, useToast } from '@components/ui';
+import { Drawer, Input, useToast } from '@components/ui';
 import { areas, type Role } from '@constants/areas';
 import type { CurrentUser } from '@lib/auth/useSession';
 import { queryKeys } from '@lib/query-keys';
@@ -69,13 +70,7 @@ function EditProfileForm({ user, role, withBirthDate, onClose }: EditProfileForm
       submitLabel="Salvar alterações"
       submitDisabled={!isDirty}
     >
-      <div className="flex items-center gap-3">
-        <Avatar name={user.fullName} seed={user.id} size="lg" />
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <p className="text-text truncate text-sm font-semibold">{user.fullName}</p>
-          <p className="text-text-secondary text-[0.8125rem]">{areas[role].label}</p>
-        </div>
-      </div>
+      <IdentityHeader name={user.fullName} seed={user.id} detail={areas[role].label} />
       <PersonalDataFields
         fullName={register('fullName')}
         phone={register('phone')}
