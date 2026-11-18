@@ -94,7 +94,7 @@ export function PolicySection({ policy: { query, form } }: { policy: PolicySetti
   const alertRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (form.alert) alertRef.current?.scrollIntoView({ block: 'center' });
-  }, [form.alert]);
+  }, [form.alert, form.formState.submitCount]);
   const saved = query.data;
   return (
     <SettingsCard id={POLICY_CARD_ID} title="Agendamento" flush={false}>
@@ -125,6 +125,7 @@ export function PolicySection({ policy: { query, form } }: { policy: PolicySetti
                     label={row.title}
                     labelHidden
                     placeholder={row.title}
+                    disabled={form.formState.isSubmitting}
                     options={optionsOf(row, saved[row.name])}
                   />
                 </div>

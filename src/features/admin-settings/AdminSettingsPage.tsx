@@ -35,6 +35,12 @@ export function AdminSettingsPage() {
     card.focus({ preventScroll: true });
     card.scrollIntoView({ block: 'start' });
     scrollPending.current = true;
+    const keepPosition = () => {
+      scrollPending.current = false;
+    };
+    const events = ['wheel', 'touchmove', 'keydown'] as const;
+    events.forEach((name) => window.addEventListener(name, keepPosition, { once: true, passive: true }));
+    return () => events.forEach((name) => window.removeEventListener(name, keepPosition));
   }, [section]);
 
   useEffect(() => {
