@@ -23,7 +23,7 @@ import { useTabbedList } from '@hooks/useTabbedList';
 import type { DoctorAppointment } from '@lib/api/models';
 import { addDays, civilDateInSaoPaulo, formatLongDay, isCivilDate, middayOf, weekOf } from '@lib/date';
 import { dayPeriodOf } from '@lib/day-periods';
-import { groupConsecutive } from '@lib/group';
+import { groupBy } from '@lib/group';
 import { plural } from '@lib/plural';
 import { queryKeys } from '@lib/query-keys';
 import { AgendaRow, AgendaRows } from './AgendaRows';
@@ -83,7 +83,8 @@ export function DoctorAgendaPage() {
   const detailId = useId();
   const results = useRef<HTMLParagraphElement>(null);
   const dayList = useRef<HTMLElement>(null);
-  const lastSearch = useRef<string | null>(null);
+  const written = useRef<string | null>(null);
+  const settled = useRef<string | null>(null);
   const [view, setView] = useSearchParam('aba', AGENDA_VIEWS.week);
   const [dayParam, setDay] = useSearchParam(DAY_PARAM, today);
   const day = isCivilDate(dayParam) ? dayParam : today;
@@ -99,8 +100,7 @@ export function DoctorAgendaPage() {
     ...agendaRangeQuery(days[0] ?? day, days[6] ?? day),
     enabled: current === AGENDA_VIEWS.week,
   });
-  const byDay =
-    week.data && new Map(groupConsecutive(week.data, civilDay).map(({ key, items }) => [key, items]));
+  const byDay = week.data && groupBy(week.data, civilDay);
   const dayItems = byDay && (byDay.get(day) ?? []);
 
   const list = useTabbedList(
@@ -124,17 +124,23 @@ export function DoctorAgendaPage() {
   const allCount = counts ? counts.pending + counts.confirmed + counts.history : undefined;
 
   useEffect(() => {
-    if (lastSearch.current !== null && searchParam !== lastSearch.current) {
-      lastSearch.current = searchParam;
+    if (written.current === null) written.current = searchParam;
+    else if (searchParam !== written.current) {
+      written.current = searchParam;
       setSearch(searchParam);
+    }
+  }, [searchParam]);
+
+  useEffect(() => {
+    if (settled.current === null || debounced === settled.current) {
+      settled.current = debounced;
       return;
     }
-    lastSearch.current = searchParam;
-    if (debounced !== searchParam) {
-      lastSearch.current = debounced;
-      setSearchParam(debounced, resetPageAnd(RESET_SELECTION));
-    }
-  }, [debounced, searchParam, setSearchParam]);
+    settled.current = debounced;
+    if (debounced === written.current) return;
+    written.current = debounced;
+    setSearchParam(debounced, resetPageAnd(RESET_SELECTION));
+  }, [debounced, setSearchParam]);
 
   const visible = current === AGENDA_VIEWS.week ? dayItems : list.items;
   const chosen = visible?.find((appointment) => appointment.id === selectedId);
@@ -287,8 +293,8 @@ export function DoctorAgendaPage() {
               ) : (
                 <EmptyState
                   icon={<LuCalendarX />}
-                  title="Nenhuma consulta"
-                  description="Escolha outra consulta."
+                  title="Nenhuma consulta selecionada"
+                  description="Os detalhes aparecem aqui quando houver uma consulta."
                 />
               )}
             </aside>

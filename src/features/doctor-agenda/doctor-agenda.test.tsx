@@ -179,10 +179,18 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     await act(() => router.navigate(CONFIRMED_URL));
 
     await waitFor(() => expect(search).toHaveValue(''));
-    await waitFor(() => expect(listCalls(calls).at(-1)?.url.searchParams.get('tab')).toBe('confirmed'));
-    expect(listCalls(calls).at(-1)?.url.searchParams.has('search')).toBe(false);
+    const before = listCalls(calls).length;
+    const visited: string[] = [];
+    const stop = router.subscribe(({ location }) => visited.push(location.search));
+    fireEvent.click(screen.getByRole('tab', { name: /^A confirmar/ }));
     await new Promise((resolve) => setTimeout(resolve, SEARCH_DELAY_MS * 2));
-    expect(router.state.location.search).toBe('?aba=consultas&situacao=confirmadas');
+    expect(router.state.location.search).toBe('?aba=consultas&situacao=a-confirmar');
+    expect(search).toHaveValue('');
+    const after = listCalls(calls).slice(before);
+    expect(after.at(-1)?.url.searchParams.get('tab')).toBe('pending');
+    expect(after.filter((call) => call.url.searchParams.has('search'))).toEqual([]);
+    stop();
+    expect(visited.filter((search) => search.includes('busca'))).toEqual([]);
   });
 
   it('groups the list by São Paulo day', async () => {
