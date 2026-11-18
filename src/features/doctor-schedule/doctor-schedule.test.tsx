@@ -77,11 +77,11 @@ const serve = ({
     ...extra,
   });
 
-const day = async (name: string) =>
+const sectionOf = async (name: string) =>
   within((await screen.findByRole('heading', { level: 2, name })).closest('section') as HTMLElement);
 
 const expand = async (user: ReturnType<typeof renderApp>['user'], name: string) => {
-  const card = await day(name);
+  const card = await sectionOf(name);
   await user.click(card.getByRole('button', { name: `Ver horários de ${name.toLowerCase()}` }));
   return card;
 };
@@ -92,12 +92,7 @@ const savedBody = (calls: ReturnType<typeof serve>['calls']) =>
   calls.find((call) => call.method === 'PUT')?.body as
     (Partial<Schedule> & Pick<Schedule, 'days'>) | undefined;
 
-const timeOffCard = async () =>
-  within(
-    (await screen.findByRole('heading', { level: 2, name: 'Folgas e bloqueios' })).closest(
-      'section',
-    ) as HTMLElement,
-  );
+const timeOffCard = () => sectionOf('Folgas e bloqueios');
 
 describe('doctor schedule', { timeout: 15_000 }, () => {
   it('lists the days from monday to sunday with their periods and status', async () => {
@@ -124,16 +119,16 @@ describe('doctor schedule', { timeout: 15_000 }, () => {
       'Sábado',
       'Domingo',
     ]);
-    const monday = await day('Segunda-feira');
+    const monday = await sectionOf('Segunda-feira');
     expect(monday.getByRole('switch', { name: 'Atender às segundas-feiras' })).toHaveAttribute(
       'aria-checked',
       'true',
     );
     expect(monday.getByText('Ativo')).toBeInTheDocument();
     expect(monday.getByText(/08:00–12:00/).closest('p')).toHaveTextContent('08:00–12:00 · 4 h');
-    const tuesday = await day('Terça-feira');
+    const tuesday = await sectionOf('Terça-feira');
     expect(tuesday.getByText(/08:00–12:00/).closest('p')).toHaveTextContent('08:00–12:00, 13:00–17:00 · 8 h');
-    const saturday = await day('Sábado');
+    const saturday = await sectionOf('Sábado');
     expect(saturday.getByRole('switch', { name: 'Atender aos sábados' })).toHaveAttribute(
       'aria-checked',
       'false',
@@ -152,7 +147,7 @@ describe('doctor schedule', { timeout: 15_000 }, () => {
   it('keeps the days collapsed until the doctor opens one', async () => {
     serve();
     const { user } = renderApp(PAGE);
-    const monday = await day('Segunda-feira');
+    const monday = await sectionOf('Segunda-feira');
     const toggle = monday.getByRole('button', { name: 'Ver horários de segunda-feira' });
 
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
@@ -174,7 +169,7 @@ describe('doctor schedule', { timeout: 15_000 }, () => {
   it('turns a day on with a first period and saves it from the phone bar', async () => {
     const { calls } = serve({ save: savedEcho() });
     const { user } = renderApp(PAGE);
-    const wednesday = await day('Quarta-feira');
+    const wednesday = await sectionOf('Quarta-feira');
 
     await user.click(wednesday.getByRole('switch', { name: 'Atender às quartas-feiras' }));
 
@@ -316,9 +311,9 @@ describe('doctor schedule', { timeout: 15_000 }, () => {
       loaded: withDays({ 4: { isActive: false, ranges: hourly(8, 2) } }),
     });
     const { user } = renderApp(PAGE);
-    const thursday = await day('Quinta-feira');
+    const thursday = await sectionOf('Quinta-feira');
     expect(thursday.queryByRole('button', { name: /horários de quinta-feira/ })).not.toBeInTheDocument();
-    await user.click((await day('Sábado')).getByRole('switch', { name: 'Atender aos sábados' }));
+    await user.click((await sectionOf('Sábado')).getByRole('switch', { name: 'Atender aos sábados' }));
 
     await user.click(saveButton());
 
@@ -353,9 +348,9 @@ describe('doctor schedule', { timeout: 15_000 }, () => {
       }),
     });
     const { user } = renderApp(PAGE);
-    const tuesday = await day('Terça-feira');
+    const tuesday = await sectionOf('Terça-feira');
     expect(tuesday.getByText(/08:00–12:00/).closest('p')).toHaveTextContent('08:00–12:00, 13:00–17:00 · 8 h');
-    await user.click((await day('Sábado')).getByRole('switch', { name: 'Atender aos sábados' }));
+    await user.click((await sectionOf('Sábado')).getByRole('switch', { name: 'Atender aos sábados' }));
 
     await user.click(saveButton());
 
@@ -425,9 +420,7 @@ describe('doctor schedule', { timeout: 15_000 }, () => {
   it('changes the appointment duration, the weekly count and the saved body', async () => {
     const { calls } = serve({ save: savedEcho() });
     const { user } = renderApp(PAGE);
-    const consultas = within(
-      (await screen.findByRole('heading', { level: 2, name: 'Consultas' })).closest('section') as HTMLElement,
-    );
+    const consultas = await sectionOf('Consultas');
     expect(consultas.getByText('24 horários')).toBeInTheDocument();
 
     await user.click(consultas.getByRole('button', { name: /^Duração de cada consulta/ }));
