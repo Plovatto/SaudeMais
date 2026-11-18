@@ -1,6 +1,7 @@
 import { queryOptions } from '@tanstack/react-query';
 import { apiFetch, type ResponseOf } from '@lib/api/api-fetch';
 import type { DoctorAppointment, HealthMetricsInput } from '@lib/api/models';
+import { MINUTE_MS } from '@lib/date';
 import { queryKeys } from '@lib/query-keys';
 
 const PAGE_SIZE = 10;
@@ -29,6 +30,7 @@ const decide =
 export const doctorHomeQuery = queryOptions({
   queryKey: queryKeys.doctor.home,
   queryFn: ({ signal }) => apiFetch('get', '/api/doctor/home', { signal }),
+  refetchInterval: MINUTE_MS,
 });
 
 export const doctorApi = {
@@ -52,6 +54,7 @@ export const nextAppointmentQuery = (today: string) => {
     queryKey: queryKeys.doctor.appointments(params),
     queryFn: ({ signal }) => doctorApi.list(params, signal),
     select: ({ items }) => items[0] ?? null,
+    refetchInterval: MINUTE_MS,
   });
 };
 
@@ -72,6 +75,7 @@ const listDay = async (day: string, signal: AbortSignal) => {
 
 export const dayAgendaQuery = (day: string) =>
   queryOptions({
-    queryKey: queryKeys.doctor.appointments({ day }),
+    queryKey: queryKeys.doctor.day(day),
+    refetchInterval: MINUTE_MS,
     queryFn: ({ signal }) => listDay(day, signal),
   });
