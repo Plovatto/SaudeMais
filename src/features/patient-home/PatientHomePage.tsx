@@ -57,10 +57,11 @@ export function PatientHomePage() {
   const shownNext = upcoming.find((booking) => booking.status === 'confirmed');
   const shownPending = upcoming.filter((booking) => booking.status === 'pending').length;
   const confirmed = useQuery({ ...nextConfirmedQuery, enabled: partial && !shownNext });
-  const pending = useQuery({ ...pendingBookingsQuery, enabled: partial });
   const next = shownNext ?? confirmed.data?.items[0];
+  const pending = useQuery({ ...pendingBookingsQuery, enabled: partial && confirmed.isSuccess && !next });
   const later = upcoming.filter((booking) => booking.id !== next?.id);
-  const pendingCount = partial ? (pending.data?.total ?? shownPending) : shownPending;
+  const pendingCount = partial ? (pending.data?.total ?? 0) : shownPending;
+  const nextQuery = [confirmed, pending].find((extra) => extra.isLoading || extra.isError) ?? query;
   const notification = query.data?.lastNotification;
 
   return (
@@ -73,7 +74,7 @@ export function PatientHomePage() {
             <div className={stagger(0)}>
               <NextCard
                 label="Próximo compromisso"
-                query={confirmed.isLoading ? confirmed : query}
+                query={nextQuery}
                 next={next && nextItem(next)}
                 empty={{
                   title: 'Nenhum compromisso confirmado',

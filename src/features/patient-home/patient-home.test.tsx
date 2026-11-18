@@ -257,6 +257,32 @@ describe('patient home', { timeout: 15_000 }, () => {
     expect(region.getByText('Nenhum compromisso confirmado')).toBeVisible();
   });
 
+  it('shows the error of the pending total with a retry instead of a wrong count', async () => {
+    const pending = [1, 2, 3].map((index) => booking(`p${index}`, { status: 'pending' }));
+    let fail = true;
+    serveApi(['patient'], {
+      '/api/patient/home': () => ({
+        status: 200,
+        body: { ...homeBody({ upcoming: pending }), counts: { upcoming: 5, past: 0 } },
+      }),
+      '/api/patient/exam-results': () => ({ status: 200, body: resultsBody() }),
+      '/api/patient/bookings': (_method, _body, url) => {
+        if (url.searchParams.get('status') === 'confirmed')
+          return { status: 200, body: { items: [], page: 1, pageSize: 1, total: 0 } };
+        if (fail) return { status: 500, body: { message: 'Falhou.', code: 'INTERNAL' } };
+        return { status: 200, body: { items: [pending[0]], page: 1, pageSize: 1, total: 5 } };
+      },
+    });
+    const { user } = renderApp('/paciente');
+
+    const retry = await screen.findByRole('button', { name: 'Tentar de novo' }, { timeout: 8000 });
+    expect(screen.queryByText(/pedidos aguardam/)).not.toBeInTheDocument();
+    fail = false;
+    await user.click(retry);
+
+    expect(await screen.findByText('5 pedidos aguardam a confirmação do médico.')).toBeVisible();
+  });
+
   it('lists what comes after the next booking with a link to everything', async () => {
     serveHome({
       upcoming: [
