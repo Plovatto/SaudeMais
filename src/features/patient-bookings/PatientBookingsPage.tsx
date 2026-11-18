@@ -209,13 +209,13 @@ export function PatientBookingsPage() {
         paneKey={selected?.id}
         onClose={closeSheet}
       >
-        {(onClose) =>
+        {({ sheet, onClose }) =>
           selected && (
             <BookingDetail
               booking={selected}
               titleId={detailId}
               onCancel={setCancelling}
-              {...(onClose && { onClose, tips: true })}
+              {...(sheet && { onClose, tips: true })}
             />
           )
         }

@@ -261,15 +261,15 @@ export function DoctorAgendaPage() {
         label="Detalhes da consulta"
         open={selected !== undefined}
         paneKey={selected?.id}
-        showPane={visible !== undefined}
+        desktopVisible={visible !== undefined}
         onClose={closeSheet}
       >
-        {(onClose) =>
+        {({ sheet, onClose }) =>
           selected ? (
             <AppointmentDetail
               appointment={selected}
               titleId={detailId}
-              {...(onClose && { onClose })}
+              {...(sheet && { onClose })}
               {...detailState}
             />
           ) : (
