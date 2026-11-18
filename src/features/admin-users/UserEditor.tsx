@@ -9,7 +9,7 @@ import { PersonalDataFields } from '@components/forms/PersonalDataFields';
 import { Button, FormAlert, Input, SettingRow, Switch, useToast } from '@components/ui';
 import { formatCivilDate } from '@lib/date';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
-import { useFormSubmit } from '@lib/useFormSubmit';
+import { useFormSubmit } from '@hooks/useFormSubmit';
 import {
   personalDataBody,
   personalDataSchema,

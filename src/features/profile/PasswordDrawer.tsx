@@ -8,7 +8,7 @@ import { FormShell } from '@components/forms/FormShell';
 import { Drawer, PasswordInput, useToast } from '@components/ui';
 import { useReportSubmitting } from '@hooks/useReportSubmitting';
 import { queryKeys } from '@lib/query-keys';
-import { useFormSubmit } from '@lib/useFormSubmit';
+import { useFormSubmit } from '@hooks/useFormSubmit';
 import { changePassword } from './profile-api';
 import { passwordSchema, type PasswordValues } from './profile-schemas';
 

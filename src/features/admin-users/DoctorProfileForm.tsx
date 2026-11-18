@@ -4,7 +4,7 @@ import { useForm, useWatch } from 'react-hook-form';
 import { LuTrash2, LuUser } from 'react-icons/lu';
 import { FormShell } from '@components/forms/FormShell';
 import { Button, Input, useToast } from '@components/ui';
-import { useFormSubmit } from '@lib/useFormSubmit';
+import { useFormSubmit } from '@hooks/useFormSubmit';
 import { DoctorProfileFields } from './DoctorProfileFields';
 import { useDoctorCatalog } from './useDoctorCatalog';
 import { useReportSubmitting } from '@hooks/useReportSubmitting';

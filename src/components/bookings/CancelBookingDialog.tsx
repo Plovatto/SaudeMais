@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { Button, Dialog, FormAlert, Textarea, useToast } from '@components/ui';
 import { footerBar } from '@components/ui/styles';
 import { cx } from '@lib/cx';
-import { useFormSubmit } from '@lib/useFormSubmit';
+import { useFormSubmit } from '@hooks/useFormSubmit';
 import { FREE_TEXT_MAX, freeText } from '@lib/validation/text';
 import { isStale, staleMessages } from './stale-appointment';
 

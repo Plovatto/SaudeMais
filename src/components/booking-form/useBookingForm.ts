@@ -16,7 +16,7 @@ import {
   type MessageOverrides,
 } from '@lib/messages/errors.pt-BR';
 import { refreshPatientBookings } from '@lib/refresh-patient-bookings';
-import { useFormSubmit } from '@lib/useFormSubmit';
+import { useFormSubmit } from '@hooks/useFormSubmit';
 import {
   firstWindowPage,
   horizonEnd,

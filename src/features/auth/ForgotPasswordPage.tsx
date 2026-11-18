@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button, FormAlert } from '@components/ui';
-import { useFormSubmit } from '@lib/useFormSubmit';
+import { useFormSubmit } from '@hooks/useFormSubmit';
 import { requestPasswordReset } from './auth-api';
 import { forgotPasswordSchema, type ForgotPasswordValues } from './auth-schemas';
 import { AuthFooterLink } from './AuthFooterLink';

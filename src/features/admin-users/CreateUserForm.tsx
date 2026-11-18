@@ -6,7 +6,7 @@ import { FormShell } from '@components/forms/FormShell';
 import { PersonalDataFields } from '@components/forms/PersonalDataFields';
 import { Dropdown, Input, useToast } from '@components/ui';
 import type { Role } from '@constants/areas';
-import { useFormSubmit } from '@lib/useFormSubmit';
+import { useFormSubmit } from '@hooks/useFormSubmit';
 import { DoctorProfileFields } from './DoctorProfileFields';
 import { useDoctorCatalog } from './useDoctorCatalog';
 import { useReportSubmitting } from '@hooks/useReportSubmitting';

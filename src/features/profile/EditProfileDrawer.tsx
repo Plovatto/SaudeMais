@@ -11,7 +11,7 @@ import { areas, type Role } from '@constants/areas';
 import { useReportSubmitting } from '@hooks/useReportSubmitting';
 import type { CurrentUser } from '@lib/auth/useSession';
 import { queryKeys } from '@lib/query-keys';
-import { useFormSubmit } from '@lib/useFormSubmit';
+import { useFormSubmit } from '@hooks/useFormSubmit';
 import { updateProfile } from './profile-api';
 import {
   birthDateLimits,

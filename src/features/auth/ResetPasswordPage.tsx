@@ -6,7 +6,7 @@ import { NewPasswordFields } from '@components/forms/NewPasswordFields';
 import { Button, FormAlert, TextLink, useToast } from '@components/ui';
 import { ApiError } from '@lib/api/api-error';
 import { endSession, sessionToken } from '@lib/auth/session';
-import { useFormSubmit } from '@lib/useFormSubmit';
+import { useFormSubmit } from '@hooks/useFormSubmit';
 import { confirmPasswordReset } from './auth-api';
 import { resetPasswordSchema, type ResetPasswordValues } from './auth-schemas';
 import { AuthScreen } from './AuthScreen';

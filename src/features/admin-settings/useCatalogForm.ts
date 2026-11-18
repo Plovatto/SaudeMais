@@ -4,7 +4,7 @@ import { useForm, type DefaultValues, type FieldValues, type Path, type Resolver
 import type { z } from 'zod';
 import { useToast } from '@components/ui';
 import type { MessageOverrides } from '@lib/messages/errors.pt-BR';
-import { useFormSubmit } from '@lib/useFormSubmit';
+import { useFormSubmit } from '@hooks/useFormSubmit';
 import { catalogMessages } from './catalog-messages';
 
 export interface CatalogFormOptions<T extends FieldValues> {

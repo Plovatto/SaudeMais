@@ -19,7 +19,7 @@ import { DESKTOP_QUERY, useMediaQuery } from '@hooks/useMediaQuery';
 import { cx } from '@lib/cx';
 import { plural } from '@lib/plural';
 import { queryKeys } from '@lib/query-keys';
-import { useFormSubmit } from '@lib/useFormSubmit';
+import { useFormSubmit } from '@hooks/useFormSubmit';
 import { DayCard } from './DayCard';
 import { DurationCard } from './DurationCard';
 import { applyRangeErrors, rangeErrorPaths, weekdayOf, type RangePath } from './range-errors';
