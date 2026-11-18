@@ -35,7 +35,6 @@ export { SheetMore } from './SheetMore';
 export { Skeleton } from './Skeleton';
 export { Spinner } from './Spinner';
 export { StackedColumns, type ChartRow, type ChartSeries, type StackedColumnsProps } from './StackedColumns';
-export { StatGrid } from './StatGrid';
 export { stagger } from './stagger';
 export { DeltaBadge, StatTile, type StatDelta, type StatTileProps } from './StatTile';
 export { StatusChip, type StatusChipProps } from './StatusChip';
