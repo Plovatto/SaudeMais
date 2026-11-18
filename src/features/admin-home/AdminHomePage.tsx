@@ -56,8 +56,6 @@ const SERIES: readonly ChartSeries<Group>[] = [
   { key: 'noShow', label: 'Faltas', swatch: 'bg-chart-4' },
 ];
 
-const rate = (value: number | null) => (value === null ? '—' : formatPercent(value));
-
 const present = (values: readonly (number | null)[]) =>
   values.filter((value): value is number => value !== null);
 
@@ -83,7 +81,7 @@ function TodayTile() {
     <StatTile
       label="Consultas hoje"
       icon={<LuCalendarDays />}
-      value={isError ? '—' : data && formatCount(data.appointmentsToday)}
+      value={isError ? '—' : data?.appointmentsToday}
       foot={
         isError
           ? 'Não foi possível carregar.'
@@ -115,7 +113,7 @@ function PanelStats({ outcomes, previous, report, versus }: StatsProps) {
       <StatTile
         label="Realizados"
         icon={<LuCheck />}
-        value={outcomes && formatCount(outcomes.completed)}
+        value={outcomes?.completed}
         delta={done}
         foot={done && versus}
         trend={points.map((point) => point.completed)}
@@ -124,7 +122,8 @@ function PanelStats({ outcomes, previous, report, versus }: StatsProps) {
       <StatTile
         label="Comparecimento"
         icon={<LuUsers />}
-        value={outcomes && rate(attendanceRate(outcomes))}
+        value={outcomes && (attendanceRate(outcomes) ?? '—')}
+        format={formatPercent}
         delta={attendance}
         foot={attendance && versus}
         trend={present(points.map(attendanceRate))}
@@ -133,7 +132,8 @@ function PanelStats({ outcomes, previous, report, versus }: StatsProps) {
       <StatTile
         label="Cancelamentos"
         icon={<LuX />}
-        value={outcomes && rate(cancellationRate(outcomes))}
+        value={outcomes && (cancellationRate(outcomes) ?? '—')}
+        format={formatPercent}
         delta={cancelled}
         foot={cancelled && versus}
         trend={present(points.map(cancellationRate))}
