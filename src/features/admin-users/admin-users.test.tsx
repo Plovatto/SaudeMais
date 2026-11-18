@@ -1,6 +1,9 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { DESKTOP_QUERY } from '@hooks/useMediaQuery';
+import { SHEET_QUERY } from '@hooks/useSheetDrag';
 import { SESSION_STORAGE_KEY } from '@lib/auth/token-store';
+import { stubMatchMedia } from '@/test/match-media';
 import { mockFetch, renderApp, serveApi, TEST_TOKEN, testUser, type ApiRoute } from '@/test/render-app';
 import type { AdminUser } from './users-api';
 
@@ -18,9 +21,10 @@ const person = (id: string, fullName: string, overrides: Partial<AdminUser> = {}
   ...overrides,
 });
 
-const joao = person('joao', 'João Silveira', { roles: ['doctor'] });
+const joao = person('joao', 'João Silveira', { roles: ['patient', 'doctor'] });
 const ana = person('ana', 'Ana Ferreira', { phone: '+5511987654321' });
-const me = person(SELF_ID, 'Ana Maria Silva', { roles: ['admin'] });
+const me = person(SELF_ID, 'Ana Maria Silva', { roles: ['patient', 'admin'] });
+const bia = person('bia', 'Bia Admin', { roles: ['patient', 'admin'] });
 
 const cardiology = { specialtyId: 'cardio', specialtyName: 'Cardiologia', council: 'CRM' };
 const detail = (user: AdminUser, doctorProfile: Record<string, unknown> | null = null) => ({
@@ -40,24 +44,19 @@ const specialties = [
   { id: 'nutri', name: 'Nutrição', council: 'CRN', appointmentDurationMin: 30, isActive: true },
   { id: 'old', name: 'Antiga', council: 'CRM', appointmentDurationMin: 30, isActive: false },
 ];
-const units = [
-  {
-    id: 'central',
-    name: 'Unidade Central',
-    address: 'Rua A, 1',
-    phone: '+551133334444',
-    isActive: true,
-    hours: [],
-  },
-  {
-    id: 'norte',
-    name: 'Unidade Norte',
-    address: 'Rua B, 2',
-    phone: '+551133335555',
-    isActive: true,
-    hours: [],
-  },
-];
+const unit = (id: string, name: string) => ({
+  id,
+  name,
+  address: 'Rua A, 1',
+  phone: '+551133334444',
+  isActive: true,
+  hours: [],
+});
+const units = [unit('central', 'Unidade Central'), unit('norte', 'Unidade Norte')];
+const catalog: Record<string, ApiRoute> = {
+  '/api/specialties': () => ok(specialties),
+  '/api/units': () => ok(units),
+};
 
 const page = (items: unknown[], total = items.length) => ({ items, page: 1, pageSize: 20, total });
 const ok = (body: unknown, status = 200) => ({ status, body });
@@ -72,42 +71,72 @@ const listOf =
   () =>
     ok(page(items, 45));
 
+const desktop = () => stubMatchMedia((query) => query === DESKTOP_QUERY);
+const phone = () => {
+  stubMatchMedia((query) => query === SHEET_QUERY);
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      observe = () => undefined;
+      disconnect = () => undefined;
+    },
+  );
+};
+
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const rowOf = async (name: string) =>
-  (await screen.findByRole('link', { name })).closest('tr') as HTMLElement;
-
-async function openActions(user: ReturnType<typeof renderApp>['user'], name: string) {
-  await user.click(await screen.findByRole('button', { name: `Ações de ${name}` }));
-  return screen.getByRole('menu', { name: `Ações de ${name}` });
-}
+const rowOf = (name: string) => screen.findByRole('button', { name: new RegExp(`^${name}`) });
+const panel = (name: string) => screen.findByRole('dialog', { name });
+const searchOf = (router: ReturnType<typeof renderApp>['router']) =>
+  Object.fromEntries(new URLSearchParams(router.state.location.search));
 
 describe('admin users list', () => {
-  it('lists the accounts with their status and profiles in a table', async () => {
-    serve({ '/api/admin/users': listOf(joao, ana, me) });
+  it('lists the accounts with initials, e-mail, profile and status', async () => {
+    serve({ '/api/admin/users': listOf(joao, ana, me, { ...bia, deactivatedAt: '2026-11-10T12:00:00Z' }) });
     renderApp('/admin/usuarios');
 
-    const table = await screen.findByRole('table', { name: 'Usuários' });
-    expect(within(table).getAllByRole('row')).toHaveLength(4);
+    const list = await screen.findByRole('region', { name: 'Lista de usuários' });
+    expect(within(list).getAllByRole('listitem')).toHaveLength(4);
     expect(screen.getByText('45 usuários encontrados')).toBeInTheDocument();
-    expect(within(await rowOf('João Silveira')).getByText('Médico')).toBeInTheDocument();
-    expect(within(await rowOf('Ana Maria Silva')).getByText('Você')).toBeInTheDocument();
+    const doctor = await rowOf('João Silveira');
+    expect(doctor).toHaveTextContent('JS');
+    expect(doctor).toHaveTextContent('joao@email.com');
+    expect(within(doctor).getByText('Médico')).toBeInTheDocument();
+    expect(within(doctor).queryByText('Paciente')).not.toBeInTheDocument();
+    expect(within(doctor).getByText('Ativo')).toBeInTheDocument();
+    expect(within(await rowOf('Ana Ferreira')).getByText('Paciente')).toBeInTheDocument();
+    expect(
+      within(await rowOf('Ana Maria Silva')).getByText(`Você · ${SELF_ID}@email.com`),
+    ).toBeInTheDocument();
+    const inactive = await rowOf('Bia Admin');
+    expect(within(inactive).getByText('Administrador')).toBeInTheDocument();
+    expect(within(inactive).getByText('Inativo')).toBeInTheDocument();
   });
 
-  it('keeps search, profile, status and page in the URL and in the request', async () => {
+  it('filters by role tab, search, status and page through the URL and the request', async () => {
     const { calls } = serve({ '/api/admin/users': listOf(joao, ana) });
     const { user, router } = renderApp('/admin/usuarios?pagina=2');
     const lastQuery = () =>
       calls.filter((call) => call.url.pathname === '/api/admin/users').at(-1)?.url.searchParams;
 
-    await screen.findByText('João Silveira');
+    await rowOf('João Silveira');
     expect(lastQuery()?.get('page')).toBe('2');
+    expect(screen.getAllByRole('tab', { name: /./ }).map((tab) => tab.textContent)).toEqual([
+      'Todos',
+      'Pacientes',
+      'Médicos',
+      'Administradores',
+    ]);
 
     await user.type(screen.getByRole('searchbox', { name: 'Buscar usuários' }), ' ana ');
     await waitFor(() => expect(lastQuery()?.get('search')).toBe('ana'));
     expect(lastQuery()?.get('page')).toBe('1');
+
+    await user.click(screen.getByRole('tab', { name: 'Administradores' }));
+    await waitFor(() => expect(lastQuery()?.get('role')).toBe('admin'));
+    expect(screen.getByRole('tab', { name: 'Administradores' })).toHaveAttribute('aria-selected', 'true');
 
     await user.click(screen.getByRole('tab', { name: 'Médicos' }));
     await waitFor(() => expect(lastQuery()?.get('role')).toBe('doctor'));
@@ -117,12 +146,16 @@ describe('admin users list', () => {
 
     await user.click(screen.getByRole('button', { name: 'Página 3' }));
     await waitFor(() => expect(lastQuery()?.get('page')).toBe('3'));
-    expect(Object.fromEntries(new URLSearchParams(router.state.location.search))).toEqual({
-      busca: 'ana',
-      perfil: 'medicos',
-      situacao: 'inativos',
-      pagina: '3',
-    });
+    expect(searchOf(router)).toEqual({ busca: 'ana', perfil: 'medicos', situacao: 'inativos', pagina: '3' });
+  });
+
+  it('opens the patients tab from the URL', async () => {
+    const { calls } = serve({ '/api/admin/users': listOf(ana) });
+    renderApp('/admin/usuarios?perfil=pacientes');
+
+    await rowOf('Ana Ferreira');
+    expect(screen.getByRole('tab', { name: 'Pacientes' })).toHaveAttribute('aria-selected', 'true');
+    expect(calls.at(-1)?.url.searchParams.get('role')).toBe('patient');
   });
 
   it('follows the search in the URL when the history changes', async () => {
@@ -173,126 +206,136 @@ describe('admin users list', () => {
     serve({ '/api/admin/users': () => ok(page([])) });
     renderApp('/admin/usuarios?busca=zzz');
 
-    expect(await screen.findByText('Nenhum usuário encontrado')).toBeInTheDocument();
+    expect(await screen.findByText('Ninguém encontrado')).toBeInTheDocument();
+    expect(screen.getByText('Tente outro nome, e-mail ou filtro.')).toBeInTheDocument();
+  });
+});
+
+describe('user panel', () => {
+  it('opens the user in a side panel on desktop and gives the focus back when it closes', async () => {
+    desktop();
+    serve({ '/api/admin/users': listOf(ana), '/api/admin/users/ana': () => ok(detail(ana)) });
+    const { user, router } = renderApp('/admin/usuarios');
+
+    const row = await rowOf('Ana Ferreira');
+    expect(row).toHaveAttribute('aria-haspopup', 'dialog');
+    await user.click(row);
+
+    const dialog = await panel('Editar usuário');
+    expect(searchOf(router)).toEqual({ usuario: 'ana' });
+    expect(await within(dialog).findByRole('textbox', { name: 'Nome completo' })).toHaveValue('Ana Ferreira');
+    expect(within(dialog).queryByRole('separator')).not.toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole('button', { name: 'Fechar' }));
+    await waitFor(() => expect(router.state.location.search).toBe(''));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Editar usuário' })).not.toBeInTheDocument(),
+    );
+    expect(row).toHaveFocus();
   });
 
-  it('confirms a deactivation with the bookings that will be cancelled', async () => {
-    const { calls } = serve({
-      '/api/admin/users': listOf(joao, ana),
-      '/api/admin/users/joao/deactivation-impact': () =>
-        ok({ futureAppointmentsAsPatient: 2, futureAppointmentsAsDoctor: 1 }),
-      '/api/admin/users/joao/deactivate': () =>
-        ok(detail({ ...joao, deactivatedAt: '2026-11-13T12:00:00Z' })),
-    });
+  it('opens the user in a bottom sheet on a phone', async () => {
+    phone();
+    serve({ '/api/admin/users': listOf(ana), '/api/admin/users/ana': () => ok(detail(ana)) });
     const { user } = renderApp('/admin/usuarios');
 
-    await user.click(
-      within(await openActions(user, 'João Silveira')).getByRole('menuitem', { name: 'Desativar' }),
-    );
-    const dialog = await screen.findByRole('dialog', { name: 'Desativar a conta de João Silveira?' });
+    await user.click(await rowOf('Ana Ferreira'));
+
+    const dialog = await panel('Editar usuário');
     expect(
-      await within(dialog).findByText(
-        /Serão cancelados: 2 agendamentos futuros como paciente e 1 consulta futura/,
-      ),
+      within(dialog).getByRole('separator', { name: 'Arraste para ajustar a altura' }),
     ).toBeInTheDocument();
-    await user.click(within(dialog).getByRole('button', { name: 'Desativar' }));
-
-    expect(await screen.findByText('Conta de João Silveira desativada.')).toBeInTheDocument();
-    expect(
-      calls.some((call) => call.method === 'POST' && call.url.pathname.endsWith('/joao/deactivate')),
-    ).toBe(true);
+    await user.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Editar usuário' })).not.toBeInTheDocument(),
+    );
   });
 
-  it('explains when the last administrator would be lost', async () => {
-    const other = person('bia', 'Bia Admin', { roles: ['admin'] });
+  it.each([
+    ['/admin/usuarios/ana', { usuario: 'ana' }, 'Editar usuário'],
+    ['/admin/usuarios/ana/medico', { usuario: 'ana', secao: 'medico' }, 'Tornar médico'],
+  ])('keeps the old link %s opening the panel', async (path, search, title) => {
+    serve({ ...catalog, '/api/admin/users': listOf(ana), '/api/admin/users/ana': () => ok(detail(ana)) });
+    const { router } = renderApp(path);
+
+    expect(await panel(title)).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/admin/usuarios');
+    expect(searchOf(router)).toEqual(search);
+  });
+
+  it('tells when the account no longer exists', async () => {
     serve({
-      '/api/admin/users': listOf(other),
-      '/api/admin/users/bia/roles/admin': (method) =>
-        method === 'DELETE' ? conflict('SELF_OR_LAST_ADMIN') : undefined,
-    });
-    const { user } = renderApp('/admin/usuarios');
-
-    await user.click(
-      within(await openActions(user, 'Bia Admin')).getByRole('menuitem', { name: 'Remover admin' }),
-    );
-    await user.click(
-      within(await screen.findByRole('dialog', { name: /Remover o perfil de administrador/ })).getByRole(
-        'button',
-        {
-          name: 'Remover admin',
-        },
-      ),
-    );
-
-    expect(await screen.findByText(/pelo menos um administrador ativo/)).toBeInTheDocument();
-  });
-
-  it('grants the administrator profile after confirming', async () => {
-    const { calls } = serve({
       '/api/admin/users': listOf(ana),
-      '/api/admin/users/ana/roles/admin': () => ok(detail({ ...ana, roles: ['patient', 'admin'] })),
+      '/api/admin/users/gone': () => ({ status: 404, body: { code: 'NOT_FOUND', message: 'x' } }),
     });
-    const { user } = renderApp('/admin/usuarios');
+    renderApp('/admin/usuarios?usuario=gone');
 
-    await user.click(
-      within(await openActions(user, 'Ana Ferreira')).getByRole('menuitem', { name: 'Tornar admin' }),
-    );
-    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Tornar admin' }));
-
-    expect(await screen.findByText('Ana Ferreira agora tem perfil de administrador.')).toBeInTheDocument();
-    expect(calls.find((call) => call.url.pathname === '/api/admin/users/ana/roles/admin')?.method).toBe(
-      'POST',
-    );
-  });
-
-  it('disables changes to the own account', async () => {
-    serve({ '/api/admin/users': listOf(me) });
-    const { user } = renderApp('/admin/usuarios');
-
-    const myMenu = await openActions(user, 'Ana Maria Silva');
-    expect(within(myMenu).getByRole('menuitem', { name: 'Desativar' })).toHaveAttribute(
-      'aria-disabled',
-      'true',
-    );
-    expect(within(myMenu).getByRole('menuitem', { name: 'Remover admin' })).toHaveAttribute(
-      'aria-disabled',
-      'true',
-    );
+    const dialog = await panel('Editar usuário');
+    expect(
+      await within(dialog).findByText('Este usuário não existe mais. Volte para a lista.'),
+    ).toBeInTheDocument();
   });
 });
 
 describe('edit user', () => {
-  it('saves name and phone with the e-mail read-only', async () => {
+  it('saves name and phone with the e-mail read-only and closes the panel', async () => {
     const patch = vi.fn();
-    serve({
+    const { calls } = serve({
+      '/api/admin/users': listOf(ana),
       '/api/admin/users/ana': (method, body) => {
         if (method !== 'PATCH') return ok(detail(ana));
         patch(body);
         return ok(detail({ ...ana, fullName: 'Ana F. Souza', phone: null }));
       },
     });
-    const { user } = renderApp('/admin/usuarios/ana');
+    const { user, router } = renderApp('/admin/usuarios?usuario=ana');
+    const lists = () => calls.filter((call) => call.url.pathname === '/api/admin/users').length;
 
-    const name = await screen.findByRole('textbox', { name: 'Nome completo' });
-    expect(screen.getByRole('textbox', { name: 'E-mail' })).toHaveAttribute('readonly');
-    expect(screen.getByRole('textbox', { name: /Telefone/ })).toHaveValue('(11) 98765-4321');
-    expect(screen.queryByLabelText(/senha/i, { selector: 'input' })).not.toBeInTheDocument();
+    const dialog = await panel('Editar usuário');
+    const name = await within(dialog).findByRole('textbox', { name: 'Nome completo' });
+    expect(within(dialog).getByRole('textbox', { name: 'E-mail' })).toHaveAttribute('readonly');
+    expect(within(dialog).getByRole('textbox', { name: /Telefone/ })).toHaveValue('(11) 98765-4321');
+    expect(within(dialog).queryByLabelText(/senha/i, { selector: 'input' })).not.toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Salvar alterações' })).toBeDisabled();
 
     await user.clear(name);
     await user.type(name, 'Ana F. Souza');
-    await user.clear(screen.getByRole('textbox', { name: /Telefone/ }));
-    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
+    await user.clear(within(dialog).getByRole('textbox', { name: /Telefone/ }));
+    const before = lists();
+    await user.click(within(dialog).getByRole('button', { name: 'Salvar alterações' }));
 
-    expect(await screen.findByText('Dados atualizados.')).toBeInTheDocument();
+    expect(await screen.findByText('Usuário atualizado.')).toBeInTheDocument();
     expect(patch).toHaveBeenCalledWith({ fullName: 'Ana F. Souza', phone: null });
+    await waitFor(() => expect(router.state.location.search).toBe(''));
+    await waitFor(() => expect(lists()).toBeGreaterThan(before));
+  });
+
+  it('shows the API error next to the field', async () => {
+    serve({
+      '/api/admin/users': listOf(ana),
+      '/api/admin/users/ana': (method) =>
+        method === 'PATCH'
+          ? conflict('VALIDATION_ERROR', { fullName: 'Nome recusado pela API.' }, 400)
+          : ok(detail(ana)),
+    });
+    const { user } = renderApp('/admin/usuarios?usuario=ana');
+
+    const dialog = await panel('Editar usuário');
+    const name = await within(dialog).findByRole('textbox', { name: 'Nome completo' });
+    await user.type(name, ' Souza');
+    await user.click(within(dialog).getByRole('button', { name: 'Salvar alterações' }));
+
+    expect(await within(dialog).findByText('Nome recusado pela API.')).toBeInTheDocument();
+    expect(name).toHaveAttribute('aria-invalid', 'true');
   });
 
   it('refreshes the session after editing the own account', async () => {
     const { fetchMock } = serve({
+      '/api/admin/users': listOf(me),
       [`/api/admin/users/${SELF_ID}`]: (method) =>
         ok(detail(method === 'PATCH' ? { ...me, fullName: 'Ana M. Silva' } : me)),
     });
-    const { user } = renderApp(`/admin/usuarios/${SELF_ID}`);
+    const { user } = renderApp(`/admin/usuarios?usuario=${SELF_ID}`);
     const sessionLoads = () =>
       fetchMock.mock.calls.filter(([url]) => (url as string).endsWith('/api/me')).length;
 
@@ -302,18 +345,19 @@ describe('edit user', () => {
     await user.type(name, 'Ana M. Silva');
     await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
 
-    expect(await screen.findByText('Dados atualizados.')).toBeInTheDocument();
+    expect(await screen.findByText('Usuário atualizado.')).toBeInTheDocument();
     await waitFor(() => expect(sessionLoads()).toBeGreaterThan(before));
   });
 
   it('sends a password reset link and explains when it cannot be sent now', async () => {
     let attempts = 0;
     serve({
+      '/api/admin/users': listOf(ana),
       '/api/admin/users/ana': () => ok(detail(ana)),
       '/api/admin/users/ana/password-reset': () =>
         attempts++ === 0 ? { status: 202 } : conflict('RESET_NOT_SENT'),
     });
-    const { user } = renderApp('/admin/usuarios/ana');
+    const { user } = renderApp('/admin/usuarios?usuario=ana');
 
     const send = await screen.findByRole('button', { name: 'Enviar link de redefinição' });
     await user.click(send);
@@ -326,39 +370,115 @@ describe('edit user', () => {
   it('shows the doctor profile and reactivates an inactive account', async () => {
     const inactive = { ...joao, deactivatedAt: '2026-11-10T12:00:00Z' };
     serve({
+      '/api/admin/users': listOf(inactive),
       '/api/admin/users/joao': () => ok(detail(inactive, joaoProfile)),
       '/api/admin/users/joao/reactivate': () => ok(detail(joao, joaoProfile)),
     });
-    const { user } = renderApp('/admin/usuarios/joao');
+    const { user } = renderApp('/admin/usuarios?usuario=joao');
 
-    expect(await screen.findByText('CRM 123456/SP')).toBeInTheDocument();
-    expect(screen.getByRole('note')).toHaveTextContent('Esta conta está desativada');
-    expect(screen.getByRole('button', { name: 'Enviar link de redefinição' })).toBeDisabled();
+    const dialog = await panel('Editar usuário');
+    expect(await within(dialog).findByText('CRM 123456/SP')).toBeInTheDocument();
+    expect(within(dialog).getByText('Médico · Cardiologia')).toBeInTheDocument();
+    expect(within(dialog).getByRole('note')).toHaveTextContent('Esta conta está desativada');
+    expect(within(dialog).getByRole('button', { name: 'Enviar link de redefinição' })).toBeDisabled();
+    const access = within(dialog).getByRole('switch', { name: 'Acesso ativo' });
+    expect(access).not.toBeChecked();
 
-    await user.click(screen.getByRole('button', { name: 'Reativar conta' }));
+    await user.click(access);
 
     expect(await screen.findByText('Conta de João Silveira reativada.')).toBeInTheDocument();
-    await waitFor(() => expect(screen.queryByRole('note')).not.toBeInTheDocument());
+    await waitFor(() => expect(within(dialog).queryByRole('note')).not.toBeInTheDocument());
+    expect(access).toBeChecked();
   });
 
-  it('tells when the account no longer exists', async () => {
-    serve({ '/api/admin/users/gone': () => ({ status: 404, body: { code: 'NOT_FOUND', message: 'x' } }) });
-    renderApp('/admin/usuarios/gone');
+  it('confirms a deactivation with the bookings that will be cancelled', async () => {
+    const { calls } = serve({
+      '/api/admin/users': listOf(joao),
+      '/api/admin/users/joao': () => ok(detail(joao, joaoProfile)),
+      '/api/admin/users/joao/deactivation-impact': () =>
+        ok({ futureAppointmentsAsPatient: 2, futureAppointmentsAsDoctor: 1 }),
+      '/api/admin/users/joao/deactivate': () =>
+        ok(detail({ ...joao, deactivatedAt: '2026-11-13T12:00:00Z' }, joaoProfile)),
+    });
+    const { user } = renderApp('/admin/usuarios?usuario=joao');
 
-    expect(await screen.findByText('Este usuário não existe mais. Volte para a lista.')).toBeInTheDocument();
+    await user.click(await screen.findByRole('switch', { name: 'Acesso ativo' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Desativar a conta de João Silveira?' });
+    expect(
+      await within(dialog).findByText(
+        /Serão cancelados: 2 agendamentos futuros como paciente e 1 consulta futura/,
+      ),
+    ).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: 'Desativar' }));
+
+    expect(await screen.findByText('Conta de João Silveira desativada.')).toBeInTheDocument();
+    expect(
+      calls.some((call) => call.method === 'POST' && call.url.pathname.endsWith('/joao/deactivate')),
+    ).toBe(true);
+    expect(await screen.findByRole('note')).toHaveTextContent('Esta conta está desativada');
+  });
+
+  it('explains when the last administrator would be lost', async () => {
+    serve({
+      '/api/admin/users': listOf(bia),
+      '/api/admin/users/bia': () => ok(detail(bia)),
+      '/api/admin/users/bia/roles/admin': (method) =>
+        method === 'DELETE' ? conflict('SELF_OR_LAST_ADMIN') : undefined,
+    });
+    const { user } = renderApp('/admin/usuarios?usuario=bia');
+
+    await user.click(await screen.findByRole('button', { name: 'Remover admin' }));
+    await user.click(
+      within(await screen.findByRole('dialog', { name: /Remover o perfil de administrador/ })).getByRole(
+        'button',
+        { name: 'Remover admin' },
+      ),
+    );
+
+    expect(await screen.findByText(/pelo menos um administrador ativo/)).toBeInTheDocument();
+  });
+
+  it('grants the administrator profile after confirming', async () => {
+    const { calls } = serve({
+      '/api/admin/users': listOf(ana),
+      '/api/admin/users/ana': () => ok(detail(ana)),
+      '/api/admin/users/ana/roles/admin': () => ok(detail({ ...ana, roles: ['patient', 'admin'] })),
+    });
+    const { user } = renderApp('/admin/usuarios?usuario=ana');
+
+    await user.click(await screen.findByRole('button', { name: 'Tornar admin' }));
+    await user.click(
+      within(await screen.findByRole('dialog', { name: /Dar perfil de administrador/ })).getByRole('button', {
+        name: 'Tornar admin',
+      }),
+    );
+
+    expect(await screen.findByText('Ana Ferreira agora tem perfil de administrador.')).toBeInTheDocument();
+    expect(calls.find((call) => call.url.pathname === '/api/admin/users/ana/roles/admin')?.method).toBe(
+      'POST',
+    );
+    expect(await screen.findByRole('button', { name: 'Remover admin' })).toBeInTheDocument();
+  });
+
+  it('disables changes that would lock the own account out', async () => {
+    serve({
+      '/api/admin/users': listOf(me),
+      [`/api/admin/users/${SELF_ID}`]: () => ok(detail(me)),
+    });
+    renderApp(`/admin/usuarios?usuario=${SELF_ID}`);
+
+    expect(await screen.findByRole('switch', { name: 'Acesso ativo' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Remover admin' })).toBeDisabled();
+    expect(screen.getByText('Você não pode desativar a própria conta.')).toBeInTheDocument();
   });
 });
 
 describe('doctor profile', () => {
-  const catalog = {
-    '/api/specialties': () => ok(specialties),
-    '/api/units': () => ok(units),
-  };
-
-  it('creates a profile with the registry labelled by the specialty council', async () => {
+  it('creates a profile from the panel with the registry labelled by the specialty council', async () => {
     const created = vi.fn();
     serve({
       ...catalog,
+      '/api/admin/users': listOf(ana),
       '/api/admin/users/ana': () => ok(detail(ana)),
       '/api/admin/users/ana/doctor-profile': (_method, body) => {
         created(body);
@@ -372,21 +492,25 @@ describe('doctor profile', () => {
             );
       },
     });
-    const { user, router } = renderApp('/admin/usuarios/ana/medico');
+    const { user, router } = renderApp('/admin/usuarios?usuario=ana');
 
-    expect(await screen.findByRole('textbox', { name: 'Nome' })).toHaveAttribute('readonly');
-    const specialty = screen.getByRole('combobox', { name: 'Especialidade' });
+    const start = await screen.findByRole('button', { name: 'Tornar médico' });
+    await user.click(start);
+    const dialog = await panel('Tornar médico');
+    expect(searchOf(router)).toEqual({ usuario: 'ana', secao: 'medico' });
+    expect(await within(dialog).findByRole('textbox', { name: 'Nome' })).toHaveAttribute('readonly');
+    const specialty = within(dialog).getByRole('combobox', { name: 'Especialidade' });
     expect(within(specialty).queryByRole('option', { name: 'Antiga' })).not.toBeInTheDocument();
 
     await user.selectOptions(specialty, 'cardio');
-    expect(screen.getByRole('textbox', { name: 'Número do CRM' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('textbox', { name: 'Número do CRM' })).toBeInTheDocument();
     await user.selectOptions(specialty, 'nutri');
-    const registry = screen.getByRole('textbox', { name: 'Número do CRN' });
+    const registry = within(dialog).getByRole('textbox', { name: 'Número do CRN' });
 
     await user.type(registry, '4567');
-    await user.selectOptions(screen.getByRole('combobox', { name: 'UF' }), 'RS');
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Unidade' }), 'norte');
-    await user.click(screen.getByRole('button', { name: 'Tornar médico' }));
+    await user.selectOptions(within(dialog).getByRole('combobox', { name: 'UF' }), 'RS');
+    await user.selectOptions(within(dialog).getByRole('combobox', { name: 'Unidade' }), 'norte');
+    await user.click(within(dialog).getByRole('button', { name: 'Tornar médico' }));
 
     expect(
       await screen.findByText('Este registro profissional já pertence a outro médico.'),
@@ -395,7 +519,7 @@ describe('doctor profile', () => {
 
     await user.clear(registry);
     await user.type(registry, '4568');
-    await user.click(screen.getByRole('button', { name: 'Tornar médico' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Tornar médico' }));
 
     expect(await screen.findByText('Ana Ferreira agora tem perfil de médico.')).toBeInTheDocument();
     expect(created).toHaveBeenLastCalledWith({
@@ -404,12 +528,18 @@ describe('doctor profile', () => {
       registryUf: 'RS',
       unitId: 'norte',
     });
-    expect(router.state.location.pathname).toBe('/admin/usuarios/ana');
+    expect(searchOf(router)).toEqual({ usuario: 'ana' });
+    expect(await panel('Editar usuário')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Editar perfil de médico' })).toHaveFocus();
   });
 
   it('validates the registry number before calling the API', async () => {
-    const { calls } = serve({ ...catalog, '/api/admin/users/ana': () => ok(detail(ana)) });
-    const { user } = renderApp('/admin/usuarios/ana/medico');
+    const { calls } = serve({
+      ...catalog,
+      '/api/admin/users': listOf(ana),
+      '/api/admin/users/ana': () => ok(detail(ana)),
+    });
+    const { user } = renderApp('/admin/usuarios?usuario=ana&secao=medico');
 
     await user.selectOptions(await screen.findByRole('combobox', { name: 'Especialidade' }), 'cardio');
     await user.type(screen.getByRole('textbox', { name: 'Número do CRM' }), '0123');
@@ -420,10 +550,26 @@ describe('doctor profile', () => {
     expect(calls.some((call) => call.method === 'POST')).toBe(false);
   });
 
+  it('goes back to the user without saving', async () => {
+    serve({
+      ...catalog,
+      '/api/admin/users': listOf(ana),
+      '/api/admin/users/ana': () => ok(detail(ana)),
+    });
+    const { user, router } = renderApp('/admin/usuarios?usuario=ana&secao=medico');
+
+    const dialog = await panel('Tornar médico');
+    await user.click(await within(dialog).findByRole('button', { name: 'Cancelar' }));
+
+    expect(await panel('Editar usuário')).toBeInTheDocument();
+    expect(searchOf(router)).toEqual({ usuario: 'ana' });
+  });
+
   it('edits and removes an existing profile', async () => {
     const changes = vi.fn();
     serve({
       ...catalog,
+      '/api/admin/users': listOf(joao),
       '/api/admin/users/joao': () => ok(detail(joao, joaoProfile)),
       '/api/admin/users/joao/deactivation-impact': () =>
         ok({ futureAppointmentsAsPatient: 0, futureAppointmentsAsDoctor: 1 }),
@@ -434,18 +580,18 @@ describe('doctor profile', () => {
           : ok(detail(joao, { ...joaoProfile, unitId: 'norte', unitName: 'Unidade Norte' }));
       },
     });
-    const { user, router } = renderApp('/admin/usuarios/joao/medico');
+    const { user, router } = renderApp('/admin/usuarios?usuario=joao&secao=medico');
 
-    const unit = await screen.findByRole('combobox', { name: 'Unidade' });
+    const unitField = await screen.findByRole('combobox', { name: 'Unidade' });
     expect(screen.getByRole('textbox', { name: 'Número do CRM' })).toHaveValue('123456');
     expect(screen.getByRole('button', { name: 'Salvar alterações' })).toBeDisabled();
 
-    await user.selectOptions(unit, 'norte');
+    await user.selectOptions(unitField, 'norte');
     await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
     expect(await screen.findByText('Perfil de médico atualizado.')).toBeInTheDocument();
     expect(changes).toHaveBeenCalledWith('PATCH', { unitId: 'norte' });
 
-    await user.click(await screen.findByRole('link', { name: 'Editar perfil de médico' }));
+    await user.click(await screen.findByRole('button', { name: 'Editar perfil de médico' }));
     await user.click(await screen.findByRole('button', { name: 'Remover perfil de médico' }));
     const dialog = await screen.findByRole('dialog', {
       name: 'Remover o perfil de médico de João Silveira?',
@@ -455,7 +601,7 @@ describe('doctor profile', () => {
 
     expect(await screen.findByText('Perfil de médico removido.')).toBeInTheDocument();
     expect(changes).toHaveBeenLastCalledWith('DELETE', undefined);
-    expect(router.state.location.pathname).toBe('/admin/usuarios/joao');
+    expect(searchOf(router)).toEqual({ usuario: 'joao' });
   });
 
   it('sends only the registry when the current specialty and unit are inactive', async () => {
@@ -469,13 +615,14 @@ describe('doctor profile', () => {
     };
     serve({
       ...catalog,
+      '/api/admin/users': listOf(joao),
       '/api/admin/users/joao': () => ok(detail(joao, legacy)),
       '/api/admin/users/joao/doctor-profile': (method, body) => {
         changes(method, body);
         return ok(detail(joao, { ...legacy, registryNumber: '654321' }));
       },
     });
-    const { user } = renderApp('/admin/usuarios/joao/medico');
+    const { user } = renderApp('/admin/usuarios?usuario=joao&secao=medico');
 
     const specialty = await screen.findByRole('combobox', { name: 'Especialidade' });
     expect(specialty).toHaveValue('old');
@@ -498,11 +645,12 @@ describe('doctor profile', () => {
   ])('shows %s next to its field', async (code, status, field, label) => {
     serve({
       ...catalog,
+      '/api/admin/users': listOf(joao),
       '/api/admin/users/joao': () => ok(detail(joao, joaoProfile)),
       '/api/admin/users/joao/doctor-profile': () =>
         conflict(code, { [field]: `Problema em ${field}.` }, status),
     });
-    const { user } = renderApp('/admin/usuarios/joao/medico');
+    const { user } = renderApp('/admin/usuarios?usuario=joao&secao=medico');
 
     await user.selectOptions(await screen.findByRole('combobox', { name: 'Unidade' }), 'norte');
     await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
@@ -514,10 +662,11 @@ describe('doctor profile', () => {
   it('explains when future appointments block the change', async () => {
     serve({
       ...catalog,
+      '/api/admin/users': listOf(joao),
       '/api/admin/users/joao': () => ok(detail(joao, joaoProfile)),
       '/api/admin/users/joao/doctor-profile': () => conflict('HAS_FUTURE_APPOINTMENTS'),
     });
-    const { user } = renderApp('/admin/usuarios/joao/medico');
+    const { user } = renderApp('/admin/usuarios?usuario=joao&secao=medico');
 
     await user.selectOptions(await screen.findByRole('combobox', { name: 'Unidade' }), 'norte');
     await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
@@ -528,10 +677,11 @@ describe('doctor profile', () => {
   it('tells when the account already became a doctor', async () => {
     serve({
       ...catalog,
+      '/api/admin/users': listOf(ana),
       '/api/admin/users/ana': () => ok(detail(ana)),
       '/api/admin/users/ana/doctor-profile': () => conflict('DOCTOR_PROFILE_EXISTS'),
     });
-    const { user } = renderApp('/admin/usuarios/ana/medico');
+    const { user } = renderApp('/admin/usuarios?usuario=ana&secao=medico');
 
     await user.selectOptions(await screen.findByRole('combobox', { name: 'Especialidade' }), 'cardio');
     await user.type(screen.getByRole('textbox', { name: 'Número do CRM' }), '4567');
@@ -546,12 +696,202 @@ describe('doctor profile', () => {
     serve({
       '/api/specialties': () => ({ status: 500 }),
       '/api/units': () => ok(units),
+      '/api/admin/users': listOf(ana),
       '/api/admin/users/ana': () => ok(detail(ana)),
     });
-    renderApp('/admin/usuarios/ana/medico');
+    renderApp('/admin/usuarios?usuario=ana&secao=medico');
 
     expect(await screen.findByRole('combobox', { name: 'Especialidade' })).toBeDisabled();
     expect(screen.getByRole('textbox', { name: 'Número do registro profissional' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Tornar médico' })).toBeDisabled();
+  });
+});
+
+describe('create user', () => {
+  const created = person('nova', 'Carla Mendes');
+
+  async function openForm(routes: Record<string, ApiRoute>) {
+    const api = serve({ ...catalog, '/api/admin/users': listOf(ana), ...routes });
+    const rendered = renderApp('/admin/usuarios');
+    await rowOf('Ana Ferreira');
+    const open = screen.getByRole('button', { name: 'Novo usuário' });
+    await rendered.user.click(open);
+    const form = await panel('Novo usuário');
+    return { ...api, ...rendered, form, open };
+  }
+
+  async function fillPerson(
+    user: ReturnType<typeof renderApp>['user'],
+    form: HTMLElement,
+    email = 'carla@email.com',
+  ) {
+    await user.type(within(form).getByRole('textbox', { name: 'E-mail' }), email);
+    await user.type(within(form).getByRole('textbox', { name: 'Nome completo' }), 'Carla Mendes');
+  }
+
+  async function chooseRole(user: ReturnType<typeof renderApp>['user'], form: HTMLElement, role: string) {
+    await user.click(within(form).getByRole('button', { name: /^Perfil/ }));
+    await user.click(await screen.findByRole('option', { name: new RegExp(`^${role}`) }));
+  }
+
+  async function fillDoctor(user: ReturnType<typeof renderApp>['user'], form: HTMLElement) {
+    await user.selectOptions(await within(form).findByRole('combobox', { name: 'Especialidade' }), 'cardio');
+    await user.type(within(form).getByRole('textbox', { name: 'Número do CRM' }), '123456');
+    await user.selectOptions(within(form).getByRole('combobox', { name: 'UF' }), 'SP');
+    await user.selectOptions(within(form).getByRole('combobox', { name: 'Unidade' }), 'norte');
+  }
+
+  const posts = (calls: ReturnType<typeof serve>['calls']) =>
+    calls.filter((call) => call.method === 'POST' && call.url.pathname === '/api/admin/users');
+
+  it('creates a patient, refreshes the list and gives the focus back to the button', async () => {
+    const { calls, user, router, form, open } = await openForm({
+      '/api/admin/users': (method) => (method === 'POST' ? ok(detail(created), 201) : ok(page([ana]))),
+    });
+    const lists = () =>
+      calls.filter((call) => call.method === 'GET' && call.url.pathname === '/api/admin/users').length;
+
+    expect(searchOf(router)).toEqual({ usuario: 'novo' });
+    expect(within(form).getByRole('form', { name: 'Novo usuário' })).toBeInTheDocument();
+    expect(within(form).getByRole('button', { name: /^Perfil/ })).toHaveTextContent('Paciente');
+    expect(within(form).queryByRole('combobox', { name: 'Especialidade' })).not.toBeInTheDocument();
+
+    await fillPerson(user, form);
+    await user.type(within(form).getByRole('textbox', { name: /Telefone/ }), '(11) 98765-4321');
+    const before = lists();
+    await user.click(within(form).getByRole('button', { name: 'Criar usuário' }));
+
+    expect(
+      await screen.findByText('Usuário criado. Ele recebe um e-mail para criar a senha.'),
+    ).toBeInTheDocument();
+    expect(posts(calls).at(-1)?.body).toEqual({
+      fullName: 'Carla Mendes',
+      email: 'carla@email.com',
+      phone: '(11) 98765-4321',
+      role: 'patient',
+    });
+    await waitFor(() => expect(router.state.location.search).toBe(''));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Novo usuário' })).not.toBeInTheDocument(),
+    );
+    expect(open).toHaveFocus();
+    await waitFor(() => expect(lists()).toBeGreaterThan(before));
+  });
+
+  it('creates an administrator without a phone', async () => {
+    const { calls, user, form } = await openForm({
+      '/api/admin/users': (method) => (method === 'POST' ? ok(detail(created), 201) : ok(page([ana]))),
+    });
+
+    await fillPerson(user, form);
+    await chooseRole(user, form, 'Administrador');
+    await user.click(within(form).getByRole('button', { name: 'Criar usuário' }));
+
+    expect(
+      await screen.findByText('Usuário criado. Ele recebe um e-mail para criar a senha.'),
+    ).toBeInTheDocument();
+    expect(posts(calls).at(-1)?.body).toEqual({
+      fullName: 'Carla Mendes',
+      email: 'carla@email.com',
+      role: 'admin',
+    });
+  });
+
+  it('creates a doctor with the professional data', async () => {
+    const { calls, user, form } = await openForm({
+      '/api/admin/users': (method) =>
+        method === 'POST'
+          ? ok(detail({ ...created, roles: ['patient', 'doctor'] }, joaoProfile), 201)
+          : ok(page([ana])),
+    });
+
+    await fillPerson(user, form);
+    await chooseRole(user, form, 'Médico');
+    expect(within(form).getByRole('button', { name: /^Perfil/ })).toHaveTextContent('Médico');
+    await fillDoctor(user, form);
+    await user.click(within(form).getByRole('button', { name: 'Criar usuário' }));
+
+    expect(
+      await screen.findByText('Usuário criado. Ele recebe um e-mail para criar a senha.'),
+    ).toBeInTheDocument();
+    expect(posts(calls).at(-1)?.body).toEqual({
+      fullName: 'Carla Mendes',
+      email: 'carla@email.com',
+      role: 'doctor',
+      doctorProfile: { specialtyId: 'cardio', registryNumber: '123456', registryUf: 'SP', unitId: 'norte' },
+    });
+  });
+
+  it('checks the required fields before calling the API', async () => {
+    const { calls, user, form } = await openForm({});
+
+    await chooseRole(user, form, 'Médico');
+    await within(form).findByRole('combobox', { name: 'Especialidade' });
+    await user.click(within(form).getByRole('button', { name: 'Criar usuário' }));
+
+    expect(await within(form).findByText('Informe seu e-mail.')).toBeInTheDocument();
+    expect(within(form).getByRole('textbox', { name: 'Nome completo' })).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+    expect(within(form).getByRole('combobox', { name: 'Especialidade' })).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+    expect(within(form).getByText('Escolha a unidade.')).toBeInTheDocument();
+    expect(posts(calls)).toHaveLength(0);
+  });
+
+  it.each([
+    ['VALIDATION_ERROR', 400, 'email', 'E-mail', 'Informe um e-mail válido.'],
+    ['VALIDATION_ERROR', 400, 'fullName', 'Nome completo', 'Informe o nome completo.'],
+    ['EMAIL_TAKEN', 409, 'email', 'E-mail', 'Este e-mail já está cadastrado.'],
+  ])('shows %s on the %s field', async (code, status, field, label, message) => {
+    const { user, form } = await openForm({
+      '/api/admin/users': (method) =>
+        method === 'POST' ? conflict(code, { [field]: message }, status) : ok(page([ana])),
+    });
+
+    await fillPerson(user, form);
+    await user.click(within(form).getByRole('button', { name: 'Criar usuário' }));
+
+    expect(await within(form).findByText(message)).toBeInTheDocument();
+    expect(within(form).getByRole('textbox', { name: label })).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByRole('dialog', { name: 'Novo usuário' })).toBeInTheDocument();
+  });
+
+  it.each([
+    ['REGISTRY_TAKEN', 409, 'doctorProfile.registryNumber', 'Número do CRM'],
+    ['REGISTRY_TAKEN', 409, 'registryNumber', 'Número do CRM'],
+    ['SPECIALTY_UNAVAILABLE', 422, 'doctorProfile.specialtyId', 'Especialidade'],
+    ['UNIT_UNAVAILABLE', 422, 'doctorProfile.unitId', 'Unidade'],
+  ])('shows %s from %s on the doctor field', async (code, status, field, label) => {
+    const { user, form } = await openForm({
+      '/api/admin/users': (method) =>
+        method === 'POST' ? conflict(code, { [field]: `Problema em ${field}.` }, status) : ok(page([ana])),
+    });
+
+    await fillPerson(user, form);
+    await chooseRole(user, form, 'Médico');
+    await fillDoctor(user, form);
+    await user.click(within(form).getByRole('button', { name: 'Criar usuário' }));
+
+    expect(await within(form).findByText(`Problema em ${field}.`)).toBeInTheDocument();
+    expect(within(form).getByLabelText(label)).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('explains when the server is busy and keeps what was typed', async () => {
+    const { user, form } = await openForm({
+      '/api/admin/users': (method) =>
+        method === 'POST' ? conflict('SERVER_BUSY', undefined, 503) : ok(page([ana])),
+    });
+
+    await fillPerson(user, form);
+    await user.click(within(form).getByRole('button', { name: 'Criar usuário' }));
+
+    expect(
+      await within(form).findByText('O servidor está ocupado. Tente de novo em instantes.'),
+    ).toBeInTheDocument();
+    expect(within(form).getByRole('textbox', { name: 'E-mail' })).toHaveValue('carla@email.com');
   });
 });
