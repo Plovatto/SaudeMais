@@ -53,7 +53,7 @@ export const areas: Record<Role, Area> = {
     base: '/paciente',
     label: 'Paciente',
     title: 'Área do paciente',
-    description: 'Agendar consultas e gerenciar minha saúde',
+    description: 'Agende consultas e exames e veja seus resultados.',
     icon: LuHeartPulse,
     pages: [
       { path: '', title: 'Início', nav: { label: 'Início', icon: LuHeart } },
@@ -107,7 +107,7 @@ export const areas: Record<Role, Area> = {
     base: '/medico',
     label: 'Médico',
     title: 'Área do médico',
-    description: 'Gerenciar agenda e atender pacientes',
+    description: 'Confirme pedidos e organize sua agenda.',
     icon: LuStethoscope,
     pages: [
       { path: '', title: 'Início', nav: { label: 'Início', icon: LuHeart } },
@@ -134,7 +134,7 @@ export const areas: Record<Role, Area> = {
     base: '/admin',
     label: 'Administrador',
     title: 'Administração',
-    description: 'Gerenciar sistema e usuários',
+    description: 'Cuide de usuários, relatórios e configurações.',
     icon: LuShieldCheck,
     pages: [
       { path: '', title: 'Painel', nav: { label: 'Painel', icon: LuLayoutDashboard } },
