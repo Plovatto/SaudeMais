@@ -9,7 +9,7 @@ import { DateTile } from './DateTile';
 
 const cardClass = 'rounded-card border-border bg-surface flex flex-col gap-3.5 border px-5 pt-[18px] pb-5';
 
-const nextLabel = cx(overline, 'text-[0.71875rem] font-bold');
+const nextLabel = cx(overline, 'text-[0.71875rem] font-[650]');
 
 const whenClass =
   'text-text text-[1.0625rem]/[1.25] font-bold tracking-[-0.015em] min-[561px]:text-xl/[1.25]';
@@ -39,11 +39,11 @@ export function NextCard({ label, query, next, empty }: NextCardProps) {
       <section aria-label={label} className={cx(cardClass, 'shadow-card')}>
         <p className={nextLabel}>{label}</p>
         <div className="flex items-center gap-3.5 min-[561px]:gap-[18px]">
-          <IconSlot className="bg-surface-strong text-text-secondary size-14 justify-center rounded-[14px] text-[22px]">
+          <IconSlot className="bg-surface-strong text-text-secondary rounded-card size-[52px] justify-center text-[22px]">
             <LuCalendar />
           </IconSlot>
           <div className="flex min-w-0 flex-col gap-1">
-            <p className={whenClass}>{empty.title}</p>
+            <p className={cx(whenClass, 'min-[561px]:text-[1.0625rem]')}>{empty.title}</p>
             <p className="text-text-secondary text-sm">{empty.text}</p>
           </div>
         </div>

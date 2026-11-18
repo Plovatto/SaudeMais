@@ -18,7 +18,8 @@ import { AGENDA_TABS, doctorAgendaUrl } from '@constants/doctor-agenda';
 import { visitTypeLabels } from '@constants/visit-types';
 import { useNow } from '@hooks/useNow';
 import type { DoctorAppointment } from '@lib/api/models';
-import { civilDateInSaoPaulo, formatShortDay, formatTime, whenText } from '@lib/date';
+import { civilDateInSaoPaulo, formatShortDay, formatTime, MINUTE_MS, whenText } from '@lib/date';
+import { cx } from '@lib/cx';
 import { AppointmentQueue } from './AppointmentQueue';
 import { COMPLETE, CONFIRM, NO_SHOW } from './decisions';
 import { ActionTarget, DecisionButton } from './DecisionButton';
@@ -43,8 +44,6 @@ const ACTIONS: readonly QuickAction[] = [
     icon: LuClock,
   },
 ];
-
-const MINUTE_MS = 60_000;
 
 const untilText = (minutes: number) => {
   if (minutes < 60) return `em ${minutes} min`;
@@ -99,7 +98,7 @@ export function DoctorHomePage() {
       <PageTitle className="sr-only">Início</PageTitle>
       {data?.lastNotification && <LastNotification notification={data.lastNotification} role="doctor" />}
       <div className="@container">
-        <div className="grid items-start gap-4 lg:gap-5 @min-[880px]:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="grid items-start gap-4 lg:gap-5 @min-[880px]:grid-cols-[minmax(0,1fr)_360px] @min-[880px]:items-stretch">
           <div className="flex min-w-0 flex-col gap-4 lg:gap-5">
             <div className={stagger(0)}>
               <NextCard
@@ -145,7 +144,7 @@ export function DoctorHomePage() {
                 />
               </div>
             )}
-            <div className={stagger(3)}>
+            <div className={cx(stagger(3), 'flex flex-1 flex-col *:flex-1')}>
               <AppointmentQueue
                 sectionRef={requests}
                 title="Pedidos a confirmar"
@@ -163,6 +162,7 @@ export function DoctorHomePage() {
                       icon={<LuCheck />}
                       title="Tudo confirmado"
                       description="Novos pedidos de consulta aparecem aqui."
+                      className="gap-5 py-[60px]"
                     />
                   ) : (
                     <ListSkeleton />
@@ -171,7 +171,11 @@ export function DoctorHomePage() {
                 actions={(appointment) => (
                   <>
                     {appointment.actions.canCancel && (
-                      <Button variant="danger-ghost" size="sm" onClick={() => actions.cancel(appointment)}>
+                      <Button
+                        variant="danger-soft-outline"
+                        size="sm"
+                        onClick={() => actions.cancel(appointment)}
+                      >
                         Recusar
                         <ActionTarget appointment={appointment} />
                       </Button>
@@ -187,7 +191,7 @@ export function DoctorHomePage() {
               />
             </div>
           </div>
-          <div className={stagger(4)}>
+          <div className={cx(stagger(4), 'flex flex-col *:flex-1')}>
             <TodayAgenda query={day} now={now} onView={actions.view} />
           </div>
         </div>
