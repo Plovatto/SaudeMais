@@ -40,7 +40,7 @@ export function ExamForm({ onBooked }: { onBooked: (exam: ExamBooking) => void }
     fields: FIELDS,
     availability: {
       queryKey: queryKeys.booking.examAvailability(unitId, examTypeId),
-      load: (signal) => examApi.availability(unitId, examTypeId, signal),
+      load: (signal, page) => examApi.availability(unitId, examTypeId, page, signal),
       enabled: unitId !== '' && examTypeId !== '',
     },
     messages: examMessages,

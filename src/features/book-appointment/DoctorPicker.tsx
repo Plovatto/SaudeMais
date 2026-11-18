@@ -18,6 +18,7 @@ export type Doctor = ResponseOf<'/api/doctors', 'get'>['items'][number];
 
 export interface DoctorPickerProps {
   doctors: Doctor[] | undefined;
+  total?: number | undefined;
   value: string;
   onPick: (doctor: Doctor) => void;
   search: string;
@@ -31,6 +32,7 @@ const countText = (count: number) => plural(count, 'disponível', 'disponíveis'
 
 export function DoctorPicker({
   doctors,
+  total = doctors?.length ?? 0,
   value,
   onPick,
   search,
@@ -41,12 +43,12 @@ export function DoctorPicker({
 }: DoctorPickerProps) {
   const errorId = useId();
   const hasChecked = doctors?.some((doctor) => doctor.id === value) ?? false;
+  const shown = doctors?.length ?? 0;
+  const more = doctors !== undefined && total > shown;
   return (
     <SectionCard
       title="Médico"
-      action={
-        doctors && <span className="text-text-muted text-[0.8125rem]">{countText(doctors.length)}</span>
-      }
+      action={doctors && <span className="text-text-muted text-[0.8125rem]">{countText(total)}</span>}
     >
       <div className="-mt-1 lg:-mt-0.5">
         <SearchInput
@@ -69,7 +71,7 @@ export function DoctorPicker({
         onKeyDown={(event) => moveFocus(event, '[role="radio"]', 'vertical')}
         className={cx(
           'border-border -mx-4 max-h-[196px] overflow-y-auto border-t [mask-image:linear-gradient(to_bottom,#000_calc(100%-32px),transparent)] pb-3 focus-visible:outline-none lg:-mx-5 lg:max-h-[300px]',
-          !error && '-mb-5',
+          !error && !more && '-mb-5',
         )}
       >
         {!doctors ? (
@@ -116,6 +118,11 @@ export function DoctorPicker({
           })
         )}
       </div>
+      {more && (
+        <p className="text-text-muted text-center text-[0.8125rem]">
+          {`Mostrando ${shown} de ${total}. ${searched ? 'Refine a busca para encontrar outros médicos.' : 'Busque pelo nome para encontrar os demais.'}`}
+        </p>
+      )}
       {error && <FieldError id={errorId}>{error}</FieldError>}
     </SectionCard>
   );

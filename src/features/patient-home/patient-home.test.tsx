@@ -76,6 +76,28 @@ const serve = (respond: () => MockResponse, results: ResultSummary[] = []) =>
 const serveHome = (home?: Partial<Home>, results?: ResultSummary[]) =>
   serve(() => ({ status: 200, body: homeBody(home) }), results);
 
+const pendingRequests = [1, 2, 3].map((index) => booking(`p${index}`, { status: 'pending' }));
+
+const bookingsPage = (items: PatientBooking[], total = items.length): MockResponse => ({
+  status: 200,
+  body: { items, page: 1, pageSize: 1, total },
+});
+
+const servePending = (
+  upcoming: number,
+  confirmed: PatientBooking[],
+  pendingTotal: () => MockResponse = () => bookingsPage(pendingRequests.slice(0, 1), 5),
+) =>
+  serveApi(['patient'], {
+    '/api/patient/home': () => ({
+      status: 200,
+      body: { ...homeBody({ upcoming: pendingRequests }), counts: { upcoming, past: 0 } },
+    }),
+    '/api/patient/exam-results': () => ({ status: 200, body: resultsBody() }),
+    '/api/patient/bookings': (_method, _body, url) =>
+      url.searchParams.get('status') === 'confirmed' ? bookingsPage(confirmed) : pendingTotal(),
+  });
+
 const banner = async () => within(await screen.findByRole('region', { name: 'Última notificação' }));
 
 const later = async () => within(await screen.findByRole('region', { name: 'Depois disso' }));
@@ -213,6 +235,43 @@ describe('patient home', { timeout: 15_000 }, () => {
     const region = within(await screen.findByRole('region', { name: 'Próximo compromisso' }));
     expect(region.getByText('Nenhum compromisso confirmado')).toBeVisible();
     expect(region.getByText(text)).toBeVisible();
+  });
+
+  it('finds the next confirmed booking and the real pending total beyond the first upcoming ones', async () => {
+    const { calls } = servePending(6, [booking('c1')]);
+    renderApp('/paciente');
+
+    const next = await screen.findByRole('link', { name: /^Próximo compromisso\s*Confirmado/ });
+    expect(next).toHaveAttribute('href', '/paciente/agendamentos?id=c1');
+    const request = calls.find(({ url }) => url.pathname === '/api/patient/bookings')?.url;
+    expect(request?.searchParams.get('scope')).toBe('upcoming');
+    expect(request?.searchParams.get('pageSize')).toBe('1');
+  });
+
+  it('counts every pending request when the home lists only the first ones', async () => {
+    servePending(5, []);
+    renderApp('/paciente');
+
+    const region = within(await screen.findByRole('region', { name: 'Próximo compromisso' }));
+    expect(await region.findByText('5 pedidos aguardam a confirmação do médico.')).toBeVisible();
+    expect(region.getByText('Nenhum compromisso confirmado')).toBeVisible();
+  });
+
+  it('shows the error of the pending total with a retry instead of a wrong count', async () => {
+    let fail = true;
+    servePending(5, [], () =>
+      fail
+        ? { status: 500, body: { message: 'Falhou.', code: 'INTERNAL' } }
+        : bookingsPage(pendingRequests.slice(0, 1), 5),
+    );
+    const { user } = renderApp('/paciente');
+
+    const retry = await screen.findByRole('button', { name: 'Tentar de novo' }, { timeout: 8000 });
+    expect(screen.queryByText(/pedidos aguardam/)).not.toBeInTheDocument();
+    fail = false;
+    await user.click(retry);
+
+    expect(await screen.findByText('5 pedidos aguardam a confirmação do médico.')).toBeVisible();
   });
 
   it('lists what comes after the next booking with a link to everything', async () => {

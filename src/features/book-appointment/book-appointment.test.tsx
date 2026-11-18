@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { todayInSaoPaulo } from '@lib/date';
+import { addDays, todayInSaoPaulo } from '@lib/date';
 import {
   dropdown,
   calendar,
@@ -73,11 +73,13 @@ type Day = (typeof days)[number];
 interface Schedule {
   first?: Day[][];
   second?: Day[];
+  later?: Record<string, Day[]>;
+  failing?: Record<string, MockResponse>;
 }
 
 function serve(
   book: () => MockResponse = () => ({ status: 201, body: appointment }),
-  { first = [days], second = [] }: Schedule = {},
+  { first = [days], second = [], later = {}, failing = {} }: Schedule = {},
 ) {
   let loads = 0;
   const served = serveApi(['patient'], {
@@ -92,7 +94,10 @@ function serve(
       return { status: 200, body: { items, page: 1, pageSize: 50, total: items.length } };
     },
     '/api/doctors/d1/availability': (_method, _body, url) => {
-      if (url.searchParams.get('from') !== todayInSaoPaulo()) return { status: 200, body: { days: second } };
+      const from = url.searchParams.get('from') ?? '';
+      if (from === addDays(todayInSaoPaulo(), 31)) return { status: 200, body: { days: second } };
+      if (from in failing) return failing[from];
+      if (from !== todayInSaoPaulo()) return { status: 200, body: { days: later[from] ?? [] } };
       const response = first[Math.min(loads, first.length - 1)] ?? [];
       loads += 1;
       return { status: 200, body: { days: response } };
@@ -170,6 +175,25 @@ describe('book appointment', { timeout: 20_000 }, () => {
     ).toBeVisible();
   });
 
+  it('shows the total of doctors and how to find the ones beyond the first page', async () => {
+    serveApi(['patient'], {
+      '/api/specialties': () => ({ status: 200, body: specialties }),
+      '/api/doctors': () => ({ status: 200, body: { items: doctors, page: 1, pageSize: 50, total: 120 } }),
+    });
+    const { user } = await start();
+
+    expect(screen.getByText('120 disponíveis')).toBeVisible();
+    const hint = screen.getByText('Mostrando 2 de 120. Busque pelo nome para encontrar os demais.');
+    expect(hint).toBeVisible();
+    expect(doctorList()).not.toContainElement(hint);
+
+    await user.type(screen.getByRole('searchbox', { name: 'Buscar médico' }), 'a');
+
+    expect(
+      await screen.findByText('Mostrando 2 de 120. Refine a busca para encontrar outros médicos.'),
+    ).toBeVisible();
+  });
+
   it('searches the doctors by name in the API', async () => {
     const { calls } = serve();
     const { user } = await start();
@@ -217,14 +241,109 @@ describe('book appointment', { timeout: 20_000 }, () => {
     ]);
   });
 
-  it('warns when the doctor has no free slot', async () => {
-    serve(undefined, { first: [[]] });
+  it('loads later months on demand as the calendar moves, past a month without free slots', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-20T02:30:00.000Z'));
+    const farDay = { date: '2027-03-01', slots: [slot('2027-03-01T11:00:00.000Z')] };
+    const { calls } = serve(undefined, {
+      first: [[days[0] as Day]],
+      second: [],
+      later: { '2027-01-20': [], '2027-02-20': [farDay] },
+    });
+    const { user } = await start();
+
+    await user.click(screen.getByRole('radio', { name: /Carlos Mendes/ }));
+    await waitFor(() => expect(openDays()).toEqual([MONDAY]));
+    expect(windowsOf(calls)).toHaveLength(2);
+
+    for (let step = 0; step < 4; step += 1) {
+      await user.click(within(calendar()).getByRole('button', { name: 'Próximo mês' }));
+    }
+
+    await waitFor(() => expect(openDays()).toEqual(['Segunda, 1 de março']));
+    expect(windowsOf(calls).slice(2)).toEqual([
+      { from: '2027-01-20', to: '2027-02-19' },
+      { from: '2027-02-20', to: '2027-03-22' },
+      { from: '2027-03-23', to: '2027-04-22' },
+    ]);
+  });
+
+  it('tells a later month is still loading its free slots', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-20T02:30:00.000Z'));
+    serve(undefined, { first: [[days[0] as Day]] });
+    const { user } = await start();
+    await user.click(screen.getByRole('radio', { name: /Carlos Mendes/ }));
+    await waitFor(() => expect(openDays()).toEqual([MONDAY]));
+    const served = fetch;
+    const held: (() => void)[] = [];
+    vi.stubGlobal('fetch', async (...args: Parameters<typeof fetch>) => {
+      await new Promise<void>((resolve) => held.push(resolve));
+      return served(...args);
+    });
+    const status = within(calendar()).getByRole('status');
+    const grid = () => within(calendar()).getByRole('button', { name: /, 1 de janeiro/ }).parentElement;
+    expect(status).toBeEmptyDOMElement();
+
+    await user.click(within(calendar()).getByRole('button', { name: 'Próximo mês' }));
+    await user.click(within(calendar()).getByRole('button', { name: 'Próximo mês' }));
+
+    await waitFor(() => expect(status).toHaveTextContent('Carregando horários…'));
+    expect(grid()).toHaveAttribute('aria-busy', 'true');
+    held.forEach((release) => release());
+    await waitFor(() => expect(status).toBeEmptyDOMElement());
+    expect(grid()).not.toHaveAttribute('aria-busy');
+  });
+
+  it('stops asking for a later window that fails and starts over on retry', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-20T02:30:00.000Z'));
+    const { calls } = serve(undefined, {
+      first: [[days[0] as Day]],
+      failing: { '2027-01-20': apiError(429, 'RATE_LIMITED') },
+    });
+    const { user } = await start();
+    await user.click(screen.getByRole('radio', { name: /Carlos Mendes/ }));
+    await waitFor(() => expect(openDays()).toEqual([MONDAY]));
+
+    await user.click(within(calendar()).getByRole('button', { name: 'Próximo mês' }));
+    await user.click(within(calendar()).getByRole('button', { name: 'Próximo mês' }));
+
+    const retry = await screen.findByRole('button', { name: 'Tentar de novo' });
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    const failed = () => windowsOf(calls).filter((window) => window.from === '2027-01-20');
+    expect(failed()).toHaveLength(1);
+
+    await user.click(retry);
+
+    await waitFor(() => expect(openDays()).toEqual([MONDAY]));
+    expect(failed()).toHaveLength(1);
+  });
+
+  it('warns when the doctor has no free slot in the whole horizon', async () => {
+    const { calls } = serve(undefined, { first: [[]] });
     const { user } = await start();
 
     await user.click(screen.getByRole('radio', { name: /Carlos Mendes/ }));
 
     expect(await screen.findByRole('note')).toHaveTextContent(/não tem vagas livres/);
     expect(screen.queryByRole('group', { name: 'Calendário' })).not.toBeInTheDocument();
+    expect(windowsOf(calls)).toHaveLength(12);
+    expect(windowsOf(calls).at(-1)?.to).toBe(addDays(todayInSaoPaulo(), 365));
+  });
+
+  it('looks for later windows when the first ones have no free slot', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-20T02:30:00.000Z'));
+    const farDay = { date: '2027-03-01', slots: [slot('2027-03-01T11:00:00.000Z')] };
+    const { calls } = serve(undefined, { first: [[]], later: { '2027-02-20': [farDay] } });
+    const { user } = await start();
+
+    await user.click(screen.getByRole('radio', { name: /Carlos Mendes/ }));
+
+    await waitFor(() => expect(openDays()).toEqual(['Segunda, 1 de março']));
+    expect(screen.queryByText(/não tem vagas livres/)).not.toBeInTheDocument();
+    expect(windowsOf(calls)).toHaveLength(4);
   });
 
   it('clears a picked day that is no longer free and points at it', async () => {

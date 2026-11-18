@@ -1,6 +1,6 @@
-import { useState, type Ref } from 'react';
+import { useEffect, useEffectEvent, useState, type Ref } from 'react';
 import { LuChevronLeft, LuChevronRight } from 'react-icons/lu';
-import { IconButton } from '@components/ui';
+import { IconButton, Spinner } from '@components/ui';
 import { cx } from '@lib/cx';
 import { addDays, formatLongDay, formatMonth, middayOf, todayInSaoPaulo, weekdayOf } from '@lib/date';
 
@@ -28,13 +28,27 @@ export interface MonthCalendarProps {
   onSelect: (date: string) => void;
   focusRef?: Ref<HTMLDivElement>;
   describedBy?: string | undefined;
+  reach?: string | undefined;
+  loading?: boolean;
+  onShowMonth?: (lastDay: string) => void;
 }
 
-export function MonthCalendar({ available, selected, onSelect, focusRef, describedBy }: MonthCalendarProps) {
+export function MonthCalendar({
+  available,
+  selected,
+  onSelect,
+  focusRef,
+  describedBy,
+  reach,
+  loading = false,
+  onShowMonth,
+}: MonthCalendarProps) {
   const today = todayInSaoPaulo();
   const open = new Set(available);
   const first = monthOf(available[0] ?? today);
-  const last = monthOf(available.at(-1) ?? today);
+  const lastAvailable = monthOf(available.at(-1) ?? today);
+  const reachMonth = reach ? monthOf(reach) : '';
+  const last = reachMonth > lastAvailable ? reachMonth : lastAvailable;
   const [shown, setShown] = useState(monthOf(selected || available[0] || today));
   const [followed, setFollowed] = useState(selected);
   if (selected !== followed) {
@@ -42,6 +56,9 @@ export function MonthCalendar({ available, selected, onSelect, focusRef, describ
     if (selected) setShown(monthOf(selected));
   }
   const month = shown < first ? first : shown > last ? last : shown;
+  const lastDay = addDays(`${shiftMonth(month, 1)}-01`, -1);
+  const showMonth = useEffectEvent((day: string) => onShowMonth?.(day));
+  useEffect(() => showMonth(lastDay), [lastDay]);
 
   return (
     <div
@@ -56,6 +73,14 @@ export function MonthCalendar({ available, selected, onSelect, focusRef, describ
         <p aria-live="polite" className="text-text flex-1 text-sm font-semibold">
           {formatMonth(middayOf(`${month}-01`))}
         </p>
+        <span role="status" className="text-text-muted inline-flex">
+          {loading && (
+            <>
+              <Spinner />
+              <span className="sr-only">Carregando horários…</span>
+            </>
+          )}
+        </span>
         <IconButton
           label="Mês anterior"
           icon={<LuChevronLeft />}
@@ -71,7 +96,7 @@ export function MonthCalendar({ available, selected, onSelect, focusRef, describ
           className="border-border-strong bg-surface shadow-button size-9 border lg:size-8"
         />
       </div>
-      <div className="grid grid-cols-7 gap-0.5 text-center">
+      <div aria-busy={loading || undefined} className="grid grid-cols-7 gap-0.5 text-center">
         {WEEKDAYS.map((letter, index) => (
           <abbr
             key={WEEKDAY_NAMES[index]}

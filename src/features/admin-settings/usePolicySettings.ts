@@ -20,7 +20,7 @@ export function usePolicySettings() {
     defaultValues: query.data && valuesOf(query.data),
     fields: policySchema.keyof().options,
     save: policyApi.update,
-    invalidate: queryKeys.catalog.policy,
+    invalidate: [queryKeys.catalog.policy],
     success: 'Configurações salvas.',
     onDone: () => {
       form.reset(form.getValues());

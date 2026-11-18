@@ -26,7 +26,7 @@ export function RescheduleExamPage() {
       })}
       availability={({ id, examType, unit }) => ({
         queryKey: queryKeys.booking.examAvailability(unit.id, examType.id, id),
-        load: (signal) => examApi.availability(unit.id, examType.id, signal, id),
+        load: (signal, page) => examApi.availability(unit.id, examType.id, page, signal, id),
       })}
       reschedule={examApi.reschedule}
     />

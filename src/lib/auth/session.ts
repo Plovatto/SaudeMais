@@ -49,6 +49,10 @@ export function acknowledgeSessionExpiry(): void {
   if (endReason === 'expired') endReason = null;
 }
 
+export function acknowledgeSessionEnd(): void {
+  endReason = null;
+}
+
 export function startSession(token: string, remember: boolean): void {
   endReason = null;
   saveToken(token, remember);
