@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hueOf, initials } from './initials';
+import { firstName, hueOf, initials } from './initials';
 
 describe('initials', () => {
   it.each([
@@ -11,6 +11,17 @@ describe('initials', () => {
     ['', ''],
   ])('reads %s as %s', (name, expected) => {
     expect(initials(name)).toBe(expected);
+  });
+});
+
+describe('firstName', () => {
+  it.each([
+    ['Ana Maria Silva', 'Ana'],
+    ['Dr. João Silveira', 'João'],
+    ['  Bruno   Lima  ', 'Bruno'],
+    ['', ''],
+  ])('reads %s as %s', (name, expected) => {
+    expect(firstName(name)).toBe(expected);
   });
 });
 

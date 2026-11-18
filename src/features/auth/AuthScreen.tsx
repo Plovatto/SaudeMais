@@ -1,26 +1,46 @@
 import type { ReactNode } from 'react';
-import { Logo } from '@components/layout/Logo';
+import { Brand, brandSurface } from '@components/layout/Brand';
 import { PageTitle } from '@components/layout/PageTitle';
-import { Card } from '@components/ui';
+import { ThemeMenu } from '@components/layout/ThemeMenu';
+import { areas, DEFAULT_ROLE } from '@constants/areas';
+import { cx } from '@lib/cx';
 
-export interface AuthScreenProps {
+export interface AuthArt {
   title: string;
-  subtitle: string;
-  withLogo?: boolean;
-  children: ReactNode;
-  footer?: ReactNode;
+  text: string;
 }
 
-export function AuthScreen({ title, subtitle, withLogo = false, children, footer }: AuthScreenProps) {
+export interface AuthScreenProps {
+  art: AuthArt;
+  title: string;
+  subtitle: ReactNode;
+  children: ReactNode;
+}
+
+export function AuthScreen({ art, title, subtitle, children }: AuthScreenProps) {
   return (
-    <div className="flex flex-col gap-6 pt-4 pb-6">
-      <header className="text-on-role flex flex-col items-center gap-2 text-center">
-        {withLogo && <Logo className="mb-4" />}
-        <PageTitle className="text-on-role text-[1.75rem] font-bold">{title}</PageTitle>
-        <p className="font-medium">{subtitle}</p>
-      </header>
-      <Card className="flex flex-col gap-5 px-6 py-8 sm:px-10">{children}</Card>
-      {footer}
+    <div className="flex min-h-dvh flex-col lg:flex-row">
+      <div
+        className={cx(brandSurface, 'flex flex-col gap-10 px-6 py-7 lg:flex-[1_1_520px] lg:px-12 lg:py-10')}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <Brand icon={areas[DEFAULT_ROLE].icon} subtitle="Clínica integrada" />
+          <ThemeMenu brand />
+        </div>
+        <div className="motion-safe:animate-fade mt-auto flex max-w-[420px] flex-col gap-3">
+          <p className="text-[2rem] leading-[1.15] font-bold tracking-[-0.02em] text-balance">{art.title}</p>
+          <p className="text-white/80">{art.text}</p>
+        </div>
+      </div>
+      <div className="bg-surface grid flex-1 place-items-center content-start px-6 py-10 lg:flex-[1_1_480px] lg:content-center">
+        <div className="motion-safe:animate-rise flex w-full max-w-[400px] flex-col gap-5">
+          <header className="flex flex-col gap-2.5">
+            <PageTitle className="text-[1.625rem] font-[650] tracking-[-0.025em]">{title}</PageTitle>
+            <p className="text-text-secondary text-[0.9375rem]">{subtitle}</p>
+          </header>
+          {children}
+        </div>
+      </div>
     </div>
   );
 }
