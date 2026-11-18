@@ -44,6 +44,8 @@ export interface Area {
 }
 
 const PROFILE = 'perfil';
+export const BOOK_APPOINTMENT_PATH = 'consultas/nova';
+export const BOOK_EXAM_PATH = 'exames/novo';
 
 const profilePage: AreaPage = { path: PROFILE, title: 'Meu perfil' };
 
@@ -69,14 +71,14 @@ export const areas: Record<Role, Area> = {
         },
       },
       {
-        path: 'consultas/nova',
+        path: BOOK_APPOINTMENT_PATH,
         title: 'Agendar consulta',
         parent: '',
         flow: true,
         nav: { label: 'Agendar consulta', icon: LuStethoscope },
       },
       {
-        path: 'exames/novo',
+        path: BOOK_EXAM_PATH,
         title: 'Agendar exame',
         parent: '',
         flow: true,
@@ -100,7 +102,7 @@ export const areas: Record<Role, Area> = {
       { path: 'exames/:id/resultado', title: 'Resultado do exame', parent: 'agendamentos' },
     ],
     tabs: ['', 'agendamentos'],
-    fab: { path: 'consultas/nova', label: 'Agendar consulta', icon: LuPlus },
+    fab: { path: BOOK_APPOINTMENT_PATH, label: 'Agendar consulta', icon: LuPlus },
   },
   doctor: {
     role: 'doctor',
@@ -226,6 +228,8 @@ export function parentUrl(pathname: string): string | undefined {
 }
 
 export const BOOKING_PARAM = 'id';
+
+export const TAB_PARAM = 'aba';
 
 export const bookingUrl = (bookingId: string, past = false) =>
   `${PATIENT_BOOKINGS_PATH}?${past ? 'aba=realizados&' : ''}${BOOKING_PARAM}=${bookingId}`;

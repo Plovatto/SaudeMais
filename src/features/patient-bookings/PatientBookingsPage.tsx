@@ -7,7 +7,7 @@ import { PagedResults } from '@components/bookings/PagedResults';
 import { PageHeader } from '@components/layout/PageHeader';
 import { Button, ButtonLink, EmptyState, TabPanel, Tabs } from '@components/ui';
 import { groupHeader, overline } from '@components/ui/styles';
-import { areas, BOOKING_PARAM } from '@constants/areas';
+import { areas, BOOK_APPOINTMENT_PATH, BOOKING_PARAM } from '@constants/areas';
 import { useListSelection } from '@hooks/useListSelection';
 import { resetPageAnd } from '@hooks/usePageParam';
 import { useSearchParam, useSetSearchParams } from '@hooks/useSearchParam';
@@ -30,7 +30,7 @@ import { getBooking, listBookings, type BookingListParams } from './bookings-api
 import { CancelDialog } from './CancelDialog';
 import { plural } from '@lib/plural';
 
-const BOOK_URL = `${areas.patient.base}/consultas/nova`;
+const BOOK_URL = `${areas.patient.base}/${BOOK_APPOINTMENT_PATH}`;
 const TABS_ID = 'patient-bookings';
 const RESET_SELECTION = [BOOKING_PARAM];
 

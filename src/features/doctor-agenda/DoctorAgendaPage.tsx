@@ -5,6 +5,7 @@ import { DetailPane } from '@components/bookings/DetailPane';
 import { PagedResults } from '@components/bookings/PagedResults';
 import { PageHeader } from '@components/layout/PageHeader';
 import { Card, EmptyState, ListSkeleton, QueryError, SearchInput, TabPanel, Tabs } from '@components/ui';
+import { TAB_PARAM } from '@constants/areas';
 import { AGENDA_STATUS_PARAM, AGENDA_TABS, AGENDA_VIEWS } from '@constants/doctor-agenda';
 import { useListSelection } from '@hooks/useListSelection';
 import { useNow } from '@hooks/useNow';
@@ -73,7 +74,7 @@ export function DoctorAgendaPage() {
   const detailId = useId();
   const results = useRef<HTMLParagraphElement>(null);
   const dayList = useRef<HTMLElement>(null);
-  const [view, setView] = useSearchParam('aba', AGENDA_VIEWS.week);
+  const [view, setView] = useSearchParam(TAB_PARAM, AGENDA_VIEWS.week);
   const [dayParam, setDay] = useSearchParam(DAY_PARAM, today);
   const day = isCivilDate(dayParam) ? dayParam : today;
   const { search, setSearch, searchParam } = useSearchDraft(SEARCH_PARAM, RESET_SELECTION);
