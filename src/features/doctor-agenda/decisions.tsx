@@ -21,39 +21,41 @@ export interface Decision {
   };
 }
 
-export const DECISIONS: readonly Decision[] = [
-  {
-    flag: 'canConfirm',
-    label: 'Confirmar',
-    loadingLabel: 'Confirmando',
-    variant: 'success-outline',
-    icon: <LuCircleCheck />,
-    success: 'Consulta confirmada.',
-    send: doctorApi.confirm,
+export const CONFIRM: Decision = {
+  flag: 'canConfirm',
+  label: 'Confirmar',
+  loadingLabel: 'Confirmando',
+  variant: 'success-outline',
+  icon: <LuCircleCheck />,
+  success: 'Consulta confirmada.',
+  send: doctorApi.confirm,
+};
+
+export const COMPLETE: Decision = {
+  flag: 'canComplete',
+  label: 'Concluir',
+  loadingLabel: 'Concluindo',
+  variant: 'success-outline',
+  icon: <LuCircleCheckBig />,
+  success: 'Consulta concluída.',
+  send: doctorApi.complete,
+  recordsMetrics: true,
+};
+
+export const NO_SHOW: Decision = {
+  flag: 'canNoShow',
+  label: 'Não compareceu',
+  loadingLabel: 'Registrando falta',
+  variant: 'danger-outline',
+  icon: <LuUserX />,
+  success: 'Falta registrada.',
+  send: doctorApi.noShow,
+  confirmation: {
+    title: 'Registrar falta?',
+    confirmLabel: 'Registrar falta',
+    description: ({ patient, startsAt }) =>
+      `${patient.fullName} não compareceu à consulta de ${formatDateTime(startsAt)}. Esse registro não pode ser desfeito.`,
   },
-  {
-    flag: 'canComplete',
-    label: 'Concluir',
-    loadingLabel: 'Concluindo',
-    variant: 'success-outline',
-    icon: <LuCircleCheckBig />,
-    success: 'Consulta concluída.',
-    send: doctorApi.complete,
-    recordsMetrics: true,
-  },
-  {
-    flag: 'canNoShow',
-    label: 'Não compareceu',
-    loadingLabel: 'Registrando falta',
-    variant: 'danger-outline',
-    icon: <LuUserX />,
-    success: 'Falta registrada.',
-    send: doctorApi.noShow,
-    confirmation: {
-      title: 'Registrar falta?',
-      confirmLabel: 'Registrar falta',
-      description: ({ patient, startsAt }) =>
-        `${patient.fullName} não compareceu à consulta de ${formatDateTime(startsAt)}. Esse registro não pode ser desfeito.`,
-    },
-  },
-];
+};
+
+export const DECISIONS: readonly Decision[] = [CONFIRM, COMPLETE, NO_SHOW];
