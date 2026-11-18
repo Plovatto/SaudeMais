@@ -26,6 +26,17 @@ describe('notification texts', () => {
     expect(notificationText(notification('appointment_cancelled', params)).body.endsWith(ending)).toBe(true);
   });
 
+  it('titles a confirmation and a result like the prototype and uses short dates in the body', () => {
+    expect(notificationText(notification('appointment_confirmed'))).toEqual({
+      title: 'Consulta confirmada',
+      body: 'Sua consulta de 19/07, 15:30 foi confirmada pelo médico.',
+    });
+    expect(notificationText(notification('exam_result_available'))).toEqual({
+      title: 'Resultado disponível',
+      body: 'O resultado do seu exame de 19/07 já pode ser consultado.',
+    });
+  });
+
   it('leaves out a missing or invalid date', () => {
     expect(notificationText(notification('appointment_confirmed', { startsAt: 'x' })).body).toBe(
       'Sua consulta foi confirmada pelo médico.',

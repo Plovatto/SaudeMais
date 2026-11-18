@@ -2,7 +2,7 @@ import { ADMIN_USERS_PATH, adminUserUrl } from '@constants/admin-users';
 import { areas, examResultUrl, PATIENT_BOOKINGS_PATH, PATIENT_PAST_PATH, type Role } from '@constants/areas';
 import { AGENDA_TABS, doctorAgendaUrl } from '@constants/doctor-agenda';
 import type { PatientBooking, UserNotification } from '@lib/api/models';
-import { formatDateTime } from '@lib/date';
+import { formatCivilDate, formatTime } from '@lib/date';
 
 type Params = UserNotification['params'];
 type Canceller = NonNullable<PatientBooking['cancellation']>['byRole'];
@@ -17,9 +17,11 @@ const textParam = (params: Params, key: string) => {
   return typeof value === 'string' && value.trim() ? value : null;
 };
 
-const at = (params: Params) => {
+const at = (params: Params, { time = true } = {}) => {
   const startsAt = textParam(params, 'startsAt');
-  return startsAt && !Number.isNaN(Date.parse(startsAt)) ? ` de ${formatDateTime(startsAt)}` : '';
+  if (!startsAt || Number.isNaN(Date.parse(startsAt))) return '';
+  const day = formatCivilDate(startsAt, { year: false });
+  return time ? ` de ${day}, ${formatTime(startsAt)}` : ` de ${day}`;
 };
 
 export const cancellers: Record<Canceller, string> = {
@@ -48,7 +50,7 @@ const notificationTexts: Record<UserNotification['type'], (params: Params) => No
     body: `A consulta${at(params)} foi cancelada pelo paciente.`,
   }),
   appointment_confirmed: (params) => ({
-    title: 'Consulta confirmada!',
+    title: 'Consulta confirmada',
     body: `Sua consulta${at(params)} foi confirmada pelo médico.`,
   }),
   appointment_cancelled: (params) => ({
@@ -60,8 +62,8 @@ const notificationTexts: Record<UserNotification['type'], (params: Params) => No
     body: `O pedido de consulta${at(params)} não foi confirmado a tempo. Escolha outro horário.`,
   }),
   exam_result_available: (params) => ({
-    title: 'Resultado de exame disponível',
-    body: `O resultado do seu exame${at(params)} já pode ser consultado.`,
+    title: 'Resultado disponível',
+    body: `O resultado do seu exame${at(params, { time: false })} já pode ser consultado.`,
   }),
   user_registered: (params) => ({
     title: 'Novo usuário cadastrado',
