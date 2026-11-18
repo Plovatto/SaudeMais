@@ -137,13 +137,11 @@ function ScheduleForm({ schedule }: { schedule: DoctorSchedule }) {
         }}
         className="flex flex-col gap-4 lg:gap-5"
       >
-        {warnings.length > 0 && (
-          <WarningAlert
-            warnings={warnings}
-            one="consulta futura ficou fora dos novos períodos"
-            many="consultas futuras ficaram fora dos novos períodos"
-          />
-        )}
+        <WarningAlert
+          warnings={warnings}
+          one="consulta futura ficou fora dos novos períodos"
+          many="consultas futuras ficaram fora dos novos períodos"
+        />
         {alert && <FormAlert>{alert}</FormAlert>}
         <fieldset disabled={isSubmitting} className={cx(layout, 'min-w-0')}>
           <legend className="sr-only">Dias e consultas</legend>
@@ -160,7 +158,7 @@ function ScheduleForm({ schedule }: { schedule: DoctorSchedule }) {
             ))}
           </div>
           <div className={cx('flex min-w-0 flex-col gap-4 lg:gap-5', stagger(1))}>
-            <DurationCard control={control} schedule={schedule} />
+            <DurationCard control={control} schedule={schedule} slots={slots} />
             {timeOff.card}
           </div>
         </fieldset>

@@ -43,15 +43,12 @@ export function TimeOffCard({ warnings, addRef, onAdd, onRemoved }: TimeOffCardP
 
   return (
     <SectionCard title="Folgas e bloqueios" flush>
-      {warnings.length > 0 && (
-        <div className={sectionPad}>
-          <WarningAlert
-            warnings={warnings}
-            one="consulta já estava marcada nesta data"
-            many="consultas já estavam marcadas nesta data"
-          />
-        </div>
-      )}
+      <WarningAlert
+        warnings={warnings}
+        one="consulta já estava marcada nesta data"
+        many="consultas já estavam marcadas nesta data"
+        className={sectionPad}
+      />
       {list.isError ? (
         <QueryError error={list.error} onRetry={() => void list.refetch()} padded />
       ) : list.data && list.data.length > 0 ? (
