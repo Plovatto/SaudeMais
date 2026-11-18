@@ -1,20 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { useId, useRef } from 'react';
 import { LuCalendarX, LuSearchX } from 'react-icons/lu';
+import { DetailPane } from '@components/bookings/DetailPane';
 import { PagedResults } from '@components/bookings/PagedResults';
 import { PageHeader } from '@components/layout/PageHeader';
-import {
-  Card,
-  Dialog,
-  EmptyState,
-  ListSkeleton,
-  QueryError,
-  SearchInput,
-  TabPanel,
-  Tabs,
-} from '@components/ui';
+import { Card, EmptyState, ListSkeleton, QueryError, SearchInput, TabPanel, Tabs } from '@components/ui';
 import { AGENDA_STATUS_PARAM, AGENDA_TABS, AGENDA_VIEWS } from '@constants/doctor-agenda';
-import { DESKTOP_QUERY, useMediaQuery } from '@hooks/useMediaQuery';
+import { useListSelection } from '@hooks/useListSelection';
 import { useNow } from '@hooks/useNow';
 import { useSearchDraft } from '@hooks/useSearchDraft';
 import { useSearchParam } from '@hooks/useSearchParam';
@@ -78,14 +70,12 @@ function rowFor({ selectedId, desktop, now, onView }: SelectionProps) {
 export function DoctorAgendaPage() {
   const now = useNow();
   const today = civilDateInSaoPaulo(now);
-  const desktop = useMediaQuery(DESKTOP_QUERY);
   const detailId = useId();
   const results = useRef<HTMLParagraphElement>(null);
   const dayList = useRef<HTMLElement>(null);
   const [view, setView] = useSearchParam('aba', AGENDA_VIEWS.week);
   const [dayParam, setDay] = useSearchParam(DAY_PARAM, today);
   const day = isCivilDate(dayParam) ? dayParam : today;
-  const [selectedId, setSelectedId] = useSearchParam(SELECTED_PARAM);
   const { search, setSearch, searchParam } = useSearchDraft(SEARCH_PARAM, RESET_SELECTION);
   const current: View = view === AGENDA_VIEWS.list ? AGENDA_VIEWS.list : AGENDA_VIEWS.week;
   const actions = useAppointmentActions(current === AGENDA_VIEWS.week ? dayList : results);
@@ -119,12 +109,12 @@ export function DoctorAgendaPage() {
   const allCount = counts ? counts.pending + counts.confirmed + counts.history : undefined;
 
   const visible = current === AGENDA_VIEWS.week ? dayItems : list.items;
-  const chosen = visible?.find((appointment) => appointment.id === selectedId);
-  const fallback = visible?.find(({ startsAt }) => new Date(startsAt) >= now) ?? visible?.[0];
-  const selected = chosen ?? (desktop ? fallback : undefined);
-  const open = (appointment: DoctorAppointment) => setSelectedId(appointment.id);
-  const closeSheet = () => setSelectedId('', { replace: true });
-  const row = rowFor({ selectedId: selected?.id, desktop, now, onView: open });
+  const { desktop, selected, select, closeSheet } = useListSelection(
+    SELECTED_PARAM,
+    visible,
+    (items) => items.find(({ startsAt }) => new Date(startsAt) >= now) ?? items[0],
+  );
+  const row = rowFor({ selectedId: selected?.id, desktop, now, onView: select });
   const pickDay = (next: string) => setDay(next, { reset: RESET_SELECTION });
   const weekCount = week.data?.length;
   const detailState = {
@@ -258,43 +248,33 @@ export function DoctorAgendaPage() {
               </TabPanel>
             </div>
           )}
-          {desktop && visible && (
-            <aside
-              key={selected?.id}
-              aria-label="Detalhes da consulta"
-              className="rounded-card border-border bg-surface shadow-raised motion-safe:animate-pop sticky top-4 border"
-            >
-              {selected ? (
-                <AppointmentDetail appointment={selected} titleId={detailId} {...detailState} />
-              ) : (
-                <EmptyState
-                  icon={<LuCalendarX />}
-                  title="Nenhuma consulta selecionada"
-                  description="Os detalhes aparecem aqui quando houver uma consulta."
-                />
-              )}
-            </aside>
-          )}
         </div>
       </TabPanel>
-      {!desktop && (
-        <Dialog
-          open={selected !== undefined}
-          onClose={closeSheet}
-          title="Detalhes da consulta"
-          placement="sheet"
-          bare
-        >
-          {selected && (
+      <DetailPane
+        desktop={desktop}
+        label="Detalhes da consulta"
+        open={selected !== undefined}
+        paneKey={selected?.id}
+        showPane={visible !== undefined}
+        onClose={closeSheet}
+      >
+        {(onClose) =>
+          selected ? (
             <AppointmentDetail
               appointment={selected}
               titleId={detailId}
-              onClose={closeSheet}
+              {...(onClose && { onClose })}
               {...detailState}
             />
-          )}
-        </Dialog>
-      )}
+          ) : (
+            <EmptyState
+              icon={<LuCalendarX />}
+              title="Nenhuma consulta selecionada"
+              description="Os detalhes aparecem aqui quando houver uma consulta."
+            />
+          )
+        }
+      </DetailPane>
       {actions.dialogs}
     </>
   );

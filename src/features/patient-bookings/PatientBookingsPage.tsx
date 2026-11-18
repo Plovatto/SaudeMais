@@ -1,12 +1,13 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { LuCalendarX, LuFilterX, LuPlus } from 'react-icons/lu';
 import { BookingRow } from '@components/bookings/BookingRow';
+import { DetailPane } from '@components/bookings/DetailPane';
 import { PagedResults } from '@components/bookings/PagedResults';
 import { PageHeader } from '@components/layout/PageHeader';
-import { Button, ButtonLink, Dialog, EmptyState, TabPanel, Tabs } from '@components/ui';
+import { Button, ButtonLink, EmptyState, TabPanel, Tabs } from '@components/ui';
 import { groupHeader, overline } from '@components/ui/styles';
 import { areas, BOOKING_PARAM } from '@constants/areas';
-import { DESKTOP_QUERY, useMediaQuery } from '@hooks/useMediaQuery';
+import { useListSelection } from '@hooks/useListSelection';
 import { resetPageAnd } from '@hooks/usePageParam';
 import { useSearchParam, useSetSearchParams } from '@hooks/useSearchParam';
 import { useTabbedList } from '@hooks/useTabbedList';
@@ -57,9 +58,7 @@ const count = (total: number) => plural(total, 'agendamento', 'agendamentos');
 export function PatientBookingsPage() {
   const [tipo] = useSearchParam('tipo');
   const [status] = useSearchParam('status');
-  const [selectedId, setSelectedId] = useSearchParam(BOOKING_PARAM);
   const setParams = useSetSearchParams();
-  const desktop = useMediaQuery(DESKTOP_QUERY);
   const detailId = useId();
   const raw = { tipo, status };
   const list = useTabbedList(
@@ -84,10 +83,10 @@ export function PatientBookingsPage() {
     applyFilters(NO_FILTERS);
     results.current?.focus();
   };
-  const chosen = list.items?.find((booking) => booking.id === selectedId);
-  const selected = chosen ?? (desktop ? list.items?.[0] : undefined);
-  const select = (booking: PatientBooking) => setSelectedId(booking.id);
-  const closeSheet = () => setSelectedId('');
+  const { desktop, selectedId, setSelectedId, chosen, selected, select, closeSheet } = useListSelection(
+    BOOKING_PARAM,
+    list.items,
+  );
 
   const settled = list.items !== undefined && !list.query.isPlaceholderData && !list.query.isFetching;
   useEffect(() => {
@@ -191,35 +190,25 @@ export function PatientBookingsPage() {
             )}
           </PagedResults>
         </div>
-        {desktop && selected && (
-          <aside
-            key={selected.id}
-            aria-label="Detalhes do agendamento"
-            className="rounded-card border-border bg-surface shadow-raised motion-safe:animate-pop sticky top-4 border"
-          >
-            <BookingDetail booking={selected} titleId={detailId} onCancel={setCancelling} />
-          </aside>
-        )}
       </TabPanel>
-      {!desktop && (
-        <Dialog
-          open={selected !== undefined}
-          onClose={closeSheet}
-          title="Detalhes do agendamento"
-          placement="sheet"
-          bare
-        >
-          {selected && (
+      <DetailPane
+        desktop={desktop}
+        label="Detalhes do agendamento"
+        open={selected !== undefined}
+        paneKey={selected?.id}
+        onClose={closeSheet}
+      >
+        {(onClose) =>
+          selected && (
             <BookingDetail
               booking={selected}
               titleId={detailId}
               onCancel={setCancelling}
-              onClose={closeSheet}
-              tips
+              {...(onClose && { onClose, tips: true })}
             />
-          )}
-        </Dialog>
-      )}
+          )
+        }
+      </DetailPane>
       <CancelDialog booking={cancelling} onClose={() => setCancelling(null)} fallbackFocus={results} />
     </>
   );
