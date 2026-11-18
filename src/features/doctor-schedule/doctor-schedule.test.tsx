@@ -475,20 +475,18 @@ describe('doctor schedule', { timeout: 15_000 }, () => {
     expect(savedBody(calls)).toHaveProperty('appointmentDurationMin', null);
   });
 
-  it('returns to the specialty duration when the own duration has the same value', async () => {
+  it('keeps an own duration equal to the specialty one while it is untouched', async () => {
     const { calls } = serve({
       save: savedEcho(),
       loaded: withDays({}, { appointmentDurationMin: 30, isSpecialtyDefault: false }),
     });
     const { user } = renderApp(PAGE);
 
-    await user.click(await screen.findByRole('button', { name: /^Duração de cada consulta/ }));
-    await user.click(screen.getByRole('option', { name: /^30 minutos/ }));
     await user.click((await sectionOf('Sábado')).getByRole('switch', { name: 'Atender aos sábados' }));
     await user.click(saveButton());
 
     expect(await screen.findByText('Horários salvos.')).toBeInTheDocument();
-    expect(savedBody(calls)).toHaveProperty('appointmentDurationMin', null);
+    expect(savedBody(calls)).not.toHaveProperty('appointmentDurationMin');
   });
 
   it('follows a background refresh while the form is untouched', async () => {
