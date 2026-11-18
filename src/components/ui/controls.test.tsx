@@ -26,6 +26,7 @@ describe('Button', () => {
     await user.click(button);
 
     expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).toHaveAttribute('aria-busy', 'true');
     expect(button).toHaveFocus();
     expect(onClick).not.toHaveBeenCalled();
   });
