@@ -42,7 +42,7 @@ export function WhenCard({
   hint,
   current,
 }: WhenCardProps) {
-  const { days, slots, loading, failure, retry, empty, reach, showUntil, sourceKey, messages } =
+  const { days, slots, loading, loadingMore, failure, retry, empty, reach, showUntil, sourceKey, messages } =
     booking.slots;
   const error = booking.errors.date ?? booking.errors.startsAt;
   const errorId = useId();
@@ -77,6 +77,7 @@ export function WhenCard({
               selected={booking.date}
               onSelect={booking.pickDate}
               reach={reach}
+              loading={loadingMore}
               onShowMonth={showUntil}
               focusRef={booking.focusRef('date')}
               describedBy={booking.errors.date ? errorId : undefined}

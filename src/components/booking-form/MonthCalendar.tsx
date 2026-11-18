@@ -1,6 +1,6 @@
 import { useEffect, useEffectEvent, useState, type Ref } from 'react';
 import { LuChevronLeft, LuChevronRight } from 'react-icons/lu';
-import { IconButton } from '@components/ui';
+import { IconButton, Spinner } from '@components/ui';
 import { cx } from '@lib/cx';
 import { addDays, formatLongDay, formatMonth, middayOf, todayInSaoPaulo, weekdayOf } from '@lib/date';
 
@@ -29,6 +29,7 @@ export interface MonthCalendarProps {
   focusRef?: Ref<HTMLDivElement>;
   describedBy?: string | undefined;
   reach?: string | undefined;
+  loading?: boolean;
   onShowMonth?: (lastDay: string) => void;
 }
 
@@ -39,6 +40,7 @@ export function MonthCalendar({
   focusRef,
   describedBy,
   reach,
+  loading = false,
   onShowMonth,
 }: MonthCalendarProps) {
   const today = todayInSaoPaulo();
@@ -71,6 +73,14 @@ export function MonthCalendar({
         <p aria-live="polite" className="text-text flex-1 text-sm font-semibold">
           {formatMonth(middayOf(`${month}-01`))}
         </p>
+        <span role="status" className="text-text-muted inline-flex">
+          {loading && (
+            <>
+              <Spinner />
+              <span className="sr-only">Carregando horários…</span>
+            </>
+          )}
+        </span>
         <IconButton
           label="Mês anterior"
           icon={<LuChevronLeft />}
@@ -86,7 +96,7 @@ export function MonthCalendar({
           className="border-border-strong bg-surface shadow-button size-9 border lg:size-8"
         />
       </div>
-      <div className="grid grid-cols-7 gap-0.5 text-center">
+      <div aria-busy={loading || undefined} className="grid grid-cols-7 gap-0.5 text-center">
         {WEEKDAYS.map((letter, index) => (
           <abbr
             key={WEEKDAY_NAMES[index]}
