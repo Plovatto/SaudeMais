@@ -275,12 +275,15 @@ export function AdminHomePage() {
         title="Painel"
         subtitle={`Visão geral da clínica · ${formatDate(period.from)} a ${formatDate(period.to)}`}
         action={
-          <Segmented
-            label="Período"
-            options={PERIOD_OPTIONS}
-            value={preset}
-            onValueChange={(value) => setPreset(value, { replace: true })}
-          />
+          <div className="flex">
+            <Segmented
+              label="Período"
+              options={PERIOD_OPTIONS}
+              value={preset}
+              onValueChange={(value) => setPreset(value, { replace: true })}
+              className="flex-1"
+            />
+          </div>
         }
       />
       {current.isError ? (
