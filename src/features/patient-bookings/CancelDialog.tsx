@@ -35,7 +35,7 @@ export function CancelDialog({ booking, onClose, fallbackFocus }: CancelDialogPr
   const refresh = () =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: queryKeys.patient.all }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.booking.availabilities }),
+      queryClient.resetQueries({ queryKey: queryKeys.booking.availabilities }),
     ]);
 
   return (

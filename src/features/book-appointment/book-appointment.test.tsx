@@ -74,11 +74,12 @@ interface Schedule {
   first?: Day[][];
   second?: Day[];
   later?: Record<string, Day[]>;
+  failing?: Record<string, MockResponse>;
 }
 
 function serve(
   book: () => MockResponse = () => ({ status: 201, body: appointment }),
-  { first = [days], second = [], later = {} }: Schedule = {},
+  { first = [days], second = [], later = {}, failing = {} }: Schedule = {},
 ) {
   let loads = 0;
   const served = serveApi(['patient'], {
@@ -95,6 +96,7 @@ function serve(
     '/api/doctors/d1/availability': (_method, _body, url) => {
       const from = url.searchParams.get('from') ?? '';
       if (from === addDays(todayInSaoPaulo(), 31)) return { status: 200, body: { days: second } };
+      if (from in failing) return failing[from];
       if (from !== todayInSaoPaulo()) return { status: 200, body: { days: later[from] ?? [] } };
       const response = first[Math.min(loads, first.length - 1)] ?? [];
       loads += 1;
@@ -266,6 +268,31 @@ describe('book appointment', { timeout: 20_000 }, () => {
       { from: '2027-02-20', to: '2027-03-22' },
       { from: '2027-03-23', to: '2027-04-22' },
     ]);
+  });
+
+  it('stops asking for a later window that fails and starts over on retry', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-20T02:30:00.000Z'));
+    const { calls } = serve(undefined, {
+      first: [[days[0] as Day]],
+      failing: { '2027-01-20': apiError(429, 'RATE_LIMITED') },
+    });
+    const { user } = await start();
+    await user.click(screen.getByRole('radio', { name: /Carlos Mendes/ }));
+    await waitFor(() => expect(openDays()).toEqual([MONDAY]));
+
+    await user.click(within(calendar()).getByRole('button', { name: 'Próximo mês' }));
+    await user.click(within(calendar()).getByRole('button', { name: 'Próximo mês' }));
+
+    const retry = await screen.findByRole('button', { name: 'Tentar de novo' });
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    const failed = () => windowsOf(calls).filter((window) => window.from === '2027-01-20');
+    expect(failed()).toHaveLength(1);
+
+    await user.click(retry);
+
+    await waitFor(() => expect(openDays()).toEqual([MONDAY]));
+    expect(failed()).toHaveLength(1);
   });
 
   it('warns when the doctor has no free slot', async () => {

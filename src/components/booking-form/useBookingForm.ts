@@ -11,7 +11,14 @@ import {
 } from '@lib/messages/errors.pt-BR';
 import { queryKeys } from '@lib/query-keys';
 import { useFormSubmit } from '@lib/useFormSubmit';
-import { horizonEnd, loadedThrough, nextWindowPage, type AvailableDay } from './availability';
+import {
+  firstWindowPage,
+  horizonEnd,
+  loadedThrough,
+  nextWindowPage,
+  type AvailableDay,
+  type WindowPage,
+} from './availability';
 
 type SlotValues = { date: string; startsAt: string; notes: string };
 
@@ -27,7 +34,7 @@ interface BookingFormOptions<TIn extends FieldValues, TOut, R> {
   fields: readonly Path<TIn>[];
   availability: {
     queryKey: QueryKey;
-    load: (signal: AbortSignal, page: number) => Promise<AvailableDay[]>;
+    load: (signal: AbortSignal, page: WindowPage) => Promise<AvailableDay[]>;
     enabled: boolean;
   };
   fieldByCode?: Partial<Record<string, Path<TIn>>>;
@@ -59,21 +66,29 @@ export function useBookingForm<TIn extends SlotValues, TOut, R>(
   const availability = useInfiniteQuery({
     queryKey: source.queryKey,
     queryFn: ({ signal, pageParam }) => source.load(signal, pageParam),
-    initialPageParam: 0,
-    getNextPageParam: (_last, pages) => nextWindowPage(pages.length),
+    initialPageParam: firstWindowPage(),
+    getNextPageParam: (_last, pages, first) => nextWindowPage(first.start, pages.length),
     enabled: source.enabled,
     staleTime: 0,
+    refetchOnWindowFocus: false,
   });
   const loaded = useMemo(() => availability.data?.pages.flat(), [availability.data]);
   const days = source.enabled ? (loaded ?? []) : [];
-  const [wanted, setWanted] = useState('');
-  const through = loadedThrough(availability.data?.pages.length ?? 0);
+  const sourceKey = JSON.stringify(source.queryKey);
+  const [want, setWant] = useState({ key: '', until: '' });
+  const wanted = want.key === sourceKey ? want.until : '';
+  const start = (availability.data?.pageParams[0] as WindowPage | undefined)?.start;
+  const through = start ? loadedThrough(start, availability.data?.pages.length ?? 0) : '';
   const { hasNextPage, isFetching, fetchNextPage } = availability;
+  const reset = () => queryClient.resetQueries({ queryKey: source.queryKey });
   const slots = days.find((day) => day.date === date)?.slots ?? [];
   const { errors, isSubmitting } = formState;
 
   useEffect(() => {
-    if (wanted > through && hasNextPage && !isFetching) void fetchNextPage();
+    if (!through || wanted <= through || !hasNextPage || isFetching) return;
+    void fetchNextPage().then((result) => {
+      if (result.isFetchNextPageError) setWant({ key: '', until: '' });
+    });
   }, [wanted, through, hasNextPage, isFetching, fetchNextPage]);
 
   useEffect(() => {
@@ -125,7 +140,7 @@ export function useBookingForm<TIn extends SlotValues, TOut, R>(
       if (SLOT_CODES.has(error.code)) {
         if (STALE_SLOT_CODES.has(error.code)) {
           clearSlot();
-          void availability.refetch();
+          void reset();
         }
         setError('startsAt', { message: errorMessage(error) }, { shouldFocus: true });
         return true;
@@ -144,7 +159,7 @@ export function useBookingForm<TIn extends SlotValues, TOut, R>(
       setMissing(false);
       return run(async () => {
         const result = await book(values);
-        void queryClient.invalidateQueries({ queryKey: queryKeys.booking.availabilities });
+        void queryClient.resetQueries({ queryKey: queryKeys.booking.availabilities });
         void queryClient.invalidateQueries({ queryKey: queryKeys.patient.all });
         form.reset();
         onBooked(result);
@@ -173,10 +188,10 @@ export function useBookingForm<TIn extends SlotValues, TOut, R>(
       slots,
       loading: availability.isFetching && days.length === 0,
       failure: availability.error,
-      retry: () => void availability.refetch(),
+      retry: () => void reset(),
       empty: availability.data?.pages[0]?.length === 0,
-      reach: hasNextPage ? horizonEnd() : undefined,
-      showUntil: setWanted,
+      reach: start ? horizonEnd(start) : undefined,
+      showUntil: (until: string) => setWant({ key: sourceKey, until }),
       messages,
     },
   };

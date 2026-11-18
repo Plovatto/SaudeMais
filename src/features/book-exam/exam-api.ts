@@ -1,4 +1,4 @@
-import { inWindows } from '@components/booking-form/availability';
+import { inWindows, type WindowPage } from '@components/booking-form/availability';
 import { apiFetch, type BodyOf, type ResponseOf } from '@lib/api/api-fetch';
 
 export type ExamBooking = ResponseOf<'/api/exam-bookings', 'post'>;
@@ -7,7 +7,7 @@ export const examApi = {
   availability: (
     unitId: string,
     examTypeId: string,
-    page: number,
+    page: WindowPage,
     signal: AbortSignal,
     rescheduling?: string,
   ) =>

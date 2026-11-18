@@ -1,4 +1,4 @@
-import { inWindows } from '@components/booking-form/availability';
+import { inWindows, type WindowPage } from '@components/booking-form/availability';
 import { apiFetch, type BodyOf, type ResponseOf } from '@lib/api/api-fetch';
 
 const DOCTORS_PAGE_SIZE = 50;
@@ -15,7 +15,7 @@ export const bookingApi = {
       },
       signal,
     }),
-  availability: (doctorId: string, page: number, signal: AbortSignal, rescheduling?: string) =>
+  availability: (doctorId: string, page: WindowPage, signal: AbortSignal, rescheduling?: string) =>
     inWindows(
       (from, to) =>
         apiFetch('get', '/api/doctors/{id}/availability', {
