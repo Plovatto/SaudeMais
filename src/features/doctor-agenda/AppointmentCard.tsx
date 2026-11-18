@@ -1,27 +1,16 @@
 import { LuCircleX, LuFileText, LuMapPin, LuPhone } from 'react-icons/lu';
 import { AppointmentHeadline } from '@components/bookings/AppointmentHeadline';
 import { CancellationNote, Detail, Note, PhoneLink } from '@components/bookings/BookingDetails';
-import { bookingStatus, hasStarted } from '@components/bookings/booking-display';
-import { ExpandableCard } from '@components/bookings/ExpandableCard';
+import { bookingStatus } from '@components/bookings/booking-display';
 import { Button, ButtonLink } from '@components/ui';
 import { areas } from '@constants/areas';
-import { RESULTS_WINDOW_DAYS, resultsLink } from '@constants/patient-results';
+import { resultsLink } from '@constants/patient-results';
 import { visitTypeLabels } from '@constants/visit-types';
 import type { DoctorAppointment } from '@lib/api/models';
-import { DECISIONS } from './decisions';
+import { availableActions } from './appointment-actions';
 import { ActionTarget, DecisionButton, type DecisionState } from './DecisionButton';
 
 const PatientIcon = areas.patient.icon;
-
-const REVIEWABLE: ReadonlySet<DoctorAppointment['status']> = new Set(['confirmed', 'completed']);
-
-const WINDOW_MS = RESULTS_WINDOW_DAYS * 86_400_000;
-
-const canReviewResults = ({ visitType, status, startsAt }: DoctorAppointment, now = Date.now()) =>
-  visitType === 'exam_review' &&
-  REVIEWABLE.has(status) &&
-  hasStarted(startsAt, now) &&
-  now - new Date(startsAt).getTime() <= WINDOW_MS;
 
 export interface AppointmentActionsProps extends DecisionState {
   appointment: DoctorAppointment;
@@ -60,9 +49,8 @@ export function AppointmentInfo({ appointment }: { appointment: DoctorAppointmen
 
 export function AppointmentActions({ appointment, onCancel, ...state }: AppointmentActionsProps) {
   const { actions, patient } = appointment;
-  const decisions = DECISIONS.filter(({ flag }) => actions[flag]);
-  const reviewable = canReviewResults(appointment);
-  if (decisions.length === 0 && !actions.canCancel && !reviewable) return null;
+  const { decisions, reviewable, any } = availableActions(appointment);
+  if (!any) return null;
 
   return (
     <div className="flex flex-wrap gap-3 *:min-w-fit *:flex-1">
@@ -83,17 +71,5 @@ export function AppointmentActions({ appointment, onCancel, ...state }: Appointm
         </ButtonLink>
       )}
     </div>
-  );
-}
-
-export function AppointmentCard(props: AppointmentActionsProps) {
-  return (
-    <ExpandableCard
-      headingLevel={3}
-      headline={<AppointmentHeading appointment={props.appointment} />}
-      actions={<AppointmentActions {...props} />}
-    >
-      <AppointmentInfo appointment={props.appointment} />
-    </ExpandableCard>
   );
 }
