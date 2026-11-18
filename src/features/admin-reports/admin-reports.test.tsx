@@ -55,10 +55,36 @@ describe('admin reports', () => {
 
     await user.click(screen.getByRole('radio', { name: '7 dias' }));
 
-    await waitFor(() => expect(router.state.location.search).toBe('?de=2026-11-09&ate=2026-11-15'));
+    await waitFor(() => expect(router.state.location.search).toBe('?periodo=7'));
     await waitFor(() => expect(lastQuery(calls)).toEqual({ from: '2026-11-09', to: '2026-11-15' }));
     expect(screen.getByRole('radio', { name: '7 dias' })).toBeChecked();
     expect(router.state.historyAction).toBe('REPLACE');
+  });
+
+  it.each([
+    ['Este mês', '?periodo=mes'],
+    ['Hoje', '?periodo=hoje'],
+  ])('keeps %s chosen on the first day of the month', async (name, search) => {
+    vi.setSystemTime(new Date('2026-11-01T15:00:00.000Z'));
+    const { calls } = serve(() => ({ status: 200, body: report() }));
+    const { user, router } = renderApp('/admin/relatorios');
+    await section('Agendamentos por dia');
+
+    await user.click(screen.getByRole('radio', { name }));
+
+    await waitFor(() => expect(router.state.location.search).toBe(search));
+    expect(screen.getByRole('radio', { name })).toBeChecked();
+    await waitFor(() => expect(lastQuery(calls)).toEqual({ from: '2026-11-01', to: '2026-11-01' }));
+  });
+
+  it('prefers the calendar preset for a matching custom period', async () => {
+    vi.setSystemTime(new Date('2026-11-07T15:00:00.000Z'));
+    serve(() => ({ status: 200, body: report() }));
+    renderApp('/admin/relatorios?de=2026-11-01&ate=2026-11-07');
+    await section('Agendamentos por dia');
+
+    expect(screen.getByRole('radio', { name: 'Este mês' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: '7 dias' })).not.toBeChecked();
   });
 
   it('takes the default period from the São Paulo calendar near midnight UTC', async () => {
@@ -79,13 +105,13 @@ describe('admin reports', () => {
 
     await user.click(screen.getByRole('radio', { name: 'Mês passado' }));
 
-    await waitFor(() => expect(router.state.location.search).toBe('?de=2026-10-01&ate=2026-10-31'));
+    await waitFor(() => expect(router.state.location.search).toBe('?periodo=mes-passado'));
     await waitFor(() =>
       expect(
         screen.getByRole('region', { name: 'Agendamentos por dia' }).closest('[aria-busy]'),
       ).toHaveAttribute('aria-busy', 'true'),
     );
-    expect(screen.getByRole('button', { name: 'Exportar em PDF' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'PDF' })).toBeDisabled();
   });
 
   it('refuses a custom period that ends before it starts', async () => {
@@ -266,7 +292,7 @@ describe('admin reports', () => {
     const { user } = renderApp('/admin/relatorios');
     await section('Agendamentos por dia');
 
-    await user.click(screen.getByRole('button', { name: `Exportar em ${label}` }));
+    await user.click(screen.getByRole('button', { name: label }));
 
     await waitFor(() => expect(click).toHaveBeenCalledOnce());
     expect((click.mock.contexts[0] as HTMLAnchorElement).download).toBe(
@@ -281,6 +307,21 @@ describe('admin reports', () => {
     vi.restoreAllMocks();
   });
 
+  it('announces the file being generated', async () => {
+    const { fetchMock } = serve(() => ({ status: 200, body: report() }));
+    const { user } = renderApp('/admin/relatorios');
+    await section('Agendamentos por dia');
+    fetchMock.mockImplementationOnce(() => new Promise<Response>(() => undefined));
+
+    await user.click(screen.getByRole('button', { name: 'Excel' }));
+
+    expect(await screen.findByRole('button', { name: 'Gerando…, Excel' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    expect(screen.getByRole('button', { name: 'PDF' })).toBeDisabled();
+  });
+
   it('warns when the file cannot be generated', async () => {
     serve(
       () => ({ status: 200, body: report() }),
@@ -289,10 +330,10 @@ describe('admin reports', () => {
     const { user } = renderApp('/admin/relatorios');
     await section('Agendamentos por dia');
 
-    await user.click(screen.getByRole('button', { name: 'Exportar em PDF' }));
+    await user.click(screen.getByRole('button', { name: 'PDF' }));
 
     expect(await screen.findByText('Algo deu errado. Tente de novo em instantes.')).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Exportar em PDF' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'PDF' })).toBeEnabled();
   });
 
   it('shows the empty state for a period without bookings', async () => {

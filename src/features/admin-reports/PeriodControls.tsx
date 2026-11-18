@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { PERIOD_PRESETS, presetPeriod } from '@components/reports/report-periods';
+import { PERIOD_PRESETS } from '@components/reports/report-periods';
 import type { Period } from '@components/reports/reports-api';
 import { Button, Card, Input, RadioChips } from '@components/ui';
 import type { FieldErrors } from '@lib/api/api-error';
@@ -68,15 +68,10 @@ function CustomPeriodForm({ period, errors, onApply }: CustomPeriodProps) {
 }
 
 export function PeriodControls({ errors }: { errors: FieldErrors }) {
-  const { period, preset, setPeriod } = usePeriod();
+  const { period, preset, setPreset, setPeriod } = usePeriod();
   return (
     <Card className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
-      <RadioChips
-        legend="Período"
-        options={PERIOD_PRESETS}
-        value={preset}
-        onValueChange={(value) => setPeriod(presetPeriod(value), { replace: true })}
-      />
+      <RadioChips legend="Período" options={PERIOD_PRESETS} value={preset} onValueChange={setPreset} />
       <CustomPeriodForm
         key={`${period.from}|${period.to}`}
         period={period}
