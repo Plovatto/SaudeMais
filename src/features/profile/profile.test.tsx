@@ -112,6 +112,7 @@ describe('profile page', () => {
     expect(await screen.findByRole('heading', { name: 'Meu perfil' })).toBeInTheDocument();
     expect(screen.getAllByText('ana@email.com').length).toBeGreaterThan(0);
     expect(screen.getByText('Fixo')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Voltar' })).toHaveAttribute('href', base);
   });
 
   it('shows the birth date and age only in the patient area', async () => {
