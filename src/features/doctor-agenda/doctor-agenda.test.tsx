@@ -115,6 +115,14 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     expect(screen.getByRole('button', { current: 'date' })).toHaveAttribute('aria-pressed', 'true');
   });
 
+  it('falls back to today for an invalid day in the URL', async () => {
+    serve({ lists: { all: [] } });
+    renderApp('/medico/agenda?dia=2030-13-40');
+
+    expect(await screen.findByText('Nenhuma consulta neste dia')).toBeVisible();
+    expect(screen.getByRole('button', { current: 'date' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
   it('switches to the appointment list and its status chips through the URL', async () => {
     const { calls } = serve({ lists: { pending: [appointment('a1')], confirmed: [confirmed('a2')] } });
     const { user, router } = renderApp('/medico/agenda');

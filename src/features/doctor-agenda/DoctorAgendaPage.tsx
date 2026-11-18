@@ -30,7 +30,7 @@ import { AgendaRow, AgendaRows } from './AgendaRows';
 import { AppointmentDetail } from './AppointmentDetail';
 import { agendaRangeQuery, doctorApi, type AgendaParams } from './doctor-api';
 import { useAppointmentActions } from './useAppointmentActions';
-import { periodOf, weekOf } from './week';
+import { isCivilDate, periodOf, weekOf } from './week';
 import { WeekStrip } from './WeekStrip';
 
 const VIEWS_ID = 'doctor-agenda';
@@ -88,7 +88,8 @@ export function DoctorAgendaPage() {
   const detailId = useId();
   const results = useRef<HTMLParagraphElement>(null);
   const [view, setView] = useSearchParam('aba', AGENDA_VIEWS.week);
-  const [day, setDay] = useSearchParam(DAY_PARAM, today);
+  const [dayParam, setDay] = useSearchParam(DAY_PARAM, today);
+  const day = isCivilDate(dayParam) ? dayParam : today;
   const [selectedId, setSelectedId] = useSearchParam(SELECTED_PARAM);
   const [searchParam, setSearchParam] = useSearchParam(SEARCH_PARAM);
   const [search, setSearch] = useState(searchParam);
@@ -127,12 +128,12 @@ export function DoctorAgendaPage() {
   const fallback =
     current === AGENDA_VIEWS.week
       ? (dayItems?.find(({ startsAt }) => new Date(startsAt) >= now) ?? dayItems?.[0])
-      : list.items?.[0];
+      : (list.items?.find(({ startsAt }) => new Date(startsAt) >= now) ?? list.items?.[0]);
   const selected = chosen ?? (desktop ? fallback : undefined);
   const open = (appointment: DoctorAppointment) => setSelectedId(appointment.id);
-  const closeSheet = () => setSelectedId('');
+  const closeSheet = () => setSelectedId('', { replace: true });
   const row = rowFor({ selectedId: selected?.id, desktop, now, onView: open });
-  const pickDay = (next: string) => setDay(next === today ? '' : next, { reset: RESET_SELECTION });
+  const pickDay = (next: string) => setDay(next, { reset: RESET_SELECTION });
   const weekCount = week.data?.length;
   const detailState = {
     pending: selected ? actions.pendingFor(selected.id) : null,
