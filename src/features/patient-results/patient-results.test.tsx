@@ -62,7 +62,8 @@ describe('patient results for the doctor', { timeout: 15_000 }, () => {
     await user.click(screen.getByRole('button', { name: /^Hemograma/ }));
     const table = screen.getByRole('table', { name: 'Itens do exame' });
     expect(table).toBeVisible();
-    expect(table.parentElement).toHaveClass('overflow-x-auto');
+    expect(screen.getByRole('region', { name: 'Itens do exame' })).toContainElement(table);
+    expect(table.parentElement).toHaveAttribute('tabindex', '0');
     expect(screen.getByRole('rowheader', { name: 'Hemoglobina' })).toBeVisible();
   });
 

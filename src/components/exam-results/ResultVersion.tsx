@@ -58,7 +58,7 @@ export function ResultVersion({
     );
   }
   return (
-    <div className="min-w-0 overflow-x-auto">
+    <div role="region" aria-label={label} tabIndex={0} className="rounded-field min-w-0 overflow-x-auto">
       <table className="w-full text-sm">
         <caption className="text-text pb-2 text-start text-sm font-semibold">{label}</caption>
         <thead>
