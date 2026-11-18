@@ -32,9 +32,8 @@ interface DayCardProps {
 
 const WEEKEND = new Set([0, 6]);
 
-function servingLabel(weekday: number, name: string): string {
-  const days = name
-    .toLowerCase()
+function servingLabel(weekday: number, lowerName: string): string {
+  const days = lowerName
     .split('-')
     .map((word) => `${word}s`)
     .join('-');
@@ -71,7 +70,7 @@ export function DayCard({ form, weekday, unit, expanded, onExpandedChange }: Day
     [open, close],
   );
   const name = WEEKDAYS[weekday] ?? '';
-  const dayName = name.toLowerCase();
+  const lowerName = name.toLowerCase();
   const next = fields.length < MAX_RANGES ? nextRange(day.ranges, unit) : null;
   const errors = fields.map((_field, index) => rangeError(formState.errors, weekday, index));
   const canExpand = day.isActive || errors.some(Boolean);
@@ -127,7 +126,7 @@ export function DayCard({ form, weekday, unit, expanded, onExpandedChange }: Day
                   if (first) append(first, { shouldFocus: false });
                   onExpandedChange(true);
                 }}
-                label={servingLabel(weekday, name)}
+                label={servingLabel(weekday, lowerName)}
                 labelHidden
                 className="cursor-pointer"
               />
@@ -135,7 +134,7 @@ export function DayCard({ form, weekday, unit, expanded, onExpandedChange }: Day
           />
           {canExpand ? (
             <IconButton
-              label={`${isOpen ? 'Fechar' : 'Ver'} horários de ${dayName}`}
+              label={`${isOpen ? 'Fechar' : 'Ver'} horários de ${lowerName}`}
               icon={
                 <LuChevronDown
                   className={cx(
@@ -165,7 +164,7 @@ export function DayCard({ form, weekday, unit, expanded, onExpandedChange }: Day
             </p>
             {fields.length > 0 && (
               <ul
-                aria-label={`Períodos de ${dayName}`}
+                aria-label={`Períodos de ${lowerName}`}
                 className={cx('flex flex-col gap-2.5', !day.isActive && 'opacity-75')}
               >
                 {fields.map((field, index) => (

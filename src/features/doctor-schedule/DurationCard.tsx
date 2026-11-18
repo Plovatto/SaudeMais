@@ -5,11 +5,11 @@ import { SectionCard, type DropdownOption } from '@components/ui';
 import { plural } from '@lib/plural';
 import type { DoctorSchedule } from './schedule-api';
 import { DURATIONS, type ScheduleValues } from './schedule-schema';
-import { useWeeklySlots } from './useWeeklySlots';
 
 interface DurationCardProps {
   control: Control<ScheduleValues>;
   schedule: DoctorSchedule;
+  slots: number;
 }
 
 const SPECIALTY_HINT = 'Padrão da especialidade';
@@ -25,8 +25,7 @@ function durationOptions(specialty: number): DropdownOption[] {
     }));
 }
 
-export function DurationCard({ control, schedule }: DurationCardProps) {
-  const slots = useWeeklySlots(control);
+export function DurationCard({ control, schedule, slots }: DurationCardProps) {
   return (
     <SectionCard title="Consultas">
       <FormDropdown
