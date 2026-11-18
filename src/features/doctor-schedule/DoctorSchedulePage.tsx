@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { usePrefetchQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import { LuCheck, LuClock } from 'react-icons/lu';
@@ -23,8 +23,9 @@ import { useFormSubmit } from '@lib/useFormSubmit';
 import { DayCard } from './DayCard';
 import { DurationCard } from './DurationCard';
 import { applyRangeErrors, rangeErrorPaths, weekdayOf, type RangePath } from './range-errors';
-import { scheduleApi, type DoctorSchedule, type ScheduleWarning } from './schedule-api';
+import { scheduleApi, timeOffQuery, type DoctorSchedule, type ScheduleWarning } from './schedule-api';
 import { DAY_ORDER, scheduleSchema, toBody, toValues, unitFor, type ScheduleValues } from './schedule-schema';
+import { useTimeOff } from './useTimeOff';
 import { useWeeklySlots } from './useWeeklySlots';
 import { WarningAlert } from './WarningAlert';
 
@@ -54,6 +55,7 @@ function ScheduleForm({ schedule }: { schedule: DoctorSchedule }) {
   const desktop = useMediaQuery(DESKTOP_QUERY);
   const queryClient = useQueryClient();
   const { show } = useToast();
+  const timeOff = useTimeOff();
   const [warnings, setWarnings] = useState<ScheduleWarning[]>([]);
   const [expanded, setExpanded] = useState<ReadonlySet<number>>(() => new Set());
   const [focusTarget, setFocusTarget] = useState<RangePath>();
@@ -159,9 +161,11 @@ function ScheduleForm({ schedule }: { schedule: DoctorSchedule }) {
           </div>
           <div className={cx('flex min-w-0 flex-col gap-4 lg:gap-5', stagger(1))}>
             <DurationCard control={control} schedule={schedule} />
+            {timeOff.card}
           </div>
         </fieldset>
       </form>
+      {timeOff.drawer}
       {!desktop && isDirty && (
         <CtaBar
           aboveNav
@@ -177,6 +181,7 @@ function ScheduleForm({ schedule }: { schedule: DoctorSchedule }) {
 }
 
 export function DoctorSchedulePage() {
+  usePrefetchQuery(timeOffQuery);
   const schedule = useQuery({
     queryKey: queryKeys.doctorSchedule,
     queryFn: ({ signal }) => scheduleApi.get(signal),
