@@ -3,10 +3,12 @@ import { AppointmentHeadline } from '@components/bookings/AppointmentHeadline';
 import { CancellationNote, Detail, Note, PhoneLink } from '@components/bookings/BookingDetails';
 import { bookingStatus } from '@components/bookings/booking-display';
 import { Button, ButtonLink } from '@components/ui';
+import { footerBar } from '@components/ui/styles';
 import { areas } from '@constants/areas';
 import { resultsLink } from '@constants/patient-results';
 import { visitTypeLabels } from '@constants/visit-types';
 import type { DoctorAppointment } from '@lib/api/models';
+import { cx } from '@lib/cx';
 import { availableActions } from './appointment-actions';
 import { ActionTarget, DecisionButton, type DecisionState } from './DecisionButton';
 
@@ -15,6 +17,7 @@ const PatientIcon = areas.patient.icon;
 export interface AppointmentActionsProps extends DecisionState {
   appointment: DoctorAppointment;
   onCancel: (appointment: DoctorAppointment) => void;
+  footer?: boolean;
 }
 
 export function AppointmentHeading({ appointment }: { appointment: DoctorAppointment }) {
@@ -47,13 +50,24 @@ export function AppointmentInfo({ appointment }: { appointment: DoctorAppointmen
   );
 }
 
-export function AppointmentActions({ appointment, onCancel, ...state }: AppointmentActionsProps) {
+export function AppointmentActions({
+  appointment,
+  onCancel,
+  footer = false,
+  ...state
+}: AppointmentActionsProps) {
   const { actions, patient } = appointment;
   const { decisions, reviewable, any } = availableActions(appointment);
   if (!any) return null;
 
+  const Wrapper = footer ? 'footer' : 'div';
   return (
-    <div className="flex flex-wrap gap-3 *:min-w-fit *:flex-1">
+    <Wrapper
+      className={cx(
+        'flex flex-wrap gap-3 *:min-w-fit *:flex-1',
+        footer && cx(footerBar, 'px-4 py-4 lg:px-5'),
+      )}
+    >
       {decisions.map((decision) => (
         <DecisionButton key={decision.flag} decision={decision} appointment={appointment} {...state} />
       ))}
@@ -70,6 +84,6 @@ export function AppointmentActions({ appointment, onCancel, ...state }: Appointm
           <ActionTarget appointment={appointment} />
         </ButtonLink>
       )}
-    </div>
+    </Wrapper>
   );
 }

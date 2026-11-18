@@ -3,22 +3,13 @@ import { cx } from '@lib/cx';
 import { softTones } from '@components/ui/styles';
 import { moveFocus } from '@lib/roving-index';
 import { formatLongDay, formatTime, middayOf } from '@lib/date';
+import { DAY_PERIODS, dayPeriodOf, type DayPeriod } from '@lib/day-periods';
 import type { Slot } from './availability';
 import { plural } from '@lib/plural';
 
 const FEW_PLACES = 3;
 
-const PERIODS = [
-  { id: 'manha', label: 'Manhã', fits: (hour: number) => hour < 12 },
-  { id: 'tarde', label: 'Tarde', fits: (hour: number) => hour >= 12 && hour < 18 },
-  { id: 'noite', label: 'Noite', fits: (hour: number) => hour >= 18 },
-] as const;
-
-type PeriodId = (typeof PERIODS)[number]['id'];
-
-const hourOf = (startsAt: string) => Number(formatTime(startsAt).slice(0, 2));
-const periodOf = (startsAt: string): PeriodId =>
-  PERIODS.find(({ fits }) => fits(hourOf(startsAt)))?.id ?? 'manha';
+type PeriodId = DayPeriod['id'];
 
 const placesLeft = (slot: Slot) =>
   'remaining' in slot && slot.remaining <= FEW_PLACES
@@ -38,12 +29,12 @@ export interface SlotPickerProps {
 }
 
 export function SlotPicker({ date, slots, value, onPick, current, focusRef, describedBy }: SlotPickerProps) {
-  const groups = PERIODS.map((period) => ({
+  const groups = DAY_PERIODS.map((period) => ({
     ...period,
-    slots: slots.filter((slot) => period.fits(hourOf(slot.startsAt))),
+    slots: slots.filter((slot) => dayPeriodOf(slot.startsAt).id === period.id),
   })).filter((period) => period.slots.length > 0);
   const [chosen, setChosen] = useState<PeriodId | null>(null);
-  const preferred = chosen ?? (value ? periodOf(value) : groups[0]?.id);
+  const preferred = chosen ?? (value ? dayPeriodOf(value).id : groups[0]?.id);
   const active = groups.find((period) => period.id === preferred) ?? groups[0];
   const free = slots.filter((slot) => slot.startsAt !== current).length;
   const hasChecked = active?.slots.some((slot) => slot.startsAt === value) ?? false;

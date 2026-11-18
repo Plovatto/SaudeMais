@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { LuCalendarX, LuSearchX } from 'react-icons/lu';
 import { PagedResults } from '@components/bookings/PagedResults';
 import { PageHeader } from '@components/layout/PageHeader';
@@ -13,7 +13,6 @@ import {
   TabPanel,
   Tabs,
 } from '@components/ui';
-import { groupHeader, overline } from '@components/ui/styles';
 import { AGENDA_STATUS_PARAM, AGENDA_TABS, AGENDA_VIEWS } from '@constants/doctor-agenda';
 import { SEARCH_DELAY_MS, useDebouncedValue } from '@hooks/useDebouncedValue';
 import { DESKTOP_QUERY, useMediaQuery } from '@hooks/useMediaQuery';
@@ -22,15 +21,15 @@ import { resetPageAnd } from '@hooks/usePageParam';
 import { useSearchParam } from '@hooks/useSearchParam';
 import { useTabbedList } from '@hooks/useTabbedList';
 import type { DoctorAppointment } from '@lib/api/models';
-import { cx } from '@lib/cx';
-import { addDays, civilDateInSaoPaulo, formatLongDay, formatTime, middayOf } from '@lib/date';
+import { addDays, civilDateInSaoPaulo, formatLongDay, isCivilDate, middayOf, weekOf } from '@lib/date';
+import { dayPeriodOf } from '@lib/day-periods';
+import { groupConsecutive } from '@lib/group';
 import { plural } from '@lib/plural';
 import { queryKeys } from '@lib/query-keys';
 import { AgendaRow, AgendaRows } from './AgendaRows';
 import { AppointmentDetail } from './AppointmentDetail';
 import { agendaRangeQuery, doctorApi, type AgendaParams } from './doctor-api';
 import { useAppointmentActions } from './useAppointmentActions';
-import { isCivilDate, periodOf, weekOf } from './week';
 import { WeekStrip } from './WeekStrip';
 
 const VIEWS_ID = 'doctor-agenda';
@@ -53,11 +52,7 @@ type StatusValue = (typeof STATUS_TABS)[number]['value'];
 
 const consultas = (total: number) => plural(total, 'consulta', 'consultas');
 const civilDay = (appointment: DoctorAppointment) => civilDateInSaoPaulo(new Date(appointment.startsAt));
-const hourOf = (appointment: DoctorAppointment) => Number(formatTime(appointment.startsAt).slice(0, 2));
-
-function GroupLabel({ children }: { children: ReactNode }) {
-  return <li className={cx(groupHeader, overline)}>{children}</li>;
-}
+const periodLabel = (appointment: DoctorAppointment) => dayPeriodOf(appointment.startsAt).label;
 
 const dayHeading = (day: string, today: string) =>
   `${day === today ? 'Hoje · ' : ''}${formatLongDay(middayOf(day))}`;
@@ -102,7 +97,9 @@ export function DoctorAgendaPage() {
     ...agendaRangeQuery(days[0] ?? day, days[6] ?? day),
     enabled: current === AGENDA_VIEWS.week,
   });
-  const dayItems = week.data?.filter((appointment) => civilDay(appointment) === day);
+  const byDay =
+    week.data && new Map(groupConsecutive(week.data, civilDay).map(({ key, items }) => [key, items]));
+  const dayItems = byDay && (byDay.get(day) ?? []);
 
   const list = useTabbedList(
     STATUS_TABS,
@@ -125,10 +122,7 @@ export function DoctorAgendaPage() {
 
   const visible = current === AGENDA_VIEWS.week ? dayItems : list.items;
   const chosen = visible?.find((appointment) => appointment.id === selectedId);
-  const fallback =
-    current === AGENDA_VIEWS.week
-      ? (dayItems?.find(({ startsAt }) => new Date(startsAt) >= now) ?? dayItems?.[0])
-      : (list.items?.find(({ startsAt }) => new Date(startsAt) >= now) ?? list.items?.[0]);
+  const fallback = visible?.find(({ startsAt }) => new Date(startsAt) >= now) ?? visible?.[0];
   const selected = chosen ?? (desktop ? fallback : undefined);
   const open = (appointment: DoctorAppointment) => setSelectedId(appointment.id);
   const closeSheet = () => setSelectedId('', { replace: true });
@@ -175,7 +169,7 @@ export function DoctorAgendaPage() {
             days={days}
             selected={day}
             today={today}
-            countOf={(date) => week.data?.filter((appointment) => civilDay(appointment) === date).length}
+            countOf={(date) => byDay && (byDay.get(date)?.length ?? 0)}
             onSelect={pickDay}
             onStep={(weeks) => pickDay(addDays(day, weeks * 7))}
             onToday={() => pickDay(today)}
@@ -204,11 +198,7 @@ export function DoctorAgendaPage() {
                   items={dayItems}
                   now={now}
                   showNow={day === today}
-                  label={(appointment, previous) =>
-                    (!previous || periodOf(hourOf(previous)) !== periodOf(hourOf(appointment))) && (
-                      <GroupLabel>{periodOf(hourOf(appointment))}</GroupLabel>
-                    )
-                  }
+                  groupOf={periodLabel}
                   row={row}
                 />
               )}
@@ -267,11 +257,7 @@ export function DoctorAgendaPage() {
                         items={items}
                         now={now}
                         showNow={false}
-                        label={(appointment, previous) =>
-                          (!previous || civilDay(previous) !== civilDay(appointment)) && (
-                            <GroupLabel>{dayHeading(civilDay(appointment), today)}</GroupLabel>
-                          )
-                        }
+                        groupOf={(appointment) => dayHeading(civilDay(appointment), today)}
                         row={row}
                       />
                     </section>

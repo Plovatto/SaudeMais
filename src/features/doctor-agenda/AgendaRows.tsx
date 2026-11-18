@@ -2,16 +2,16 @@ import { Fragment, type ReactNode } from 'react';
 import { bookingStatus, hasStarted } from '@components/bookings/booking-display';
 import { DateTile } from '@components/bookings/DateTile';
 import { ListRow, StatusChip } from '@components/ui';
+import { groupHeader, overline } from '@components/ui/styles';
 import { visitTypeLabels } from '@constants/visit-types';
 import type { DoctorAppointment } from '@lib/api/models';
+import { cx } from '@lib/cx';
 import { formatTime } from '@lib/date';
+import { groupConsecutive } from '@lib/group';
 
 function NowLine({ now }: { now: Date }) {
   return (
-    <li
-      aria-hidden
-      className="text-danger-text after:bg-danger flex items-center gap-2.5 px-4 py-1 text-[0.6875rem] font-bold tracking-[0.05em] uppercase after:h-px after:flex-1 after:opacity-45 lg:px-5"
-    >
+    <li className="text-danger-text after:bg-danger flex items-center gap-2.5 px-4 py-1 text-[0.6875rem] font-bold tracking-[0.05em] uppercase after:h-px after:flex-1 after:opacity-45 lg:px-5">
       Agora · {formatTime(now.toISOString())}
     </li>
   );
@@ -59,22 +59,28 @@ export interface AgendaRowsProps {
   items: readonly DoctorAppointment[];
   now: Date;
   showNow: boolean;
-  label?: (appointment: DoctorAppointment, previous: DoctorAppointment | undefined) => ReactNode;
+  groupOf?: (appointment: DoctorAppointment) => string;
   row: (appointment: DoctorAppointment) => ReactNode;
 }
 
-export function AgendaRows({ items, now, showNow, label, row }: AgendaRowsProps) {
+export function AgendaRows({ items, now, showNow, groupOf, row }: AgendaRowsProps) {
   const upcoming = items.findIndex(({ startsAt }) => new Date(startsAt) > now);
   const nowAt = showNow ? (upcoming === -1 ? items.length : upcoming) : -1;
+  const groups = groupConsecutive(
+    items.map((appointment, index) => ({ appointment, index })),
+    ({ appointment }) => groupOf?.(appointment) ?? '',
+  );
   return (
     <ul className="divide-border divide-y">
-      {items.map((appointment, index) => (
-        <Fragment key={appointment.id}>
-          {index === nowAt && <NowLine now={now} />}
-          {label?.(appointment, items[index - 1])}
-          <li>{row(appointment)}</li>
-        </Fragment>
-      ))}
+      {groups.map(({ key, items: entries }) =>
+        entries.map(({ appointment, index }, position) => (
+          <Fragment key={appointment.id}>
+            {index === nowAt && <NowLine now={now} />}
+            {position === 0 && key && <li className={cx(groupHeader, overline)}>{key}</li>}
+            <li>{row(appointment)}</li>
+          </Fragment>
+        )),
+      )}
       {nowAt === items.length && <NowLine now={now} />}
     </ul>
   );

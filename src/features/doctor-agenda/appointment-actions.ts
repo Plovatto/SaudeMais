@@ -18,5 +18,3 @@ export const availableActions = (appointment: DoctorAppointment) => {
   const reviewable = canReviewResults(appointment);
   return { decisions, reviewable, any: decisions.length > 0 || appointment.actions.canCancel || reviewable };
 };
-
-export const hasActions = (appointment: DoctorAppointment) => availableActions(appointment).any;

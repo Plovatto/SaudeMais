@@ -67,6 +67,19 @@ export function todayInSaoPaulo(now = new Date()): string {
   return civilDateInSaoPaulo(now);
 }
 
+export function hourInSaoPaulo(iso: string): number {
+  return Number(partsOf(timeOfDay, new Date(iso))('hour'));
+}
+
+export function isCivilDate(value: string): boolean {
+  const time = Date.parse(`${value}T00:00:00.000Z`);
+  return (
+    /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(time) && new Date(time).toISOString().startsWith(value)
+  );
+}
+
+export const weekdayOf = (date: string) => utcDay(date).getUTCDay();
+
 export function addDays(date: string, days: number): string {
   const value = utcDay(date);
   value.setUTCDate(value.getUTCDate() + days);
@@ -104,6 +117,12 @@ export const formatRelative = (iso: string, now = new Date()) =>
   relativeOr(iso, now, (date) => dateTime.format(date));
 
 const DAYS_PER_WEEK = 7;
+
+export function weekOf(date: string): string[] {
+  const monday = addDays(date, -((weekdayOf(date) + 6) % DAYS_PER_WEEK));
+  return Array.from({ length: DAYS_PER_WEEK }, (_, index) => addDays(monday, index));
+}
+
 const DAYS_PER_MONTH = 30;
 const DAYS_PER_YEAR = 365;
 

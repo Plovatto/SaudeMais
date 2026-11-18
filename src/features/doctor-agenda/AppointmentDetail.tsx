@@ -1,8 +1,5 @@
 import { CloseButton } from '@components/ui';
-import { footerBar } from '@components/ui/styles';
 import type { DoctorAppointment } from '@lib/api/models';
-import { cx } from '@lib/cx';
-import { hasActions } from './appointment-actions';
 import { AppointmentActions, AppointmentHeading, AppointmentInfo } from './AppointmentCard';
 import type { DecisionState } from './DecisionButton';
 
@@ -25,11 +22,7 @@ export function AppointmentDetail({ appointment, titleId, onClose, ...state }: A
         </div>
         <AppointmentInfo appointment={appointment} />
       </div>
-      {hasActions(appointment) && (
-        <footer className={cx(footerBar, 'px-4 py-4 lg:px-5')}>
-          <AppointmentActions appointment={appointment} {...state} />
-        </footer>
-      )}
+      <AppointmentActions appointment={appointment} footer {...state} />
     </article>
   );
 }
