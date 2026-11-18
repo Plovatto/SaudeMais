@@ -50,7 +50,7 @@ export function WhenCard({
       title={title}
       className="@container"
       flush
-      action={hint && <span className="text-text-muted text-[0.8125rem] max-lg:basis-full">{hint}</span>}
+      action={hint && <span className="text-text-muted text-[0.8125rem]">{hint}</span>}
     >
       {waitingNote && days.length === 0 && !loading && !failure && !empty ? (
         <ListMessage>{waitingNote}</ListMessage>
@@ -118,7 +118,7 @@ export function WhenCard({
 
 export function NotesCard({ booking, placeholder }: { booking: BookingFormState; placeholder: string }) {
   return (
-    <SectionCard title="Observação (opcional)">
+    <SectionCard title="Observação" optional>
       <Textarea
         label="Observação"
         labelHidden
