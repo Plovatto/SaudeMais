@@ -1,9 +1,11 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { stubMatchMedia } from '@/test/match-media';
 import { renderApp, serveApi, type ApiCall } from '@/test/render-app';
+import { SEARCH_DELAY_MS } from '@hooks/useDebouncedValue';
 import { DESKTOP_QUERY } from '@hooks/useMediaQuery';
 import { GENERIC_ERROR_MESSAGE } from '@lib/messages/errors.pt-BR';
+import { todayInSaoPaulo } from '@lib/date';
 import { queryKeys } from '@lib/query-keys';
 import {
   actions,
@@ -132,8 +134,10 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     const consultas = screen.getByRole('tab', { name: 'Consultas' });
     expect(consultas).toHaveAttribute('aria-selected', 'true');
     await waitFor(() => expect(consultas).toHaveTextContent('Consultas2'));
-    expect(await screen.findByRole('tab', { name: 'Todas 2' })).toHaveAttribute('aria-selected', 'true');
-    expect(listCalls(calls).at(-1)?.url.searchParams.get('tab')).toBe('all');
+    expect(screen.getByRole('tab', { name: 'Todas' })).toHaveAttribute('aria-selected', 'true');
+    const all = listCalls(calls).at(-1)?.url.searchParams;
+    expect(all?.get('tab')).toBe('all');
+    expect(all?.get('from')).toBe(todayInSaoPaulo());
 
     await user.click(screen.getByRole('tab', { name: 'Confirmadas 1' }));
     expect(router.state.location.search).toBe('?aba=consultas&situacao=confirmadas');
@@ -164,6 +168,21 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     await waitFor(() => expect(listCalls(calls).at(-1)?.url.searchParams.get('search')).toBe('Andreia'));
     expect(await screen.findByText('Nenhuma consulta encontrada')).toBeVisible();
     expect(screen.getByText('Tente outro nome.')).toBeVisible();
+  });
+
+  it('keeps the search box in step with a URL change from elsewhere', async () => {
+    const { calls } = serve({ lists: {} });
+    const { router } = renderApp(`${PENDING_URL}&busca=Andreia`);
+
+    const search = await screen.findByRole('searchbox', { name: 'Buscar paciente' });
+    expect(search).toHaveValue('Andreia');
+    await act(() => router.navigate(CONFIRMED_URL));
+
+    await waitFor(() => expect(search).toHaveValue(''));
+    await waitFor(() => expect(listCalls(calls).at(-1)?.url.searchParams.get('tab')).toBe('confirmed'));
+    expect(listCalls(calls).at(-1)?.url.searchParams.has('search')).toBe(false);
+    await new Promise((resolve) => setTimeout(resolve, SEARCH_DELAY_MS * 2));
+    expect(router.state.location.search).toBe('?aba=consultas&situacao=confirmadas');
   });
 
   it('groups the list by São Paulo day', async () => {
@@ -421,13 +440,14 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     stubMatchMedia((query) => query === DESKTOP_QUERY);
     const { user } = renderApp(HISTORY_URL);
 
-    const linkIn = async (name: string) => {
+    const detailOf = async (name: string) => {
       await user.click(await screen.findByRole('button', { name: new RegExp(`^${name}`) }));
-      const aside = screen.getByRole('complementary', { name: 'Detalhes da consulta' });
-      return within(aside).queryByRole('link', { name: /^Ver exames do paciente/ });
+      return within(screen.getByRole('complementary', { name: 'Detalhes da consulta' }));
     };
+    const RESULTS_LINK = { name: /^Ver exames do paciente/ };
+    const linkIn = async (name: string) => (await detailOf(name)).getByRole('link', RESULTS_LINK);
     for (const name of ['Carla Dias', 'Davi Lima', 'Eva Rocha', 'Fábio Reis'])
-      expect(await linkIn(name)).not.toBeInTheDocument();
+      expect((await detailOf(name)).queryByRole('link', RESULTS_LINK)).not.toBeInTheDocument();
     const jair = await linkIn('Jair Oliveira');
     expect(jair).toHaveAttribute('href', '/medico/pacientes/p2/exames');
     expect(jair).toHaveAccessibleName(/^Ver exames do paciente: Jair Oliveira/);
@@ -440,7 +460,7 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
         body: { items: [], page: 1, pageSize: 10, total: 0 },
       }),
     });
-    await user.click(andreia as HTMLElement);
+    await user.click(andreia);
     expect(await screen.findByRole('heading', { level: 1, name: 'Exames de Andreia Soares' })).toBeVisible();
   });
 

@@ -82,6 +82,8 @@ export function DoctorAgendaPage() {
   const desktop = useMediaQuery(DESKTOP_QUERY);
   const detailId = useId();
   const results = useRef<HTMLParagraphElement>(null);
+  const dayList = useRef<HTMLElement>(null);
+  const lastSearch = useRef<string | null>(null);
   const [view, setView] = useSearchParam('aba', AGENDA_VIEWS.week);
   const [dayParam, setDay] = useSearchParam(DAY_PARAM, today);
   const day = isCivilDate(dayParam) ? dayParam : today;
@@ -89,8 +91,8 @@ export function DoctorAgendaPage() {
   const [searchParam, setSearchParam] = useSearchParam(SEARCH_PARAM);
   const [search, setSearch] = useState(searchParam);
   const debounced = useDebouncedValue(search.trim(), SEARCH_DELAY_MS);
-  const actions = useAppointmentActions(results);
   const current: View = view === AGENDA_VIEWS.list ? AGENDA_VIEWS.list : AGENDA_VIEWS.week;
+  const actions = useAppointmentActions(current === AGENDA_VIEWS.week ? dayList : results);
 
   const days = weekOf(day);
   const week = useQuery({
@@ -104,7 +106,12 @@ export function DoctorAgendaPage() {
   const list = useTabbedList(
     STATUS_TABS,
     ({ tab }, page) => {
-      const params: AgendaParams = { tab, page, ...(searchParam && { search: searchParam }) };
+      const params: AgendaParams = {
+        tab,
+        page,
+        ...(tab === 'all' && { from: today }),
+        ...(searchParam && { search: searchParam }),
+      };
       return {
         queryKey: queryKeys.doctor.appointments(params),
         queryFn: (signal: AbortSignal) => doctorApi.list(params, signal),
@@ -117,7 +124,16 @@ export function DoctorAgendaPage() {
   const allCount = counts ? counts.pending + counts.confirmed + counts.history : undefined;
 
   useEffect(() => {
-    if (debounced !== searchParam) setSearchParam(debounced, resetPageAnd(RESET_SELECTION));
+    if (lastSearch.current !== null && searchParam !== lastSearch.current) {
+      lastSearch.current = searchParam;
+      setSearch(searchParam);
+      return;
+    }
+    lastSearch.current = searchParam;
+    if (debounced !== searchParam) {
+      lastSearch.current = debounced;
+      setSearchParam(debounced, resetPageAnd(RESET_SELECTION));
+    }
   }, [debounced, searchParam, setSearchParam]);
 
   const visible = current === AGENDA_VIEWS.week ? dayItems : list.items;
@@ -154,16 +170,12 @@ export function DoctorAgendaPage() {
         variant="line"
         items={[
           { value: AGENDA_VIEWS.week, label: 'Agenda' },
-          { value: AGENDA_VIEWS.list, label: 'Consultas', count: allCount ?? '–' },
+          { value: AGENDA_VIEWS.list, label: 'Consultas', count: allCount },
         ]}
         value={current}
         onValueChange={(next) => setView(next, { reset: [...RESET_SELECTION, DAY_PARAM] })}
       />
-      <TabPanel
-        tabsId={VIEWS_ID}
-        value={current}
-        className="mt-4 flex flex-col gap-4 focus-visible:outline-none"
-      >
+      <TabPanel tabsId={VIEWS_ID} value={current} className="mt-4 flex flex-col gap-4">
         {current === AGENDA_VIEWS.week && (
           <WeekStrip
             days={days}
@@ -178,6 +190,8 @@ export function DoctorAgendaPage() {
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
           {current === AGENDA_VIEWS.week ? (
             <section
+              ref={dayList}
+              tabIndex={-1}
               aria-label={`Consultas de ${formatLongDay(middayOf(day))}`}
               aria-busy={week.isPending}
               className="rounded-card border-border bg-surface shadow-card overflow-hidden border"
@@ -220,17 +234,13 @@ export function DoctorAgendaPage() {
                   items={STATUS_TABS.map(({ value, label, tab }) => ({
                     value,
                     label,
-                    count: counts ? (tab === 'all' ? allCount : counts[tab]) : undefined,
+                    count: counts && tab !== 'all' ? counts[tab] : undefined,
                   }))}
                   value={list.tab.value}
                   onValueChange={list.selectTab}
                 />
               </Card>
-              <TabPanel
-                tabsId={STATUS_ID}
-                value={list.tab.value}
-                className="flex flex-col gap-3 focus-visible:outline-none"
-              >
+              <TabPanel tabsId={STATUS_ID} value={list.tab.value} className="flex flex-col gap-3">
                 <PagedResults<DoctorAppointment>
                   bare
                   list={list}
@@ -266,13 +276,21 @@ export function DoctorAgendaPage() {
               </TabPanel>
             </div>
           )}
-          {desktop && selected && (
+          {desktop && visible && (
             <aside
-              key={selected.id}
+              key={selected?.id}
               aria-label="Detalhes da consulta"
               className="rounded-card border-border bg-surface shadow-raised motion-safe:animate-pop sticky top-4 border"
             >
-              <AppointmentDetail appointment={selected} titleId={detailId} {...detailState} />
+              {selected ? (
+                <AppointmentDetail appointment={selected} titleId={detailId} {...detailState} />
+              ) : (
+                <EmptyState
+                  icon={<LuCalendarX />}
+                  title="Nenhuma consulta"
+                  description="Escolha outra consulta."
+                />
+              )}
             </aside>
           )}
         </div>
