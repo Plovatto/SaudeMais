@@ -31,11 +31,22 @@ interface CancelFormProps {
   reason: ReasonMode;
   cancel: Cancel;
   warning: ReactNode;
+  confirmLabel: string;
+  success: string;
   refresh: () => Promise<unknown>;
   onClose: () => void;
 }
 
-function CancelForm({ target, reason: mode, cancel, warning, refresh, onClose }: CancelFormProps) {
+function CancelForm({
+  target,
+  reason: mode,
+  cancel,
+  warning,
+  confirmLabel,
+  success,
+  refresh,
+  onClose,
+}: CancelFormProps) {
   const { show } = useToast();
   const [stale, setStale] = useState(false);
   const {
@@ -63,7 +74,7 @@ function CancelForm({ target, reason: mode, cancel, warning, refresh, onClose }:
   const onSubmit = handleSubmit(({ reason }) =>
     run(async () => {
       await cancel(target.id, target.startsAt, reason);
-      show({ message: 'Agendamento cancelado.', tone: 'success' });
+      show({ message: success, tone: 'success' });
       await refresh();
       onClose();
     }),
@@ -91,7 +102,7 @@ function CancelForm({ target, reason: mode, cancel, warning, refresh, onClose }:
         </Button>
         {!stale && (
           <Button type="submit" variant="danger" loading={isSubmitting}>
-            Cancelar agendamento
+            {confirmLabel}
           </Button>
         )}
       </div>
@@ -107,6 +118,8 @@ interface CancelBookingDialogProps {
   reason?: ReasonMode;
   cancel: Cancel;
   warning?: ReactNode;
+  confirmLabel?: string;
+  success?: string;
   refresh: () => Promise<unknown>;
   onClose: () => void;
   fallbackFocus: RefObject<HTMLElement | null>;
@@ -120,6 +133,8 @@ export function CancelBookingDialog({
   reason = 'optional',
   cancel,
   warning,
+  confirmLabel = 'Cancelar agendamento',
+  success = 'Agendamento cancelado.',
   refresh,
   onClose,
   fallbackFocus,
@@ -142,6 +157,8 @@ export function CancelBookingDialog({
           reason={reason}
           cancel={cancel}
           warning={warning}
+          confirmLabel={confirmLabel}
+          success={success}
           refresh={refresh}
           onClose={onClose}
         />

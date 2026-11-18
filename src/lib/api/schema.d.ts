@@ -77,7 +77,11 @@ export interface paths {
          */
         get: operations["adminListUsers"];
         put?: never;
-        post?: never;
+        /**
+         * Cadastrar usuário
+         * @description Cria uma conta de paciente, médico ou administrador. Toda conta também é paciente; para `doctor`, envie `doctorProfile` (o conselho vem da especialidade). A conta nasce sem senha utilizável: entrar antes de criar a senha responde `INVALID_CREDENTIALS`. Depois de salvar, a pessoa recebe por e-mail um link válido por 72 horas para criar a senha em `POST /api/password-reset/confirm`; esse link conta nos limites por conta de `POST /api/admin/users/{id}/password-reset`. Fica no registro de auditoria (`user.created`) e, ao contrário do autocadastro, não gera o aviso `user_registered` para os administradores.
+         */
+        post: operations["adminCreateUser"];
         delete?: never;
         options?: never;
         head?: never;
@@ -665,7 +669,7 @@ export interface paths {
         };
         /**
          * Listar a agenda do médico
-         * @description Consultas do médico logado na aba escolhida em `tab`, a partir do dia `from`, com o paciente (nome e telefone), a especialidade, a unidade e as observações. O médico só vê as próprias consultas. Cada item traz o que o médico pode fazer (`actions`), para o cliente não repetir as regras. `counts` traz os totais das abas, sem os filtros. Limite: 120 requisições por minuto por IP.
+         * @description Consultas do médico logado na aba escolhida em `tab`, com o paciente (nome e telefone), a especialidade, a unidade e as observações. A aba `all` traz todas as consultas, em qualquer situação, em ordem de horário, para montar a semana e a lista do dia. Os filtros se combinam: `from` e `to` limitam aos dias do período, incluídos, no fuso de São Paulo, e `search` procura no nome do paciente, sem distinguir acentos nem maiúsculas. `to` anterior a `from` responde 400. O médico só vê as próprias consultas. Cada item traz o que o médico pode fazer (`actions`), para o cliente não repetir as regras. `counts` traz os totais das abas sem os filtros `from`, `to` e `search`, os mesmos em qualquer aba. Limite: 120 requisições por minuto por IP.
          */
         get: operations["listDoctorAppointments"];
         put?: never;
@@ -1139,7 +1143,7 @@ export interface paths {
         put?: never;
         /**
          * Criar uma nova senha com o link
-         * @description Troca a senha usando o token do link. O token vale uma vez só; depois da troca, todas as sessões da conta são encerradas. Limite: 20 tentativas por IP a cada 15 minutos.
+         * @description Troca a senha usando o token do link, seja o de redefinição ou o de criação de senha enviado quando um administrador cadastra a conta. O token vale uma vez só; depois da troca, todas as sessões da conta são encerradas. Limite: 20 tentativas por IP a cada 15 minutos.
          */
         post: operations["confirmPasswordReset"];
         delete?: never;
@@ -1832,6 +1836,41 @@ export interface components {
             registryNumber: string;
             /** @example SP */
             registryUf: string;
+        };
+        /**
+         * @example {
+         *       "fullName": "Carla Mendes",
+         *       "email": "carla.mendes@email.com",
+         *       "phone": "(11) 98765-4321",
+         *       "role": "doctor",
+         *       "doctorProfile": {
+         *         "specialtyId": "0190f6a1-0000-7000-8000-000000000001",
+         *         "unitId": "0190f6a1-0000-7000-8000-000000000002",
+         *         "registryNumber": "123456",
+         *         "registryUf": "SP"
+         *       }
+         *     }
+         */
+        CreateUserInput: {
+            /**
+             * @description Nome completo, de 2 a 120 caracteres.
+             * @example Ana Maria Silva
+             */
+            fullName: string;
+            /** @example ana.silva@email.com */
+            email: string;
+            /**
+             * @description Telefone com DDD. Números brasileiros sem código do país ganham `+55`; é gravado em E.164.
+             * @example (11) 98765-4321
+             */
+            phone?: "" | string;
+            /**
+             * @description Perfil da nova conta. Toda conta também é paciente; `doctor` e `admin` somam o próprio perfil ao de paciente.
+             * @example doctor
+             * @enum {string}
+             */
+            role: "patient" | "doctor" | "admin";
+            doctorProfile?: components["schemas"]["DoctorProfileInput"] & unknown;
         };
         UpdateDoctorProfileInput: {
             /** Format: uuid */
@@ -2548,7 +2587,7 @@ export interface components {
             page: number;
             pageSize: number;
             total: number;
-            /** @description Totais das abas da agenda, sem os filtros. */
+            /** @description Totais das abas da agenda, sem os filtros `from`, `to` e `search`. */
             counts: {
                 /**
                  * @description Pedidos a confirmar.
@@ -2626,7 +2665,7 @@ export interface components {
             pending: components["schemas"]["DoctorAppointment"][];
             /** @description As consultas mais antigas que aguardam registro, da mais antiga para a mais recente. */
             awaitingRecord: components["schemas"]["DoctorAppointment"][];
-            /** @description Totais das abas da agenda, sem os filtros. */
+            /** @description Totais das abas da agenda, sem os filtros `from`, `to` e `search`. */
             counts: {
                 /**
                  * @description Pedidos a confirmar.
@@ -3763,6 +3802,159 @@ export interface operations {
                      * @example {
                      *       "message": "Erro interno do servidor.",
                      *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminCreateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CreateUserInput"];
+            };
+        };
+        responses: {
+            /** @description Usuário cadastrado. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserDetail"];
+                };
+            };
+            /** @description Dados inválidos (`VALIDATION_ERROR` ou `INVALID_JSON`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Dados inválidos.",
+                     *       "code": "VALIDATION_ERROR",
+                     *       "fields": {
+                     *         "email": "Informe um e-mail válido."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada (`UNAUTHENTICATED`). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Sua sessão expirou. Entre novamente.",
+                     *       "code": "UNAUTHENTICATED"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflito com o estado atual (`EMAIL_TAKEN`, `REGISTRY_TAKEN`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Este e-mail já está cadastrado.",
+                     *       "code": "EMAIL_TAKEN",
+                     *       "fields": {
+                     *         "email": "Este e-mail já está cadastrado."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Especialidade ou unidade inativa ou inexistente (`SPECIALTY_UNAVAILABLE`, `UNIT_UNAVAILABLE`). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Escolha uma especialidade ativa.",
+                     *       "code": "SPECIALTY_UNAVAILABLE",
+                     *       "fields": {
+                     *         "doctorProfile.specialtyId": "Escolha uma especialidade ativa."
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+                     *       "code": "TOO_MANY_REQUESTS"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado no servidor (`INTERNAL_ERROR`). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "Erro interno do servidor.",
+                     *       "code": "INTERNAL_ERROR"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Servidor ocupado conferindo outras senhas (`SERVER_BUSY`). Tente de novo em instantes. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "O servidor está ocupado. Tente de novo em instantes.",
+                     *       "code": "SERVER_BUSY"
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];
@@ -8005,10 +8197,14 @@ export interface operations {
             query?: {
                 page?: number;
                 pageSize?: number;
-                /** @description Aba da agenda: a confirmar (`pending`, pedidos pendentes que ainda não começaram) e confirmadas (`confirmed`, confirmadas que ainda não começaram) e aguardando registro (`awaiting`, confirmadas que já começaram), das mais próximas para as mais distantes; histórico (`history`, todo o resto, inclusive as confirmadas que já começaram e aguardam registro), das mais recentes para as mais antigas. */
-                tab?: "pending" | "confirmed" | "awaiting" | "history";
+                /** @description Aba da agenda: a confirmar (`pending`, pedidos pendentes que ainda não começaram) e confirmadas (`confirmed`, confirmadas que ainda não começaram) e aguardando registro (`awaiting`, confirmadas que já começaram), das mais próximas para as mais distantes; histórico (`history`, todo o resto, inclusive as confirmadas que já começaram e aguardam registro), das mais recentes para as mais antigas; todas (`all`, em qualquer situação), das mais antigas para as mais recentes. */
+                tab?: "pending" | "confirmed" | "awaiting" | "history" | "all";
                 /** @description Só consultas que começam neste dia ou depois, no fuso de São Paulo. */
                 from?: string;
+                /** @description Só consultas que começam neste dia ou antes, incluído, no fuso de São Paulo. Não pode ser anterior a `from`. */
+                to?: string;
+                /** @description Parte do nome do paciente, sem distinguir acentos nem maiúsculas. */
+                search?: string;
             };
             header?: never;
             path?: never;

@@ -1,5 +1,6 @@
 import { Link, type LinkProps } from 'react-router';
 import { cx } from '@lib/cx';
+import { textLink } from './styles';
 
 export interface TextLinkProps extends LinkProps {
   newTab?: boolean;
@@ -8,10 +9,7 @@ export interface TextLinkProps extends LinkProps {
 export function TextLink({ className, newTab = false, children, ...props }: TextLinkProps) {
   return (
     <Link
-      className={cx(
-        'text-role-text can-hover:decoration-2 font-medium underline decoration-1 underline-offset-2',
-        className,
-      )}
+      className={cx(textLink, className)}
       {...(newTab && { target: '_blank', rel: 'noopener noreferrer' })}
       {...props}
     >

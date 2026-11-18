@@ -103,4 +103,7 @@ export const headerBar = 'flex min-h-14 items-center gap-x-3 px-4 lg:px-5';
 
 export const footerBar = 'border-border bg-surface-muted rounded-b-card border-t';
 
+export const textLink =
+  'text-role-text can-hover:decoration-2 font-medium underline decoration-1 underline-offset-2';
+
 export const overline = 'text-[0.6875rem] font-semibold tracking-[0.06em] text-text-muted uppercase';

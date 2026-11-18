@@ -92,7 +92,7 @@ export function DoctorAgendaPage() {
             resultsRef={results}
             empty={<EmptyState icon={<LuCalendarX />} {...list.tab.empty} />}
           >
-            {(items) => <AppointmentList items={items} grouped fallbackFocus={results} />}
+            {(items) => <AppointmentList items={items} fallbackFocus={results} />}
           </PagedResults>
         </TabPanel>
       </div>

@@ -1,5 +1,5 @@
 import { BookingRow } from '@components/bookings/BookingRow';
-import { ButtonLink, ListPlaceholder, SectionCard } from '@components/ui';
+import { ListPlaceholder, SectionCard, SectionLink } from '@components/ui';
 import { bookingUrl, PATIENT_BOOKINGS_PATH } from '@constants/areas';
 import type { PatientBooking } from '@lib/api/models';
 
@@ -14,11 +14,7 @@ export function LaterBookings({ items, pending }: LaterBookingsProps) {
       title="Depois disso"
       flush
       aria-busy={pending}
-      action={
-        <ButtonLink to={PATIENT_BOOKINGS_PATH} variant="ghost" size="sm" className="-me-2">
-          Ver todos
-        </ButtonLink>
-      }
+      action={<SectionLink to={PATIENT_BOOKINGS_PATH}>Ver todos</SectionLink>}
     >
       {items?.length ? (
         <ul className="divide-border divide-y">

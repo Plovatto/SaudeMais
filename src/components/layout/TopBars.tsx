@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router';
 import { NOTIFICATIONS_PATH, parentLink, profileUrl, type Area } from '@constants/areas';
 import { NotificationBell } from '@features/notifications';
 import { useCurrentUser } from '@lib/auth/useSession';
-import { cx } from '@lib/cx';
+import { RoleLogo } from './RoleLogo';
 import { useRouteHandle } from './route-handle';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -18,16 +18,7 @@ function Who({ area }: { area: Area }) {
   const user = useCurrentUser();
   return (
     <Link to={profileUrl(area.role)} className="flex min-w-0 flex-1 items-center gap-3 lg:hidden">
-      <span
-        className={cx(
-          'grid size-11 shrink-0 place-items-center rounded-[13px] text-white',
-          area.role === 'admin'
-            ? 'bg-role-strong shadow-[0_6px_14px_-8px_var(--role-strong)]'
-            : 'bg-role shadow-[0_6px_14px_-8px_var(--role)]',
-        )}
-      >
-        <area.icon aria-hidden className="size-[22px]" />
-      </span>
+      <RoleLogo area={area} />
       <span className="flex min-w-0 flex-col">
         <span className="text-text-secondary text-[1.0625rem] leading-tight font-bold tracking-[-0.01em]">
           {area.label}

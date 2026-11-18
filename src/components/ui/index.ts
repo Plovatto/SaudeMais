@@ -1,6 +1,6 @@
 export { Avatar, type AvatarProps } from './Avatar';
 export { Button, type ButtonProps } from './Button';
-export { ButtonLink, type ButtonLinkProps } from './ButtonLink';
+export { ButtonLink, SectionLink, type ButtonLinkProps } from './ButtonLink';
 export { Card, type CardProps } from './Card';
 export { Checkbox, type CheckboxProps } from './Checkbox';
 export { CloseButton } from './CloseButton';
@@ -25,6 +25,7 @@ export { Pagination, type PaginationProps } from './Pagination';
 export { PasswordInput } from './PasswordInput';
 export { Popover, type PopoverProps } from './Popover';
 export { QueryError, type QueryErrorProps } from './QueryError';
+export { QuickActions, type QuickAction, type QuickActionsProps } from './QuickActions';
 export { RadioChips, type RadioChipsProps } from './RadioChips';
 export { SearchInput, type SearchInputProps } from './SearchInput';
 export { SectionCard, type SectionCardProps } from './SectionCard';
