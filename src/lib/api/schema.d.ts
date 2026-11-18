@@ -2786,7 +2786,7 @@ export interface components {
              * @example 30
              * @enum {number|null}
              */
-            appointmentDurationMin?: 15 | null;
+            appointmentDurationMin?: 15 | 20 | 30 | 45 | 60 | null;
         };
         DoctorSchedule: {
             /**
