@@ -1,7 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { RefObject } from 'react';
+import { useState, type RefObject } from 'react';
 import { DateTile } from '@components/bookings/DateTile';
-import { CloseButton, ListPlaceholder, QueryError, SectionCard, SettingRow, useToast } from '@components/ui';
+import {
+  CloseButton,
+  ConfirmDialog,
+  ListPlaceholder,
+  QueryError,
+  SectionCard,
+  SettingRow,
+  useToast,
+} from '@components/ui';
 import { sectionPad } from '@components/ui/styles';
 import { ApiError } from '@lib/api/api-error';
 import { formatLongDay, middayOf } from '@lib/date';
@@ -14,35 +22,40 @@ interface TimeOffCardProps {
   warnings: readonly ScheduleWarning[];
   addRef: RefObject<HTMLButtonElement | null>;
   onAdd: () => void;
-  onRemoved: () => void;
+  onRemoved: (date: string) => void;
 }
 
-const describe = ({ date, reason }: TimeOff) => {
-  const day = formatLongDay(middayOf(date));
-  return { day, title: reason ?? 'Dia bloqueado', label: reason ?? day };
-};
+const removalMessages = {
+  PAST_DATE: 'Esta data já passou e não pode mais ser desbloqueada.',
+} as const;
+
+const dayOf = (date: string) => formatLongDay(middayOf(date));
+
+const isClientError = (error: unknown) =>
+  error instanceof ApiError && error.status >= 400 && error.status < 500;
 
 export function TimeOffCard({ warnings, addRef, onAdd, onRemoved }: TimeOffCardProps) {
   const queryClient = useQueryClient();
   const { show } = useToast();
   const list = useQuery(timeOffQuery);
+  const [pending, setPending] = useState<TimeOff | null>(null);
   const refresh = () => queryClient.invalidateQueries({ queryKey: timeOffQuery.queryKey });
   const removal = useMutation({
     mutationFn: timeOffApi.remove,
-    onSuccess: async () => {
+    onSuccess: async (_result, date) => {
       await refresh();
-      onRemoved();
-      addRef.current?.focus();
+      onRemoved(date);
       show({ message: 'Bloqueio removido.', tone: 'success' });
     },
-    onError: (error) => {
-      show({ message: errorMessage(error), tone: 'danger' });
-      if (error instanceof ApiError && error.code === 'NOT_FOUND') void refresh();
+    onError: async (error) => {
+      show({ message: errorMessage(error, removalMessages), tone: 'danger' });
+      if (isClientError(error)) await refresh();
     },
+    onSettled: () => setPending(null),
   });
 
   return (
-    <SectionCard title="Folgas e bloqueios" flush>
+    <SectionCard title="Folgas e bloqueios" flush className="lg:flex-[1_0_auto]">
       <WarningAlert
         warnings={warnings}
         one="consulta já estava marcada nesta data"
@@ -54,20 +67,19 @@ export function TimeOffCard({ warnings, addRef, onAdd, onRemoved }: TimeOffCardP
       ) : list.data && list.data.length > 0 ? (
         <ul aria-label="Datas bloqueadas" className="divide-border divide-y">
           {list.data.map((item) => {
-            const { day, title, label } = describe(item);
+            const day = dayOf(item.date);
             return (
               <SettingRow
                 key={item.date}
                 as="li"
                 className="gap-3.5 px-4 py-3 lg:px-5"
                 leading={<DateTile startsAt={middayOf(item.date)} />}
-                title={title}
+                title={item.reason ?? 'Dia bloqueado'}
                 meta={day}
                 trailing={
                   <CloseButton
-                    label={`Remover bloqueio de ${label}`}
-                    disabled={removal.isPending && removal.variables === item.date}
-                    onClick={() => removal.mutate(item.date)}
+                    label={`Remover bloqueio de ${day}${item.reason ? ` (${item.reason})` : ''}`}
+                    onClick={() => setPending(item)}
                   />
                 }
               />
@@ -82,6 +94,16 @@ export function TimeOffCard({ warnings, addRef, onAdd, onRemoved }: TimeOffCardP
           Bloquear uma data
         </AddButton>
       </div>
+      <ConfirmDialog
+        open={pending !== null}
+        onClose={() => setPending(null)}
+        title={pending ? `Desbloquear ${dayOf(pending.date).toLowerCase()}?` : 'Desbloquear a data?'}
+        description="Os pacientes voltam a ver os horários livres deste dia."
+        confirmLabel="Desbloquear"
+        loading={removal.isPending}
+        fallbackFocus={addRef}
+        onConfirm={() => pending && removal.mutate(pending.date)}
+      />
     </SectionCard>
   );
 }

@@ -3,19 +3,24 @@ import type { ScheduleWarning } from './schedule-api';
 import { TimeOffCard } from './TimeOffCard';
 import { TimeOffDrawer } from './TimeOffDrawer';
 
+interface DateWarnings {
+  date: string;
+  warnings: ScheduleWarning[];
+}
+
 export function useTimeOff() {
   const addRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
-  const [warnings, setWarnings] = useState<ScheduleWarning[]>([]);
+  const [created, setCreated] = useState<DateWarnings | null>(null);
   const card = (
     <TimeOffCard
-      warnings={warnings}
+      warnings={created?.warnings ?? []}
       addRef={addRef}
       onAdd={() => {
-        setWarnings([]);
+        setCreated(null);
         setOpen(true);
       }}
-      onRemoved={() => setWarnings([])}
+      onRemoved={(date) => setCreated((current) => (current?.date === date ? null : current))}
     />
   );
   const drawer = (
@@ -23,7 +28,7 @@ export function useTimeOff() {
       open={open}
       fallbackFocus={addRef}
       onClose={() => setOpen(false)}
-      onCreated={setWarnings}
+      onCreated={(date, warnings) => setCreated({ date, warnings })}
     />
   );
   return { card, drawer };
