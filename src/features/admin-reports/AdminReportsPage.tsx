@@ -1,103 +1,75 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { LuChartColumn } from 'react-icons/lu';
+import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
+import { LuChartColumn, LuDownload, LuFileText } from 'react-icons/lu';
 import { PageHeader } from '@components/layout/PageHeader';
+import { attendanceRate, reportOutcomes } from '@components/reports/report-outcomes';
 import {
-  EmptyState,
-  MeterList,
-  QueryError,
-  SectionCard,
-  Skeleton,
-  StackedColumns,
-  type ChartRow,
-  type ChartSeries,
-} from '@components/ui';
+  downloadAdminReport,
+  fetchAdminReport,
+  type AdminReport,
+  type ReportFormat,
+} from '@components/reports/reports-api';
+import { Button, EmptyState, QueryError, Skeleton, StatTile, stagger, useToast } from '@components/ui';
+import { useLeaveSignal } from '@hooks/useLeaveSignal';
 import { ApiError } from '@lib/api/api-error';
 import { cx } from '@lib/cx';
-import { formatDate } from '@lib/date';
+import { errorMessage } from '@lib/messages/errors.pt-BR';
+import { formatCount, formatPercent } from '@lib/number';
 import { queryKeys } from '@lib/query-keys';
-import { BookingSummaries } from './BookingSummaries';
+import { saveFile } from '@lib/save-file';
 import { PeriodControls } from './PeriodControls';
-import { fetchAdminReport, type AdminReport } from './reports-api';
+import { ReportTables } from './ReportTables';
 import { usePeriod } from './usePeriod';
-
-type Group = 'completed' | 'open' | 'missed';
-
-const SERIES: readonly ChartSeries<Group>[] = [
-  { key: 'completed', label: 'Concluídos', swatch: 'bg-chart-1' },
-  { key: 'open', label: 'Em aberto', swatch: 'bg-chart-2' },
-  { key: 'missed', label: 'Não realizados', swatch: 'bg-chart-3' },
-];
-
-const TOP_LISTS = [
-  { key: 'topSpecialties', title: 'Especialidades mais procuradas', empty: 'Nenhuma consulta no período.' },
-  { key: 'topExamTypes', title: 'Exames mais procurados', empty: 'Nenhum exame no período.' },
-] as const;
 
 const NO_ERRORS = {};
 
-function chartRows({ series, period }: AdminReport): ChartRow<Group>[] {
-  const weekly = period.granularity === 'week';
-  return series.map((point) => ({
-    key: point.start,
-    label: weekly ? `Semana de ${formatDate(point.start)}` : formatDate(point.start),
-    axisLabel: formatDate(point.start, { year: false }),
-    values: {
-      completed: point.completed,
-      open: point.pending + point.confirmed + point.awaitingRecord,
-      missed: point.cancelled + point.noShow + point.expired,
-    },
-  }));
-}
+const EXPORTS: readonly { format: ReportFormat; label: string; icon: ReactNode; primary: boolean }[] = [
+  { format: 'xlsx', label: 'Excel', icon: <LuDownload />, primary: false },
+  { format: 'pdf', label: 'PDF', icon: <LuFileText />, primary: true },
+];
 
-function ReportSkeleton() {
+function SummaryTiles({ report }: { report: AdminReport }) {
+  const outcomes = reportOutcomes(report);
+  const attendance = attendanceRate(outcomes);
+  const tiles = [
+    { label: 'Agendamentos', value: formatCount(outcomes.total) },
+    { label: 'Realizados', value: formatCount(outcomes.completed) },
+    { label: 'Cancelados', value: formatCount(outcomes.cancelled) },
+    { label: 'Faltas', value: formatCount(outcomes.noShow) },
+    { label: 'Comparecimento', value: attendance === null ? '—' : formatPercent(attendance) },
+  ];
   return (
-    <div aria-busy="true" className="grid gap-5 lg:grid-cols-2">
-      {[0, 1, 2].map((index) => (
-        <Skeleton key={index} className={cx('h-72', index === 2 && 'lg:col-span-2')} />
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 lg:gap-4">
+      {tiles.map(({ label, value }, index) => (
+        <StatTile
+          key={label}
+          compact
+          label={label}
+          value={value}
+          className={cx(stagger(index), index === tiles.length - 1 && 'max-sm:col-span-2')}
+        />
       ))}
     </div>
   );
 }
 
-function Report({ report }: { report: AdminReport }) {
-  const weekly = report.period.granularity === 'week';
+function ReportSkeleton() {
   return (
-    <div className="grid gap-5 lg:grid-cols-2">
-      <BookingSummaries report={report} />
-      <SectionCard
-        title={weekly ? 'Agendamentos por semana' : 'Agendamentos por dia'}
-        description="Consultas e exames pela situação atual. Não realizados reúne cancelados, faltas e não confirmados."
-        className="lg:col-span-2"
-      >
-        <StackedColumns
-          label={weekly ? 'Agendamentos por semana' : 'Agendamentos por dia'}
-          rowHeader={weekly ? 'Semana' : 'Dia'}
-          series={SERIES}
-          rows={chartRows(report)}
-        />
-      </SectionCard>
-      {TOP_LISTS.map(({ key, title, empty }) => {
-        const items = report[key];
-        return (
-          <SectionCard key={key} title={title}>
-            {items.length === 0 ? (
-              <p className="text-text-secondary text-sm">{empty}</p>
-            ) : (
-              <MeterList
-                label={title}
-                max={items[0]?.total ?? 0}
-                items={items.map(({ id, name, total }) => ({ key: id, label: name, value: total }))}
-              />
-            )}
-          </SectionCard>
-        );
-      })}
+    <div aria-busy="true" className="flex flex-col gap-4 lg:gap-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 lg:gap-4">
+        {[0, 1, 2, 3, 4].map((index) => (
+          <Skeleton key={index} className={cx('h-[88px]', index === 4 && 'max-sm:col-span-2')} />
+        ))}
+      </div>
+      <Skeleton className="h-72" />
     </div>
   );
 }
 
 export function AdminReportsPage() {
   const { period } = usePeriod();
+  const { show } = useToast();
+  const leaving = useLeaveSignal();
   const query = useQuery({
     queryKey: queryKeys.adminReport(period),
     queryFn: ({ signal }) => fetchAdminReport(period, signal),
@@ -107,17 +79,40 @@ export function AdminReportsPage() {
   const fieldErrors =
     error instanceof ApiError && (error.fields['from'] || error.fields['to']) ? error.fields : undefined;
   const empty = data && data.appointments.total + data.exams.total === 0;
+  const ready = data !== undefined && !query.isPlaceholderData && !query.isError;
+  const exporting = useMutation({
+    mutationFn: ({ format, report }: { format: ReportFormat; report: AdminReport }) =>
+      downloadAdminReport(report.period, format, leaving.current.signal),
+    onSuccess: (file, { format, report }) =>
+      saveFile(file, `relatorio_${report.period.from}_a_${report.period.to}.${format}`),
+    onError: (exportError) => {
+      if (!leaving.current.signal.aborted) show({ tone: 'danger', message: errorMessage(exportError) });
+    },
+  });
 
   return (
     <>
       <PageHeader
         title="Relatórios"
-        {...(data &&
-          !query.isPlaceholderData && {
-            subtitle: `${formatDate(data.period.from)} a ${formatDate(data.period.to)}`,
-          })}
+        subtitle="Escolha o período, confira na tela e exporte."
+        action={EXPORTS.map(({ format, label, icon, primary }) => {
+          const busy = exporting.isPending && exporting.variables.format === format;
+          return (
+            <Button
+              key={format}
+              variant={primary ? 'primary' : 'secondary'}
+              icon={icon}
+              loading={busy}
+              disabled={!ready || (exporting.isPending && !busy)}
+              aria-label={`Exportar em ${label}`}
+              onClick={() => data && exporting.mutate({ format, report: data })}
+            >
+              {busy ? 'Gerando…' : label}
+            </Button>
+          );
+        })}
       />
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4 lg:gap-5">
         <PeriodControls errors={fieldErrors ?? NO_ERRORS} />
         {query.isPending && <ReportSkeleton />}
         {query.isError && !fieldErrors && <QueryError error={error} onRetry={() => void query.refetch()} />}
@@ -131,9 +126,13 @@ export function AdminReportsPage() {
         {data && !empty && (
           <div
             aria-busy={query.isPlaceholderData}
-            className={cx('transition-opacity', query.isPlaceholderData && 'opacity-60')}
+            className={cx(
+              'flex flex-col gap-4 transition-opacity lg:gap-5',
+              query.isPlaceholderData && 'opacity-60',
+            )}
           >
-            <Report report={data} />
+            <SummaryTiles report={data} />
+            <ReportTables report={data} />
           </div>
         )}
       </div>
