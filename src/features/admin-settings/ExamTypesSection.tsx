@@ -38,6 +38,7 @@ function ExamTypeForm({ examType, onDone }: { examType: ExamType | null; onDone:
     invalidate: [
       queryKeys.catalog.examTypes,
       queryKeys.catalog.activeExamTypes,
+      queryKeys.catalog.offers,
       queryKeys.catalog.activeUnits,
     ],
     success: examType ? 'Tipo de exame atualizado.' : 'Tipo de exame criado.',
