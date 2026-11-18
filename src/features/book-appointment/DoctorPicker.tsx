@@ -43,6 +43,8 @@ export function DoctorPicker({
 }: DoctorPickerProps) {
   const errorId = useId();
   const hasChecked = doctors?.some((doctor) => doctor.id === value) ?? false;
+  const shown = doctors?.length ?? 0;
+  const more = doctors !== undefined && total > shown;
   return (
     <SectionCard
       title="Médico"
@@ -69,7 +71,7 @@ export function DoctorPicker({
         onKeyDown={(event) => moveFocus(event, '[role="radio"]', 'vertical')}
         className={cx(
           'border-border -mx-4 max-h-[196px] overflow-y-auto border-t [mask-image:linear-gradient(to_bottom,#000_calc(100%-32px),transparent)] pb-3 focus-visible:outline-none lg:-mx-5 lg:max-h-[300px]',
-          !error && '-mb-5',
+          !error && !more && '-mb-5',
         )}
       >
         {!doctors ? (
@@ -79,50 +81,48 @@ export function DoctorPicker({
             {searched ? `Nenhum médico encontrado para "${searched}".` : 'Nenhum médico disponível.'}
           </ListMessage>
         ) : (
-          <>
-            {doctors.map((doctor, index) => {
-              const selected = doctor.id === value;
-              return (
-                <button
-                  key={doctor.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  tabIndex={selected || (!hasChecked && index === 0) ? 0 : -1}
-                  onClick={() => onPick(doctor)}
+          doctors.map((doctor, index) => {
+            const selected = doctor.id === value;
+            return (
+              <button
+                key={doctor.id}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                tabIndex={selected || (!hasChecked && index === 0) ? 0 : -1}
+                onClick={() => onPick(doctor)}
+                className={cx(
+                  'border-border relative flex w-full items-center gap-3.5 border-b px-4 py-3 text-start transition-colors duration-150 lg:px-5',
+                  stagger(index),
+                  selected
+                    ? 'before:bg-role bg-[color-mix(in_oklab,var(--role-soft)_55%,var(--surface))] before:absolute before:inset-y-2.5 before:start-0 before:w-[3px] before:rounded-e-[3px]'
+                    : 'can-hover:bg-surface-muted',
+                )}
+              >
+                <span
+                  aria-hidden
                   className={cx(
-                    'border-border relative flex w-full items-center gap-3.5 border-b px-4 py-3 text-start transition-colors duration-150 lg:px-5',
-                    stagger(index),
-                    selected
-                      ? 'before:bg-role bg-[color-mix(in_oklab,var(--role-soft)_55%,var(--surface))] before:absolute before:inset-y-2.5 before:start-0 before:w-[3px] before:rounded-e-[3px]'
-                      : 'can-hover:bg-surface-muted',
+                    'bg-surface size-[18px] shrink-0 rounded-full transition-[border-width,border-color] duration-150',
+                    selected ? 'border-role-strong border-[5px]' : 'border-border-field border-[1.5px]',
                   )}
-                >
-                  <span
-                    aria-hidden
-                    className={cx(
-                      'bg-surface size-[18px] shrink-0 rounded-full transition-[border-width,border-color] duration-150',
-                      selected ? 'border-role-strong border-[5px]' : 'border-border-field border-[1.5px]',
-                    )}
-                  />
-                  <Avatar name={doctor.fullName} seed={doctor.id} />
-                  <RowText
-                    title={doctor.fullName}
-                    meta={doctor.unit.name}
-                    titleClassName="truncate"
-                    metaClassName="truncate"
-                  />
-                </button>
-              );
-            })}
-            {total > doctors.length && (
-              <ListMessage>
-                {`Mostrando ${doctors.length} de ${total}. ${searched ? 'Refine a busca para encontrar outros médicos.' : 'Busque pelo nome para encontrar os demais.'}`}
-              </ListMessage>
-            )}
-          </>
+                />
+                <Avatar name={doctor.fullName} seed={doctor.id} />
+                <RowText
+                  title={doctor.fullName}
+                  meta={doctor.unit.name}
+                  titleClassName="truncate"
+                  metaClassName="truncate"
+                />
+              </button>
+            );
+          })
         )}
       </div>
+      {more && (
+        <p className="text-text-muted text-center text-[0.8125rem]">
+          {`Mostrando ${shown} de ${total}. ${searched ? 'Refine a busca para encontrar outros médicos.' : 'Busque pelo nome para encontrar os demais.'}`}
+        </p>
+      )}
       {error && <FieldError id={errorId}>{error}</FieldError>}
     </SectionCard>
   );

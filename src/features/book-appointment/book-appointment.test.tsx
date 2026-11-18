@@ -183,16 +183,14 @@ describe('book appointment', { timeout: 20_000 }, () => {
     const { user } = await start();
 
     expect(screen.getByText('120 disponíveis')).toBeVisible();
-    expect(
-      within(doctorList()).getByText('Mostrando 2 de 120. Busque pelo nome para encontrar os demais.'),
-    ).toBeVisible();
+    const hint = screen.getByText('Mostrando 2 de 120. Busque pelo nome para encontrar os demais.');
+    expect(hint).toBeVisible();
+    expect(doctorList()).not.toContainElement(hint);
 
     await user.type(screen.getByRole('searchbox', { name: 'Buscar médico' }), 'a');
 
     expect(
-      await within(doctorList()).findByText(
-        'Mostrando 2 de 120. Refine a busca para encontrar outros médicos.',
-      ),
+      await screen.findByText('Mostrando 2 de 120. Refine a busca para encontrar outros médicos.'),
     ).toBeVisible();
   });
 
