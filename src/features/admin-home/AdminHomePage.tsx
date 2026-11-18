@@ -50,7 +50,7 @@ type Group = 'completed' | 'cancelled' | 'noShow';
 const SERIES: readonly ChartSeries<Group>[] = [
   { key: 'completed', label: 'Realizados', swatch: 'bg-chart-1' },
   { key: 'cancelled', label: 'Cancelados', swatch: 'bg-chart-2' },
-  { key: 'noShow', label: 'Faltas', swatch: 'bg-chart-3' },
+  { key: 'noShow', label: 'Faltas', swatch: 'bg-chart-4' },
 ];
 
 const TOP_LISTS = [
@@ -220,10 +220,15 @@ function PanelCharts({
               key: 'noShow',
               label: 'Faltas',
               value: outcomes.noShow,
-              swatch: 'bg-chart-3',
-              stroke: 'var(--chart-3)',
+              swatch: 'bg-chart-4',
+              stroke: 'var(--chart-4)',
             },
-            { key: 'open', label: 'Em aberto', value: outcomes.open, swatch: 'bg-surface-strong' },
+            {
+              key: 'open',
+              label: 'Em aberto',
+              value: outcomes.open,
+              swatch: 'border-border-field bg-surface-strong border',
+            },
           ]}
         />
       </SectionCard>
