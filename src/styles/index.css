@@ -53,6 +53,7 @@
   --chart-1: #2a78d6;
   --chart-2: #eb6834;
   --chart-3: #868e90;
+  --chart-4: #8c5fd4;
   --focus: #132322;
   --overlay: rgb(11 18 19 / 0.45);
   --elevation-card: 0 1px 2px rgb(16 42 41 / 0.05);
@@ -95,6 +96,7 @@
   --chart-1: #3987e5;
   --chart-2: #d95926;
   --chart-3: #7d8a8c;
+  --chart-4: #9c78e2;
   --focus: #e6eeee;
   --overlay: rgb(0 0 0 / 0.6);
   --elevation-card: 0 1px 2px rgb(0 0 0 / 0.35);
@@ -274,6 +276,7 @@
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
   --color-focus: var(--focus);
   --color-overlay: var(--overlay);
   --shadow-card: var(--elevation-card);
