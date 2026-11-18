@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { todayInSaoPaulo } from '@lib/date';
+import { addDays, todayInSaoPaulo } from '@lib/date';
 import {
   dropdown,
   calendar,
@@ -73,11 +73,12 @@ type Day = (typeof days)[number];
 interface Schedule {
   first?: Day[][];
   second?: Day[];
+  later?: Record<string, Day[]>;
 }
 
 function serve(
   book: () => MockResponse = () => ({ status: 201, body: appointment }),
-  { first = [days], second = [] }: Schedule = {},
+  { first = [days], second = [], later = {} }: Schedule = {},
 ) {
   let loads = 0;
   const served = serveApi(['patient'], {
@@ -92,7 +93,9 @@ function serve(
       return { status: 200, body: { items, page: 1, pageSize: 50, total: items.length } };
     },
     '/api/doctors/d1/availability': (_method, _body, url) => {
-      if (url.searchParams.get('from') !== todayInSaoPaulo()) return { status: 200, body: { days: second } };
+      const from = url.searchParams.get('from') ?? '';
+      if (from === addDays(todayInSaoPaulo(), 31)) return { status: 200, body: { days: second } };
+      if (from !== todayInSaoPaulo()) return { status: 200, body: { days: later[from] ?? [] } };
       const response = first[Math.min(loads, first.length - 1)] ?? [];
       loads += 1;
       return { status: 200, body: { days: response } };
@@ -214,7 +217,30 @@ describe('book appointment', { timeout: 20_000 }, () => {
     expect(windowsOf(calls)).toEqual([
       { from: '2026-11-19', to: '2026-12-19' },
       { from: '2026-12-20', to: '2027-01-19' },
+      { from: '2027-01-20', to: '2027-02-19' },
+      { from: '2027-02-20', to: '2027-03-22' },
     ]);
+  });
+
+  it('keeps asking for later windows while the last one still has free slots, up to a year', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-20T02:30:00.000Z'));
+    const farDay = { date: '2027-03-01', slots: [slot('2027-03-01T11:00:00.000Z')] };
+    const { calls } = serve(undefined, {
+      first: [[days[0] as Day]],
+      second: [days[1] as Day],
+      later: { '2027-02-20': [farDay] },
+    });
+    const { user } = await start();
+
+    await user.click(screen.getByRole('radio', { name: /Carlos Mendes/ }));
+
+    await waitFor(() => expect(windowsOf(calls)).toHaveLength(6));
+    expect(windowsOf(calls).slice(4)).toEqual([
+      { from: '2027-03-23', to: '2027-04-22' },
+      { from: '2027-04-23', to: '2027-05-23' },
+    ]);
+    await waitFor(() => expect(openDays()).toEqual([MONDAY, TUESDAY]));
   });
 
   it('warns when the doctor has no free slot', async () => {
