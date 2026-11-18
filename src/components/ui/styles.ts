@@ -47,7 +47,7 @@ export interface ButtonStyle {
 
 export function buttonClass({ variant = 'primary', size = 'md', fullWidth = false }: ButtonStyle): string {
   return cx(
-    'inline-flex items-center justify-center gap-2 whitespace-nowrap transition-[background-color,border-color,box-shadow,scale] duration-(--duration-fast) ease-standard select-none pressable:scale-97',
+    'inline-flex items-center justify-center gap-2 whitespace-nowrap transition-[background-color,border-color,box-shadow,scale] duration-(--duration-fast) ease-out select-none pressable:scale-97',
     disabledState,
     buttonVariants[variant],
     buttonSizes[size],
