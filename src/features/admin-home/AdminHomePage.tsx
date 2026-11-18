@@ -144,9 +144,11 @@ function PanelStats({ outcomes, previous, report, versus }: StatsProps) {
   );
 }
 
+const CHART_GRID = 'grid gap-4 min-[1281px]:grid-cols-12 lg:gap-5';
+
 function PanelSkeleton() {
   return (
-    <div aria-busy="true" className="grid gap-4 min-[1281px]:grid-cols-12 lg:gap-5">
+    <div aria-busy="true" className={CHART_GRID}>
       <Skeleton className="h-80 min-[1281px]:col-span-8" />
       <Skeleton className="h-80 min-[1281px]:col-span-4" />
       <Skeleton className="h-56 min-[1281px]:col-span-6" />
@@ -168,7 +170,7 @@ function PanelCharts({
   const delta = countDelta(outcomes.total, previous?.total);
   const average = outcomes.total / Math.max(report.series.length, 1);
   return (
-    <div className="grid gap-4 min-[1281px]:grid-cols-12 lg:gap-5">
+    <div className={CHART_GRID}>
       <SectionCard
         title="Volume de agendamentos"
         description="Consultas e exames marcados no período, pela situação atual."
