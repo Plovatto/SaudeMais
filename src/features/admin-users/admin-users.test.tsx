@@ -121,6 +121,8 @@ describe('admin users list', () => {
     const inactive = await rowOf('Bia Admin');
     expect(within(inactive).getByText('Administrador')).toBeInTheDocument();
     expect(within(inactive).getByText('Inativo')).toBeInTheDocument();
+    expect(within(inactive).getByText('BA')).not.toHaveClass('opacity-60');
+    expect(within(inactive).getByText('BA')).toHaveClass('text-text-secondary');
   });
 
   it('filters by role tab, search, status and page through the URL and the request', async () => {

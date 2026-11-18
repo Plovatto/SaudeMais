@@ -1,6 +1,7 @@
 import type { Role } from '@constants/areas';
 import { cx } from '@lib/cx';
 import { hueOf, initials } from '@lib/initials';
+import { softTones } from './styles';
 
 const hues = [
   'bg-[#dff3f1] text-[#0b6a64] dark:bg-[#14393a] dark:text-[#6fd8d0]',
@@ -26,17 +27,26 @@ export interface AvatarProps {
   role?: Role;
   size?: keyof typeof sizes;
   square?: boolean;
+  muted?: boolean;
   className?: string;
 }
 
-export function Avatar({ name, seed = name, role, size = 'md', square = false, className }: AvatarProps) {
+export function Avatar({
+  name,
+  seed = name,
+  role,
+  size = 'md',
+  square = false,
+  muted = false,
+  className,
+}: AvatarProps) {
   return (
     <span
       aria-hidden
       className={cx(
         'inline-grid shrink-0 place-items-center font-bold tracking-[0.01em]',
         square ? 'rounded-field' : 'rounded-full',
-        hues[role ? roleHues[role] : hueOf(seed)],
+        muted ? softTones.neutral : hues[role ? roleHues[role] : hueOf(seed)],
         sizes[size],
         className,
       )}

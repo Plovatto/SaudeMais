@@ -262,7 +262,8 @@ describe('patient bookings', { timeout: 15_000 }, () => {
     const first = await screen.findByRole('button', { name: /Dr\. João Silveira/ });
     expect(first).toHaveAttribute('aria-current', 'true');
     expect(first).not.toHaveAttribute('aria-haspopup');
-    expect(await screen.findByRole('heading', { name: 'Dr. João Silveira' })).toBeVisible();
+    const aside = screen.getByRole('complementary', { name: 'Detalhes do agendamento' });
+    expect(await within(aside).findByRole('heading', { name: 'Dr. João Silveira' })).toBeVisible();
     expect(screen.queryByRole('dialog', { name: SHEET })).not.toBeInTheDocument();
     expect(screen.queryByText('Antes de ir')).not.toBeInTheDocument();
 

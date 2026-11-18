@@ -34,7 +34,7 @@ export const buttonVariants = {
 export type ButtonVariant = keyof typeof buttonVariants;
 
 export const buttonSizes = {
-  sm: 'min-h-9 rounded-field px-3 text-[0.8125rem] font-semibold lg:min-h-8',
+  sm: 'min-h-11 rounded-field px-3 text-[0.8125rem] font-semibold lg:min-h-8',
   md: 'min-h-11 rounded-field px-4 text-sm font-semibold lg:min-h-10',
   lg: 'min-h-[50px] rounded-tile px-6 text-[0.9375rem] font-semibold lg:min-h-12',
 };
@@ -102,6 +102,9 @@ export const groupHeader = 'border-border bg-surface-muted border-b px-4 py-2.5 
 export const headerBar = 'flex min-h-14 items-center gap-x-3 px-4 lg:px-5';
 
 export const footerBar = 'border-border bg-surface-muted rounded-b-card border-t';
+
+export const hitArea =
+  'relative after:absolute after:-inset-x-1 after:top-1/2 after:h-11 after:-translate-y-1/2';
 
 export const textLink =
   'text-role-text can-hover:decoration-2 font-medium underline decoration-1 underline-offset-2';
