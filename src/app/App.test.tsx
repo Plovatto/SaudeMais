@@ -97,6 +97,17 @@ describe('role areas', () => {
     expect(crumbs.getByText('Resultado do exame')).toHaveAttribute('aria-current', 'page');
   });
 
+  it.each([
+    ['/medico/perfil', 'Meu perfil'],
+    ['/notificacoes?perfil=medico', 'Notificações'],
+  ])('places %s under the account crumb', async (path, title) => {
+    renderAt(path);
+
+    const crumbs = await navigation('Você está em');
+    expect(crumbs.getByRole('link', { name: 'Conta' })).toHaveAttribute('href', '/medico/perfil');
+    expect(crumbs.getByText(title)).toHaveAttribute('aria-current', 'page');
+  });
+
   it('shortens the reschedule crumb but keeps the full page title', async () => {
     renderAt('/paciente/consultas/1/reagendar');
 

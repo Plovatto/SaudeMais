@@ -416,10 +416,10 @@ describe('password change', () => {
   };
 
   it('shows when the password was last changed', async () => {
-    serve({ ...testUser(), passwordChangedAt: '2026-08-10T12:00:00.000Z' });
+    serve({ ...testUser(), passwordChangedAt: new Date(Date.now() - 100 * 86_400_000).toISOString() });
     openProfile();
 
-    expect(await screen.findByText('Última alteração em 10/08/2026')).toBeInTheDocument();
+    expect(await screen.findByText('Última alteração há 3 meses')).toBeInTheDocument();
   });
 
   it('keeps the button disabled until every rule passes', async () => {

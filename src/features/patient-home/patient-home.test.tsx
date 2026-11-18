@@ -86,8 +86,8 @@ describe('patient home', { timeout: 15_000 }, () => {
     renderApp('/paciente');
 
     const region = await banner();
-    expect(region.getByText('Consulta confirmada!')).toBeVisible();
-    expect(region.getByText('Sua consulta de 19/07/2030, 15:30 foi confirmada pelo médico.')).toBeVisible();
+    expect(region.getByText('Consulta confirmada')).toBeVisible();
+    expect(region.getByText('Sua consulta de 19/07, 15:30 foi confirmada pelo médico.')).toBeVisible();
     expect(region.getByText('há 2 h')).toBeVisible();
     expect(region.getByText('(não lida)')).toBeInTheDocument();
   });
@@ -97,24 +97,24 @@ describe('patient home', { timeout: 15_000 }, () => {
       'a cancellation by the doctor',
       { type: 'appointment_cancelled', params: { startsAt: FUTURE, cancelledByRole: 'doctor' } },
       'Consulta cancelada',
-      'A consulta de 19/07/2030, 15:30 foi cancelada pelo médico.',
+      'A consulta de 19/07, 15:30 foi cancelada pelo médico.',
     ],
     [
       'a cancellation by the system',
       { type: 'appointment_cancelled', params: { startsAt: FUTURE, cancelledByRole: 'system' } },
       'Consulta cancelada',
-      'A consulta de 19/07/2030, 15:30 foi cancelada pelo sistema.',
+      'A consulta de 19/07, 15:30 foi cancelada pelo sistema.',
     ],
     [
       'an expired request',
       { type: 'appointment_expired' },
       'Pedido não confirmado',
-      'O pedido de consulta de 19/07/2030, 15:30 não foi confirmado a tempo. Escolha outro horário.',
+      'O pedido de consulta de 19/07, 15:30 não foi confirmado a tempo. Escolha outro horário.',
     ],
     [
       'an exam result',
       { type: 'exam_result_available', params: {} },
-      'Resultado de exame disponível',
+      'Resultado disponível',
       'O resultado do seu exame já pode ser consultado.',
     ],
   ])('writes the banner text for %s', async (_case, overrides, title, body) => {
@@ -134,7 +134,7 @@ describe('patient home', { timeout: 15_000 }, () => {
     });
     const { user, router } = renderApp('/paciente');
 
-    const link = (await banner()).getByRole('link', { name: /Consulta confirmada!/ });
+    const link = (await banner()).getByRole('link', { name: /Consulta confirmada/ });
     expect(link).toHaveAttribute('href', '/paciente/agendamentos');
     await user.click(link);
 
@@ -168,7 +168,7 @@ describe('patient home', { timeout: 15_000 }, () => {
     const { calls } = serveHome({ lastNotification: notification({ readAt: new Date().toISOString() }) });
     const { user, router } = renderApp('/paciente');
 
-    await user.click((await banner()).getByRole('link', { name: /Consulta confirmada!/ }));
+    await user.click((await banner()).getByRole('link', { name: /Consulta confirmada/ }));
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/paciente/agendamentos'));
     expect(calls.some((call) => call.method === 'POST')).toBe(false);

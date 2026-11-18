@@ -206,9 +206,9 @@ describe('notifications', { timeout: 15_000 }, () => {
 
     const popover = await openPopover(user);
     const [unread, read] = (await popover.findAllByRole('link')).slice(0, 2);
-    expect(unread).toHaveTextContent('Consulta confirmada!');
+    expect(unread).toHaveTextContent('Consulta confirmada');
     expect(unread).toHaveTextContent('(não lida)');
-    expect(unread).toHaveTextContent('há 2 h');
+    expect(unread).toHaveTextContent('há 2 horas');
     const createdAt = unread?.querySelector('time')?.getAttribute('dateTime') ?? '';
     expect(unread?.querySelector('time')).toHaveAttribute('title', formatDateTime(createdAt));
     expect(read).toHaveTextContent('Consulta cancelada');
@@ -238,7 +238,7 @@ describe('notifications', { timeout: 15_000 }, () => {
     const { user, router } = renderApp('/paciente/exames/e1/resultado');
 
     const popover = await openPopover(user);
-    await user.click(await popover.findByRole('link', { name: /Consulta confirmada!/ }));
+    await user.click(await popover.findByRole('link', { name: /Consulta confirmada/ }));
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/paciente/agendamentos'));
     expect(screen.queryByRole('dialog', { name: 'Notificações' })).not.toBeInTheDocument();
@@ -266,7 +266,7 @@ describe('notifications', { timeout: 15_000 }, () => {
     const { user, router } = renderApp('/paciente/exames/e1/resultado');
 
     const popover = await openPopover(user);
-    await user.click(await popover.findByRole('link', { name: /Consulta confirmada!/ }));
+    await user.click(await popover.findByRole('link', { name: /Consulta confirmada/ }));
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/login'));
   });
@@ -399,7 +399,7 @@ describe('notifications', { timeout: 15_000 }, () => {
     const { user } = renderApp('/paciente/exames/e1/resultado');
 
     const popover = await openPopover(user);
-    await popover.findByRole('link', { name: /Consulta confirmada!/ });
+    await popover.findByRole('link', { name: /Consulta confirmada/ });
     expect(popover.queryByText('Tudo lido')).not.toBeInTheDocument();
     expect(popover.queryByRole('button', { name: 'Marcar todas como lidas' })).not.toBeInTheDocument();
   });

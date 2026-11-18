@@ -98,22 +98,28 @@ export const formatCivilDate = (iso: string, options?: { year?: boolean }) =>
 
 const relativeTime = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto', style: 'short' });
 const relativeSpan = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'always' });
+const relativeLong = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto' });
 
 export const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
 const RELATIVE_DAYS = 7;
 
-function relativeOr(iso: string, now: Date, older: (date: Date, days: number) => string): string {
+function relativeOr(
+  iso: string,
+  now: Date,
+  older: (date: Date, days: number) => string,
+  { format = relativeTime, relativeDays = RELATIVE_DAYS } = {},
+): string {
   const date = new Date(iso);
   const elapsed = now.getTime() - date.getTime();
   if (Number.isNaN(elapsed)) return INVALID_DATE;
-  if (elapsed < MINUTE_MS) return relativeTime.format(0, 'second');
-  if (elapsed < HOUR_MS) return relativeTime.format(-Math.floor(elapsed / MINUTE_MS), 'minute');
-  if (elapsed < DAY_MS) return relativeTime.format(-Math.floor(elapsed / HOUR_MS), 'hour');
+  if (elapsed < MINUTE_MS) return format.format(0, 'second');
+  if (elapsed < HOUR_MS) return format.format(-Math.floor(elapsed / MINUTE_MS), 'minute');
+  if (elapsed < DAY_MS) return format.format(-Math.floor(elapsed / HOUR_MS), 'hour');
   const days =
     (utcDay(todayInSaoPaulo(now)).getTime() - utcDay(civilDateInSaoPaulo(date)).getTime()) / DAY_MS;
-  return days > RELATIVE_DAYS ? older(date, days) : relativeTime.format(-days, 'day');
+  return days > relativeDays ? older(date, days) : format.format(-days, 'day');
 }
 
 export const formatRelative = (iso: string, now = new Date()) =>
@@ -135,8 +141,10 @@ function spanSince(days: number): string {
   return relativeSpan.format(-Math.floor(days / DAYS_PER_YEAR), 'year');
 }
 
+const SINCE_DAYS = 13;
+
 export const formatSince = (iso: string, now = new Date()) =>
-  relativeOr(iso, now, (date) => `em ${formatDate(civilDateInSaoPaulo(date))}`);
+  relativeOr(iso, now, (_date, days) => spanSince(days), { format: relativeLong, relativeDays: SINCE_DAYS });
 
 export const formatAgo = (iso: string, now = new Date()) =>
   relativeOr(iso, now, (_date, days) => spanSince(days));

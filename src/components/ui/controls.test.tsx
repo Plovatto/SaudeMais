@@ -6,6 +6,7 @@ import { Button } from './Button';
 import { Pagination } from './Pagination';
 import { paginationRange } from './pagination-range';
 import { Popover } from './Popover';
+import { SectionCard } from './SectionCard';
 import { Switch } from './Switch';
 import { TabPanel, Tabs } from './Tabs';
 import { TOAST_DURATION_MS, ToastProvider } from './ToastProvider';
@@ -343,5 +344,30 @@ describe('Toast', () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     expect(() => render(<Trigger />)).toThrow(/ToastProvider/);
     vi.restoreAllMocks();
+  });
+});
+
+describe('SectionCard', () => {
+  it('marks an optional section in the title and keeps a two-part action together', () => {
+    render(
+      <SectionCard
+        title="Observação"
+        optional
+        action={
+          <>
+            <span>2 consultas</span>
+            <a href="/agenda">Ver tudo</a>
+          </>
+        }
+      >
+        <p>Conteúdo</p>
+      </SectionCard>,
+    );
+
+    expect(screen.getByRole('region', { name: 'Observação (opcional)' })).toBeVisible();
+    expect(screen.getByText('(opcional)')).toHaveClass('font-normal');
+    const count = screen.getByText('2 consultas');
+    expect(count.parentElement).toContainElement(screen.getByRole('link', { name: 'Ver tudo' }));
+    expect(count.parentElement).toHaveClass('shrink-0');
   });
 });
