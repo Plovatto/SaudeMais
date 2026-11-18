@@ -690,7 +690,7 @@ export interface paths {
         get: operations["getDoctorSchedule"];
         /**
          * Salvar a agenda semanal
-         * @description Substitui a agenda inteira de uma vez: envie os 7 dias, cada um com `isActive` e as faixas em minutos desde 00:00 (de 0 a 1440, início antes do fim). Dia inativo guarda as faixas e não gera vagas. As faixas de um dia não podem se sobrepor, mas podem se encostar, e precisam caber no horário da unidade do médico. Nenhuma consulta é cancelada: `warnings` lista as consultas futuras que ficaram fora das novas faixas. A conta de demonstração só lê. Limite: 30 requisições por minuto por IP.
+         * @description Substitui a agenda inteira de uma vez: envie os 7 dias, cada um com `isActive` e as faixas em minutos desde 00:00 (de 0 a 1440, início antes do fim). Dia inativo guarda as faixas e não gera vagas. As faixas de um dia não podem se sobrepor, mas podem se encostar, e precisam caber no horário da unidade do médico. Nenhuma consulta é cancelada: `warnings` lista as consultas futuras que ficaram fora das novas faixas. Limite: 30 requisições por minuto por IP.
          */
         put: operations["saveDoctorSchedule"];
         post?: never;
@@ -1079,7 +1079,7 @@ export interface paths {
         put?: never;
         /**
          * Marcar um aviso como lido
-         * @description Marca o aviso como lido. Repetir não tem efeito e mantém o horário da primeira leitura. Aviso de outra conta responde como inexistente. A conta de demonstração só lê. Limite: 60 requisições por minuto por IP.
+         * @description Marca o aviso como lido. Repetir não tem efeito e mantém o horário da primeira leitura. Aviso de outra conta responde como inexistente. Limite: 60 requisições por minuto por IP.
          */
         post: operations["readNotification"];
         delete?: never;
@@ -1099,7 +1099,7 @@ export interface paths {
         put?: never;
         /**
          * Marcar todos os avisos como lidos
-         * @description Marca como lidos todos os avisos do perfil da área aberta (`role`); os dos outros perfis da conta não mudam. A conta de demonstração só lê. Limite: 60 requisições por minuto por IP.
+         * @description Marca como lidos todos os avisos do perfil da área aberta (`role`); os dos outros perfis da conta não mudam. Limite: 60 requisições por minuto por IP.
          */
         post: operations["readAllNotifications"];
         delete?: never;
@@ -1119,7 +1119,7 @@ export interface paths {
         put?: never;
         /**
          * Pedir link para redefinir a senha
-         * @description Envia ao e-mail um link válido por 30 minutos. A resposta é sempre 204, exista ou não a conta. Cada conta recebe no máximo um link a cada 15 minutos e 3 por dia; contas de demonstração e desativadas não recebem. Pedir de novo invalida o link anterior. Limite: 10 pedidos por IP a cada 15 minutos.
+         * @description Envia ao e-mail um link válido por 30 minutos. A resposta é sempre 204, exista ou não a conta. Cada conta recebe no máximo um link a cada 15 minutos e 3 por dia; contas desativadas não recebem. Pedir de novo invalida o link anterior. Limite: 10 pedidos por IP a cada 15 minutos.
          */
         post: operations["requestPasswordReset"];
         delete?: never;
@@ -1348,7 +1348,7 @@ export interface paths {
         post?: never;
         /**
          * Encerrar uma sessão
-         * @description Encerra uma sessão da própria conta, como a de um aparelho que a pessoa não reconhece. A sessão atual não pode ser encerrada por aqui: use o logout. Sessão de outra conta responde 404, sem revelar se existe. Na conta de demonstração a rota é bloqueada. Limite: 60 requisições de sessão por minuto por IP.
+         * @description Encerra uma sessão da própria conta, como a de um aparelho que a pessoa não reconhece. A sessão atual não pode ser encerrada por aqui: use o logout. Sessão de outra conta responde 404, sem revelar se existe. Limite: 60 requisições de sessão por minuto por IP.
          */
         delete: operations["endSession"];
         options?: never;
@@ -1860,7 +1860,7 @@ export interface components {
             registryUf: string;
         };
         AdminUser: components["schemas"]["User"] & {
-            /** @description Conta de demonstração, que não pode ser alterada. */
+            /** @description Conta de demonstração: os dados são restaurados periodicamente e ficam fora das métricas. */
             isProtected: boolean;
             /** Format: date-time */
             deactivatedAt: string | null;
@@ -3942,7 +3942,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Sem perfil de administrador (`FORBIDDEN`) ou conta de demonstração (`PROTECTED_ACCOUNT`). */
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -3950,8 +3950,8 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "message": "Esta é uma conta de demonstração e não pode ser alterada.",
-                     *       "code": "PROTECTED_ACCOUNT"
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];
@@ -4172,7 +4172,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Sem perfil de administrador (`FORBIDDEN`) ou conta de demonstração (`PROTECTED_ACCOUNT`). */
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -4180,8 +4180,8 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "message": "Esta é uma conta de demonstração e não pode ser alterada.",
-                     *       "code": "PROTECTED_ACCOUNT"
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];
@@ -4305,7 +4305,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Sem perfil de administrador (`FORBIDDEN`) ou conta de demonstração (`PROTECTED_ACCOUNT`). */
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -4313,8 +4313,8 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "message": "Esta é uma conta de demonstração e não pode ser alterada.",
-                     *       "code": "PROTECTED_ACCOUNT"
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];
@@ -4418,7 +4418,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Sem perfil de administrador (`FORBIDDEN`) ou conta de demonstração (`PROTECTED_ACCOUNT`). */
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -4426,8 +4426,8 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "message": "Esta é uma conta de demonstração e não pode ser alterada.",
-                     *       "code": "PROTECTED_ACCOUNT"
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];
@@ -4552,7 +4552,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Sem perfil de administrador (`FORBIDDEN`) ou conta de demonstração (`PROTECTED_ACCOUNT`). */
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -4560,8 +4560,8 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "message": "Esta é uma conta de demonstração e não pode ser alterada.",
-                     *       "code": "PROTECTED_ACCOUNT"
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];
@@ -4686,7 +4686,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Sem perfil de administrador (`FORBIDDEN`) ou conta de demonstração (`PROTECTED_ACCOUNT`). */
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -4694,8 +4694,8 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "message": "Esta é uma conta de demonstração e não pode ser alterada.",
-                     *       "code": "PROTECTED_ACCOUNT"
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];
@@ -4823,7 +4823,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Sem perfil de administrador (`FORBIDDEN`) ou conta de demonstração (`PROTECTED_ACCOUNT`). */
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -4831,8 +4831,8 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "message": "Esta é uma conta de demonstração e não pode ser alterada.",
-                     *       "code": "PROTECTED_ACCOUNT"
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];
@@ -4974,7 +4974,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Sem perfil de administrador (`FORBIDDEN`) ou conta de demonstração (`PROTECTED_ACCOUNT`). */
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -4982,8 +4982,8 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "message": "Esta é uma conta de demonstração e não pode ser alterada.",
-                     *       "code": "PROTECTED_ACCOUNT"
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];
@@ -5093,7 +5093,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Sem perfil de administrador (`FORBIDDEN`) ou conta de demonstração (`PROTECTED_ACCOUNT`). */
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -5101,8 +5101,8 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "message": "Esta é uma conta de demonstração e não pode ser alterada.",
-                     *       "code": "PROTECTED_ACCOUNT"
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];
@@ -8255,21 +8255,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Sem perfil de médico (`FORBIDDEN`) ou conta de demonstração (`PROTECTED_ACCOUNT`). */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "message": "Esta é uma conta de demonstração e não pode ser alterada.",
-                     *       "code": "PROTECTED_ACCOUNT"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
             /** @description Registro inexistente (`NOT_FOUND`). */
             404: {
                 headers: {
@@ -8677,21 +8662,6 @@ export interface operations {
                      * @example {
                      *       "message": "Sua sessão expirou. Entre novamente.",
                      *       "code": "UNAUTHENTICATED"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Conta de demonstração (`PROTECTED_ACCOUNT`); não pode ser alterada. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "message": "Esta é uma conta de demonstração e não pode ser alterada.",
-                     *       "code": "PROTECTED_ACCOUNT"
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];
@@ -10693,21 +10663,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Conta de demonstração (`PROTECTED_ACCOUNT`); não pode ser alterada. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "message": "Esta é uma conta de demonstração e não pode ser alterada.",
-                     *       "code": "PROTECTED_ACCOUNT"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
             /** @description Registro inexistente (`NOT_FOUND`). */
             404: {
                 headers: {
@@ -10807,7 +10762,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Perfil que a conta não tem (`FORBIDDEN`) ou conta de demonstração (`PROTECTED_ACCOUNT`). */
+            /** @description A conta não tem o perfil exigido (`FORBIDDEN`). */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -10815,8 +10770,8 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "message": "Esta é uma conta de demonstração e não pode ser alterada.",
-                     *       "code": "PROTECTED_ACCOUNT"
+                     *       "message": "Você não tem acesso a esta área.",
+                     *       "code": "FORBIDDEN"
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];
@@ -11601,21 +11556,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Conta de demonstração (`PROTECTED_ACCOUNT`); não pode ser alterada. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "message": "Esta é uma conta de demonstração e não pode ser alterada.",
-                     *       "code": "PROTECTED_ACCOUNT"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
             /** @description Limite de tentativas atingido (`TOO_MANY_REQUESTS`). O cabeçalho `RateLimit` diz quando tentar de novo. */
             429: {
                 headers: {
@@ -11696,21 +11636,6 @@ export interface operations {
                      * @example {
                      *       "message": "Sua sessão expirou. Entre novamente.",
                      *       "code": "UNAUTHENTICATED"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Conta de demonstração (`PROTECTED_ACCOUNT`); não pode ser alterada. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "message": "Esta é uma conta de demonstração e não pode ser alterada.",
-                     *       "code": "PROTECTED_ACCOUNT"
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];
@@ -12018,21 +11943,6 @@ export interface operations {
                      * @example {
                      *       "message": "Sua sessão expirou. Entre novamente.",
                      *       "code": "UNAUTHENTICATED"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Conta de demonstração (`PROTECTED_ACCOUNT`); não pode ser alterada. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "message": "Esta é uma conta de demonstração e não pode ser alterada.",
-                     *       "code": "PROTECTED_ACCOUNT"
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];
