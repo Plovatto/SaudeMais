@@ -46,7 +46,7 @@ export default defineConfig(({ command, mode }) => {
     },
     test: {
       environment: 'jsdom',
-      setupFiles: ['./src/test/setup.ts'],
+      setupFiles: ['./src/test/animation-event.ts', './src/test/setup.ts'],
       env: { VITE_API_URL: 'http://localhost:3001' },
       include: ['src/**/*.test.{ts,tsx}'],
       css: true,

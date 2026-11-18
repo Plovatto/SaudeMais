@@ -2,6 +2,8 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
+import { MOTION_QUERY } from '@lib/motion';
+import { stubMatchMedia } from '@/test/match-media';
 import { Button } from './Button';
 import { Pagination } from './Pagination';
 import { paginationRange } from './pagination-range';
@@ -145,6 +147,44 @@ describe('Tabs', () => {
 
     await user.keyboard('{ArrowRight}');
     expect(screen.getByRole('tab', { name: 'Confirmadas' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('slides the line indicator under the selected tab', async () => {
+    const offsets: Record<string, [number, number]> = { Hoje: [0, 60], Semana: [64, 80] };
+    const box = (element: HTMLElement) => offsets[element.textContent] ?? [0, 0];
+    vi.spyOn(HTMLElement.prototype, 'offsetLeft', 'get').mockImplementation(function (this: HTMLElement) {
+      return box(this)[0];
+    });
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(function (this: HTMLElement) {
+      return box(this)[1];
+    });
+    function Line() {
+      const [tab, setTab] = useState<'hoje' | 'semana'>('hoje');
+      return (
+        <Tabs
+          id="periodo"
+          label="Período"
+          variant="line"
+          value={tab}
+          onValueChange={setTab}
+          items={[
+            { value: 'hoje', label: 'Hoje' },
+            { value: 'semana', label: 'Semana' },
+          ]}
+        />
+      );
+    }
+    const user = userEvent.setup();
+    const { container } = render(<Line />);
+    const indicator = () => container.querySelector('[data-tab-indicator]');
+
+    expect(indicator()).toHaveStyle({ transform: 'translateX(0px) scaleX(60)' });
+    expect(indicator()).not.toHaveClass('transition-transform');
+
+    await user.click(screen.getByRole('tab', { name: 'Semana' }));
+    expect(indicator()).toHaveStyle({ transform: 'translateX(64px) scaleX(80)' });
+    expect(indicator()).toHaveClass('transition-transform');
+    vi.restoreAllMocks();
   });
 });
 
@@ -337,6 +377,26 @@ describe('Toast', () => {
     await user.click(screen.getByRole('button', { name: 'Cancelar consulta' }));
     await user.click(screen.getByRole('button', { name: 'Fechar aviso' }));
 
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+  });
+
+  it('fades out before leaving when motion is allowed', async () => {
+    stubMatchMedia((query) => query === MOTION_QUERY);
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <Trigger />
+      </ToastProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Cancelar consulta' }));
+    await user.click(screen.getByRole('button', { name: 'Fechar aviso' }));
+
+    const toast = screen.getByText('Consulta cancelada').closest('div');
+    expect(toast).toHaveAttribute('aria-hidden', 'true');
+    expect(toast).toHaveClass('animate-fade-out');
+
+    if (toast) fireEvent.animationEnd(toast);
     expect(screen.getByRole('status')).toBeEmptyDOMElement();
   });
 
