@@ -208,7 +208,7 @@ describe('notifications', { timeout: 15_000 }, () => {
     const [unread, read] = (await popover.findAllByRole('link')).slice(0, 2);
     expect(unread).toHaveTextContent('Consulta confirmada!');
     expect(unread).toHaveTextContent('(não lida)');
-    expect(unread).toHaveTextContent('há 2 h');
+    expect(unread).toHaveTextContent('há 2 horas');
     const createdAt = unread?.querySelector('time')?.getAttribute('dateTime') ?? '';
     expect(unread?.querySelector('time')).toHaveAttribute('title', formatDateTime(createdAt));
     expect(read).toHaveTextContent('Consulta cancelada');
