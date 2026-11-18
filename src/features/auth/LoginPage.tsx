@@ -5,7 +5,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import { PAGE_TITLE_ID } from '@components/layout/PageTitle';
 import { Button, Checkbox, FormAlert, PasswordInput, TextLink } from '@components/ui';
+import { hitArea } from '@components/ui/styles';
 import { homeFor } from '@lib/auth/return-to';
+import { cx } from '@lib/cx';
 import { acknowledgeSessionExpiry, startSession } from '@lib/auth/session';
 import { sessionQuery } from '@lib/auth/useSession';
 import { applyApiErrors } from '@lib/form-errors';
@@ -80,7 +82,7 @@ export function LoginPage() {
           <PasswordInput label="Senha" error={errors.password?.message} {...register('password')} />
           <div className="flex flex-wrap items-center justify-between gap-x-4">
             <Checkbox label="Lembrar de mim" {...register('remember')} />
-            <TextLink to="/esqueci-senha" className="text-[0.8125rem]">
+            <TextLink to="/esqueci-senha" className={cx(hitArea, 'text-[0.8125rem]')}>
               Esqueci a senha
             </TextLink>
           </div>

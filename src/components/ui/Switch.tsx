@@ -38,7 +38,7 @@ export function Switch({
         if (!busy) onCheckedChange(!checked);
       }}
       className={cx(
-        'rounded-field text-text inline-flex min-h-11 items-center gap-3 text-sm font-medium',
+        'rounded-field text-text inline-flex min-h-11 min-w-11 items-center gap-3 text-sm font-medium',
         disabledState,
         className,
       )}
