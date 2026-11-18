@@ -218,7 +218,9 @@ export const notificationsUrl = (role: Role) => `${NOTIFICATIONS_PATH}?${AREA_PA
 
 export const PATIENT_BOOKINGS_PATH = `${areas.patient.base}/agendamentos`;
 
-export const PATIENT_PAST_PATH = `${PATIENT_BOOKINGS_PATH}?aba=realizados`;
+export const TAB_PARAM = 'aba';
+
+export const PATIENT_PAST_PATH = `${PATIENT_BOOKINGS_PATH}?${TAB_PARAM}=realizados`;
 
 export const examResultUrl = (bookingId: string) => `${areas.patient.base}/exames/${bookingId}/resultado`;
 
@@ -229,7 +231,5 @@ export function parentUrl(pathname: string): string | undefined {
 
 export const BOOKING_PARAM = 'id';
 
-export const TAB_PARAM = 'aba';
-
 export const bookingUrl = (bookingId: string, past = false) =>
-  `${PATIENT_BOOKINGS_PATH}?${past ? 'aba=realizados&' : ''}${BOOKING_PARAM}=${bookingId}`;
+  `${PATIENT_BOOKINGS_PATH}?${past ? `${TAB_PARAM}=realizados&` : ''}${BOOKING_PARAM}=${bookingId}`;
