@@ -19,6 +19,7 @@ import { syncUser, type UserLocks } from './user-cache';
 import { userMessages } from './user-messages';
 import { UserBadges } from './UserBadges';
 import { usersApi, type AdminUserDetail } from './users-api';
+import { useReportSubmitting } from './useReportSubmitting';
 import type { useUserActions } from './useUserActions';
 
 type UserActions = ReturnType<typeof useUserActions>;
@@ -179,6 +180,7 @@ export interface UserEditorProps extends SectionProps {
   focusDoctor: boolean;
   onDoctor: () => void;
   onClose: () => void;
+  onSubmittingChange: (submitting: boolean) => void;
 }
 
 export function UserEditor({
@@ -189,6 +191,7 @@ export function UserEditor({
   focusDoctor,
   onDoctor,
   onClose,
+  onSubmittingChange,
 }: UserEditorProps) {
   const queryClient = useQueryClient();
   const { show } = useToast();
@@ -202,6 +205,7 @@ export function UserEditor({
     defaultValues: personalDataValues(user),
   });
   const { alert, run } = useFormSubmit(setError, ['fullName', 'phone'], undefined, userMessages);
+  useReportSubmitting(isSubmitting, onSubmittingChange);
 
   const onSubmit = handleSubmit((values) =>
     run(async () => {

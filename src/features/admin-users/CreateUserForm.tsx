@@ -9,6 +9,7 @@ import type { Role } from '@constants/areas';
 import { useFormSubmit } from '@lib/useFormSubmit';
 import { DoctorProfileFields } from './DoctorProfileFields';
 import { useDoctorCatalog } from './useDoctorCatalog';
+import { useReportSubmitting } from './useReportSubmitting';
 import { syncUser } from './user-cache';
 import { userMessages } from './user-messages';
 import {
@@ -39,9 +40,10 @@ const ALIASES = Object.fromEntries(DOCTOR_FIELDS.map((field) => [field, `doctorP
 
 export interface CreateUserFormProps {
   onClose: () => void;
+  onSubmittingChange: (submitting: boolean) => void;
 }
 
-export function CreateUserForm({ onClose }: CreateUserFormProps) {
+export function CreateUserForm({ onClose, onSubmittingChange }: CreateUserFormProps) {
   const queryClient = useQueryClient();
   const { show } = useToast();
   const {
@@ -58,6 +60,7 @@ export function CreateUserForm({ onClose }: CreateUserFormProps) {
   const role = useWatch({ control, name: 'role' });
   const catalog = useDoctorCatalog(null, useWatch({ control, name: 'doctorProfile.specialtyId' }));
   const doctorErrors = errors.doctorProfile;
+  useReportSubmitting(isSubmitting, onSubmittingChange);
 
   const onSubmit = handleSubmit((values) =>
     run(async () => {
