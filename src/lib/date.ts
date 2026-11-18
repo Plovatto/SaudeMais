@@ -86,6 +86,9 @@ export function addDays(date: string, days: number): string {
   return value.toISOString().slice(0, 10);
 }
 
+export const daysBetween = (from: string, to: string) =>
+  Math.round((utcDay(to).getTime() - utcDay(from).getTime()) / DAY_MS);
+
 export function formatDate(date: string, { year = true } = {}): string {
   return (year ? fullDate : shortDate).format(utcDay(date));
 }

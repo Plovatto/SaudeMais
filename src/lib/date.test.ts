@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import {
   addDays,
+  daysBetween,
   dayTile,
   civilDateInSaoPaulo,
   formatDateTime,
@@ -62,6 +63,11 @@ describe.each([
   it('adds days to a civil date across months and years', () => {
     expect(addDays('2026-11-14', 30)).toBe('2026-12-14');
     expect(addDays('2026-12-31', 1)).toBe('2027-01-01');
+  });
+
+  it('counts the days between two civil dates', () => {
+    expect(daysBetween('2026-11-01', '2026-11-30')).toBe(29);
+    expect(daysBetween('2026-12-31', '2027-01-01')).toBe(1);
   });
 
   it('formats a civil date with and without the year', () => {
