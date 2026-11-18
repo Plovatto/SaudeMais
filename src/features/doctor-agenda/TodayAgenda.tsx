@@ -3,12 +3,12 @@ import { Fragment } from 'react';
 import { bookingStatus, hasStarted } from '@components/bookings/booking-display';
 import { DateTile } from '@components/bookings/DateTile';
 import {
-  ButtonLink,
   ListMessage,
   ListRow,
   ListSkeleton,
   QueryError,
   SectionCard,
+  SectionLink,
   StatusChip,
 } from '@components/ui';
 import { doctorAgendaUrl } from '@constants/doctor-agenda';
@@ -25,19 +25,30 @@ export interface TodayAgendaProps {
 
 function NowLine({ now }: { now: Date }) {
   return (
-    <li className="text-danger-text after:bg-danger flex items-center gap-2.5 px-4 py-1 text-[0.6875rem] font-bold tracking-[0.05em] uppercase after:h-px after:flex-1 after:opacity-45 lg:px-5">
+    <li
+      aria-hidden
+      className="text-danger-text after:bg-danger flex items-center gap-2.5 px-4 py-1 text-[0.6875rem] font-bold tracking-[0.05em] uppercase after:h-px after:flex-1 after:opacity-45 lg:px-5"
+    >
       Agora · {formatTime(now.toISOString())}
     </li>
   );
 }
 
-function TodayRow({ appointment, onView }: { appointment: DoctorAppointment; onView: () => void }) {
-  const status = bookingStatus(appointment, 'doctor');
+interface TodayRowProps {
+  appointment: DoctorAppointment;
+  now: Date;
+  onView: () => void;
+}
+
+function TodayRow({ appointment, now, onView }: TodayRowProps) {
+  const status = bookingStatus(appointment, 'doctor', now.getTime());
   return (
     <ListRow
       onClick={onView}
       aria-haspopup="dialog"
-      leading={<DateTile startsAt={appointment.startsAt} muted={hasStarted(appointment.startsAt)} />}
+      leading={
+        <DateTile startsAt={appointment.startsAt} muted={hasStarted(appointment.startsAt, now.getTime())} />
+      }
       title={appointment.patient.fullName}
       meta={
         <>
@@ -69,9 +80,7 @@ export function TodayAgenda({ query, now, onView }: TodayAgendaProps) {
               {plural(items.length, 'consulta', 'consultas')}
             </span>
           )}
-          <ButtonLink to={doctorAgendaUrl()} variant="ghost" size="sm" className="-me-2">
-            Ver tudo
-          </ButtonLink>
+          <SectionLink to={doctorAgendaUrl()}>Ver tudo</SectionLink>
         </>
       }
     >
@@ -86,7 +95,7 @@ export function TodayAgenda({ query, now, onView }: TodayAgendaProps) {
             <Fragment key={appointment.id}>
               {index === nowAt && <NowLine now={now} />}
               <li>
-                <TodayRow appointment={appointment} onView={() => onView(appointment)} />
+                <TodayRow appointment={appointment} now={now} onView={() => onView(appointment)} />
               </li>
             </Fragment>
           ))}

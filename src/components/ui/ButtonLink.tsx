@@ -8,3 +8,7 @@ export type ButtonLinkProps = ComponentProps<typeof Link> & ButtonStyle;
 export function ButtonLink({ variant, size, fullWidth, className, ...props }: ButtonLinkProps) {
   return <Link className={cx(buttonClass({ variant, size, fullWidth }), className)} {...props} />;
 }
+
+export function SectionLink(props: ComponentProps<typeof Link>) {
+  return <ButtonLink variant="ghost" size="sm" className="-me-2" {...props} />;
+}
