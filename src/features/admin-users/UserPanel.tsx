@@ -1,4 +1,4 @@
-import { useState, type RefObject } from 'react';
+import { useRef, useState, type RefObject } from 'react';
 import { Drawer, DrawerBody, QueryError, Skeleton } from '@components/ui';
 import { DOCTOR_SECTION, NEW_USER, USER_PARAM, USER_SECTION_PARAM } from '@constants/admin-users';
 import { useSearchParam, useSetSearchParams } from '@hooks/useSearchParam';
@@ -6,6 +6,7 @@ import { CreateUserForm } from './CreateUserForm';
 import { DoctorProfileForm } from './DoctorProfileForm';
 import { userMessages } from './user-messages';
 import { UserEditor } from './UserEditor';
+import { useProfileRemoval } from './useProfileRemoval';
 import { useUserActions } from './useUserActions';
 import { useUserDetail } from './useUserDetail';
 
@@ -21,6 +22,9 @@ export function UserPanel({ fallbackFocus }: UserPanelProps) {
   const userId = creating ? '' : userParam;
   const { query, locks } = useUserDetail(userId);
   const actions = useUserActions(fallbackFocus);
+  const doctorButton = useRef<HTMLButtonElement>(null);
+  const backToUser = () => setSection('', { replace: true });
+  const removal = useProfileRemoval(doctorButton, backToUser);
   const [lastSection, setLastSection] = useState(section);
   const [backFromDoctor, setBackFromDoctor] = useState(false);
   if (lastSection !== section) {
@@ -64,7 +68,8 @@ export function UserPanel({ fallbackFocus }: UserPanelProps) {
               key={user.id}
               user={user}
               locked={locks.isInactive}
-              onBack={() => setSection('', { replace: true })}
+              onBack={backToUser}
+              onRemove={() => removal.request(user)}
             />
           ) : (
             <UserEditor
@@ -72,6 +77,7 @@ export function UserPanel({ fallbackFocus }: UserPanelProps) {
               user={user}
               locks={locks}
               actions={actions}
+              doctorButton={doctorButton}
               focusDoctor={backFromDoctor}
               onDoctor={() => setSection(DOCTOR_SECTION)}
               onClose={close}
@@ -79,6 +85,7 @@ export function UserPanel({ fallbackFocus }: UserPanelProps) {
           ))}
       </Drawer>
       {actions.dialogs}
+      {removal.dialog}
     </>
   );
 }
