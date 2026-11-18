@@ -26,6 +26,8 @@ describe('Button', () => {
     await user.click(button);
 
     expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).toHaveAttribute('aria-busy', 'true');
+    expect(button).not.toHaveAttribute('disabled');
     expect(button).toHaveFocus();
     expect(onClick).not.toHaveBeenCalled();
   });
@@ -48,6 +50,18 @@ describe('Button', () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
+  it('stays natively disabled when it is also loading', () => {
+    render(
+      <Button disabled loading>
+        Salvar
+      </Button>,
+    );
+
+    const button = screen.getByRole('button', { name: 'Salvar, Carregando' });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute('aria-busy', 'true');
+  });
+
   it('does not submit forms unless asked to', () => {
     render(<Button>Cancelar</Button>);
 
@@ -68,6 +82,19 @@ describe('Switch', () => {
     expect(toggle).toHaveAttribute('aria-checked', 'false');
     await user.click(toggle);
     expect(toggle).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('marks itself busy without disabling and ignores clicks while saving', async () => {
+    const user = userEvent.setup();
+    const onCheckedChange = vi.fn();
+    render(<Switch checked={false} busy onCheckedChange={onCheckedChange} label="Segunda-feira ativa" />);
+    const toggle = screen.getByRole('switch', { name: 'Segunda-feira ativa' });
+
+    expect(toggle).toHaveAttribute('aria-busy', 'true');
+    expect(toggle).toHaveAttribute('aria-disabled', 'true');
+    expect(toggle).not.toHaveAttribute('disabled');
+    await user.click(toggle);
+    expect(onCheckedChange).not.toHaveBeenCalled();
   });
 });
 

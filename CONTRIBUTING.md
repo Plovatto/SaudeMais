@@ -34,7 +34,6 @@ NODE_ENV=development
 CORS_ORIGIN=http://localhost:4173
 APP_PUBLIC_URL=http://localhost:4173
 MAIL_DRIVER=console
-DEMO_ACCOUNTS_ENABLED=true
 ADMIN_EMAIL=admin@e2e.test
 ADMIN_PASSWORD=uma-senha-de-teste-longa
 ```

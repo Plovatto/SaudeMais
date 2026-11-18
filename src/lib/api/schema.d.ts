@@ -33,7 +33,7 @@ export interface paths {
         };
         /**
          * Ver os números do painel
-         * @description Contagens do painel do administrador: pacientes e médicos com conta ativa e consultas de hoje no fuso de São Paulo. Contas desativadas e de demonstração não entram. Limite: 120 requisições por minuto por IP.
+         * @description Contagens do painel do administrador: pacientes e médicos com conta ativa e consultas de hoje no fuso de São Paulo. Contas desativadas não entram. Limite: 120 requisições por minuto por IP.
          */
         get: operations["getAdminHome"];
         put?: never;
@@ -53,7 +53,7 @@ export interface paths {
         };
         /**
          * Ver os relatórios
-         * @description Totais de consultas e exames que começam no período, pela situação atual, com cancelamentos por autor, taxa de faltas, série para gráfico e especialidades e exames mais procurados. Os dias seguem o fuso de São Paulo; sem datas, vale os últimos 30 dias até hoje, e o período tem no máximo 366 dias. Só números: nada de dados pessoais, observações, motivos ou resultados. Agendamentos de pacientes de demonstração não entram. Limite: 30 requisições por minuto por IP.
+         * @description Totais de consultas e exames que começam no período, pela situação atual, com cancelamentos por autor, taxa de faltas, série para gráfico e especialidades e exames mais procurados. Os dias seguem o fuso de São Paulo; sem datas, vale os últimos 30 dias até hoje, e o período tem no máximo 366 dias. Só números: nada de dados pessoais, observações, motivos ou resultados. Limite: 30 requisições por minuto por IP.
          */
         get: operations["getAdminReports"];
         put?: never;
@@ -275,7 +275,7 @@ export interface paths {
         put?: never;
         /**
          * Pedir uma consulta
-         * @description Cria o pedido de consulta do paciente logado, que nasce pendente (`pending`) até o médico confirmar, e avisa o médico. `startsAt` precisa ser o início de uma vaga devolvida por `GET /api/doctors/{id}/availability`; o fim vem da duração atual da especialidade. A unidade e a especialidade gravadas são as do perfil do médico. Contas comuns têm no máximo 5 agendamentos ativos futuros. Se duas pessoas pedem a mesma vaga ao mesmo tempo, só uma consegue; a outra recebe `SLOT_TAKEN`. Limite: 60 requisições por minuto por IP.
+         * @description Cria o pedido de consulta do paciente logado, que nasce pendente (`pending`) até o médico confirmar, e avisa o médico. `startsAt` precisa ser o início de uma vaga devolvida por `GET /api/doctors/{id}/availability`; o fim vem da duração atual da especialidade. A unidade e a especialidade gravadas são as do perfil do médico. Os limites de agendamentos ativos futuros da política valem para todo paciente, sem exceção: no máximo `maxActiveAppointments` consultas e `maxActiveBookings` agendamentos somando consultas e exames (`ACTIVE_LIMIT`). Se duas pessoas pedem a mesma vaga ao mesmo tempo, só uma consegue; a outra recebe `SLOT_TAKEN`. Limite: 60 requisições por minuto por IP.
          */
         post: operations["bookAppointment"];
         delete?: never;
@@ -315,7 +315,7 @@ export interface paths {
         put?: never;
         /**
          * Cancelar uma consulta
-         * @description Cancela uma consulta pendente ou confirmada que ainda não começou e avisa a outra parte depois do commit: o médico recebe `appointment_cancelled_by_patient` e o paciente recebe `appointment_cancelled`. Cancelam o paciente dela, com motivo opcional, e o médico que a atende, com motivo obrigatório. Envie em `startsAt` o início que a tela mostrava: se a consulta mudou, já começou ou já foi encerrada, a resposta é `INVALID_STATE` e nada muda. O paciente pode cancelar uma consulta confirmada dentro da janela da política (`appointmentLateWindowHours`), e o cancelamento fica marcado como tardio. A vaga volta a ficar livre. As contas de demonstração também cancelam, porque os agendamentos delas são restaurados todo dia. Responde o detalhe atualizado; para os demais usuários, responde como inexistente. Limite: 60 requisições por minuto por IP.
+         * @description Cancela uma consulta pendente ou confirmada que ainda não começou e avisa a outra parte depois do commit: o médico recebe `appointment_cancelled_by_patient` e o paciente recebe `appointment_cancelled`. Cancelam o paciente dela, com motivo opcional, e o médico que a atende, com motivo obrigatório. Envie em `startsAt` o início que a tela mostrava: se a consulta mudou, já começou ou já foi encerrada, a resposta é `INVALID_STATE` e nada muda. O paciente pode cancelar uma consulta confirmada dentro da janela da política (`appointmentLateWindowHours`), e o cancelamento fica marcado como tardio. A vaga volta a ficar livre. Responde o detalhe atualizado; para os demais usuários, responde como inexistente. Limite: 60 requisições por minuto por IP.
          */
         post: operations["cancelAppointment"];
         delete?: never;
@@ -335,7 +335,7 @@ export interface paths {
         put?: never;
         /**
          * Confirmar uma consulta
-         * @description Confirma um pedido pendente (`pending`) que ainda não começou, registra o evento `confirmed` com o médico como autor e, depois do commit, avisa o paciente com `appointment_confirmed`. Só o médico que atende a consulta confirma. Envie em `startsAt` o início que a tela mostrava: se o paciente reagendou ou cancelou, se a consulta já foi confirmada ou se o horário já chegou, a resposta é `INVALID_STATE` e nada muda. Horário desatualizado, consulta já iniciada e pedido expirado respondem todos com esse mesmo código; não existem `NOT_STARTED` nem `EXPIRED` nesta rota. A conta de demonstração também confirma, porque os agendamentos dela são restaurados todo dia. Responde o detalhe atualizado; para os demais médicos, responde como inexistente. Limite: 60 requisições por minuto por IP.
+         * @description Confirma um pedido pendente (`pending`) que ainda não começou, registra o evento `confirmed` com o médico como autor e, depois do commit, avisa o paciente com `appointment_confirmed`. Só o médico que atende a consulta confirma. Envie em `startsAt` o início que a tela mostrava: se o paciente reagendou ou cancelou, se a consulta já foi confirmada ou se o horário já chegou, a resposta é `INVALID_STATE` e nada muda. Horário desatualizado, consulta já iniciada e pedido expirado respondem todos com esse mesmo código; não existem `NOT_STARTED` nem `EXPIRED` nesta rota. Responde o detalhe atualizado; para os demais médicos, responde como inexistente. Limite: 60 requisições por minuto por IP.
          */
         post: operations["confirmAppointment"];
         delete?: never;
@@ -645,12 +645,12 @@ export interface paths {
         };
         /**
          * Ver a política de agendamento
-         * @description Janelas de cancelamento tardio, limite de reagendamentos, horizonte e antecedência mínima.
+         * @description Janelas de cancelamento tardio, limite de reagendamentos, horizonte, antecedência mínima e limites de agendamentos ativos futuros por paciente (total, consultas e exames). Os limites de segurança, como tentativas de login e de redefinição de senha, ficam fixos no código e não aparecem aqui.
          */
         get: operations["adminGetPolicy"];
         /**
          * Alterar a política de agendamento
-         * @description Substitui todos os valores da política. Vale para as próximas ações de pacientes e médicos.
+         * @description Substitui todos os valores da política e registra `policy.updated` na auditoria. Vale para as próximas ações de pacientes e médicos: baixar um limite de agendamentos ativos não cancela nada, só impede novos agendamentos enquanto o paciente estiver no limite. Cada limite de agendamentos ativos fica entre 1 e 50. O limite por tipo e o limite total valem juntos, então o menor dos dois é o que bloqueia primeiro.
          */
         put: operations["adminUpdatePolicy"];
         post?: never;
@@ -817,7 +817,7 @@ export interface paths {
         };
         /**
          * Ver os avisos por e-mail
-         * @description Lista os avisos por e-mail dos perfis da conta, cada um com o perfil a que pertence e se está ligado. Sem escolha gravada, o aviso vem ligado. Os e-mails saem junto com os avisos do app e o lembrete sai até 24 horas antes de consultas e exames confirmados. Contas de demonstração e desativadas não recebem e-mail. Limite: 120 requisições de perfil por minuto por IP.
+         * @description Lista os avisos por e-mail dos perfis da conta, cada um com o perfil a que pertence e se está ligado. Sem escolha gravada, o aviso vem ligado. Os e-mails saem junto com os avisos do app e o lembrete sai até 24 horas antes de consultas e exames confirmados. Contas desativadas não recebem e-mail. Limite: 120 requisições de perfil por minuto por IP.
          */
         get: operations["listEmailPreferences"];
         put?: never;
@@ -863,7 +863,7 @@ export interface paths {
         put?: never;
         /**
          * Agendar um exame
-         * @description Agenda o exame do paciente logado, que já nasce confirmado (`confirmed`) e recebe um código público (`EX-` e seis letras ou números) para apresentar na unidade. `startsAt` precisa ser o início de uma vaga devolvida por `GET /api/exam-availability`; o fim vem da duração atual do tipo de exame. O exame ocupa o menor lugar livre da vaga, até a capacidade da oferta. Contas comuns têm no máximo 5 agendamentos ativos futuros, somando consultas e exames. Se o último lugar é disputado ao mesmo tempo, só um paciente consegue; os outros recebem `NO_CAPACITY`. Limite: 60 requisições por minuto por IP.
+         * @description Agenda o exame do paciente logado, que já nasce confirmado (`confirmed`) e recebe um código público (`EX-` e seis letras ou números) para apresentar na unidade. `startsAt` precisa ser o início de uma vaga devolvida por `GET /api/exam-availability`; o fim vem da duração atual do tipo de exame. O exame ocupa o menor lugar livre da vaga, até a capacidade da oferta. Os limites de agendamentos ativos futuros da política valem para todo paciente, sem exceção: no máximo `maxActiveExams` exames e `maxActiveBookings` agendamentos somando consultas e exames (`ACTIVE_LIMIT`). Se o último lugar é disputado ao mesmo tempo, só um paciente consegue; os outros recebem `NO_CAPACITY`. Limite: 60 requisições por minuto por IP.
          */
         post: operations["bookExam"];
         delete?: never;
@@ -903,7 +903,7 @@ export interface paths {
         put?: never;
         /**
          * Cancelar um exame
-         * @description Cancela um exame confirmado que ainda não começou e libera o lugar na vaga. Só o paciente dele cancela. Envie em `startsAt` o início que a tela mostrava: se o exame mudou, já começou ou já foi encerrado, a resposta é `INVALID_STATE` e nada muda. Dentro da janela da política (`examLateWindowHours`), o cancelamento fica marcado como tardio. As contas de demonstração também cancelam, porque os agendamentos delas são restaurados todo dia. Responde o detalhe atualizado; para os demais usuários, responde como inexistente. Limite: 60 requisições por minuto por IP.
+         * @description Cancela um exame confirmado que ainda não começou e libera o lugar na vaga. Só o paciente dele cancela. Envie em `startsAt` o início que a tela mostrava: se o exame mudou, já começou ou já foi encerrado, a resposta é `INVALID_STATE` e nada muda. Dentro da janela da política (`examLateWindowHours`), o cancelamento fica marcado como tardio. Responde o detalhe atualizado; para os demais usuários, responde como inexistente. Limite: 60 requisições por minuto por IP.
          */
         post: operations["cancelExamBooking"];
         delete?: never;
@@ -1376,7 +1376,7 @@ export interface paths {
         post?: never;
         /**
          * Sair de todas as sessões
-         * @description Encerra todas as sessões da conta, inclusive a atual. Na conta de demonstração, encerra só a sessão de quem pediu.
+         * @description Encerra todas as sessões da conta, inclusive a atual.
          */
         delete: operations["logoutEverywhere"];
         options?: never;
@@ -1396,7 +1396,7 @@ export interface paths {
         post?: never;
         /**
          * Encerrar as outras sessões
-         * @description Encerra todas as sessões da conta menos a atual. Na conta de demonstração, compartilhada entre visitantes, não encerra nada. Limite: 60 requisições de sessão por minuto por IP.
+         * @description Encerra todas as sessões da conta menos a atual. Limite: 60 requisições de sessão por minuto por IP.
          */
         delete: operations["endOtherSessions"];
         options?: never;
@@ -1461,17 +1461,17 @@ export interface components {
         };
         AdminHome: {
             /**
-             * @description Contas ativas com o perfil de paciente, sem as contas de demonstração. Toda conta nasce paciente, então médicos e administradores também entram.
+             * @description Contas ativas com o perfil de paciente. Toda conta nasce paciente, então médicos e administradores também entram.
              * @example 127
              */
             patients: number;
             /**
-             * @description Contas ativas com o perfil de médico, sem a conta de demonstração.
+             * @description Contas ativas com o perfil de médico.
              * @example 61
              */
             doctors: number;
             /**
-             * @description Consultas que começam hoje no fuso de São Paulo pendentes, confirmadas, concluídas ou com falta registrada, sem as canceladas, as não confirmadas a tempo e as de pacientes de demonstração.
+             * @description Consultas que começam hoje no fuso de São Paulo pendentes, confirmadas, concluídas ou com falta registrada, sem as canceladas e as não confirmadas a tempo.
              * @example 24
              */
             appointmentsToday: number;
@@ -1892,9 +1892,15 @@ export interface components {
             user: components["schemas"]["User"];
         };
         DoctorProfileInput: {
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @example 0190a5d2-7c1e-7b3a-9f4d-2e8b6c1a5f30
+             */
             specialtyId: string;
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @example 0190a5d2-7c1e-7b3a-9f4d-2e8b6c1a5f30
+             */
             unitId: string;
             /** @example 123456 */
             registryNumber: string;
@@ -1937,9 +1943,15 @@ export interface components {
             doctorProfile?: components["schemas"]["DoctorProfileInput"] & unknown;
         };
         UpdateDoctorProfileInput: {
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @example 0190a5d2-7c1e-7b3a-9f4d-2e8b6c1a5f30
+             */
             specialtyId?: string;
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @example 0190a5d2-7c1e-7b3a-9f4d-2e8b6c1a5f30
+             */
             unitId?: string;
             /** @example 123456 */
             registryNumber?: string;
@@ -1963,8 +1975,6 @@ export interface components {
             registryUf: string;
         };
         AdminUser: components["schemas"]["User"] & {
-            /** @description Conta de demonstração: os dados são restaurados periodicamente e ficam fora das métricas. */
-            isProtected: boolean;
             /** Format: date-time */
             deactivatedAt: string | null;
             /** Format: date-time */
@@ -1989,11 +1999,13 @@ export interface components {
             /**
              * Format: uuid
              * @description Médico escolhido.
+             * @example 0190a5d2-7c1e-7b3a-9f4d-2e8b6c1a5f30
              */
             doctorId: string;
             /**
              * Format: uuid
              * @description Especialidade escolhida; precisa ser a do médico.
+             * @example 0190a5d2-7c1e-7b3a-9f4d-2e8b6c1a5f30
              */
             specialtyId: string;
             /**
@@ -2505,6 +2517,21 @@ export interface components {
              * @example 60
              */
             minLeadMinutes: number;
+            /**
+             * @description Agendamentos ativos futuros (pendentes ou confirmados) que cada paciente pode ter ao mesmo tempo, somando consultas e exames.
+             * @example 5
+             */
+            maxActiveBookings: number;
+            /**
+             * @description Consultas ativas futuras que cada paciente pode ter ao mesmo tempo.
+             * @example 5
+             */
+            maxActiveAppointments: number;
+            /**
+             * @description Exames ativos futuros que cada paciente pode ter ao mesmo tempo.
+             * @example 5
+             */
+            maxActiveExams: number;
         };
         Policy: {
             /**
@@ -2532,6 +2559,21 @@ export interface components {
              * @example 60
              */
             minLeadMinutes: number;
+            /**
+             * @description Agendamentos ativos futuros (pendentes ou confirmados) que cada paciente pode ter ao mesmo tempo, somando consultas e exames.
+             * @example 5
+             */
+            maxActiveBookings: number;
+            /**
+             * @description Consultas ativas futuras que cada paciente pode ter ao mesmo tempo.
+             * @example 5
+             */
+            maxActiveAppointments: number;
+            /**
+             * @description Exames ativos futuros que cada paciente pode ter ao mesmo tempo.
+             * @example 5
+             */
+            maxActiveExams: number;
             /** Format: date-time */
             updatedAt: string;
         };
@@ -2950,11 +2992,13 @@ export interface components {
             /**
              * Format: uuid
              * @description Unidade escolhida.
+             * @example 0190a5d2-7c1e-7b3a-9f4d-2e8b6c1a5f30
              */
             unitId: string;
             /**
              * Format: uuid
              * @description Tipo de exame escolhido.
+             * @example 0190a5d2-7c1e-7b3a-9f4d-2e8b6c1a5f30
              */
             examTypeId: string;
             /**
@@ -3431,7 +3475,10 @@ export interface components {
             email: string;
         };
         PasswordResetConfirmation: {
-            /** @description Token recebido no link do e-mail, depois de `#token=`. */
+            /**
+             * @description Token recebido no link do e-mail, depois de `#token=`.
+             * @example q8Zr3VtYw1mN0pLk7sXc2bHf9dGj4uEa6oIi5nRy_-T
+             */
             token: string;
             /** @example senha-segura-123 */
             password: string;

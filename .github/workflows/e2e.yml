@@ -74,7 +74,6 @@ jobs:
           TRUST_PROXY_HOPS: 0
           APP_PUBLIC_URL: http://localhost:4173
           MAIL_DRIVER: console
-          DEMO_ACCOUNTS_ENABLED: true
         run: |
           npm ci
           npm run db:seed

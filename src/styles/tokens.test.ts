@@ -119,3 +119,21 @@ describe('Figma colors', () => {
     }
   });
 });
+
+describe('interaction variants', () => {
+  const unavailable = /@custom-variant unavailable \((.+)\);/.exec(css)?.[1]?.replaceAll('&', 'button') ?? '';
+
+  function button(attributes: Record<string, string>): HTMLButtonElement {
+    const element = document.createElement('button');
+    for (const [name, value] of Object.entries(attributes)) element.setAttribute(name, value);
+    return element;
+  }
+
+  it('dims disabled controls but not ones that are only busy', () => {
+    expect(button({ disabled: '' }).matches(unavailable)).toBe(true);
+    expect(button({ 'aria-disabled': 'true' }).matches(unavailable)).toBe(true);
+    expect(button({ disabled: '', 'aria-busy': 'true' }).matches(unavailable)).toBe(true);
+    expect(button({ 'aria-disabled': 'true', 'aria-busy': 'true' }).matches(unavailable)).toBe(false);
+    expect(button({}).matches(unavailable)).toBe(false);
+  });
+});

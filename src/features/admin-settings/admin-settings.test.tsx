@@ -325,6 +325,9 @@ describe('admin settings', () => {
       maxReschedules: 3,
       bookingHorizonDays: 60,
       minLeadMinutes: 60,
+      maxActiveBookings: 5,
+      maxActiveAppointments: 5,
+      maxActiveExams: 5,
     });
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Salvar' })).not.toBeInTheDocument());
   });
@@ -346,6 +349,39 @@ describe('admin settings', () => {
     expect(calls.find((call) => call.method === 'PUT')?.body).toMatchObject({ bookingHorizonDays: 90 });
     await waitFor(() => expect(document.getElementById('politica')).toHaveFocus());
     expect(screen.queryByRole('button', { name: 'Salvar configurações' })).not.toBeInTheDocument();
+  });
+
+  it('saves the active booking limits with every policy field', async () => {
+    stubMatchMedia((query) => query === DESKTOP_QUERY);
+    const { calls } = serve({
+      '/api/admin/policy': (method, body) =>
+        method === 'PUT'
+          ? { status: 200, body: { ...policy, ...(body as object) } }
+          : { status: 200, body: { ...policy, maxActiveExams: 7 } },
+    });
+    const { user } = renderApp('/admin/configuracoes');
+    await user.click(
+      await screen.findByRole('button', { name: /^Agendamentos ativos por paciente 5 agendamentos/ }),
+    );
+    await user.click(screen.getByRole('option', { name: /^10 agendamentos/ }));
+    await user.click(screen.getByRole('button', { name: /^Consultas ativas por paciente 5 consultas/ }));
+    await user.click(screen.getByRole('option', { name: /^1 consulta$/ }));
+    await user.click(screen.getByRole('button', { name: /^Exames ativos por paciente 7 exames/ }));
+    expect(screen.getByRole('option', { name: /^7 exames/ })).toBeInTheDocument();
+    await user.click(screen.getByRole('option', { name: /^50 exames/ }));
+    await user.click(screen.getByRole('button', { name: 'Salvar configurações' }));
+
+    expect(await screen.findByText('Configurações salvas.')).toBeInTheDocument();
+    expect(calls.find((call) => call.method === 'PUT')?.body).toEqual({
+      appointmentLateWindowHours: 24,
+      examLateWindowHours: 2,
+      maxReschedules: 2,
+      bookingHorizonDays: 60,
+      minLeadMinutes: 60,
+      maxActiveBookings: 10,
+      maxActiveAppointments: 1,
+      maxActiveExams: 50,
+    });
   });
 
   it('keeps the changes and the save bar when saving the policy fails', async () => {
