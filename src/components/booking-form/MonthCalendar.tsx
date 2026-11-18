@@ -1,11 +1,11 @@
 import { useState, type Ref } from 'react';
 import { LuChevronLeft, LuChevronRight } from 'react-icons/lu';
 import { IconButton } from '@components/ui';
+import { WEEKDAYS } from '@constants/weekdays';
 import { cx } from '@lib/cx';
 import { addDays, formatLongDay, formatMonth, middayOf, todayInSaoPaulo, weekdayOf } from '@lib/date';
 
-const WEEKDAYS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
-const WEEKDAY_NAMES = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+const WEEKDAY_NAMES = WEEKDAYS.map((weekday) => weekday.split('-')[0]?.toLowerCase() ?? weekday);
 
 const monthOf = (date: string) => date.slice(0, 7);
 
@@ -72,13 +72,13 @@ export function MonthCalendar({ available, selected, onSelect, focusRef, describ
         />
       </div>
       <div className="grid grid-cols-7 gap-0.5 text-center">
-        {WEEKDAYS.map((letter, index) => (
+        {WEEKDAYS.map((weekday, index) => (
           <abbr
             key={WEEKDAY_NAMES[index]}
             title={WEEKDAY_NAMES[index]}
             className="text-text-muted pt-1 pb-1.5 text-[0.6875rem] font-semibold no-underline"
           >
-            {letter}
+            {weekday[0]}
           </abbr>
         ))}
         {cellsOf(month).map((date) => {

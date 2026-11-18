@@ -7,7 +7,7 @@ import { ExamResultView } from '@components/exam-results/ExamResultView';
 import { PagedResults } from '@components/bookings/PagedResults';
 import { PageHeader } from '@components/layout/PageHeader';
 import { ButtonLink, Card, EmptyState } from '@components/ui';
-import { areas } from '@constants/areas';
+import { doctorAgendaUrl } from '@constants/doctor-agenda';
 import type { ResultsLinkState } from '@constants/patient-results';
 import { useClampedPage, usePageParam } from '@hooks/usePageParam';
 import { ApiError } from '@lib/api/api-error';
@@ -17,7 +17,6 @@ import { queryKeys } from '@lib/query-keys';
 import { listPatientResults } from './results-api';
 import { plural } from '@lib/plural';
 
-const AGENDA = `${areas.doctor.base}/agenda`;
 const DENIED = new Set(['FORBIDDEN_NO_LINK', 'VALIDATION_ERROR']);
 
 const found = (total: number) => plural(total, 'resultado', 'resultados');
@@ -43,7 +42,11 @@ export function PatientResultsPage() {
 
   return (
     <>
-      <PageHeader title={name ? `Exames de ${name}` : 'Exames do paciente'} back backFallback={AGENDA} />
+      <PageHeader
+        title={name ? `Exames de ${name}` : 'Exames do paciente'}
+        back
+        backFallback={doctorAgendaUrl()}
+      />
       {isDenied(query.error) ? (
         <Card>
           <EmptyState
@@ -51,7 +54,7 @@ export function PatientResultsPage() {
             title="Sem acesso aos exames deste paciente"
             description={NO_LINK_MESSAGE}
             action={
-              <ButtonLink to={AGENDA} variant="secondary">
+              <ButtonLink to={doctorAgendaUrl()} variant="secondary">
                 Voltar para a agenda
               </ButtonLink>
             }
