@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup, configure } from '@testing-library/react';
 import { afterEach, beforeEach, vi } from 'vitest';
-import { acknowledgeSessionExpiry } from '@lib/auth/session';
+import { acknowledgeSessionEnd } from '@lib/auth/session';
 import { clearToken } from '@lib/auth/token-store';
 import { stubMatchMedia } from './match-media';
 
@@ -30,6 +30,6 @@ if (!('showModal' in HTMLDialogElement.prototype)) {
 afterEach(() => {
   cleanup();
   clearToken();
-  acknowledgeSessionExpiry();
+  acknowledgeSessionEnd();
   vi.unstubAllGlobals();
 });

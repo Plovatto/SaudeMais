@@ -45,10 +45,6 @@ export function sessionEndReason(): SessionEndReason | null {
   return endReason;
 }
 
-export function acknowledgeSessionExpiry(): void {
-  if (endReason === 'expired') endReason = null;
-}
-
 export function acknowledgeSessionEnd(): void {
   endReason = null;
 }
