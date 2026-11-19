@@ -3,12 +3,13 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { loadEnv, type Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
-import { buildCsp } from './src/config/csp';
+import { buildCsp, type CspAnalytics } from './src/config/csp';
 import { parseEnv } from './src/config/parse-env';
+import { seoPages } from './seo/pages';
 
 const src = (path = '') => fileURLToPath(new URL(`./src/${path}`, import.meta.url));
 
-function staticHosting(apiUrl: string): Plugin {
+function staticHosting(apiUrl: string, analytics: CspAnalytics): Plugin {
   return {
     name: 'saudemais:static-hosting',
     apply: 'build',
@@ -16,14 +17,10 @@ function staticHosting(apiUrl: string): Plugin {
     transformIndexHtml: () => [
       {
         tag: 'meta',
-        attrs: { 'http-equiv': 'Content-Security-Policy', content: buildCsp(apiUrl) },
+        attrs: { 'http-equiv': 'Content-Security-Policy', content: buildCsp(apiUrl, analytics) },
         injectTo: 'head-prepend',
       },
     ],
-    generateBundle(_, bundle) {
-      const html = bundle['index.html'];
-      if (html?.type === 'asset') this.emitFile({ type: 'asset', fileName: '404.html', source: html.source });
-    },
   };
 }
 
@@ -31,7 +28,7 @@ export default defineConfig(({ command, mode }) => {
   const env = command === 'build' ? parseEnv(loadEnv(mode, process.cwd(), 'VITE_')) : null;
 
   return {
-    plugins: [react(), tailwindcss(), env && staticHosting(env.apiUrl)],
+    plugins: [react(), tailwindcss(), seoPages(), env && staticHosting(env.apiUrl, env.analytics)],
     resolve: {
       alias: {
         '@': src(),
@@ -48,7 +45,7 @@ export default defineConfig(({ command, mode }) => {
       environment: 'jsdom',
       setupFiles: ['./src/test/animation-event.ts', './src/test/setup.ts'],
       env: { VITE_API_URL: 'http://localhost:3001' },
-      include: ['src/**/*.test.{ts,tsx}'],
+      include: ['src/**/*.test.{ts,tsx}', 'seo/**/*.test.ts'],
       css: true,
     },
   };

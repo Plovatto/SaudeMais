@@ -1,0 +1,20 @@
+# Saúde+
+
+> Saúde+ é uma aplicação web de agendamento de consultas e exames para pacientes, médicos e administradores. O paciente agenda, reagenda e cancela consultas e exames e vê os resultados; o médico confirma pedidos e organiza a agenda e os horários de atendimento; o administrador cuida de usuários, relatórios e configurações. Em português do Brasil, com tema claro e escuro.
+
+Saúde+ is a Portuguese-language web app for booking medical appointments and exams, with separate areas for patients, doctors and administrators.
+
+## Stack
+
+- Interface: React 19, TypeScript, Vite, Tailwind CSS 4, React Router, TanStack Query
+- API: Node.js, Express, TypeScript, Drizzle ORM, PostgreSQL, documented with OpenAPI
+
+## Links
+
+- [App](https://saudemais.plovatto.dev/login)
+- [Criar conta](https://saudemais.plovatto.dev/cadastro)
+- [Termos de uso](https://saudemais.plovatto.dev/termos)
+- [Política de privacidade](https://saudemais.plovatto.dev/privacidade)
+- [API (documentação)](https://saudemais-api.plovatto.dev/docs/)
+- [Código do app](https://github.com/Plovatto/SaudeMais)
+- [Código da API](https://github.com/Plovatto/API-SaudeMais)

@@ -2,8 +2,15 @@ import { useMatches, useSearchParams } from 'react-router';
 import { AREA_PARAM, DEFAULT_ROLE, roleFromSlug, type Role } from '@constants/areas';
 import { useCurrentUser } from '@lib/auth/useSession';
 
+export interface RouteSeo {
+  title?: string;
+  description?: string;
+  index?: boolean;
+}
+
 export interface RouteHandle {
   title?: string;
+  seo?: RouteSeo;
   crumb?: string;
   role?: Role;
   surface?: 'brand';

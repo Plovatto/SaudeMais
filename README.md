@@ -130,9 +130,13 @@ Utilize `.env.example` como referência:
 
 ```env
 VITE_API_URL=http://localhost:3001
+VITE_GA_ID=
+VITE_CLARITY_ID=
 ```
 
 O build falha se `VITE_API_URL` faltar ou for inválida. Como toda variável `VITE_`, ela fica visível no código publicado, então nunca coloque segredos nela.
+
+`VITE_GA_ID` (Google Analytics, formato `G-XXXXXXXXXX`) e `VITE_CLARITY_ID` (Microsoft Clarity) são opcionais. Em branco, nenhuma ferramenta de medição é carregada e o aviso de cookies não aparece. Preenchidas, elas só rodam depois que a pessoa aceita o aviso, a escolha vale até ser alterada na política de privacidade, e o build libera na Content Security Policy apenas os domínios das ferramentas configuradas.
 
 ## Deploy
 
@@ -141,11 +145,11 @@ O deploy é feito no GitHub Pages pelo workflow `.github/workflows/pages.yml`, d
 Duas configurações são necessárias no repositório:
 
 - Em **Settings → Pages**, a origem deve estar como **GitHub Actions**.
-- Em **Settings → Secrets and variables → Actions → Variables**, `VITE_API_URL` deve apontar para a API publicada, com `https`.
+- Em **Settings → Secrets and variables → Actions → Variables**, `VITE_API_URL` deve apontar para a API publicada, com `https`. `VITE_GA_ID` e `VITE_CLARITY_ID` entram na mesma lista quando você quiser ligar a medição de uso.
 
 O site é servido no domínio próprio `saudemais.plovatto.dev`, e a API em `saudemais-api.plovatto.dev`. No DNS, o subdomínio `saudemais` é um registro `CNAME` apontando para `plovatto.github.io`, e em **Settings → Pages → Custom domain** o valor deve ser `saudemais.plovatto.dev`, com **Enforce HTTPS** ativo.
 
-O build copia `index.html` para `404.html` para que links diretos funcionem e injeta uma Content Security Policy que só permite chamadas para a API.
+O build gera um HTML por página pública (`/login`, `/cadastro`, `/termos` e `/privacidade`), cada um com título, descrição, canonical, cartões de compartilhamento e dados estruturados próprios, para que o Google indexe cada uma com resposta 200. O `404.html` serve de fallback para as demais rotas, com `noindex`, e o build injeta uma Content Security Policy que só permite chamadas para a API (e para as ferramentas de medição, se configuradas). Os marcadores `<!--seo:head-->` e `<!--seo:noscript-->` do `index.html` são preenchidos pelo plugin em `seo/pages.ts`; `public/robots.txt`, `public/sitemap.xml` e `public/llms.txt` são mantidos à mão.
 
 A origem `https://saudemais.plovatto.dev` também precisa constar em `CORS_ORIGIN` na API.
 
