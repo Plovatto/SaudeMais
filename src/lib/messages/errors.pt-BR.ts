@@ -43,6 +43,9 @@ const errorMessages: Record<string, string> = {
   NOT_STARTED: 'Esta consulta ainda não começou. Registre o desfecho a partir do horário de início.',
   INVALID_CURRENT_PASSWORD: 'A senha atual está incorreta.',
   CURRENT_SESSION: 'Esta é a sessão em uso. Para encerrá-la, saia da conta.',
+  ACCOUNT_NOT_FOUND: 'Não encontramos uma conta com este e-mail.',
+  RESET_TOO_SOON:
+    'Já enviamos um link há pouco. Confira seu e-mail e o spam, ou tente de novo em alguns minutos.',
   TOO_MANY_REQUESTS: 'Muitas tentativas. Aguarde alguns minutos e tente de novo.',
   SERVER_BUSY: 'O servidor está ocupado. Tente de novo em instantes.',
   VALIDATION_ERROR: 'Confira os campos destacados.',

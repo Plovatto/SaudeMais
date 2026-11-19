@@ -13,22 +13,20 @@ export const termsOfUse: LegalDocument = {
     {
       heading: 'Sobre o Saúde+',
       paragraphs: [
-        'O Saúde+ é um projeto de portfólio que demonstra o agendamento de consultas e exames para pacientes, médicos e administradores.',
-        'Este é um ambiente de demonstração: não há atendimento médico real, e consultas, exames e resultados exibidos são fictícios.',
+        'O Saúde+ permite agendar consultas e exames e acompanhar resultados, com áreas para pacientes, médicos e administradores.',
+        'O Saúde+ organiza agendamentos e avisos. Ele não substitui o atendimento médico nem serve para emergências.',
       ],
     },
     {
       heading: 'Uso da conta',
       paragraphs: [
-        'Você é responsável pelos dados que informa e pela guarda da sua senha. Não cadastre dados reais de saúde nem de terceiros.',
-        'As contas de exemplo são compartilhadas entre visitantes e seguem as mesmas regras de qualquer conta, então os dados delas podem mudar a qualquer momento.',
+        'Você é responsável pelos dados que informa e pela guarda da sua senha.',
+        'Você pode encerrar suas sessões e alterar seus dados no perfil a qualquer momento.',
       ],
     },
     {
       heading: 'Disponibilidade',
-      paragraphs: [
-        'O serviço pode ficar fora do ar, ser alterado ou ter os dados apagados a qualquer momento, sem aviso.',
-      ],
+      paragraphs: ['O serviço pode ficar temporariamente indisponível por manutenção ou atualização.'],
     },
   ],
 };
@@ -47,7 +45,7 @@ export const privacyPolicy: LegalDocument = {
     {
       heading: 'Uso dos dados',
       paragraphs: [
-        'Os dados servem apenas para o funcionamento da demonstração: entrar na conta, agendar e receber avisos dentro do app.',
+        'Os dados servem apenas para o funcionamento do serviço: entrar na conta, agendar e receber avisos dentro do app.',
         'Observações de agendamentos, motivos de cancelamento e resultados de exame nunca aparecem em registros técnicos.',
       ],
     },
@@ -57,5 +55,13 @@ export const privacyPolicy: LegalDocument = {
         'Você pode ver e alterar seus dados no perfil e encerrar suas sessões a qualquer momento, conforme a Lei Geral de Proteção de Dados (LGPD).',
       ],
     },
+  ],
+};
+
+export const analyticsSection: LegalDocument['sections'][number] = {
+  heading: 'Medição de uso',
+  paragraphs: [
+    'Se você aceitar, usamos o Google Analytics e o Microsoft Clarity para entender como o Saúde+ é usado e melhorar o serviço. Eles usam cookies e coletam dados de navegação, como páginas visitadas, tipo de dispositivo e interações na tela.',
+    'Sem a sua autorização, nenhuma dessas ferramentas é carregada. Você pode recusar ou mudar a escolha a qualquer momento, e ao recusar os cookies de medição são apagados.',
   ],
 };

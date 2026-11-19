@@ -3,7 +3,7 @@ import type userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import type { Role } from '@constants/areas';
 import { holdRequests, mockApi, renderApp, requestBody, TEST_TOKEN, testUser } from '@/test/render-app';
-import { EXAMPLE_DOCTOR, EXAMPLE_PATIENT } from '@constants/example-accounts';
+import { EXAMPLE_ALL_PROFILES } from '@constants/example-accounts';
 
 const renderAt = (path: string) => renderApp(path);
 
@@ -41,22 +41,23 @@ describe('login', () => {
     expect(screen.getByRole('link', { name: 'Cadastre-se' })).toHaveAttribute('href', '/cadastro');
     expect(screen.getByRole('link', { name: 'Esqueci a senha' })).toHaveAttribute('href', '/esqueci-senha');
     const examples = within(screen.getByRole('region', { name: 'Contas de exemplo' })).getAllByRole('button');
-    expect(examples.map((button) => button.textContent)).toEqual(['Paciente 1 perfil', 'Médico 2 perfis']);
+    expect(examples).toHaveLength(1);
+    expect(examples[0]).toHaveTextContent('Conta completa');
+    expect(examples[0]).toHaveTextContent('Paciente, médico e administrador');
     expect(examples[0]).toHaveAccessibleDescription('Preenche o e-mail e a senha da conta.');
   });
 
-  it.each([
-    ['Paciente 1 perfil', EXAMPLE_PATIENT],
-    ['Médico 2 perfis', EXAMPLE_DOCTOR],
-  ])('fills in the example account %s and marks it', async (name, account) => {
+  it('fills in the example account, keeps the password hidden and marks it', async () => {
+    const account = EXAMPLE_ALL_PROFILES;
     const { user } = renderAt('/login');
 
-    const chip = await screen.findByRole('button', { name });
+    const chip = await screen.findByRole('button', { name: /Conta completa/ });
     expect(chip).not.toHaveClass('bg-role-soft');
     await user.click(chip);
 
     expect(screen.getByLabelText('E-mail')).toHaveValue(account.email);
     expect(screen.getByLabelText('Senha')).toHaveValue(account.password);
+    expect(screen.getByLabelText('Senha')).toHaveAttribute('type', 'password');
     expect(chip).toHaveClass('bg-role-soft');
   });
 
@@ -146,17 +147,16 @@ describe('register', () => {
   async function fillForm(user: ReturnType<typeof userEvent.setup>) {
     await user.type(await screen.findByLabelText('Nome completo'), 'Ana Maria Silva');
     await user.type(screen.getByLabelText('E-mail'), 'ana@email.com');
-    await user.type(screen.getByLabelText('Telefone'), '(11) 98765-4321');
+    await user.type(screen.getByLabelText(/Telefone/), '(11) 98765-4321');
     await user.type(screen.getByLabelText('Senha'), 'senha-segura-123');
     await user.type(screen.getByLabelText('Confirmar senha'), 'senha-segura-123');
     await user.click(screen.getByRole('checkbox'));
   }
 
-  it('shows the demo environment notice and links to the terms and the privacy policy', async () => {
+  it('links to the terms and the privacy policy', async () => {
     renderAt('/cadastro');
 
-    expect(await screen.findByRole('note')).toHaveTextContent('Ambiente de demonstração');
-    expect(screen.getByRole('heading', { level: 1, name: 'Criar conta' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Criar conta' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Entrar' })).toHaveAttribute('href', '/login');
     const terms = screen.getByRole('link', { name: /^termos de uso.*abre em nova aba/ });
     expect(terms).toHaveAttribute('href', '/termos');
@@ -219,7 +219,7 @@ describe('register', () => {
       `${'a'.repeat(250)}@email.com`,
       'O e-mail pode ter até 254 caracteres.',
     ],
-    ['a phone starting with zero', 'Telefone', '011987654321', 'Informe um telefone válido com DDD.'],
+    ['a phone starting with zero', /Telefone/, '011987654321', 'Informe um telefone válido com DDD.'],
     ['a password over 128 characters', 'Senha', 'a'.repeat(129), 'A senha pode ter até 128 caracteres.'],
   ])('rejects %s before calling the API', async (_case, label, value, message) => {
     const fetchMock = mockApi();
@@ -241,8 +241,8 @@ describe('register', () => {
     const { router, user } = renderAt('/cadastro');
 
     await fillForm(user);
-    await user.clear(screen.getByLabelText('Telefone'));
-    await user.type(screen.getByLabelText('Telefone'), '+44 20 7946 0958');
+    await user.clear(screen.getByLabelText(/Telefone/));
+    await user.type(screen.getByLabelText(/Telefone/), '+44 20 7946 0958');
     await user.click(screen.getByRole('button', { name: 'Cadastrar-se' }));
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/login'));

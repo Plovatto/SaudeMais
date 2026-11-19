@@ -1,9 +1,12 @@
+import type { ReactNode } from 'react';
 import { PageHeader } from '@components/layout/PageHeader';
-import { Card } from '@components/ui';
+import { Button, Card } from '@components/ui';
+import { analyticsEnabled } from '@lib/analytics';
+import { reopenConsent } from '@lib/consent';
 import { formatLongDate } from '@lib/date';
-import { privacyPolicy, termsOfUse, type LegalDocument } from './legal-content';
+import { analyticsSection, privacyPolicy, termsOfUse, type LegalDocument } from './legal-content';
 
-function LegalPage({ legal }: { legal: LegalDocument }) {
+function LegalPage({ legal, children }: { legal: LegalDocument; children?: ReactNode }) {
   return (
     <>
       <PageHeader title={legal.title} back backFallback="/cadastro" />
@@ -19,6 +22,7 @@ function LegalPage({ legal }: { legal: LegalDocument }) {
             ))}
           </section>
         ))}
+        {children}
       </Card>
     </>
   );
@@ -29,5 +33,14 @@ export function TermsPage() {
 }
 
 export function PrivacyPage() {
-  return <LegalPage legal={privacyPolicy} />;
+  if (!analyticsEnabled) return <LegalPage legal={privacyPolicy} />;
+  return (
+    <LegalPage legal={{ ...privacyPolicy, sections: [...privacyPolicy.sections, analyticsSection] }}>
+      <div>
+        <Button variant="secondary" onClick={reopenConsent}>
+          Alterar minha escolha sobre a medição de uso
+        </Button>
+      </div>
+    </LegalPage>
+  );
 }

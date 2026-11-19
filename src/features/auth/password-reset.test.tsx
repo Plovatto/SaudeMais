@@ -1,23 +1,60 @@
 import { screen, waitFor } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, onTestFinished, vi } from 'vitest';
 import { SESSION_STORAGE_KEY } from '@lib/auth/token-store';
 import { mockApi, mockFetch, renderApp, requestBody, TEST_TOKEN } from '@/test/render-app';
 
 const RESET_TOKEN = 'b'.repeat(43);
 
 describe('forgot password', () => {
-  it('always confirms the request with the same message', async () => {
+  it('confirms the e-mail the link was sent to', async () => {
     const fetchMock = mockApi({ status: 204 });
     const { user } = renderApp('/esqueci-senha');
 
     await user.type(await screen.findByLabelText('E-mail'), 'ana@email.com');
     await user.click(screen.getByRole('button', { name: 'Enviar link' }));
 
-    const confirmation = await screen.findByText(/Se houver uma conta com o e-mail/);
+    const confirmation = await screen.findByText(/Enviamos para/);
     expect(confirmation.closest('[role="status"]')).not.toBeNull();
     expect(confirmation).toHaveFocus();
     expect(screen.getByText('ana@email.com')).toBeInTheDocument();
     expect(requestBody(fetchMock)).toEqual({ email: 'ana@email.com' });
+  });
+
+  it('tells when there is no account with the e-mail', async () => {
+    mockApi({
+      status: 404,
+      body: {
+        message: 'Não encontramos uma conta com este e-mail.',
+        code: 'ACCOUNT_NOT_FOUND',
+        fields: { email: 'Não encontramos uma conta com este e-mail.' },
+      },
+    });
+    const { user } = renderApp('/esqueci-senha');
+
+    await user.type(await screen.findByLabelText('E-mail'), 'ninguem@email.com');
+    await user.click(screen.getByRole('button', { name: 'Enviar link' }));
+
+    expect(await screen.findByText('Não encontramos uma conta com este e-mail.')).toBeInTheDocument();
+    expect(screen.queryByText(/Enviamos para/)).not.toBeInTheDocument();
+  });
+
+  it('resends the link after the wait and confirms it', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
+    const fetchMock = mockApi({ status: 204 }, { status: 204 });
+    const { user } = renderApp('/esqueci-senha');
+
+    await user.type(await screen.findByLabelText('E-mail'), 'ana@email.com');
+    await user.click(screen.getByRole('button', { name: 'Enviar link' }));
+    expect(await screen.findByRole('button', { name: /Reenviar e-mail em/ })).toHaveAttribute('disabled');
+
+    vi.setSystemTime(Date.now() + 31_000);
+    await user.click(await screen.findByRole('button', { name: 'Reenviar e-mail' }, { timeout: 3000 }));
+
+    expect(await screen.findByText('Link reenviado.')).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it('validates the e-mail before calling the API', async () => {
@@ -47,7 +84,7 @@ describe('forgot password', () => {
     await waitFor(() =>
       expect(screen.getAllByRole('alert').some((element) => element.textContent?.trim())).toBe(true),
     );
-    expect(screen.queryByText(/Se houver uma conta/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Enviamos para/)).not.toBeInTheDocument();
   });
 
   it('is reached from the login screen', async () => {
