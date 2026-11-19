@@ -44,7 +44,11 @@ jobs:
       - run: npm run build
       - name: check the static hosting output
         run: |
-          cmp dist/index.html dist/404.html
+          grep -q 'name="robots" content="noindex, nofollow"' dist/404.html
+          grep -q 'src="/assets/' dist/404.html
+          for page in login cadastro termos privacidade; do
+            grep -q "rel=\"canonical\" href=\"https://saudemais.plovatto.dev/$page\"" "dist/$page.html"
+          done
           head -c 300 dist/index.html | grep -q 'http-equiv="Content-Security-Policy"'
           grep -q 'src="/assets/' dist/index.html
       - run: npm audit --omit=dev --audit-level=moderate

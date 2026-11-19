@@ -47,9 +47,16 @@ function ExamTypeForm({ examType, onDone }: { examType: ExamType | null; onDone:
   const { errors, isSubmitting } = form.formState;
   return (
     <FormShell onSubmit={form.onSubmit} alert={form.alert} submitting={isSubmitting} onCancel={onDone}>
-      <Input label="Nome" autoComplete="off" error={errors.name?.message} {...form.register('name')} />
+      <Input
+        label="Nome"
+        placeholder="Ex.: Hemograma completo"
+        autoComplete="off"
+        error={errors.name?.message}
+        {...form.register('name')}
+      />
       <Input
         label="Código"
+        placeholder="Ex.: hemograma_completo"
         hint="Usado na integração com o laboratório. Letras minúsculas, números e _."
         autoComplete="off"
         error={errors.code?.message}

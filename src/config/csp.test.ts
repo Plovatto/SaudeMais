@@ -28,6 +28,19 @@ describe('buildCsp', () => {
     }
   });
 
+  it('allows the analytics hosts only for the tools that are configured', () => {
+    const none = directives(buildCsp('https://api.example.com', { ga: false, clarity: false }));
+    const both = directives(buildCsp('https://api.example.com', { ga: true, clarity: true }));
+    const onlyGa = directives(buildCsp('https://api.example.com', { ga: true, clarity: false }));
+
+    expect(none.get('script-src')).toEqual(["'self'"]);
+    expect(onlyGa.get('script-src')).toEqual(["'self'", 'https://www.googletagmanager.com']);
+    expect(onlyGa.get('connect-src')).not.toContain('https://*.clarity.ms');
+    expect(both.get('script-src')).toContain('https://www.clarity.ms');
+    expect(both.get('connect-src')).toContain('https://*.clarity.ms');
+    expect(both.get('connect-src')?.[0]).toBe('https://api.example.com');
+  });
+
   it('restricts base URL and form targets to the site', () => {
     expect(policy.get('base-uri')).toEqual(["'self'"]);
     expect(policy.get('form-action')).toEqual(["'self'"]);

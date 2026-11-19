@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /paciente/
+Disallow: /medico/
+Disallow: /admin/
+Disallow: /notificacoes
+Disallow: /perfis
+Disallow: /esqueci-senha
+Disallow: /redefinir-senha
+
+Sitemap: https://saudemais.plovatto.dev/sitemap.xml

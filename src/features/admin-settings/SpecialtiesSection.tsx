@@ -28,9 +28,16 @@ function SpecialtyForm({ specialty, onDone }: { specialty: Specialty | null; onD
   const { errors, isSubmitting } = form.formState;
   return (
     <FormShell onSubmit={form.onSubmit} alert={form.alert} submitting={isSubmitting} onCancel={onDone}>
-      <Input label="Nome" autoComplete="off" error={errors.name?.message} {...form.register('name')} />
+      <Input
+        label="Nome"
+        placeholder="Ex.: Cardiologia"
+        autoComplete="off"
+        error={errors.name?.message}
+        {...form.register('name')}
+      />
       <Input
         label="Conselho profissional"
+        placeholder="Ex.: CRM"
         hint="Sigla do conselho que registra quem atende (ex.: CRM, CRN, CRP)."
         autoComplete="off"
         error={errors.council?.message}
@@ -38,6 +45,7 @@ function SpecialtyForm({ specialty, onDone }: { specialty: Specialty | null; onD
       />
       <Input
         label="Duração da consulta (minutos)"
+        placeholder="Ex.: 30"
         type="number"
         inputMode="numeric"
         step={5}

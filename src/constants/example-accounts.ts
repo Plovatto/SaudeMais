@@ -21,4 +21,11 @@ export const EXAMPLE_DOCTOR: ExampleAccount = {
   roles: ['doctor', 'patient'],
 };
 
-export const EXAMPLE_ACCOUNTS = [EXAMPLE_PATIENT, EXAMPLE_DOCTOR] as const;
+export const EXAMPLE_ALL_PROFILES: ExampleAccount = {
+  label: 'Conta completa',
+  email: 'admin@saudemais.com',
+  password: 'completo-demo-123',
+  roles: ['patient', 'doctor', 'admin'],
+};
+
+export const EXAMPLE_ACCOUNTS = [EXAMPLE_ALL_PROFILES] as const;

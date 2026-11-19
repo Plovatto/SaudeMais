@@ -38,17 +38,9 @@ export interface MenuProps {
   icon?: ReactNode;
   align?: 'start' | 'end';
   className?: string;
-  triggerClassName?: string;
 }
 
-export function Menu({
-  label,
-  items,
-  icon = <LuEllipsisVertical />,
-  align = 'end',
-  className,
-  triggerClassName,
-}: MenuProps) {
+export function Menu({ label, items, icon = <LuEllipsisVertical />, align = 'end', className }: MenuProps) {
   const { open, setOpen, dismiss, rootRef, contentId, triggerProps } = useFloating();
   const [focusOnOpen, setFocusOnOpen] = useState(0);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -75,7 +67,6 @@ export function Menu({
         label={label}
         icon={icon}
         aria-haspopup="menu"
-        className={triggerClassName}
         onClick={() => (open ? dismiss() : openAt(0))}
         onKeyDown={onTriggerKeyDown}
       />

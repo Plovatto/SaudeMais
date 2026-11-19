@@ -52,6 +52,7 @@ function IntegrationForm({
     >
       <Input
         label="Nome"
+        placeholder="Ex.: Laboratório Central"
         hint="Nome do laboratório ou sistema que vai usar a chave."
         autoComplete="off"
         error={errors.name?.message}

@@ -9,6 +9,7 @@ import { hitArea } from '@components/ui/styles';
 import { homeFor } from '@lib/auth/return-to';
 import { acknowledgeSessionEnd, startSession } from '@lib/auth/session';
 import { sessionQuery } from '@lib/auth/useSession';
+import { track } from '@lib/analytics';
 import { cx } from '@lib/cx';
 import { applyApiErrors } from '@lib/form-errors';
 import { login } from './auth-api';
@@ -50,6 +51,7 @@ export function LoginPage() {
     try {
       const session = await login(values);
       startSession(session.token, values.remember);
+      track('login');
       queryClient.setQueryData(sessionQuery.queryKey, {
         birthDate: null,
         passwordChangedAt: null,

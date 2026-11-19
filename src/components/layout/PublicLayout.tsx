@@ -2,7 +2,7 @@ import { Outlet } from 'react-router';
 import { DEFAULT_ROLE } from '@constants/areas';
 import { MainContent, pageSurface, SkipLink } from './MainContent';
 import { useRouteHandle } from './route-handle';
-import { ThemeMenu } from './ThemeMenu';
+import { ThemeToggle } from './ThemeToggle';
 
 export function PublicLayout() {
   const brand = useRouteHandle().surface === 'brand';
@@ -16,7 +16,7 @@ export function PublicLayout() {
       ) : (
         <>
           <div className="flex justify-end p-2">
-            <ThemeMenu />
+            <ThemeToggle />
           </div>
           <MainContent className="max-w-[520px] px-4 pb-10">
             <Outlet />

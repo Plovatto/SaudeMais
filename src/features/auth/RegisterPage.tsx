@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router';
 import { NewPasswordFields } from '@components/forms/NewPasswordFields';
 import { Button, Checkbox, FormAlert, Input, TextLink, useToast } from '@components/ui';
 import { useFormSubmit } from '@hooks/useFormSubmit';
+import { track } from '@lib/analytics';
 import { register as createAccount } from './auth-api';
 import { registerSchema, type RegisterValues } from './auth-schemas';
 import { AuthFooterLink } from './AuthFooterLink';
@@ -37,6 +38,7 @@ export function RegisterPage() {
   const onSubmit = handleSubmit((values) =>
     run(async () => {
       const user = await createAccount(values);
+      track('sign_up');
       show({ message: 'Conta criada. Entre com seu e-mail e senha.', tone: 'success' });
       await navigate('/login', { state: { email: user.email } });
     }),
@@ -50,13 +52,16 @@ export function RegisterPage() {
       }}
       title="Criar conta"
       subtitle="Preencha os dados para se cadastrar."
+      wide
     >
-      <FormAlert tone="warning" role="note">
-        Ambiente de demonstração: não use dados reais.
-      </FormAlert>
-      <form noValidate onSubmit={(event) => void onSubmit(event)} className="flex flex-col gap-5">
+      <form
+        noValidate
+        onSubmit={(event) => void onSubmit(event)}
+        className="flex flex-col gap-5 xl:grid xl:grid-cols-2 xl:gap-x-4"
+      >
         <Input
           label="Nome completo"
+          className="xl:col-span-2"
           autoComplete="name"
           placeholder="Seu nome completo"
           icon={<LuUser />}
@@ -70,7 +75,7 @@ export function RegisterPage() {
           autoComplete="tel"
           inputMode="tel"
           placeholder="(99) 99999-9999"
-          hint="Opcional, com DDD."
+          labelNote="Opcional"
           icon={<LuPhone />}
           error={errors.phone?.message}
           {...register('phone')}
@@ -81,27 +86,29 @@ export function RegisterPage() {
           confirmation={register('passwordConfirmation')}
           errors={{ password: errors.password?.message, confirmation: errors.passwordConfirmation?.message }}
         />
-        <Checkbox
-          label={
-            <>
-              Aceito os{' '}
-              <TextLink to="/termos" newTab>
-                termos de uso
-              </TextLink>{' '}
-              e a{' '}
-              <TextLink to="/privacidade" newTab>
-                política de privacidade
-              </TextLink>
-            </>
-          }
-          error={errors.acceptTerms?.message}
-          {...register('acceptTerms')}
-        />
-        {alert && <FormAlert>{alert}</FormAlert>}
-        <Button type="submit" size="lg" fullWidth loading={isSubmitting}>
-          Cadastrar-se
-        </Button>
-        <AuthFooterLink question="Já tem conta?" label="Entrar" to="/login" />
+        <div className="flex flex-col gap-5 xl:col-span-2">
+          <Checkbox
+            label={
+              <>
+                Aceito os{' '}
+                <TextLink to="/termos" newTab>
+                  termos de uso
+                </TextLink>{' '}
+                e a{' '}
+                <TextLink to="/privacidade" newTab>
+                  política de privacidade
+                </TextLink>
+              </>
+            }
+            error={errors.acceptTerms?.message}
+            {...register('acceptTerms')}
+          />
+          {alert && <FormAlert>{alert}</FormAlert>}
+          <Button type="submit" size="lg" fullWidth loading={isSubmitting}>
+            Cadastrar-se
+          </Button>
+          <AuthFooterLink question="Já tem conta?" label="Entrar" to="/login" />
+        </div>
       </form>
     </AuthScreen>
   );

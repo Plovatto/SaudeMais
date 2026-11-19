@@ -3,7 +3,6 @@ import { LuCircleAlert, LuCircleCheck, LuInfo } from 'react-icons/lu';
 import { cx } from '@lib/cx';
 import { motionAllowed } from '@lib/motion';
 import { CloseButton } from './CloseButton';
-import { IconSlot } from './IconSlot';
 import { ToastContext, type ToastInput, type ToastTone } from './toast-context';
 
 export const TOAST_DURATION_MS = 5000;
@@ -18,9 +17,33 @@ interface ToastItem {
 }
 
 const tones = {
-  success: { icon: <LuCircleCheck />, prefix: 'Sucesso: ' },
-  danger: { icon: <LuCircleAlert />, prefix: 'Erro: ' },
-  info: { icon: <LuInfo />, prefix: 'Aviso: ' },
+  success: {
+    icon: <LuCircleCheck />,
+    prefix: 'Sucesso: ',
+    title: 'Tudo certo',
+    card: 'border-success/35',
+    accent: 'bg-success',
+    badge: 'bg-success text-on-success shadow-[0_10px_18px_-8px_var(--success)]',
+    track: 'bg-success/15',
+  },
+  danger: {
+    icon: <LuCircleAlert />,
+    prefix: 'Erro: ',
+    title: 'Algo deu errado',
+    card: 'border-danger/40',
+    accent: 'bg-danger',
+    badge: 'bg-danger text-on-danger shadow-[0_10px_18px_-8px_var(--danger)]',
+    track: 'bg-danger/15',
+  },
+  info: {
+    icon: <LuInfo />,
+    prefix: 'Aviso: ',
+    title: 'Aviso',
+    card: 'border-role-strong/35',
+    accent: 'bg-role-strong',
+    badge: 'bg-role-strong text-on-role shadow-[0_10px_18px_-8px_var(--role-strong)]',
+    track: 'bg-role-strong/15',
+  },
 };
 
 interface ToastProps {
@@ -35,6 +58,7 @@ function Toast({ toast, onDismiss, onRemove }: ToastProps) {
   const remaining = useRef(TOAST_DURATION_MS);
   const returnFocus = useRef<HTMLElement | null>(null);
   const paused = hovered || focused || toast.tone === 'danger';
+  const look = tones[toast.tone];
 
   useEffect(() => {
     if (paused || toast.leaving) return;
@@ -77,22 +101,41 @@ function Toast({ toast, onDismiss, onRemove }: ToastProps) {
         if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
       }}
       className={cx(
-        'bg-text text-surface shadow-overlay flex w-full max-w-sm items-center gap-3 rounded-[14px] py-1 ps-3 pe-1 text-[0.8125rem] font-medium',
-        toast.leaving ? 'animate-fade-out' : 'motion-safe:animate-rise pointer-events-auto',
+        'bg-surface text-text shadow-overlay relative flex w-full max-w-[400px] items-center gap-3.5 overflow-hidden rounded-[18px] border py-4 ps-5 pe-2.5',
+        look.card,
+        toast.leaving
+          ? 'animate-fade-out'
+          : 'motion-safe:animate-toast-in lg:motion-safe:animate-toast-in-up pointer-events-auto',
       )}
     >
-      <IconSlot className="bg-surface/12 size-8 justify-center rounded-[9px] text-base">
-        {tones[toast.tone].icon}
-      </IconSlot>
-      <p className="flex-1 py-2">
-        <span className="sr-only">{tones[toast.tone].prefix}</span>
-        {toast.message}
-      </p>
-      <CloseButton
-        label="Fechar aviso"
-        onClick={close}
-        className="text-surface can-hover:bg-surface/15 focus-visible:outline-surface focus-visible:-outline-offset-2"
-      />
+      <span aria-hidden className={cx('absolute inset-y-0 start-0 w-1.5', look.accent)} />
+      <span
+        aria-hidden
+        className={cx('grid size-11 shrink-0 place-items-center rounded-[14px] text-[1.375rem]', look.badge)}
+      >
+        {look.icon}
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span aria-hidden className="text-[0.9375rem] leading-tight font-bold tracking-[-0.01em]">
+          {look.title}
+        </span>
+        <span className="text-text-secondary text-sm leading-snug font-medium">
+          <span className="sr-only">{look.prefix}</span>
+          {toast.message}
+        </span>
+      </span>
+      <CloseButton label="Fechar aviso" onClick={close} className="shrink-0" />
+      {toast.tone !== 'danger' && (
+        <span aria-hidden className={cx('absolute inset-x-0 bottom-0 h-1', look.track)}>
+          <span
+            style={{
+              animationDuration: `${TOAST_DURATION_MS}ms`,
+              animationPlayState: paused || toast.leaving ? 'paused' : 'running',
+            }}
+            className={cx('motion-safe:animate-toast-timer block h-full origin-left', look.accent)}
+          />
+        </span>
+      )}
     </div>
   );
 }
@@ -134,9 +177,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext value={value}>
       {children}
-      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-50 flex flex-col items-center gap-2 ps-[max(1rem,env(safe-area-inset-left))] pe-[max(1rem,env(safe-area-inset-right))] lg:bottom-[calc(1.5rem+env(safe-area-inset-bottom))]">
+      <div className="pointer-events-none fixed inset-x-0 top-[calc(0.75rem+env(safe-area-inset-top))] z-[110] flex flex-col items-center gap-3 ps-[max(0.75rem,env(safe-area-inset-left))] pe-[max(0.75rem,env(safe-area-inset-right))] lg:inset-x-auto lg:end-[calc(2rem+env(safe-area-inset-right))] lg:top-auto lg:bottom-[calc(2rem+env(safe-area-inset-bottom))] lg:w-[400px] lg:items-end lg:ps-0 lg:pe-0">
         {regions.map(({ role, items }) => (
-          <div key={role} role={role} aria-atomic="false" className="flex w-full flex-col items-center gap-2">
+          <div
+            key={role}
+            role={role}
+            aria-atomic="false"
+            className="flex w-full flex-col items-center gap-3 lg:items-end"
+          >
             {items.map((toast) => (
               <Toast key={toast.id} toast={toast} onDismiss={dismiss} onRemove={remove} />
             ))}

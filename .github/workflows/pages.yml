@@ -18,6 +18,8 @@ jobs:
     timeout-minutes: 10
     env:
       VITE_API_URL: ${{ vars.VITE_API_URL }}
+      VITE_GA_ID: ${{ vars.VITE_GA_ID }}
+      VITE_CLARITY_ID: ${{ vars.VITE_CLARITY_ID }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

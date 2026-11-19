@@ -15,5 +15,13 @@
     "moduleDetection": "force",
     "noEmit": true
   },
-  "include": ["vite.config.ts", "src/config/parse-env.ts", "src/config/csp.ts"]
+  "include": [
+    "vite.config.ts",
+    "seo/pages.ts",
+    "seo/pages.test.ts",
+    "src/config/parse-env.ts",
+    "src/config/analytics-ids.ts",
+    "src/config/csp.ts",
+    "src/config/site.ts"
+  ]
 }

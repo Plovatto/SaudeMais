@@ -1,6 +1,8 @@
 import type { ComponentType } from 'react';
 import { redirect, type RouteObject } from 'react-router';
 import { RootFallback, RootRoute } from '@components/layout/RootRoute';
+import type { RouteSeo } from '@components/layout/route-handle';
+import { PUBLIC_PAGES } from '@config/site';
 import { adminUserUrl, DOCTOR_SECTION } from '@constants/admin-users';
 import { areas, NOTIFICATIONS_PATH, type Area } from '@constants/areas';
 import { ForbiddenPage, NotFoundPage, RouteError, RouteErrorBoundary } from '@features/errors';
@@ -12,6 +14,11 @@ const placeholder = lazyComponent(
   async () => (await import('@components/layout/PlaceholderPage')).PlaceholderPage,
 );
 
+const indexable = (path: string): RouteSeo => {
+  const found = PUBLIC_PAGES.find((candidate) => candidate.path === path);
+  return { index: true, ...(found && { title: found.title, description: found.description }) };
+};
+
 const notFound: RouteObject = {
   path: '*',
   handle: { title: 'Página não encontrada' },
@@ -22,15 +29,16 @@ interface PageOptions {
   lazy?: typeof placeholder;
   surface?: 'brand';
   crumb?: string | undefined;
+  seo?: RouteSeo;
 }
 
 const page = (
   path: string,
   title: string,
-  { lazy = placeholder, surface, crumb }: PageOptions = {},
+  { lazy = placeholder, surface, crumb, seo }: PageOptions = {},
 ): RouteObject => ({
   ...(path === '' ? { index: true } : { path }),
-  handle: { title, ...(surface && { surface }), ...(crumb && { crumb }) },
+  handle: { title, ...(surface && { surface }), ...(crumb && { crumb }), ...(seo && { seo }) },
   ErrorBoundary: RouteError,
   lazy,
 });
@@ -132,8 +140,16 @@ export const routes: RouteObject[] = [
           {
             Component: PublicOnly,
             children: [
-              page('login', 'Entrar', { lazy: authScreen('LoginPage'), surface: 'brand' }),
-              page('cadastro', 'Criar conta', { lazy: authScreen('RegisterPage'), surface: 'brand' }),
+              page('login', 'Entrar', {
+                lazy: authScreen('LoginPage'),
+                surface: 'brand',
+                seo: indexable('/login'),
+              }),
+              page('cadastro', 'Criar conta', {
+                lazy: authScreen('RegisterPage'),
+                surface: 'brand',
+                seo: indexable('/cadastro'),
+              }),
               page('esqueci-senha', 'Esqueci a senha', {
                 lazy: authScreen('ForgotPasswordPage'),
                 surface: 'brand',
@@ -146,8 +162,11 @@ export const routes: RouteObject[] = [
               page('perfis', 'Escolha seu perfil', { lazy: authScreen('RoleSelectPage'), surface: 'brand' }),
             ],
           },
-          page('termos', 'Termos de uso', { lazy: authScreen('TermsPage') }),
-          page('privacidade', 'Política de privacidade', { lazy: authScreen('PrivacyPage') }),
+          page('termos', 'Termos de uso', { lazy: authScreen('TermsPage'), seo: indexable('/termos') }),
+          page('privacidade', 'Política de privacidade', {
+            lazy: authScreen('PrivacyPage'),
+            seo: indexable('/privacidade'),
+          }),
           page('redefinir-senha', 'Criar nova senha', {
             lazy: authScreen('ResetPasswordPage'),
             surface: 'brand',
