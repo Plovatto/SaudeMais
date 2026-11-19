@@ -34,6 +34,7 @@ export default defineConfig(
     rules: { 'react-hooks/rules-of-hooks': 'off' },
   },
   { files: ['src/lib/theme.test.ts'], rules: { '@typescript-eslint/no-implied-eval': 'off' } },
+  { files: ['src/lib/analytics.ts'], rules: { 'prefer-rest-params': 'off' } },
   { files: ['eslint.config.js', 'public/*.js'], extends: [tseslint.configs.disableTypeChecked] },
   prettier,
 );
