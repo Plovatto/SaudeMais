@@ -1,6 +1,7 @@
 export interface FieldProps {
   label: string;
   labelHidden?: boolean | undefined;
+  labelNote?: string | undefined;
   hint?: string | undefined;
   error?: string | undefined;
   invalid?: boolean | undefined;
@@ -17,6 +18,7 @@ export function splitFieldProps<T extends FieldOwnProps>(props: T) {
     id,
     label,
     labelHidden,
+    labelNote,
     hint,
     error,
     invalid,
@@ -28,6 +30,7 @@ export function splitFieldProps<T extends FieldOwnProps>(props: T) {
     id,
     label,
     labelHidden,
+    labelNote,
     hint,
     error,
     invalid,

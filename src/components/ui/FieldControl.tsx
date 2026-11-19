@@ -28,6 +28,7 @@ export function FieldControl({
   id,
   label,
   labelHidden,
+  labelNote,
   hint,
   error,
   invalid: flagged,
@@ -47,6 +48,7 @@ export function FieldControl({
         className={cx('text-text text-[0.8125rem] font-semibold', labelHidden && 'sr-only')}
       >
         {label}
+        {labelNote && <span className="text-text-muted ms-1.5 text-xs font-medium">{labelNote}</span>}
       </label>
       <div className={cx(controlBox(invalid), end !== undefined && 'pe-0', boxClassName)}>
         {icon && <IconSlot className="text-text-muted text-xl">{icon}</IconSlot>}

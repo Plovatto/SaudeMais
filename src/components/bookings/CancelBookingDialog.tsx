@@ -87,6 +87,7 @@ function CancelForm({
         <Textarea
           label={mode === 'required' ? 'Motivo' : 'Motivo (opcional)'}
           required={mode === 'required'}
+          placeholder="Conte brevemente o motivo"
           maxLength={FREE_TEXT_MAX}
           disabled={stale}
           error={errors.reason?.message}

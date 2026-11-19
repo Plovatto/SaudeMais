@@ -3,8 +3,18 @@ import { PasswordInput } from '@components/ui';
 import { PASSWORD_MIN } from '@lib/validation/account-fields';
 
 const labels = {
-  create: { password: 'Senha', confirmation: 'Confirmar senha' },
-  change: { password: 'Nova senha', confirmation: 'Confirmar nova senha' },
+  create: {
+    password: 'Senha',
+    confirmation: 'Confirmar senha',
+    passwordHolder: 'Crie uma senha',
+    confirmationHolder: 'Repita a senha',
+  },
+  change: {
+    password: 'Nova senha',
+    confirmation: 'Confirmar nova senha',
+    passwordHolder: 'Digite a nova senha',
+    confirmationHolder: 'Repita a nova senha',
+  },
 };
 
 export interface NewPasswordFieldsProps {
@@ -28,6 +38,7 @@ export function NewPasswordFields({
     <>
       <PasswordInput
         label={labels[variant].password}
+        placeholder={labels[variant].passwordHolder}
         autoComplete="new-password"
         hint={showHint ? `Pelo menos ${PASSWORD_MIN} caracteres.` : undefined}
         disabled={disabled}
@@ -36,6 +47,7 @@ export function NewPasswordFields({
       />
       <PasswordInput
         label={labels[variant].confirmation}
+        placeholder={labels[variant].confirmationHolder}
         autoComplete="new-password"
         disabled={disabled}
         error={errors.confirmation}

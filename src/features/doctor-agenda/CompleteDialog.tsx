@@ -107,6 +107,7 @@ function CompleteForm({
           <div className="grid grid-cols-2 gap-3">
             <Input
               label="Sistólica (mmHg)"
+              placeholder="120"
               error={errors.metrics?.systolic?.message}
               {...pressure}
               {...systolic}
@@ -117,6 +118,7 @@ function CompleteForm({
             />
             <Input
               label="Diastólica (mmHg)"
+              placeholder="80"
               error={errors.metrics?.diastolic?.message}
               {...pressure}
               {...register('metrics.diastolic')}
@@ -125,6 +127,7 @@ function CompleteForm({
         </fieldset>
         <Input
           label="Peso (kg)"
+          placeholder="72,4"
           hint="Use vírgula para os decimais, como em 72,4."
           inputMode="decimal"
           autoComplete="off"

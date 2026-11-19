@@ -50,9 +50,16 @@ function UnitForm({ unit, onDone }: { unit: Unit | null; onDone: () => void }) {
   const { errors, isSubmitting } = form.formState;
   return (
     <FormShell onSubmit={form.onSubmit} alert={form.alert} submitting={isSubmitting} onCancel={onDone}>
-      <Input label="Nome" autoComplete="off" error={errors.name?.message} {...form.register('name')} />
+      <Input
+        label="Nome"
+        placeholder="Ex.: Unidade Central"
+        autoComplete="off"
+        error={errors.name?.message}
+        {...form.register('name')}
+      />
       <Input
         label="Endereço"
+        placeholder="Rua, número, bairro e cidade"
         autoComplete="off"
         icon={<LuMapPin />}
         error={errors.address?.message}

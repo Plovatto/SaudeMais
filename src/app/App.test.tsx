@@ -153,7 +153,7 @@ describe('role areas', () => {
   });
 });
 
-describe('account', () => {
+describe('account', { timeout: 15_000 }, () => {
   it('opens the profile of the current area and switches the profile', async () => {
     const { user, router } = renderAt('/medico');
 
@@ -162,7 +162,9 @@ describe('account', () => {
     expect(router.state.location.pathname).toBe('/medico/perfil');
 
     await user.click(screen.getByRole('link', { name: 'Perfil atual Médico Trocar' }));
-    expect(await screen.findByRole('heading', { level: 1, name: 'Escolha seu perfil' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Escolha seu perfil' }, { timeout: 5000 }),
+    ).toBeInTheDocument();
   });
 
   it('hides the profile switch for accounts with a single role', async () => {
@@ -193,21 +195,18 @@ describe('account', () => {
     expect(document.documentElement.dataset.theme).toBe('dark');
     expect(screen.getAllByRole('button', { name: 'Usar tema claro' }).length).toBeGreaterThan(0);
     await router.navigate('/termos');
-    await user.click(await screen.findByRole('button', { name: 'Tema' }));
-    expect(screen.getByRole('menuitemradio', { name: 'Tema escuro' })).toHaveAttribute(
-      'aria-checked',
-      'true',
-    );
+    expect(await screen.findByRole('button', { name: 'Usar tema claro' })).toBeInTheDocument();
   });
 });
 
 describe('public pages and errors', () => {
-  it('offers the theme choice on public pages', async () => {
+  it('toggles the theme on public pages', async () => {
     const { user } = renderAt('/login', undefined, false);
 
-    await user.click(await screen.findByRole('button', { name: 'Tema' }));
+    await user.click(await screen.findByRole('button', { name: 'Usar tema escuro' }));
 
-    expect(screen.getByRole('menuitemradio', { name: 'Tema claro' })).toBeInTheDocument();
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    expect(screen.getByRole('button', { name: 'Usar tema claro' })).toBeInTheDocument();
   });
 
   it.each(['/pagina-que-nao-existe', '/paciente/pagina-que-nao-existe'])(

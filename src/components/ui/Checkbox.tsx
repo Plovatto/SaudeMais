@@ -24,7 +24,7 @@ export function Checkbox({
         <input
           type="checkbox"
           className={cx(
-            'accent-role-strong size-5 shrink-0 cursor-pointer rounded-[4px] disabled:cursor-not-allowed',
+            'accent-role-strong size-4 shrink-0 cursor-pointer rounded-[4px] disabled:cursor-not-allowed',
             invalid && 'ring-danger ring-offset-surface ring-2 ring-offset-2',
           )}
           {...props}
