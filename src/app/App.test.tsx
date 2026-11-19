@@ -195,7 +195,8 @@ describe('account', { timeout: 15_000 }, () => {
     expect(document.documentElement.dataset.theme).toBe('dark');
     expect(screen.getAllByRole('button', { name: 'Usar tema claro' }).length).toBeGreaterThan(0);
     await router.navigate('/termos');
-    expect(await screen.findByRole('button', { name: 'Usar tema claro' })).toBeInTheDocument();
+    await screen.findByRole('heading', { level: 1, name: 'Termos de uso' });
+    expect(screen.getByRole('button', { name: 'Usar tema claro' })).toBeInTheDocument();
   });
 });
 
