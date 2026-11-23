@@ -13,6 +13,7 @@ import {
   slotGroup,
   slotTimes,
 } from '@/test/booking-flow';
+import { patientAppointment, unit } from '@/test/patient-fixtures';
 import { apiError, holdRequests, renderApp, serveApi, type MockResponse } from '@/test/render-app';
 
 const specialties = [
@@ -20,21 +21,19 @@ const specialties = [
   { id: 's2', name: 'Nutrição', council: 'CRN', appointmentDurationMin: 30, isActive: true },
 ];
 
-const unit = { id: 'u1', name: 'Unidade Central', address: 'Rua das Flores, 123', phone: '+551133334444' };
-
 const doctors = [
   {
     id: 'd1',
     fullName: 'Carlos Mendes',
     specialty: { id: 's1', name: 'Cardiologia', council: 'CRM' },
-    unit,
+    unit: unit(),
     registry: { number: '123456', uf: 'SP' },
   },
   {
     id: 'd2',
     fullName: 'Beatriz Lima',
     specialty: { id: 's2', name: 'Nutrição', council: 'CRN' },
-    unit,
+    unit: unit(),
     registry: { number: '654321', uf: 'SP' },
   },
 ];
@@ -47,20 +46,7 @@ const days = [
   { date: '2026-11-24', slots: [slot('2026-11-24T12:00:00.000Z')] },
 ];
 
-const appointment = {
-  id: 'a1',
-  status: 'pending',
-  visitType: 'routine',
-  startsAt: '2026-11-23T17:30:00.000Z',
-  endsAt: '2026-11-23T18:00:00.000Z',
-  notes: null,
-  patient: { id: 'p1', fullName: 'Ana Maria Silva' },
-  doctor: { id: 'd1', fullName: 'Carlos Mendes' },
-  specialty: { id: 's1', name: 'Cardiologia', council: 'CRM' },
-  unit,
-  createdAt: '2026-11-14T12:00:00.000Z',
-  events: [],
-};
+const appointment = patientAppointment();
 
 type Day = (typeof days)[number];
 

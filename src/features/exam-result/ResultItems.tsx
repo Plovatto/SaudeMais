@@ -3,6 +3,7 @@ import { LuFileText } from 'react-icons/lu';
 import { FlagChip } from '@components/exam-results/FlagChip';
 import { flags, formatResultValue } from '@components/exam-results/result-flags';
 import type { ResultItem } from '@components/exam-results/ResultVersion';
+import { Card } from '@components/ui';
 import { cx } from '@lib/cx';
 import { formatMeasurement } from '@lib/number';
 
@@ -102,9 +103,11 @@ function ItemRow({ item }: { item: ResultItem }) {
 export function ResultItems({ items, meta }: { items: ResultItem[]; meta: ReactNode }) {
   const titleId = useId();
   return (
-    <section
+    <Card
+      as="section"
+      variant="plain"
       aria-labelledby={titleId}
-      className="rounded-card border-border bg-surface shadow-card motion-safe:animate-rise overflow-hidden border"
+      className="motion-safe:animate-rise overflow-hidden"
     >
       <header className="flex min-h-14 flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3.5 sm:px-5">
         <h2 id={titleId} className="text-text flex-1 text-[0.9375rem] font-semibold tracking-[-0.01em]">
@@ -129,6 +132,6 @@ export function ResultItems({ items, meta }: { items: ResultItem[]; meta: ReactN
           <ItemRow key={`${index}-${item.name}`} item={item} />
         ))}
       </ul>
-    </section>
+    </Card>
   );
 }

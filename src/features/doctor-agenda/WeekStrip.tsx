@@ -1,5 +1,5 @@
 import { LuChevronLeft, LuChevronRight } from 'react-icons/lu';
-import { Button, IconButton } from '@components/ui';
+import { Button, Card, IconButton } from '@components/ui';
 import { cx } from '@lib/cx';
 import { dayTile, formatLongDay, formatMonth, middayOf } from '@lib/date';
 import { plural } from '@lib/plural';
@@ -18,10 +18,7 @@ export interface WeekStripProps {
 
 export function WeekStrip({ days, selected, today, countOf, onSelect, onStep, onToday }: WeekStripProps) {
   return (
-    <section
-      aria-label="Semana"
-      className="rounded-card border-border bg-surface shadow-card flex flex-col gap-3 border p-3 lg:p-4"
-    >
+    <Card as="section" variant="plain" aria-label="Semana" className="flex flex-col gap-3 p-3 lg:p-4">
       <div className="flex items-center gap-3">
         <p className="text-text flex-1 font-semibold">{formatMonth(middayOf(selected))}</p>
         <div role="group" aria-label="Navegar na agenda" className="flex items-center gap-1.5">
@@ -87,6 +84,6 @@ export function WeekStrip({ days, selected, today, countOf, onSelect, onStep, on
           );
         })}
       </div>
-    </section>
+    </Card>
   );
 }

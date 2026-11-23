@@ -1,7 +1,6 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, type RefObject } from 'react';
-import { useToast } from '@components/ui';
-import { errorMessage } from '@lib/messages/errors.pt-BR';
+import { useQueryClient } from '@tanstack/react-query';
+import type { RefObject } from 'react';
+import { usePendingMutation } from '@hooks/usePendingMutation';
 import { plural } from '@lib/plural';
 import { ImpactDialog } from './ImpactDialog';
 import { refreshUser, syncUser } from './user-cache';
@@ -15,21 +14,15 @@ const describeRemoval = ({ futureAppointmentsAsDoctor }: DeactivationImpact) =>
 
 export function useProfileRemoval(fallbackFocus: RefObject<HTMLElement | null>, onRemoved: () => void) {
   const queryClient = useQueryClient();
-  const { show } = useToast();
-  const [pending, setPending] = useState<AdminUser | null>(null);
-
-  const mutation = useMutation({
-    mutationFn: (user: AdminUser) => usersApi.removeDoctorProfile(user.id),
+  const { mutation, pending, ask, close } = usePendingMutation({
+    run: (user: AdminUser) => usersApi.removeDoctorProfile(user.id),
+    success: () => 'Perfil de médico removido.',
+    messages: userMessages,
     onSuccess: (updated) => {
       syncUser(queryClient, updated);
-      show({ message: 'Perfil de médico removido.', tone: 'success' });
       onRemoved();
     },
-    onError: (error, user) => {
-      refreshUser(queryClient, user.id);
-      show({ message: errorMessage(error, userMessages), tone: 'danger' });
-    },
-    onSettled: () => setPending(null),
+    onError: (_error, user) => refreshUser(queryClient, user.id),
   });
 
   const dialog = (
@@ -40,10 +33,10 @@ export function useProfileRemoval(fallbackFocus: RefObject<HTMLElement | null>, 
       describe={describeRemoval}
       loading={mutation.isPending}
       onConfirm={() => pending && mutation.mutate(pending)}
-      onClose={() => setPending(null)}
+      onClose={close}
       fallbackFocus={fallbackFocus}
     />
   );
 
-  return { request: (user: AdminUser) => setPending(user), dismiss: () => setPending(null), dialog };
+  return { request: ask, dismiss: close, dialog };
 }

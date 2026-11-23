@@ -1,8 +1,8 @@
-import { act, screen, waitFor, within } from '@testing-library/react';
+﻿import { act, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { FUTURE, PAST } from '@/test/doctor-fixtures';
 import { stubMatchMedia } from '@/test/match-media';
-import { actions, booking } from '@/test/patient-fixtures';
+import { actions, booking, unit } from '@/test/patient-fixtures';
 import { holdRequests, renderApp, serveApi, type ApiCall, type MockResponse } from '@/test/render-app';
 import { DESKTOP_QUERY } from '@hooks/useMediaQuery';
 import type { PatientBooking } from '@lib/api/models';
@@ -77,7 +77,7 @@ const serveOffPage = () =>
         endsAt: '2030-01-10T13:10:00.000Z',
         notes: null,
         examType: { id: 'e1', name: 'Ultrassom', kind: 'imaging' },
-        unit: { id: 'u1', name: 'Hospital Central', address: 'Rua das Flores, 123', phone: '+551133334444' },
+        unit: unit({ name: 'Hospital Central' }),
         hasResult: false,
         cancellation: null,
         createdAt: PAST,

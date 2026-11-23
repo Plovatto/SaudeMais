@@ -1,5 +1,6 @@
 import { FLAG_ORDER, flagCount, flags } from '@components/exam-results/result-flags';
 import type { ResultItem } from '@components/exam-results/ResultVersion';
+import { Card } from '@components/ui';
 import { cx } from '@lib/cx';
 import { plural, pluralWord } from '@lib/plural';
 
@@ -13,9 +14,11 @@ export function ResultSummary({ items }: { items: ResultItem[] }) {
     .map(({ flag, count }) => ({ flag, text: flagCount(flag, count) }));
 
   return (
-    <section
+    <Card
+      as="section"
+      variant="plain"
       aria-label="Resumo do resultado"
-      className="rounded-card border-border bg-surface shadow-card motion-safe:animate-rise flex flex-col items-stretch gap-[30px] border px-5 py-5 sm:flex-row sm:items-center sm:gap-6 sm:px-[22px] sm:py-[18px]"
+      className="motion-safe:animate-rise flex flex-col items-stretch gap-[30px] px-5 py-5 sm:flex-row sm:items-center sm:gap-6 sm:px-[22px] sm:py-[18px]"
     >
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <p className="text-text text-[0.96875rem] font-[650]">
@@ -54,6 +57,6 @@ export function ResultSummary({ items }: { items: ResultItem[] }) {
           ))}
         </div>
       </div>
-    </section>
+    </Card>
   );
 }

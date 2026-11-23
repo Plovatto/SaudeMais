@@ -5,7 +5,7 @@ import { BookingRow } from '@components/bookings/BookingRow';
 import { DetailPane } from '@components/bookings/DetailPane';
 import { PagedResults } from '@components/bookings/PagedResults';
 import { PageHeader } from '@components/layout/PageHeader';
-import { Button, ButtonLink, EmptyState, TabPanel, Tabs } from '@components/ui';
+import { Button, ButtonLink, Card, EmptyState, TabPanel, Tabs } from '@components/ui';
 import { groupHeader, overline } from '@components/ui/styles';
 import { areas, BOOK_APPOINTMENT_PATH, BOOKING_PARAM } from '@constants/areas';
 import { useListSelection } from '@hooks/useListSelection';
@@ -150,10 +150,7 @@ export function PatientBookingsPage() {
             found={found}
             resultsRef={results}
             empty={
-              <section
-                aria-label="Lista de agendamentos"
-                className="rounded-card border-border bg-surface shadow-card border"
-              >
+              <Card as="section" variant="plain" aria-label="Lista de agendamentos">
                 {filtered ? (
                   <EmptyState
                     icon={<LuFilterX />}
@@ -172,13 +169,15 @@ export function PatientBookingsPage() {
                     action={<ButtonLink to={BOOK_URL}>Agendar consulta</ButtonLink>}
                   />
                 )}
-              </section>
+              </Card>
             }
           >
             {(items) => (
-              <section
+              <Card
+                as="section"
+                variant="plain"
                 aria-label="Lista de agendamentos"
-                className="rounded-card border-border bg-surface shadow-card overflow-hidden border"
+                className="overflow-hidden"
               >
                 {groupConsecutive(items, (booking) => formatMonth(booking.startsAt)).map((group) => (
                   <div key={group.key}>
@@ -197,7 +196,7 @@ export function PatientBookingsPage() {
                     </ul>
                   </div>
                 ))}
-              </section>
+              </Card>
             )}
           </PagedResults>
         </div>

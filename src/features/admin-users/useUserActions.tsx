@@ -1,7 +1,7 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, type RefObject } from 'react';
-import { ConfirmDialog, useToast } from '@components/ui';
-import { errorMessage } from '@lib/messages/errors.pt-BR';
+import { useQueryClient } from '@tanstack/react-query';
+import type { RefObject } from 'react';
+import { ConfirmDialog } from '@components/ui';
+import { usePendingMutation } from '@hooks/usePendingMutation';
 import { ImpactDialog } from './ImpactDialog';
 import { plural } from '@lib/plural';
 import { refreshUser, syncUser } from './user-cache';
@@ -47,25 +47,17 @@ const describeDeactivation = ({
 
 export function useUserActions(fallbackFocus?: RefObject<HTMLElement | null>) {
   const queryClient = useQueryClient();
-  const { show } = useToast();
-  const [pending, setPending] = useState<Pending | null>(null);
-
-  const mutation = useMutation({
-    mutationFn: ({ action, user }: Pending) => run[action](user.id),
-    onSuccess: (updated, { action, user }) => {
-      syncUser(queryClient, updated);
-      show({ message: done[action](user.fullName), tone: 'success' });
-    },
-    onError: (error, { user }) => {
-      refreshUser(queryClient, user.id);
-      show({ message: errorMessage(error, userMessages), tone: 'danger' });
-    },
-    onSettled: () => setPending(null),
+  const { mutation, pending, ask, close } = usePendingMutation({
+    run: ({ action, user }: Pending) => run[action](user.id),
+    success: ({ action, user }) => done[action](user.fullName),
+    messages: userMessages,
+    onSuccess: (updated) => syncUser(queryClient, updated),
+    onError: (_error, { user }) => refreshUser(queryClient, user.id),
   });
 
   const request = (action: UserAction, user: AdminUser) => {
     if (action === 'reactivate') mutation.mutate({ action, user });
-    else setPending({ action, user });
+    else ask({ action, user });
   };
 
   const isBusy = (user: AdminUser, ...actions: UserAction[]) =>
@@ -73,7 +65,6 @@ export function useUserActions(fallbackFocus?: RefObject<HTMLElement | null>) {
     mutation.variables.user.id === user.id &&
     actions.includes(mutation.variables.action);
 
-  const close = () => setPending(null);
   const confirm = () => pending && mutation.mutate(pending);
   const revoking = pending?.action === 'revokeAdmin';
   const adminChange = revoking || pending?.action === 'grantAdmin' ? pending : null;

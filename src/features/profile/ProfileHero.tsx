@@ -1,5 +1,5 @@
 import { LuMail, LuPencil, LuPhone } from 'react-icons/lu';
-import { Avatar, Button, StatusChip } from '@components/ui';
+import { Avatar, Button, Card, StatusChip } from '@components/ui';
 import { areas, type Role } from '@constants/areas';
 import type { CurrentUser } from '@lib/auth/useSession';
 import { ageText, phoneText } from './profile-text';
@@ -13,10 +13,7 @@ export interface ProfileHeroProps {
 export function ProfileHero({ user, role, onEdit }: ProfileHeroProps) {
   const age = role === 'patient' && user.birthDate ? ageText(user.birthDate) : null;
   return (
-    <section
-      aria-label="Resumo do perfil"
-      className="rounded-card border-border bg-surface shadow-card overflow-hidden border"
-    >
+    <Card as="section" variant="plain" aria-label="Resumo do perfil" className="overflow-hidden">
       <div
         aria-hidden
         className="h-[72px] bg-[radial-gradient(120%_140%_at_100%_0%,color-mix(in_oklab,var(--role-strong)_32%,transparent),transparent_60%),linear-gradient(120deg,var(--role-soft),color-mix(in_oklab,var(--role-strong)_18%,var(--surface)))] sm:h-[84px]"
@@ -56,6 +53,6 @@ export function ProfileHero({ user, role, onEdit }: ProfileHeroProps) {
           {phoneText(user.phone) ?? 'Telefone não informado'}
         </span>
       </div>
-    </section>
+    </Card>
   );
 }
