@@ -92,7 +92,7 @@
   --danger-soft: #2c1b1c;
   --danger-text: #e4938e;
   --danger-strong: #b4524e;
-  --danger-strong-hover: #c05d59;
+  --danger-strong-hover: #9f4541;
   --on-danger: #ffffff;
   --warning: #d6ad62;
   --warning-soft: #2a2416;
@@ -162,7 +162,7 @@
 :root[data-theme='dark'] [data-role='patient'] {
   --role: #5cb3b2;
   --role-strong: #2a7d7c;
-  --role-strong-hover: #318988;
+  --role-strong-hover: #236e6d;
   --on-role: #ffffff;
   --role-soft: #162a2a;
   --role-soft-strong: #1d3838;
@@ -174,8 +174,8 @@
 
 :root[data-theme='dark'] [data-role='doctor'] {
   --role: #7fa6d6;
-  --role-strong: #3d6aa3;
-  --role-strong-hover: #4676b0;
+  --role-strong: #4170aa;
+  --role-strong-hover: #375f94;
   --on-role: #ffffff;
   --role-soft: #172232;
   --role-soft-strong: #1f2d42;
@@ -187,8 +187,8 @@
 
 :root[data-theme='dark'] [data-role='admin'] {
   --role: #9ba5ae;
-  --role-strong: #56626d;
-  --role-strong-hover: #616e7a;
+  --role-strong: #687582;
+  --role-strong-hover: #5a6672;
   --on-role: #ffffff;
   --role-soft: #20262b;
   --role-soft-strong: #2a3238;

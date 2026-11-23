@@ -56,7 +56,7 @@ export function PasswordStrength({ password, current }: { password: string; curr
               aria-hidden
               className={cx(
                 'grid size-[18px] shrink-0 place-items-center rounded-full border-[1.5px] transition-colors duration-150 [&_svg]:size-2.5',
-                rule.ok ? 'border-success bg-success text-white' : 'border-border-field text-transparent',
+                rule.ok ? 'border-success bg-success text-white dark:border-success-strong dark:bg-success-strong' : 'border-border-field text-transparent',
               )}
             >
               <LuCheck strokeWidth={3} />

@@ -101,6 +101,12 @@ describe.each([
       }
     });
 
+    it('keeps the selected border visible on every surface (3:1)', () => {
+      for (const background of ['canvas', 'surface', 'surface-muted']) {
+        expect(contrast(colors['role-strong'], colors[background]), background).toBeGreaterThanOrEqual(3);
+      }
+    });
+
     it('keeps the focus ring visible on the page and on every surface (3:1)', () => {
       for (const background of ['canvas', 'surface', 'surface-muted', 'role-soft']) {
         expect(contrast(colors['focus'], colors[background]), background).toBeGreaterThanOrEqual(3);
