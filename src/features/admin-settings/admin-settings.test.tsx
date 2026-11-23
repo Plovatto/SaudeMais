@@ -530,6 +530,49 @@ describe('admin settings', () => {
     expect(queryClient.getQueryState(['catalog', 'active-exam-types'])?.isInvalidated).toBe(false);
   });
 
+  it('loads every page of units for the offers picker', async () => {
+    serve({
+      '/api/admin/units': (_method, _body, url) =>
+        url.searchParams.get('page') === '2'
+          ? { status: 200, body: page([unit({ id: 'u51', name: 'Filial 51' })], 51, 2) }
+          : { status: 200, body: page([unit()], 51) },
+    });
+    const { user } = renderApp('/admin/configuracoes');
+
+    await user.click(await screen.findByRole('button', { name: /^Unidade Escolha a unidade/ }));
+
+    expect(await screen.findByRole('option', { name: /^Filial 51/ })).toBeInTheDocument();
+  });
+
+  it.each([
+    ['specialty', 'Adicionar especialidade', 'Nova especialidade', 'Cardiologia', '/api/admin/specialties'],
+    ['unit', 'Adicionar unidade', 'Nova unidade', 'Filial', '/api/admin/units'],
+  ])('refreshes users and doctor schedules after saving a %s', async (_kind, add, formName, name, path) => {
+    serve({
+      [path]: (method) =>
+        method === 'POST' ? { status: 201, body: unit() } : { status: 200, body: page([]) },
+    });
+    const { user, queryClient } = renderApp('/admin/configuracoes');
+    queryClient.setQueryData(['admin-users', 'list', {}], []);
+    queryClient.setQueryData(['doctor-schedule'], []);
+    queryClient.setQueryData(['doctor-time-off'], []);
+
+    await user.click(await screen.findByRole('button', { name: add }));
+    const form = await findForm(formName);
+    await user.type(within(form).getByLabelText('Nome'), name);
+    if (path.endsWith('units')) {
+      await user.type(within(form).getByLabelText('Endereço'), 'Rua A, 1');
+      await user.type(within(form).getByLabelText('Telefone'), '1133334444');
+    }
+    await user.click(within(form).getByRole('button', { name: 'Salvar' }));
+
+    await waitFor(() =>
+      expect(queryClient.getQueryState(['admin-users', 'list', {}])?.isInvalidated).toBe(true),
+    );
+    expect(queryClient.getQueryState(['doctor-schedule'])?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(['doctor-time-off'])?.isInvalidated).toBe(false);
+  });
+
   it('refreshes the units offering an exam after saving an offer', async () => {
     serveOffer({
       '/api/admin/units/u1/exam-offers/e1': () => ({
