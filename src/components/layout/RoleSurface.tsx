@@ -18,16 +18,20 @@ export function RoleSurface({ role, className, children }: RoleSurfaceProps) {
 
   useLayoutEffect(() => {
     const surface = ref.current;
-    if (!surface || window.matchMedia?.('(forced-colors: active)').matches) return;
+    if (!surface) return;
     const tokens = getComputedStyle(surface);
     const fill = tokens.getPropertyValue(theme === 'dark' ? '--role' : '--role-strong').trim();
     const outline = tokens.getPropertyValue('--surface').trim();
     if (!fill || !outline) return;
     const properties = cursorProperties({ fill, outline });
     const root = document.documentElement.style;
+    const previous = Object.keys(properties).map((name) => [name, root.getPropertyValue(name)] as const);
     for (const [name, value] of Object.entries(properties)) root.setProperty(name, value);
     return () => {
-      for (const name of Object.keys(properties)) root.removeProperty(name);
+      for (const [name, value] of previous) {
+        if (value) root.setProperty(name, value);
+        else root.removeProperty(name);
+      }
     };
   }, [role, theme]);
 

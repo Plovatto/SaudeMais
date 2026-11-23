@@ -9,7 +9,11 @@ export interface CursorColors {
 
 type IconElement = ReactElement<{ children: ReactElement<{ d: string }>[] }>;
 
-const pathsOf = (icon: IconType) => (icon({}) as IconElement).props.children.map((path) => path.props.d);
+function pathsOf(icon: IconType): string[] {
+  const { children } = (icon({}) as IconElement).props;
+  if (!Array.isArray(children)) throw new Error('Unexpected icon shape for the cursor');
+  return children.map((path) => path.props.d);
+}
 
 const arrowPaths = pathsOf(LuMousePointer2);
 const handPaths = pathsOf(LuPointer);
