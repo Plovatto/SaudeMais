@@ -1,6 +1,7 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { unit } from '@/test/patient-fixtures';
 import { renderApp, serveApi, type MockResponse } from '@/test/render-app';
 import { ExamResultView } from '@components/exam-results/ExamResultView';
 import type { ResultItem } from '@components/exam-results/ResultVersion';
@@ -60,7 +61,7 @@ const result = (overrides: Partial<ExamResult> = {}): ExamResult => ({
     id: 'b1',
     publicCode: 'EX-7F3K2Q',
     examType: { id: 'e1', name: 'Hemograma', kind: 'lab' },
-    unit: { id: 'u1', name: 'Unidade Central', address: 'Rua das Flores, 123', phone: '+551133334444' },
+    unit: unit(),
     startsAt: '2030-01-10T13:00:00.000Z',
   },
   current: version(),

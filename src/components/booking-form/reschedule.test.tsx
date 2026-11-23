@@ -2,31 +2,18 @@ import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { todayInSaoPaulo } from '@lib/date';
 import { examSlot, openDays, pickDay, pickedDay, pickTime, slotGroup, slotTimes } from '@/test/booking-flow';
-import { actions } from '@/test/patient-fixtures';
+import { actions, patientAppointment, unit } from '@/test/patient-fixtures';
 import { apiError, renderApp, serveApi, type MockResponse } from '@/test/render-app';
 
 const CURRENT = '2026-11-23T17:30:00.000Z';
 const LIST_LINK = 'Voltar para meus agendamentos';
 
-const unit = { id: 'u1', name: 'Unidade Central', address: 'Rua das Flores, 123', phone: '+551133334444' };
-
-const appointment = {
-  id: 'a1',
+const appointment = patientAppointment({
   status: 'confirmed',
-  visitType: 'routine',
-  startsAt: CURRENT,
-  endsAt: '2026-11-23T18:00:00.000Z',
-  notes: null,
-  patient: { id: 'p1', fullName: 'Ana Maria Silva' },
-  doctor: { id: 'd1', fullName: 'Carlos Mendes' },
-  specialty: { id: 's1', name: 'Cardiologia', council: 'CRM' },
-  unit,
   cancellation: null,
-  createdAt: '2026-11-14T12:00:00.000Z',
   patientActions: actions(),
   doctorActions: null,
-  events: [],
-};
+});
 
 const exam = {
   id: 'x1',
@@ -36,7 +23,7 @@ const exam = {
   endsAt: '2026-11-23T17:40:00.000Z',
   notes: null,
   examType: { id: 'e1', name: 'Hemograma', kind: 'lab', preparationNotes: 'Jejum de 8 horas.' },
-  unit,
+  unit: unit(),
   cancellation: null,
   createdAt: '2026-11-14T12:00:00.000Z',
   actions: actions(),

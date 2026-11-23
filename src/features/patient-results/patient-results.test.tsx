@@ -1,6 +1,7 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { createMemoryRouter } from 'react-router';
+import { unit } from '@/test/patient-fixtures';
 import { renderApp, renderRouter, serveApi, type MockResponse } from '@/test/render-app';
 import { routes } from '@app/routes';
 import type { ExamResult } from '@lib/api/models';
@@ -17,7 +18,7 @@ const result = (id: string, name: string): ExamResult => ({
     id,
     publicCode: `EX-${id}`,
     examType: { id: `t-${id}`, name, kind: 'lab' },
-    unit: { id: 'u1', name: 'Unidade Central', address: 'Rua das Flores, 123', phone: '+551133334444' },
+    unit: unit(),
     startsAt: '2026-11-10T11:00:00.000Z',
   },
   current: {
