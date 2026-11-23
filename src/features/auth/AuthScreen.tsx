@@ -22,7 +22,7 @@ export interface AuthScreenProps {
 }
 
 const authGradient =
-  'bg-[linear-gradient(160deg,#0a5f61_0%,#0d7f82_40%,#17a5a8_75%,#25c3c6_100%)] lg:bg-[linear-gradient(160deg,#06403f_0%,#084f51_45%,#0b6c6f_100%)] dark:bg-[linear-gradient(160deg,#031516_0%,#07302f_45%,#0a4f51_100%)] dark:lg:bg-[linear-gradient(160deg,#021111_0%,#052221_45%,#073d3f_100%)]';
+  'bg-[linear-gradient(160deg,#0a5f61_0%,#0d7f82_40%,#17a5a8_75%,#25c3c6_100%)] lg:bg-[linear-gradient(160deg,#06403f_0%,#084f51_45%,#0b6c6f_100%)] dark:bg-(image:--brand-backdrop) dark:lg:bg-(image:--brand-backdrop)';
 
 const blob = 'pointer-events-none absolute -z-10 rounded-full';
 
@@ -40,14 +40,14 @@ export function AuthScreen({ art, title, subtitle, children, wide = false }: Aut
         aria-hidden
         className={cx(
           blob,
-          'motion-safe:animate-drift-a -start-[15vmax] -top-[20vmax] size-[60vmax] bg-[radial-gradient(circle,rgb(127_240_227/0.4),transparent_65%)]',
+          'motion-safe:animate-drift-a -start-[15vmax] -top-[20vmax] size-[60vmax] bg-[radial-gradient(circle,rgb(127_240_227/0.4),transparent_65%)] dark:opacity-25',
         )}
       />
       <div
         aria-hidden
         className={cx(
           blob,
-          'motion-safe:animate-drift-b -end-[20vmax] -bottom-[25vmax] size-[70vmax] bg-[radial-gradient(circle,rgb(255_255_255/0.3),transparent_62%)]',
+          'motion-safe:animate-drift-b -end-[20vmax] -bottom-[25vmax] size-[70vmax] bg-[radial-gradient(circle,rgb(255_255_255/0.3),transparent_62%)] dark:opacity-15',
         )}
       />
       <div

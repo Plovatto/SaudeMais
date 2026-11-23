@@ -10,7 +10,7 @@ export interface SecuritySectionProps {
 
 export function SecuritySection({ passwordChangedAt, onChangePassword }: SecuritySectionProps) {
   return (
-    <SectionCard title="Segurança" className="lg:flex-1">
+    <SectionCard title="Segurança">
       <SettingRow
         className="gap-4 py-3.5"
         leading={

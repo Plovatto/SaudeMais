@@ -63,16 +63,16 @@ export function ProfilePage() {
         <div className={stagger(0)}>
           <ProfileHero user={user} role={role} onEdit={() => setPanel('edit')} />
         </div>
-        <div className={`grid items-stretch gap-4 lg:grid-cols-2 lg:gap-5 ${stagger(1)}`}>
+        <div className={`grid items-start gap-4 lg:grid-cols-2 lg:gap-5 ${stagger(1)}`}>
           <div className="flex min-w-0 flex-col gap-4 lg:gap-5">
             <PersonalDataSection user={user} withBirthDate={withBirthDate} onEdit={() => setPanel('edit')} />
             <SecuritySection
               passwordChangedAt={user.passwordChangedAt}
               onChangePassword={() => setPanel('password')}
             />
+            <AppearanceSection />
           </div>
           <div className="flex min-w-0 flex-col gap-4 lg:gap-5">
-            <AppearanceSection />
             <EmailPreferencesSection />
           </div>
         </div>
@@ -80,7 +80,7 @@ export function ProfilePage() {
           <SessionsSection />
         </div>
         <Button
-          variant="danger"
+          variant="danger-soft-outline"
           icon={<LuLogOut />}
           onClick={() => setPanel('logout')}
           className={`mx-auto mt-1 min-h-[50px] w-full sm:max-w-[360px] lg:min-h-12 ${stagger(3)}`}
