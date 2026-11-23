@@ -100,13 +100,11 @@ export function OffersSection() {
   const [unitId, setUnitId] = useSearchParam('unidade');
   const units = useQuery({
     queryKey: [...queryKeys.catalog.units, 'all'],
-    queryFn: ({ signal }) =>
-      fetchAllPages((page) => unitsApi.list(page, signal, MAX_PAGE_SIZE), MAX_PAGE_SIZE),
+    queryFn: ({ signal }) => fetchAllPages((page) => unitsApi.list(page, signal, MAX_PAGE_SIZE)),
   });
   const examTypes = useQuery({
     queryKey: [...queryKeys.catalog.examTypes, 'all'],
-    queryFn: ({ signal }) =>
-      fetchAllPages((page) => examTypesApi.list(page, signal, MAX_PAGE_SIZE), MAX_PAGE_SIZE),
+    queryFn: ({ signal }) => fetchAllPages((page) => examTypesApi.list(page, signal, MAX_PAGE_SIZE)),
   });
   const offers = useQuery({
     queryKey: [...queryKeys.catalog.offers, unitId],

@@ -62,12 +62,10 @@ const ON_AGENDA: ReadonlySet<DoctorAppointment['status']> = new Set([
 ]);
 
 const listRange = async (from: string, to: string, signal: AbortSignal) => {
-  const items = await fetchAllPages(
-    (page) => doctorApi.list({ tab: 'all', page, from, to, pageSize: RANGE_LIMIT }, signal),
-    RANGE_LIMIT,
+  const items = await fetchAllPages((page) =>
+    doctorApi.list({ tab: 'all', page, from, to, pageSize: RANGE_LIMIT }, signal),
   );
-  const unique = new Map(items.map((item) => [item.id, item] as const));
-  return [...unique.values()].filter(({ status }) => ON_AGENDA.has(status));
+  return items.filter(({ status }) => ON_AGENDA.has(status));
 };
 
 export const agendaRangeQuery = (from: string, to = from) =>
