@@ -23,7 +23,7 @@ export function PageHeader({
   className,
 }: PageHeaderProps) {
   const { pathname } = useLocation();
-  const target = parentUrl(pathname) ?? (back ? backFallback : undefined);
+  const target = (back ? backFallback : undefined) ?? parentUrl(pathname);
   return (
     <header
       className={cx(
