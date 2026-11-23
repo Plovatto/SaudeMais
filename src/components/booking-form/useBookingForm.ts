@@ -8,6 +8,7 @@ import {
 import { useEffect, useEffectEvent, useMemo, useState } from 'react';
 import { useWatch, type FieldValues, type Path, type UseFormReturn } from 'react-hook-form';
 import { useFormSubmit } from '@hooks/useFormSubmit';
+import { useToday } from '@hooks/useToday';
 import { ApiError } from '@lib/api/api-error';
 import type { FieldAliases } from '@lib/form-errors';
 import {
@@ -65,6 +66,7 @@ export function useBookingForm<TIn extends SlotValues, TOut, R>(
   }: BookingFormOptions<TIn, TOut, R>,
 ) {
   const queryClient = useQueryClient();
+  const today = useToday();
   const [missing, setMissing] = useState(false);
   const { control, register, getValues, setValue, setError, clearErrors, formState } =
     form as unknown as UseFormReturn<SlotValues>;
@@ -76,9 +78,9 @@ export function useBookingForm<TIn extends SlotValues, TOut, R>(
     QueryKey,
     WindowPage
   >({
-    queryKey: source.queryKey,
+    queryKey: [...source.queryKey, today],
     queryFn: ({ signal, pageParam }) => source.load(signal, pageParam),
-    initialPageParam: firstWindowPage(),
+    initialPageParam: firstWindowPage(today),
     getNextPageParam: (_last, pages, lastParam) => nextWindowPage(lastParam.start, pages.length),
     enabled: source.enabled,
     staleTime: 0,

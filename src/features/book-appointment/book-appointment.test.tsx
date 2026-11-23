@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { addDays, todayInSaoPaulo } from '@lib/date';
 import {
@@ -219,6 +219,24 @@ describe('book appointment', { timeout: 20_000 }, () => {
       { from: '2026-11-19', to: '2026-12-19' },
       { from: '2026-12-20', to: '2027-01-19' },
     ]);
+  });
+
+  it('asks for a fresh window when the civil day changes while the page stays open', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-20T02:30:00.000Z'));
+    const { calls } = serve(undefined, { first: [[days[0] as Day]], second: [days[1] as Day] });
+    const { user } = await start();
+
+    await user.click(screen.getByRole('radio', { name: /Carlos Mendes/ }));
+    await waitFor(() => expect(openDays()).toEqual([MONDAY, TUESDAY]));
+    expect(windowsOf(calls)[0]).toEqual({ from: '2026-11-19', to: '2026-12-19' });
+
+    vi.setSystemTime(new Date('2026-11-20T03:30:00.000Z'));
+    act(() => {
+      window.dispatchEvent(new Event('focus'));
+    });
+
+    await waitFor(() => expect(windowsOf(calls)).toContainEqual({ from: '2026-11-20', to: '2026-12-20' }));
   });
 
   it('loads later months on demand as the calendar moves, past a month without free slots', async () => {
