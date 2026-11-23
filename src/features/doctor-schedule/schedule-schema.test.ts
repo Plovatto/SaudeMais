@@ -34,6 +34,18 @@ describe('weekly slots', () => {
     expect(weeklySlots({ days, appointmentDurationMin: 45 })).toBe(5);
   });
 
+  it('counts slots per period like the api, not over the summed minutes', () => {
+    const split = {
+      isActive: true,
+      ranges: [
+        { startMin: 480, endMin: 585 },
+        { startMin: 780, endMin: 885 },
+      ],
+    };
+    expect(dayMinutes(split)).toBe(210);
+    expect(weeklySlots({ days: [split], appointmentDurationMin: 30 })).toBe(6);
+  });
+
   it('counts overlapping periods of a day only once', () => {
     const overlapping = {
       isActive: true,

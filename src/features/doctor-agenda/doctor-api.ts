@@ -1,5 +1,6 @@
 import { queryOptions } from '@tanstack/react-query';
 import { apiFetch, type ResponseOf } from '@lib/api/api-fetch';
+import { fetchAllPages } from '@lib/api/page';
 import type { DoctorAppointment, HealthMetricsInput } from '@lib/api/models';
 import { MINUTE_MS } from '@lib/date';
 import { queryKeys } from '@lib/query-keys';
@@ -61,17 +62,10 @@ const ON_AGENDA: ReadonlySet<DoctorAppointment['status']> = new Set([
 ]);
 
 const listRange = async (from: string, to: string, signal: AbortSignal) => {
-  const pageOf = (page: number) =>
-    doctorApi.list({ tab: 'all', page, from, to, pageSize: RANGE_LIMIT }, signal);
-  const first = await pageOf(1);
-  const pages = Math.ceil(first.total / RANGE_LIMIT);
-  const rest = await Promise.all(
-    Array.from({ length: Math.max(pages - 1, 0) }, (_, index) => pageOf(index + 2)),
+  const items = await fetchAllPages((page) =>
+    doctorApi.list({ tab: 'all', page, from, to, pageSize: RANGE_LIMIT }, signal),
   );
-  const unique = new Map(
-    [first, ...rest].flatMap(({ items }) => items.map((item) => [item.id, item] as const)),
-  );
-  return [...unique.values()].filter(({ status }) => ON_AGENDA.has(status));
+  return items.filter(({ status }) => ON_AGENDA.has(status));
 };
 
 export const agendaRangeQuery = (from: string, to = from) =>
