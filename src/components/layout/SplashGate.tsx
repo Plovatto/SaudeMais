@@ -13,6 +13,8 @@ let seen = false;
 
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+const LEAVE_ON = ['keydown', 'pointerdown'] as const;
+
 export function SplashGate({ children }: { children: ReactNode }) {
   const [phase, setPhase] = useState<Phase>(seen ? 'done' : 'show');
   const loading = useSession().status === 'loading';
@@ -37,6 +39,18 @@ export function SplashGate({ children }: { children: ReactNode }) {
     );
     return () => clearTimeout(timer);
   }, [phase]);
+
+  useEffect(() => {
+    if (phase !== 'show' || blocking) return;
+    const leave = () => {
+      seen = true;
+      setPhase('leave');
+    };
+    for (const type of LEAVE_ON) window.addEventListener(type, leave, { capture: true, once: true });
+    return () => {
+      for (const type of LEAVE_ON) window.removeEventListener(type, leave, { capture: true });
+    };
+  }, [phase, blocking]);
 
   return (
     <>

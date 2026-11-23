@@ -5,9 +5,10 @@ import { TEST_TOKEN, testUser } from '@/test/render-app';
 import { SESSION_STORAGE_KEY } from '@lib/auth/token-store';
 import { createQueryClient } from '@lib/query-client';
 import { queryKeys } from '@lib/query-keys';
-import { SplashGate } from './SplashGate';
 
-function mountGate(sessionReady: boolean) {
+async function mountGate(sessionReady: boolean) {
+  vi.resetModules();
+  const { SplashGate } = await import('./SplashGate');
   sessionStorage.setItem(SESSION_STORAGE_KEY, TEST_TOKEN);
   const queryClient = createQueryClient();
   if (sessionReady) queryClient.setQueryData(queryKeys.session, testUser());
@@ -38,8 +39,8 @@ describe('SplashGate', () => {
     sessionStorage.clear();
   });
 
-  it('leaves the app reachable by keyboard and screen readers when the session is ready', () => {
-    mountGate(true);
+  it('leaves the app reachable by keyboard and screen readers when the session is ready', async () => {
+    await mountGate(true);
 
     expect(appRoot()).not.toHaveAttribute('inert');
     expect(appRoot()).not.toHaveAttribute('aria-hidden');
@@ -48,12 +49,25 @@ describe('SplashGate', () => {
     expect(document.querySelector('[data-splash-layer]')).toBeInTheDocument();
   });
 
-  it('keeps the app inert and hidden only while the session is still loading', () => {
+  it('starts leaving as soon as a ready user presses a key, so focus never sits behind it', async () => {
+    await mountGate(true);
+
+    expect(document.querySelector('[data-splash-layer]')).toHaveAttribute('aria-hidden', 'true');
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }));
+    });
+
+    expect(document.querySelector('[data-splash-layer]')).toHaveClass('pointer-events-none');
+    await act(() => vi.advanceTimersByTimeAsync(600));
+    expect(document.querySelector('[data-splash-layer]')).not.toBeInTheDocument();
+  });
+
+  it('keeps the app inert and hidden only while the session is still loading', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(() => new Promise(() => undefined)),
     );
-    mountGate(false);
+    await mountGate(false);
 
     expect(appRoot()).toHaveAttribute('inert');
     expect(appRoot()).toHaveAttribute('aria-hidden', 'true');
@@ -61,7 +75,7 @@ describe('SplashGate', () => {
   });
 
   it('removes the splash after playing it', async () => {
-    mountGate(true);
+    await mountGate(true);
 
     await act(() => vi.advanceTimersByTimeAsync(3000));
     await act(() => vi.advanceTimersByTimeAsync(600));
