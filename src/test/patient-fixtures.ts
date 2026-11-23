@@ -11,6 +11,14 @@ export const actions = (overrides: Partial<PatientBooking['actions']> = {}): Pat
   ...overrides,
 });
 
+export const unit = (overrides: Partial<PatientBooking['unit']> = {}): PatientBooking['unit'] => ({
+  id: 'u1',
+  name: 'Unidade Central',
+  address: 'Rua das Flores, 123',
+  phone: '+551133334444',
+  ...overrides,
+});
+
 export const booking = (id: string, overrides: Partial<PatientBooking> = {}): PatientBooking => ({
   id,
   kind: 'appointment',
@@ -23,18 +31,10 @@ export const booking = (id: string, overrides: Partial<PatientBooking> = {}): Pa
   specialty: { id: 's1', name: 'Cardiologia', council: 'CRM' },
   examType: null,
   publicCode: null,
-  unit: { id: 'u1', name: 'Hospital Central', address: 'Rua das Flores, 123', phone: '+551133334444' },
+  unit: unit({ name: 'Hospital Central' }),
   actions: actions(),
   cancellation: null,
   hasResult: false,
-  ...overrides,
-});
-
-export const unit = (overrides: Partial<PatientBooking['unit']> = {}): PatientBooking['unit'] => ({
-  id: 'u1',
-  name: 'Unidade Central',
-  address: 'Rua das Flores, 123',
-  phone: '+551133334444',
   ...overrides,
 });
 
