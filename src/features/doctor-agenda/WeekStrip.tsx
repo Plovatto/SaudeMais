@@ -57,7 +57,7 @@ export function WeekStrip({ days, selected, today, countOf, onSelect, onStep, on
               className={cx(
                 'rounded-tile flex min-h-16 cursor-pointer flex-col items-center justify-center gap-1 border px-1 py-2 transition-[background-color,border-color,box-shadow] duration-150',
                 on
-                  ? 'border-role-strong bg-role-strong text-on-role shadow-[0_8px_18px_-10px_var(--color-role-strong)]'
+                  ? 'border-role-strong bg-role-strong text-on-role shadow-button'
                   : cx(
                       'bg-surface-muted can-hover:border-border-strong',
                       day === today ? 'border-role-strong text-role-text' : 'border-border text-text',

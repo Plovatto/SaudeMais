@@ -32,7 +32,7 @@ export function PasswordInput(props: Omit<InputProps, 'type' | 'end'>) {
           aria-pressed={shown}
           disabled={props.disabled}
           onClick={() => setVisible((current) => !current)}
-          className="aria-pressed:text-role-strong pressable:scale-90 unavailable:opacity-100 transition-[color,background-color,transform] duration-200"
+          className="aria-pressed:text-role-strong dark:aria-pressed:text-role-text pressable:scale-90 unavailable:opacity-100 transition-[color,background-color,transform] duration-200"
         />
       }
     />

@@ -4,7 +4,7 @@ import { PulseLine } from './PulseLine';
 import { APP_NAME } from './route-handle';
 
 const splashGradient =
-  'bg-[linear-gradient(170deg,#0a5f61_0%,#0d7f82_38%,#17a5a8_72%,#5fd0d1_100%)] dark:bg-[linear-gradient(170deg,#031516_0%,#07302f_42%,#0a4f51_78%,#1b7f81_100%)]';
+  'bg-[linear-gradient(170deg,#0a5f61_0%,#0d7f82_38%,#17a5a8_72%,#5fd0d1_100%)] dark:bg-(image:--brand-backdrop)';
 
 const blob = 'pointer-events-none absolute -z-10 rounded-full';
 
@@ -20,11 +20,11 @@ export function SplashScreen() {
     >
       <div
         aria-hidden
-        className={`${blob} motion-safe:animate-drift-a -start-[15vmax] -top-[20vmax] size-[60vmax] bg-[radial-gradient(circle,rgb(127_240_227/0.4),transparent_65%)]`}
+        className={`${blob} motion-safe:animate-drift-a -start-[15vmax] -top-[20vmax] size-[60vmax] bg-[radial-gradient(circle,rgb(127_240_227/0.4),transparent_65%)] dark:opacity-25`}
       />
       <div
         aria-hidden
-        className={`${blob} motion-safe:animate-drift-b -end-[20vmax] -bottom-[25vmax] size-[70vmax] bg-[radial-gradient(circle,rgb(255_255_255/0.32),transparent_62%)]`}
+        className={`${blob} motion-safe:animate-drift-b -end-[20vmax] -bottom-[25vmax] size-[70vmax] bg-[radial-gradient(circle,rgb(255_255_255/0.32),transparent_62%)] dark:opacity-15`}
       />
       <div className="flex flex-col items-center gap-9">
         <div className="relative grid size-40 place-items-center sm:size-44">

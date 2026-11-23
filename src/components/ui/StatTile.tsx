@@ -124,7 +124,7 @@ export function StatTile({
           {icon}
         </span>
       )}
-      <p className={cx('text-text-secondary text-[0.8125rem] font-semibold', icon !== undefined && 'pe-10')}>
+      <p className={cx('text-text-secondary text-[0.8125rem] font-semibold', icon !== undefined && 'pe-11')}>
         {label}
       </p>
       {value === undefined ? (

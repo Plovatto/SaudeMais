@@ -23,7 +23,7 @@ const tones = {
     title: 'Tudo certo',
     card: 'border-success/35',
     accent: 'bg-success',
-    badge: 'bg-success text-on-success shadow-[0_10px_18px_-8px_var(--success)]',
+    badge: 'bg-success dark:bg-success-strong text-on-success shadow-[0_10px_18px_-8px_var(--success-glow)]',
     track: 'bg-success/15',
   },
   danger: {
@@ -32,7 +32,7 @@ const tones = {
     title: 'Algo deu errado',
     card: 'border-danger/40',
     accent: 'bg-danger',
-    badge: 'bg-danger text-on-danger shadow-[0_10px_18px_-8px_var(--danger)]',
+    badge: 'bg-danger dark:bg-danger-strong text-on-danger shadow-[0_10px_18px_-8px_var(--danger-glow)]',
     track: 'bg-danger/15',
   },
   info: {
@@ -41,7 +41,7 @@ const tones = {
     title: 'Aviso',
     card: 'border-role-strong/35',
     accent: 'bg-role-strong',
-    badge: 'bg-role-strong text-on-role shadow-[0_10px_18px_-8px_var(--role-strong)]',
+    badge: 'bg-role-strong text-on-role shadow-[0_10px_18px_-8px_var(--role-glow)]',
     track: 'bg-role-strong/15',
   },
 };

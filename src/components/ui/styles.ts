@@ -56,7 +56,7 @@ export function buttonClass({ variant = 'primary', size = 'md', fullWidth = fals
 }
 
 export const lift =
-  'transition-[translate,box-shadow,border-color] duration-150 ease-out-quint can-hover:-translate-y-px';
+  'transition-[translate,box-shadow,border-color,background-color] duration-150 ease-out-quint can-hover:-translate-y-px';
 
 export const squareButton = cx(
   'relative inline-flex size-11 shrink-0 lg:size-10 items-center justify-center rounded-field transition-colors duration-150',

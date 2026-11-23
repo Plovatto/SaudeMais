@@ -10,7 +10,9 @@ function Tab({ item }: { item: NavItem }) {
         aria-current={ariaCurrent(item)}
         className={cx(
           'pressable:scale-95 relative flex min-h-12 flex-col items-center justify-center gap-1 text-[0.6875rem] font-semibold transition-[color,scale] duration-150',
-          item.active ? 'text-role-text [&_svg]:text-role-strong' : 'text-text-muted',
+          item.active
+            ? 'text-role-text [&_svg]:text-role-strong dark:[&_svg]:text-role-text'
+            : 'text-text-muted',
         )}
       >
         <item.icon aria-hidden className="size-[22px]" />
@@ -43,7 +45,7 @@ export function BottomNav({ tabs, fab }: { tabs: NavItem[]; fab: NavItem | undef
               to={fab.to}
               aria-label={fab.label}
               aria-current={ariaCurrent(fab)}
-              className="bg-role-strong text-on-role pressable:scale-95 rounded-card mx-auto -mt-[22px] mb-[9px] grid size-[52px] place-items-center shadow-[0_8px_20px_-6px_var(--role-strong),0_0_0_4px_var(--surface)] transition-transform duration-150 ease-out"
+              className="bg-role-strong text-on-role pressable:scale-95 rounded-card mx-auto -mt-[22px] mb-[9px] grid size-[52px] place-items-center shadow-[0_8px_20px_-6px_var(--role-glow),0_0_0_4px_var(--surface)] transition-transform duration-150 ease-out"
             >
               <fab.icon aria-hidden className="size-[22px]" />
             </Link>

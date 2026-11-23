@@ -52,7 +52,7 @@ export function AppearanceSection() {
               className={cx(
                 'bg-surface has-[:focus-visible]:outline-focus flex cursor-pointer flex-col gap-2.5 rounded-[14px] border p-2 transition-[border-color,box-shadow] duration-150 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 sm:p-2.5',
                 checked
-                  ? 'border-role-strong shadow-[0_0_0_1px_var(--role-strong),0_6px_16px_-8px_var(--role-strong)]'
+                  ? 'border-role-strong shadow-[0_0_0_1px_var(--role-strong),0_6px_16px_-8px_var(--role-glow)]'
                   : 'border-border-strong shadow-field can-hover:border-border-field',
               )}
             >
