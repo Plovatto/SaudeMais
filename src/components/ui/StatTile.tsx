@@ -3,6 +3,7 @@ import { LuTrendingDown, LuTrendingUp } from 'react-icons/lu';
 import { useCountUp } from '@hooks/useCountUp';
 import { cx } from '@lib/cx';
 import { formatCount } from '@lib/number';
+import { Card } from './Card';
 import { Skeleton } from './Skeleton';
 
 export interface StatDelta {
@@ -107,11 +108,13 @@ export function StatTile({
   className,
 }: StatTileProps) {
   return (
-    <section
+    <Card
+      as="section"
+      variant="plain"
       aria-label={label}
       aria-busy={value === undefined}
       className={cx(
-        'rounded-card border-border bg-surface shadow-card relative flex min-w-0 flex-col gap-1 overflow-hidden border px-[18px] pt-[18px] max-[560px]:px-3.5 max-[560px]:pt-3.5',
+        'relative flex min-w-0 flex-col gap-1 overflow-hidden px-[18px] pt-[18px] max-[560px]:px-3.5 max-[560px]:pt-3.5',
         (compact || !trend || trend.length < 2) && 'pb-4 max-[560px]:pb-3.5',
         className,
       )}
@@ -146,6 +149,6 @@ export function StatTile({
         </p>
       )}
       {!compact && trend && trend.length > 1 && <Sparkline values={trend} />}
-    </section>
+    </Card>
   );
 }

@@ -126,10 +126,7 @@ export function UsersPage() {
           }
         >
           {(items) => (
-            <section
-              aria-label="Lista de usuários"
-              className="rounded-card border-border bg-surface shadow-card overflow-hidden border"
-            >
+            <Card as="section" variant="plain" aria-label="Lista de usuários" className="overflow-hidden">
               <ul className="divide-border divide-y">
                 {items.map((user) => (
                   <li key={user.id}>
@@ -137,7 +134,7 @@ export function UsersPage() {
                   </li>
                 ))}
               </ul>
-            </section>
+            </Card>
           )}
         </PagedResults>
       </TabPanel>

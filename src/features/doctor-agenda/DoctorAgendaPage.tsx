@@ -167,12 +167,14 @@ export function DoctorAgendaPage() {
         )}
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
           {current === AGENDA_VIEWS.week ? (
-            <section
+            <Card
+              as="section"
+              variant="plain"
               ref={dayList}
               tabIndex={-1}
               aria-label={`Consultas de ${formatLongDay(middayOf(day))}`}
               aria-busy={week.isPending}
-              className="rounded-card border-border bg-surface shadow-card overflow-hidden border"
+              className="overflow-hidden"
             >
               {week.isPending && <ListSkeleton />}
               {week.isError && !week.data && (
@@ -194,7 +196,7 @@ export function DoctorAgendaPage() {
                   row={row}
                 />
               )}
-            </section>
+            </Card>
           ) : (
             <div className="flex min-w-0 flex-col gap-3">
               <Card className="flex flex-col gap-3 p-3 lg:p-4">
@@ -237,10 +239,7 @@ export function DoctorAgendaPage() {
                   }
                 >
                   {(items) => (
-                    <section
-                      aria-label="Consultas"
-                      className="rounded-card border-border bg-surface shadow-card overflow-hidden border"
-                    >
+                    <Card as="section" variant="plain" aria-label="Consultas" className="overflow-hidden">
                       <AgendaRows
                         items={items}
                         now={now}
@@ -248,7 +247,7 @@ export function DoctorAgendaPage() {
                         groupOf={(appointment) => dayHeading(civilDay(appointment), today)}
                         row={row}
                       />
-                    </section>
+                    </Card>
                   )}
                 </PagedResults>
               </TabPanel>
