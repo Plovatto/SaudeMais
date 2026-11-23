@@ -61,7 +61,7 @@ describe('admin reports', () => {
   });
 
   it.each([
-    ['Este mês', '?periodo=mes', { from: '2026-10-01', to: '2026-10-31' }],
+    ['Este mês', '?periodo=mes', { from: '2026-11-01', to: '2026-11-01' }],
     ['Hoje', '?periodo=hoje', { from: '2026-11-01', to: '2026-11-01' }],
   ])('keeps %s chosen on the first day of the month', async (name, search, period) => {
     vi.setSystemTime(new Date('2026-11-01T15:00:00.000Z'));

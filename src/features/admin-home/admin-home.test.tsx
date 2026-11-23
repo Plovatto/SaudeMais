@@ -120,17 +120,17 @@ describe('admin panel', () => {
     expect(await (await tile('Realizados')).findByText('vs. fevereiro')).toBeInTheDocument();
   });
 
-  it('shows the whole month before on the first day of a month', async () => {
+  it('keeps the current month on the first day of a month', async () => {
     vi.setSystemTime(new Date('2026-11-01T15:00:00.000Z'));
     const { calls } = serve({ report: () => ({ status: 200, body: adminReport() }) });
     renderApp('/admin?periodo=mes');
 
     await waitFor(() =>
       expect(reportQueries(calls)).toEqual(
-        expect.arrayContaining(['2026-10-01|2026-10-31', '2026-09-01|2026-09-30']),
+        expect.arrayContaining(['2026-11-01|2026-11-01', '2026-10-01|2026-10-01']),
       ),
     );
-    expect(await (await tile('Realizados')).findByText('vs. setembro')).toBeInTheDocument();
+    expect(await (await tile('Realizados')).findByText('vs. outubro')).toBeInTheDocument();
   });
 
   it('compares the last 12 full months with the 12 months before', async () => {
