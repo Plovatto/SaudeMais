@@ -1,4 +1,4 @@
-import { LuKeyRound } from 'react-icons/lu';
+import { LuKeyRound, LuLogOut } from 'react-icons/lu';
 import { Button, SectionCard, SettingRow } from '@components/ui';
 import { tile } from '@components/ui/styles';
 import { passwordChangeText } from './profile-text';
@@ -6,9 +6,10 @@ import { passwordChangeText } from './profile-text';
 export interface SecuritySectionProps {
   passwordChangedAt: string | null | undefined;
   onChangePassword: () => void;
+  onLogout: () => void;
 }
 
-export function SecuritySection({ passwordChangedAt, onChangePassword }: SecuritySectionProps) {
+export function SecuritySection({ passwordChangedAt, onChangePassword, onLogout }: SecuritySectionProps) {
   return (
     <SectionCard title="Segurança">
       <SettingRow
@@ -29,6 +30,27 @@ export function SecuritySection({ passwordChangedAt, onChangePassword }: Securit
             aria-haspopup="dialog"
           >
             Alterar
+          </Button>
+        }
+      />
+      <SettingRow
+        className="gap-4 py-3.5"
+        leading={
+          <span aria-hidden className={tile}>
+            <LuLogOut />
+          </span>
+        }
+        title="Sair da conta"
+        meta="Encerra a sessão neste aparelho"
+        trailing={
+          <Button
+            variant="danger-soft-outline"
+            size="sm"
+            onClick={onLogout}
+            aria-label="Sair da conta"
+            aria-haspopup="dialog"
+          >
+            Sair
           </Button>
         }
       />

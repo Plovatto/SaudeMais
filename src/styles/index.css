@@ -544,6 +544,7 @@
   }
 
   html {
+    cursor: var(--cursor, auto);
     background-color: var(--canvas);
     color: var(--text);
     -webkit-font-smoothing: antialiased;
@@ -559,10 +560,28 @@
     [role='menuitem'],
     [role='menuitemradio'],
     summary,
-    select
+    select,
+    a[href]
   ):not(:disabled, [aria-disabled='true']),
   label:has(input:is([type='checkbox'], [type='radio']):not(:disabled)) {
-    cursor: pointer;
+    cursor: var(--cursor-pointer, pointer);
+  }
+
+  :is(
+    input:not(
+      [type='checkbox'],
+      [type='radio'],
+      [type='range'],
+      [type='color'],
+      [type='file'],
+      [type='button'],
+      [type='submit'],
+      [type='reset']
+    ),
+    textarea,
+    [contenteditable='true']
+  ):not(:disabled) {
+    cursor: text;
   }
 
   :is(button, [role='button'], [role='tab'], [role='switch'], [role='option'], [role='menuitem']):is(
