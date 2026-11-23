@@ -256,7 +256,8 @@ describe('admin reports', () => {
       'Médico10',
       'Administrador01',
       'Sistema10',
-      'Total66',
+      'Não confirmada1—',
+      'Total76',
     ]);
     expect(screen.getByText('Cancelamentos tardios: 2 consultas e 1 exame.')).toBeInTheDocument();
   });

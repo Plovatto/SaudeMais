@@ -136,6 +136,16 @@ describe('exam result', { timeout: 15_000 }, () => {
     expect(within(summary).getByRole('img')).toHaveAccessibleName('1 normal, 1 baixo, 1 alto, 1 crítico');
   });
 
+  it('goes back to the past bookings', async () => {
+    serve({ status: 200, body: result() });
+    renderApp(PAGE);
+
+    expect(await screen.findByRole('link', { name: 'Voltar' })).toHaveAttribute(
+      'href',
+      '/paciente/agendamentos?aba=realizados',
+    );
+  });
+
   it('tells when every item is inside the reference', async () => {
     serve({ status: 200, body: result({ current: version({ items: [ranged.items?.[0] as ResultItem] }) }) });
     renderApp(PAGE);

@@ -97,23 +97,32 @@ export function toBody(
   return duration === undefined ? body : { ...body, appointmentDurationMin: duration };
 }
 
-export function dayMinutes({ isActive, ranges }: Day): number {
-  if (!isActive) return 0;
-  let total = 0;
+function coveredRanges({ isActive, ranges }: Day): Range[] {
+  if (!isActive) return [];
+  const covered: Range[] = [];
   let coveredUntil = -1;
   [...ranges]
     .sort((a, b) => a.startMin - b.startMin)
     .forEach(({ startMin, endMin }) => {
       const from = Math.max(startMin, coveredUntil);
       if (endMin <= from) return;
-      total += endMin - from;
+      covered.push({ startMin: from, endMin });
       coveredUntil = endMin;
     });
-  return total;
+  return covered;
 }
 
+export const dayMinutes = (day: Day): number =>
+  coveredRanges(day).reduce((total, { startMin, endMin }) => total + endMin - startMin, 0);
+
+const daySlots = (day: Day, durationMin: number): number =>
+  coveredRanges(day).reduce(
+    (total, { startMin, endMin }) => total + Math.floor((endMin - startMin) / durationMin),
+    0,
+  );
+
 export const weeklySlots = ({ days, appointmentDurationMin }: ScheduleValues) =>
-  days.reduce((total, entry) => total + Math.floor(dayMinutes(entry) / appointmentDurationMin), 0);
+  days.reduce((total, entry) => total + daySlots(entry, appointmentDurationMin), 0);
 
 export function nextRange(ranges: Range[], unit: UnitHour | undefined): Range | null {
   if (!unit) return null;

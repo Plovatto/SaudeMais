@@ -109,12 +109,15 @@ function CancelledByTable({ report }: { report: AdminReport }) {
         label="Cancelamentos por autor"
         rowHeader="Autor"
         columns={KIND_COLUMNS}
-        rows={CANCELLED_BY.map(({ key, label }) => ({
-          key,
-          header: label,
-          cells: counts([appointments.cancelledBy[key], exams.cancelledBy[key]]),
-        }))}
-        total={counts([appointments.cancelled, exams.cancelled])}
+        rows={[
+          ...CANCELLED_BY.map(({ key, label }) => ({
+            key,
+            header: label,
+            cells: counts([appointments.cancelledBy[key], exams.cancelledBy[key]]),
+          })),
+          { key: 'expired', header: 'Não confirmada', cells: [formatCount(appointments.expired), '—'] },
+        ]}
+        total={counts([outcomesOf(appointments).cancelled, outcomesOf(exams).cancelled])}
       />
     </SectionCard>
   );

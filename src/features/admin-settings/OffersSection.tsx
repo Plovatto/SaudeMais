@@ -6,6 +6,7 @@ import { FormShell } from '@components/forms/FormShell';
 import { Button, Dropdown, Input, ListMessage, ListSkeleton, QueryError } from '@components/ui';
 import { sectionPad } from '@components/ui/styles';
 import { useSearchParam } from '@hooks/useSearchParam';
+import { fetchAllPages } from '@lib/api/page';
 import { cx } from '@lib/cx';
 import { queryKeys } from '@lib/query-keys';
 import { catalogMessages } from './catalog-messages';
@@ -99,11 +100,11 @@ export function OffersSection() {
   const [unitId, setUnitId] = useSearchParam('unidade');
   const units = useQuery({
     queryKey: [...queryKeys.catalog.units, 'all'],
-    queryFn: ({ signal }) => unitsApi.list(1, signal, MAX_PAGE_SIZE),
+    queryFn: ({ signal }) => fetchAllPages((page) => unitsApi.list(page, signal, MAX_PAGE_SIZE)),
   });
   const examTypes = useQuery({
     queryKey: [...queryKeys.catalog.examTypes, 'all'],
-    queryFn: ({ signal }) => examTypesApi.list(1, signal, MAX_PAGE_SIZE),
+    queryFn: ({ signal }) => fetchAllPages((page) => examTypesApi.list(page, signal, MAX_PAGE_SIZE)),
   });
   const offers = useQuery({
     queryKey: [...queryKeys.catalog.offers, unitId],
@@ -113,9 +114,7 @@ export function OffersSection() {
   const editor = useCatalogEditor<ExamOffer>(cardRef);
   const failed = [units, examTypes, offers].find((query) => query.isError);
   const offered = new Set((offers.data ?? []).map(offerKey));
-  const choices = (examTypes.data?.items ?? []).filter(
-    (examType) => examType.isActive && !offered.has(examType.id),
-  );
+  const choices = (examTypes.data ?? []).filter((examType) => examType.isActive && !offered.has(examType.id));
 
   return (
     <SettingsCard id="ofertas" ref={cardRef} title="Exames por unidade">
@@ -127,12 +126,7 @@ export function OffersSection() {
           icon={<LuBuilding2 />}
           value={unitId}
           onChange={setUnitId}
-          hint={
-            units.data && units.data.total > MAX_PAGE_SIZE
-              ? `Mostrando as primeiras ${MAX_PAGE_SIZE} unidades.`
-              : undefined
-          }
-          options={(units.data?.items ?? []).map((unit) => ({
+          options={(units.data ?? []).map((unit) => ({
             value: unit.id,
             label: unit.name,
             hint: unit.address,
