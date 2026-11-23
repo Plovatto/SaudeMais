@@ -2,7 +2,8 @@ import { Outlet, useLocation } from 'react-router';
 import { areas, currentPage } from '@constants/areas';
 import { cx } from '@lib/cx';
 import { BottomNav } from './BottomNav';
-import { MainContent, pageSurface, SkipLink } from './MainContent';
+import { MainContent, SkipLink } from './MainContent';
+import { RoleSurface } from './RoleSurface';
 import { useAreaRole } from './route-handle';
 import { Sidebar } from './Sidebar';
 import { Masthead, TopBar } from './TopBars';
@@ -15,7 +16,7 @@ export function RoleLayout() {
   const page = currentPage(area, pathname);
   const flow = page?.flow === true;
   return (
-    <div data-role={area.role} className={cx(pageSurface, 'flex')}>
+    <RoleSurface role={area.role} className="flex">
       <SkipLink />
       <Sidebar area={area} menu={menu} account={account} />
       <div className="relative isolate min-w-0 flex-1">
@@ -35,6 +36,6 @@ export function RoleLayout() {
         </MainContent>
       </div>
       {!flow && <BottomNav tabs={tabs} fab={fab} />}
-    </div>
+    </RoleSurface>
   );
 }

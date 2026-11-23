@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react';
 import { DEFAULT_ROLE } from '@constants/areas';
-import { MainContent, pageSurface } from './MainContent';
+import { MainContent } from './MainContent';
+import { RoleSurface } from './RoleSurface';
 
 export function StandaloneScreen({ children }: { children: ReactNode }) {
   return (
-    <div data-role={DEFAULT_ROLE} className={pageSurface}>
+    <RoleSurface role={DEFAULT_ROLE}>
       <MainContent className="px-4">{children}</MainContent>
-    </div>
+    </RoleSurface>
   );
 }

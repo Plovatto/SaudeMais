@@ -3,8 +3,6 @@ import { cx } from '@lib/cx';
 
 const MAIN_ID = 'conteudo';
 
-export const pageSurface = 'min-h-dvh bg-canvas text-text';
-
 export function SkipLink() {
   return (
     <a

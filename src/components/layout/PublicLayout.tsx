@@ -1,13 +1,14 @@
 import { Outlet } from 'react-router';
 import { DEFAULT_ROLE } from '@constants/areas';
-import { MainContent, pageSurface, SkipLink } from './MainContent';
+import { MainContent, SkipLink } from './MainContent';
+import { RoleSurface } from './RoleSurface';
 import { useRouteHandle } from './route-handle';
 import { ThemeToggle } from './ThemeToggle';
 
 export function PublicLayout() {
   const brand = useRouteHandle().surface === 'brand';
   return (
-    <div data-role={DEFAULT_ROLE} className={pageSurface}>
+    <RoleSurface role={DEFAULT_ROLE}>
       <SkipLink />
       {brand ? (
         <MainContent className="min-h-dvh">
@@ -23,6 +24,6 @@ export function PublicLayout() {
           </MainContent>
         </>
       )}
-    </div>
+    </RoleSurface>
   );
 }

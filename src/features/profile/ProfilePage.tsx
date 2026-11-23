@@ -3,7 +3,7 @@ import { LuArrowUpDown, LuLogOut } from 'react-icons/lu';
 import { Link } from 'react-router';
 import { PageHeader } from '@components/layout/PageHeader';
 import { useAreaRole } from '@components/layout/route-handle';
-import { Button, ConfirmDialog, stagger } from '@components/ui';
+import { ConfirmDialog, stagger } from '@components/ui';
 import { areas } from '@constants/areas';
 import { useCurrentUser } from '@lib/auth/useSession';
 import { useSignOut } from '@lib/auth/useSignOut';
@@ -69,6 +69,7 @@ export function ProfilePage() {
             <SecuritySection
               passwordChangedAt={user.passwordChangedAt}
               onChangePassword={() => setPanel('password')}
+              onLogout={() => setPanel('logout')}
             />
             <AppearanceSection />
           </div>
@@ -79,14 +80,6 @@ export function ProfilePage() {
         <div className={stagger(2)}>
           <SessionsSection />
         </div>
-        <Button
-          variant="danger-soft-outline"
-          icon={<LuLogOut />}
-          onClick={() => setPanel('logout')}
-          className={`mx-auto mt-1 min-h-[50px] w-full sm:max-w-[360px] lg:min-h-12 ${stagger(3)}`}
-        >
-          Sair da conta
-        </Button>
       </div>
       <EditProfileDrawer
         open={panel === 'edit'}
