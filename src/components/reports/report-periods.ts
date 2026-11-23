@@ -18,7 +18,10 @@ export const PERIOD_PRESETS = [
   {
     value: 'mes',
     label: 'Este mês',
-    period: untilYesterday((yesterday) => ({ from: monthStart(yesterday), to: yesterday })),
+    period: (today: string) => {
+      const from = monthStart(today);
+      return { from, to: today === from ? today : addDays(today, -1) };
+    },
   },
   {
     value: 'mes-passado',

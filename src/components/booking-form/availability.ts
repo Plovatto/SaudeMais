@@ -1,5 +1,5 @@
 import type { ResponseOf } from '@lib/api/api-fetch';
-import { addDays, todayInSaoPaulo } from '@lib/date';
+import { addDays } from '@lib/date';
 
 const WINDOW_DAYS = 31;
 const MAX_HORIZON_DAYS = 365;
@@ -17,7 +17,7 @@ export interface WindowPage {
 
 const lastOffset = (window: number) => Math.min((window + 1) * WINDOW_DAYS - 1, MAX_HORIZON_DAYS);
 
-export const firstWindowPage = (): WindowPage => ({ start: todayInSaoPaulo(), page: 0 });
+export const firstWindowPage = (today: string): WindowPage => ({ start: today, page: 0 });
 
 export const loadedThrough = (start: string, pages: number) => addDays(start, lastOffset(pages));
 

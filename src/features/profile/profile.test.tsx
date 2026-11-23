@@ -507,7 +507,7 @@ describe('password change', () => {
     expect(
       await screen.findByText('Senha alterada. As outras sessões foram encerradas.'),
     ).toBeInTheDocument();
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
   it('changes the password, closes the drawer and refreshes the sessions', async () => {
@@ -519,7 +519,7 @@ describe('password change', () => {
     expect(
       await screen.findByText('Senha alterada. As outras sessões foram encerradas.'),
     ).toBeInTheDocument();
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     const sessionCalls = fetchMock.mock.calls.filter(([url]) =>
       (typeof url === 'string' ? url : url instanceof URL ? url.href : url.url).endsWith('/api/me/sessions'),
     );

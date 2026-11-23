@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useState, type ReactNode } from 'react';
 import { cx } from '@lib/cx';
+import { useSession } from '@lib/auth/useSession';
 import { SplashScreen } from './SplashScreen';
 
 const SHOW_MS = 3000;
@@ -12,8 +13,12 @@ let seen = false;
 
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+const LEAVE_ON = ['keydown', 'pointerdown'] as const;
+
 export function SplashGate({ children }: { children: ReactNode }) {
   const [phase, setPhase] = useState<Phase>(seen ? 'done' : 'show');
+  const loading = useSession().status === 'loading';
+  const blocking = phase === 'show' && loading;
 
   useLayoutEffect(() => {
     if (phase !== 'show') return;
@@ -35,14 +40,27 @@ export function SplashGate({ children }: { children: ReactNode }) {
     return () => clearTimeout(timer);
   }, [phase]);
 
+  useEffect(() => {
+    if (phase !== 'show' || blocking) return;
+    const leave = () => {
+      seen = true;
+      setPhase('leave');
+    };
+    for (const type of LEAVE_ON) window.addEventListener(type, leave, { capture: true, once: true });
+    return () => {
+      for (const type of LEAVE_ON) window.removeEventListener(type, leave, { capture: true });
+    };
+  }, [phase, blocking]);
+
   return (
     <>
-      <div inert={phase === 'show'} aria-hidden={phase === 'show' || undefined}>
+      <div inert={blocking} aria-hidden={blocking || undefined}>
         {children}
       </div>
       {phase !== 'done' && (
         <div
           data-splash-layer
+          aria-hidden={!blocking || undefined}
           className={cx(
             'fixed inset-0 z-[100] transition-[opacity,scale] duration-[600ms] ease-out',
             phase === 'leave' && 'pointer-events-none scale-105 opacity-0',
