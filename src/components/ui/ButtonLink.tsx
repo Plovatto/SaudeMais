@@ -1,7 +1,7 @@
 import type { ComponentProps } from 'react';
 import { Link } from 'react-router';
 import { cx } from '@lib/cx';
-import { buttonClass, type ButtonStyle } from './styles';
+import { buttonClass, ghostEnd, type ButtonStyle } from './styles';
 
 export type ButtonLinkProps = ComponentProps<typeof Link> & ButtonStyle;
 
@@ -10,5 +10,5 @@ export function ButtonLink({ variant, size, fullWidth, className, ...props }: Bu
 }
 
 export function SectionLink({ className, ...props }: ComponentProps<typeof Link>) {
-  return <ButtonLink variant="ghost" size="sm" className={cx('-me-2', className)} {...props} />;
+  return <ButtonLink variant="ghost" size="sm" className={cx(ghostEnd, className)} {...props} />;
 }

@@ -57,7 +57,7 @@ export function ReadAllButton({ role, unread, focusAfter, compact = false }: Rea
         refocus.current = document.activeElement === buttonRef.current;
         mutation.mutate();
       }}
-      className={cx('shrink-0', compact ? 'ms-auto min-h-7 px-2 lg:min-h-7' : 'px-2')}
+      className={cx('shrink-0', compact ? 'ms-auto -me-2 min-h-7 px-2 lg:min-h-7' : '-me-2 px-2')}
     >
       <span className={cx(compact && 'sr-only')}>{LABEL}</span>
     </Button>
