@@ -100,11 +100,7 @@ function StatusTable({ report }: { report: AdminReport }) {
 function CancelledByTable({ report }: { report: AdminReport }) {
   const { appointments, exams } = report;
   return (
-    <SectionCard
-      flush
-      title="Cancelamentos por autor"
-      description={`Cancelamentos tardios: ${plural(appointments.lateCancellations, 'consulta', 'consultas')} e ${plural(exams.lateCancellations, 'exame', 'exames')}.`}
-    >
+    <SectionCard flush title="Cancelamentos por autor">
       <ReportTable
         label="Cancelamentos por autor"
         rowHeader="Autor"
@@ -119,6 +115,9 @@ function CancelledByTable({ report }: { report: AdminReport }) {
         ]}
         total={counts([outcomesOf(appointments).cancelled, outcomesOf(exams).cancelled])}
       />
+      <p className="text-text-muted px-4 py-3 text-[0.8125rem] lg:px-5">
+        {`Cancelamentos tardios: ${plural(appointments.lateCancellations, 'consulta', 'consultas')} e ${plural(exams.lateCancellations, 'exame', 'exames')}.`}
+      </p>
     </SectionCard>
   );
 }
