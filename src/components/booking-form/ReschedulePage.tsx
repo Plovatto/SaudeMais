@@ -281,7 +281,7 @@ function RescheduleForm<B extends Reschedulable>({
       />
       {notice && (
         <p role="note" className="text-warning-text flex items-start gap-2 px-1 text-[0.8125rem]">
-          <LuTriangleAlert aria-hidden className="mt-0.5 size-3.5 shrink-0" />
+          <LuTriangleAlert aria-hidden className="mt-[3px] size-3.5 shrink-0" />
           {notice(current)}
         </p>
       )}

@@ -27,7 +27,7 @@ export function InfoList({ items, className }: { items: InfoItem[]; className?: 
             aria-hidden
             className={cx(
               'col-start-1 row-span-3 row-start-1',
-              boxed ? tile : 'text-text-muted mt-0.5 inline-flex shrink-0 [&_svg]:size-[18px]',
+              boxed ? tile : 'text-text-muted mt-px inline-flex shrink-0 [&_svg]:size-[18px]',
             )}
           >
             {icon}
