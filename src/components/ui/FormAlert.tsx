@@ -31,7 +31,7 @@ export function FormAlert({ tone = 'danger', role = 'alert', icon, children }: F
       )}
     >
       <IconSlot className="mt-px text-base">{icon ?? tones[tone].icon}</IconSlot>
-      {children}
+      <span className="min-w-0 flex-1">{children}</span>
     </p>
   );
 }

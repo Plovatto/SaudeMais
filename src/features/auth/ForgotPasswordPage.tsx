@@ -62,7 +62,7 @@ export function ForgotPasswordPage() {
       title="Esqueceu a senha?"
       subtitle="Informe seu e-mail e enviaremos um link para criar uma nova senha."
     >
-      <div role="status">
+      <div role="status" className="empty:absolute">
         {sentTo && (
           <p ref={confirmation} tabIndex={-1} className="text-text text-sm focus-visible:outline-none">
             Enviamos para <strong className="break-all">{sentTo}</strong> um link para criar uma nova senha. O
