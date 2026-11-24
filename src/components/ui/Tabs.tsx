@@ -1,4 +1,12 @@
-import { useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
+import {
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import { cx } from '@lib/cx';
 import { rovingIndex } from '@lib/roving-index';
 import { CountBadge } from './CountBadge';
@@ -26,7 +34,7 @@ const listLayout: Record<NonNullable<TabsProps<string>['variant']>, string> = {
   pill: 'gap-3',
   tile: 'gap-3',
   line: 'border-border gap-1 border-b',
-  chip: '-mx-1 gap-2 overflow-x-auto px-1 pb-1 lg:flex-wrap lg:overflow-visible lg:pb-0',
+  chip: '-mx-1 gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] lg:flex-wrap lg:overflow-visible lg:pb-0 [&::-webkit-scrollbar]:hidden',
 };
 
 const safe = (value: string) => encodeURIComponent(value).replace(/%/g, '_');
@@ -41,23 +49,32 @@ interface IndicatorBox {
 
 function useIndicator(listRef: RefObject<HTMLDivElement | null>, value: string, enabled: boolean) {
   const [box, setBox] = useState<IndicatorBox | null>(null);
+  const measure = useCallback(() => {
+    const tab = listRef.current?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]');
+    setBox((previous) => {
+      if (!tab) return null;
+      const left = tab.offsetLeft;
+      const width = tab.offsetWidth;
+      if (previous && previous.left === left && previous.width === width) return previous;
+      return { left, width, animate: previous !== null };
+    });
+  }, [listRef]);
+
+  useLayoutEffect(() => {
+    if (enabled) measure();
+  });
 
   useLayoutEffect(() => {
     const list = listRef.current;
     if (!enabled || !list) return;
-    const measure = () => {
-      const tab = list.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]');
-      setBox((previous) =>
-        tab ? { left: tab.offsetLeft, width: tab.offsetWidth, animate: previous !== null } : null,
-      );
-    };
-    measure();
-    if (typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(measure);
-    observer.observe(list);
-    list.querySelectorAll('[role="tab"]').forEach((tab) => observer.observe(tab));
-    return () => observer.disconnect();
-  }, [listRef, value, enabled]);
+    if (typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver(measure);
+      observer.observe(list);
+      list.querySelectorAll('[role="tab"]').forEach((tab) => observer.observe(tab));
+      void document.fonts?.ready.then(measure);
+      return () => observer.disconnect();
+    }
+  }, [listRef, value, enabled, measure]);
 
   return box;
 }
@@ -87,6 +104,12 @@ export function Tabs<T extends string>({
 }: TabsProps<T>) {
   const listRef = useRef<HTMLDivElement>(null);
   const indicator = useIndicator(listRef, value, variant === 'line');
+  useLayoutEffect(() => {
+    if (variant !== 'chip') return;
+    listRef.current
+      ?.querySelector('[aria-selected="true"]')
+      ?.scrollIntoView?.({ inline: 'nearest', block: 'nearest' });
+  }, [value, variant]);
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const current = items.findIndex((item) => item.value === value);
     const next = rovingIndex(event.key, current, items.length, 'horizontal');

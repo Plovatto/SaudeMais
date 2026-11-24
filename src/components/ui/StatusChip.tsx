@@ -16,12 +16,13 @@ export function StatusChip({ tone, icon, dot = true, children, className }: Stat
     <span
       className={cx(
         'inline-flex min-h-6 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold whitespace-nowrap print:border',
-        !icon && dot && 'ps-2 before:size-1.5 before:shrink-0 before:rounded-full before:bg-current',
+        (Boolean(icon) || dot) && 'ps-2',
+        !icon && dot && 'before:size-1.5 before:shrink-0 before:rounded-full before:bg-current',
         softTones[tone],
         className,
       )}
     >
-      {icon && <IconSlot>{icon}</IconSlot>}
+      {icon && <IconSlot className="[&_svg]:size-3.5">{icon}</IconSlot>}
       {children}
     </span>
   );

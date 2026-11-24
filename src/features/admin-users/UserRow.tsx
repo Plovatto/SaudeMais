@@ -10,6 +10,7 @@ export interface UserRowProps {
 
 export function UserRow({ user, isSelf, onOpen }: UserRowProps) {
   const inactive = user.deactivatedAt !== null;
+  const [local = '', domain = ''] = user.email.split('@');
   return (
     <ListRow
       onClick={() => onOpen(user)}
@@ -17,7 +18,13 @@ export function UserRow({ user, isSelf, onOpen }: UserRowProps) {
       className="cursor-pointer"
       leading={<Avatar name={user.fullName} seed={user.id} muted={inactive} />}
       title={user.fullName}
-      meta={isSelf ? `Você · ${user.email}` : user.email}
+      meta={
+        <>
+          {isSelf && 'Você · '}
+          {local}@<wbr />
+          {domain}
+        </>
+      }
       trailing={
         <>
           <RoleChips roles={user.roles} className="shrink-0 max-lg:hidden" />

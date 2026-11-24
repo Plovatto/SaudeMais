@@ -2,6 +2,7 @@ import type { UseQueryResult } from '@tanstack/react-query';
 import type { ReactNode, RefObject } from 'react';
 import { Card, Pagination, QueryError, Skeleton } from '@components/ui';
 import type { PageMeta } from '@hooks/usePageParam';
+import { cx } from '@lib/cx';
 
 interface PagedList<Item> {
   query: UseQueryResult<PageMeta>;
@@ -38,7 +39,7 @@ export function PagedResults<Item>({
         ref={resultsRef}
         tabIndex={-1}
         aria-live="polite"
-        className="text-text-secondary text-sm focus-visible:outline-none"
+        className={cx('text-text-secondary text-sm focus-visible:outline-none', total === 0 && 'sr-only')}
       >
         {total > 0 ? found(total) : null}
       </p>

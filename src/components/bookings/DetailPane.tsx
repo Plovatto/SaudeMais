@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Dialog } from '@components/ui';
+import { cx } from '@lib/cx';
 
 interface DetailPaneView {
   sheet: boolean;
@@ -31,7 +32,10 @@ export function DetailPane({
         <aside
           key={paneKey}
           aria-label={label}
-          className="rounded-card border-border bg-surface shadow-raised motion-safe:animate-pop sticky top-4 border"
+          className={cx(
+            'rounded-card border-border bg-surface motion-safe:animate-pop sticky top-4 border',
+            paneKey === undefined ? 'shadow-card' : 'shadow-raised',
+          )}
         >
           {children({ sheet: false, onClose })}
         </aside>
