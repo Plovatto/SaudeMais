@@ -95,7 +95,7 @@ function BellBadge({ unread }: { unread: number }) {
   );
 }
 
-const bellIcon = <LuBell className="translate-y-px" />;
+const bellIcon = <LuBell />;
 
 const caret =
   "before:border-border before:bg-surface before:absolute before:-top-1.5 before:end-[22px] before:z-[2] before:size-3 before:rotate-45 before:rounded-tl-[3px] before:border-s before:border-t before:content-[''] lg:before:end-3.5";
