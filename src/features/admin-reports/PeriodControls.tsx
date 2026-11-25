@@ -60,7 +60,11 @@ function CustomPeriodForm({ period, errors, onApply }: CustomPeriodProps) {
         }}
         className="sm:flex-1"
       />
-      <Button type="submit" variant="secondary" className="sm:mt-[1.875rem]">
+      <Button
+        type="submit"
+        variant="secondary"
+        className="sm:mt-[1.59375rem] sm:min-h-[50px] lg:min-h-[42px]"
+      >
         Aplicar
       </Button>
     </form>

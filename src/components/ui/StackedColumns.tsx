@@ -152,10 +152,11 @@ export function StackedColumns<K extends string>({ label, rowHeader, series, row
       </div>
       <Button
         variant="ghost"
+        size="sm"
         aria-expanded={showTable}
         aria-controls={tableId}
         onClick={() => setShowTable((shown) => !shown)}
-        className="self-start"
+        className="-ms-3 self-start"
       >
         {showTable ? 'Ocultar tabela' : 'Ver tabela'}
       </Button>

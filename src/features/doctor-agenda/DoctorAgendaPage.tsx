@@ -165,6 +165,29 @@ export function DoctorAgendaPage() {
             onToday={() => pickDay(today)}
           />
         )}
+        {current === AGENDA_VIEWS.list && (
+          <Card className="flex flex-col gap-3 p-3 lg:p-4">
+            <SearchInput
+              label="Buscar paciente"
+              placeholder="Buscar paciente"
+              value={search}
+              maxLength={120}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+            <Tabs<StatusValue>
+              id={STATUS_ID}
+              label="Situação"
+              variant="chip"
+              items={STATUS_TABS.map(({ value, label, tab }) => ({
+                value,
+                label,
+                count: counts && tab !== 'all' ? counts[tab] : undefined,
+              }))}
+              value={list.tab.value}
+              onValueChange={list.selectTab}
+            />
+          </Card>
+        )}
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
           {current === AGENDA_VIEWS.week ? (
             <Card
@@ -199,27 +222,6 @@ export function DoctorAgendaPage() {
             </Card>
           ) : (
             <div className="flex min-w-0 flex-col gap-3">
-              <Card className="flex flex-col gap-3 p-3 lg:p-4">
-                <SearchInput
-                  label="Buscar paciente"
-                  placeholder="Buscar paciente"
-                  value={search}
-                  maxLength={120}
-                  onChange={(event) => setSearch(event.target.value)}
-                />
-                <Tabs<StatusValue>
-                  id={STATUS_ID}
-                  label="Situação"
-                  variant="chip"
-                  items={STATUS_TABS.map(({ value, label, tab }) => ({
-                    value,
-                    label,
-                    count: counts && tab !== 'all' ? counts[tab] : undefined,
-                  }))}
-                  value={list.tab.value}
-                  onValueChange={list.selectTab}
-                />
-              </Card>
               <TabPanel tabsId={STATUS_ID} value={list.tab.value} className="flex flex-col gap-3">
                 <PagedResults<DoctorAppointment>
                   bare
@@ -227,7 +229,7 @@ export function DoctorAgendaPage() {
                   found={consultas}
                   resultsRef={results}
                   empty={
-                    <Card>
+                    <Card variant="plain">
                       <EmptyState
                         icon={searchParam ? <LuSearchX /> : <LuCalendarX />}
                         title="Nenhuma consulta encontrada"
@@ -273,7 +275,7 @@ export function DoctorAgendaPage() {
                 <EmptyState
                   icon={<LuCalendarX />}
                   title="Nenhuma consulta selecionada"
-                  description="Os detalhes aparecem aqui quando houver uma consulta."
+                  description="Os detalhes aparecem aqui."
                 />
               )
             }

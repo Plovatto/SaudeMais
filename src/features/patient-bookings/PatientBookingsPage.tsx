@@ -122,7 +122,7 @@ export function PatientBookingsPage() {
           </ButtonLink>
         }
       />
-      <div className="flex items-end gap-3">
+      <div className="border-border flex items-end gap-3 border-b">
         <Tabs<TabValue>
           id={TABS_ID}
           label="Agendamentos"
@@ -134,7 +134,7 @@ export function PatientBookingsPage() {
           }))}
           value={list.tab.value}
           onValueChange={list.selectTab}
-          className="min-w-0 flex-1"
+          className="min-w-0 flex-1 border-b-0"
         />
         <BookingsFilter scope={list.tab.scope} filters={valid} onApply={applyFilters} />
       </div>

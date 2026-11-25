@@ -23,7 +23,7 @@ export function RoleSurface({ role, className, children }: RoleSurfaceProps) {
     const fill = tokens.getPropertyValue(theme === 'dark' ? '--role' : '--role-strong').trim();
     const outline = tokens.getPropertyValue('--surface').trim();
     if (!fill || !outline) return;
-    const properties = cursorProperties({ fill, outline });
+    const properties = { ...cursorProperties({ fill, outline }), '--scrollbar-thumb': fill };
     const root = document.documentElement.style;
     const previous = Object.keys(properties).map((name) => [name, root.getPropertyValue(name)] as const);
     for (const [name, value] of Object.entries(properties)) root.setProperty(name, value);

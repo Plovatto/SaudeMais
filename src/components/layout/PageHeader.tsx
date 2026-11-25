@@ -36,7 +36,7 @@ export function PageHeader({
         <Link
           to={target}
           aria-label="Voltar"
-          className="text-text-secondary can-hover:bg-surface-strong rounded-field relative -ms-2 -mt-0.5 grid size-[34px] shrink-0 place-items-center transition-colors duration-150 after:absolute after:-inset-[5px] lg:in-data-shell:hidden print:hidden"
+          className="text-text-secondary can-hover:bg-surface-strong rounded-field relative -my-1 -ms-2 grid size-[34px] shrink-0 place-items-center transition-colors duration-150 after:absolute after:-inset-[5px] lg:-mt-px lg:-mb-1 lg:self-start lg:in-data-shell:hidden print:hidden"
         >
           <LuArrowLeft aria-hidden className="size-[18px]" />
         </Link>

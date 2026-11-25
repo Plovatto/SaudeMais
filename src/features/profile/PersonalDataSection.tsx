@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { LuLock } from 'react-icons/lu';
 import { Button, SectionCard } from '@components/ui';
+import { ghostEnd } from '@components/ui/styles';
 import type { CurrentUser } from '@lib/auth/useSession';
 import { birthDateText, phoneText } from './profile-text';
 
@@ -32,7 +33,13 @@ export function PersonalDataSection({ user, withBirthDate, onEdit }: PersonalDat
       title="Dados pessoais"
       flush
       action={
-        <Button variant="ghost" size="sm" onClick={onEdit} aria-label="Editar dados pessoais">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onEdit}
+          aria-label="Editar dados pessoais"
+          className={ghostEnd}
+        >
           Editar
         </Button>
       }

@@ -67,7 +67,9 @@ export function ThemeToggle({ tone = 'default' }: { tone?: keyof typeof tones })
     >
       <span aria-hidden className="relative block size-[1em]">
         <LuSun className={cx(layer, dark ? shown : hidden('rotate-90'))} />
-        <LuMoon className={cx(layer, dark ? hidden('-rotate-90') : shown)} />
+        <LuMoon
+          className={cx(layer, '-inset-[0.0556em] size-[1.1112em]', dark ? hidden('-rotate-90') : shown)}
+        />
       </span>
     </button>
   );

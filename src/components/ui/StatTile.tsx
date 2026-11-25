@@ -54,7 +54,7 @@ function Sparkline({ values }: { values: readonly number[] }) {
   const gradient = useId();
   const low = Math.min(...values);
   const high = Math.max(...values);
-  const y = (value: number) => 32 - ((value - low) / (high - low || 1)) * 28;
+  const y = (value: number) => 30 - ((value - low) / (high - low || 1)) * 24;
   const points = values.map((value, index) => [(index / Math.max(values.length - 1, 1)) * 100, y(value)]);
   const path = points
     .map(([x = 0, py = 0], index) => {
@@ -66,10 +66,7 @@ function Sparkline({ values }: { values: readonly number[] }) {
     .join(' ');
   const last = values.at(-1) ?? 0;
   return (
-    <div
-      aria-hidden
-      className="relative -mx-[18px] mt-2.5 h-10 max-[560px]:-mx-3.5 max-[560px]:mt-2 max-[560px]:h-[34px]"
-    >
+    <div aria-hidden className="relative mt-2.5 h-10 max-[560px]:mt-2 max-[560px]:h-[34px]">
       <svg viewBox="0 0 100 36" preserveAspectRatio="none" className="block size-full">
         <defs>
           <linearGradient id={gradient} x1="0" x2="0" y1="0" y2="1">
@@ -89,7 +86,7 @@ function Sparkline({ values }: { values: readonly number[] }) {
         />
       </svg>
       <span
-        className="bg-chart-1 absolute end-0 -mt-[5px] size-2.5 rounded-full shadow-[0_0_0_2px_var(--surface)]"
+        className="bg-chart-1 absolute end-0 -mt-[5px] size-2.5 translate-x-1/2 rounded-full shadow-[0_0_0_2px_var(--surface)]"
         style={{ top: `${((y(last) / 36) * 100).toFixed(1)}%` }}
       />
     </div>
