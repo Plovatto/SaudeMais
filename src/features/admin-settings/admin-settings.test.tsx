@@ -101,6 +101,7 @@ describe('admin settings', () => {
     expect(router.state.location.pathname).toBe('/admin/configuracoes/integracoes');
     expect(screen.getByRole('tab', { name: 'Integrações' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('tabpanel', { name: 'Integrações' })).toBeInTheDocument();
+    expect(document.getElementById('integracoes')).not.toHaveFocus();
   });
 
   it('focuses the card of a deep link and leaves unknown sections', async () => {

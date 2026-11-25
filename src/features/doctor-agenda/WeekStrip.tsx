@@ -14,6 +14,7 @@ export interface WeekStripProps {
   onSelect: (day: string) => void;
   onStep: (weeks: number) => void;
   onToday: () => void;
+  isSelectable?: (day: string) => boolean;
   canStepBack?: boolean;
   canStepForward?: boolean;
 }
@@ -26,6 +27,7 @@ export function WeekStrip({
   onSelect,
   onStep,
   onToday,
+  isSelectable = () => true,
   canStepBack = true,
   canStepForward = true,
 }: WeekStripProps) {
@@ -64,9 +66,10 @@ export function WeekStrip({
               type="button"
               aria-pressed={on}
               aria-current={day === today ? 'date' : undefined}
+              disabled={!isSelectable(day)}
               onClick={() => onSelect(day)}
               className={cx(
-                'rounded-tile flex min-h-16 cursor-pointer flex-col items-center justify-center gap-1 border px-1 py-2 transition-[background-color,border-color,box-shadow] duration-150',
+                'rounded-tile flex min-h-16 cursor-pointer flex-col items-center justify-center gap-1 border px-1 py-2 transition-[background-color,border-color,box-shadow] duration-150 disabled:cursor-not-allowed disabled:opacity-40',
                 on
                   ? 'border-role-strong bg-role-strong text-on-role shadow-button'
                   : cx(

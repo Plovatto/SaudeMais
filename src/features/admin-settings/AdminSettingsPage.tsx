@@ -1,7 +1,7 @@
 import { useIsFetching, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { LuCheck, LuSlidersHorizontal } from 'react-icons/lu';
-import { Navigate, useNavigate, useParams } from 'react-router';
+import { Navigate, useLocation, useNavigate, useParams } from 'react-router';
 import { PageColumn } from '@components/layout/PageColumn';
 import { PageHeader } from '@components/layout/PageHeader';
 import { Button, CtaBar, ctaButton, stagger, TabPanel, Tabs } from '@components/ui';
@@ -44,15 +44,16 @@ export function AdminSettingsPage() {
   const desktop = useMediaQuery(DESKTOP_QUERY);
   const policy = usePolicySettings();
   const section = useParams()['*'] ?? '';
-  const tab = TAB_OF[section];
+  const tab = Object.hasOwn(TAB_OF, section) ? TAB_OF[section] : undefined;
   const navigate = useNavigate();
+  const fromTab = (useLocation().state as { fromTab?: boolean } | null)?.fromTab === true;
 
   const queryClient = useQueryClient();
   const loading = useIsFetching({ queryKey: queryKeys.catalog.all });
   const scrollPending = useRef(false);
 
   useEffect(() => {
-    const card = section === '' ? null : document.getElementById(section);
+    const card = section === '' || fromTab ? null : document.getElementById(section);
     if (!card) return;
     card.focus({ preventScroll: true });
     card.scrollIntoView({ block: 'start' });
@@ -63,7 +64,7 @@ export function AdminSettingsPage() {
     const events = ['wheel', 'touchmove', 'keydown'] as const;
     events.forEach((name) => window.addEventListener(name, keepPosition, { once: true, passive: true }));
     return () => events.forEach((name) => window.removeEventListener(name, keepPosition));
-  }, [section]);
+  }, [section, fromTab]);
 
   useEffect(() => {
     if (!scrollPending.current || queryClient.isFetching({ queryKey: queryKeys.catalog.all }) > 0) return;
@@ -111,7 +112,12 @@ export function AdminSettingsPage() {
             variant="line"
             items={[...TABS]}
             value={tab}
-            onValueChange={(next) => void navigate(next === 'agendamento' ? BASE : `${BASE}/${next}`)}
+            onValueChange={(next) =>
+              void navigate(next === 'agendamento' ? BASE : `${BASE}/${next}`, {
+                replace: true,
+                state: { fromTab: true },
+              })
+            }
           />
           {panel('agendamento', <PolicySection policy={policy} />)}
           {panel(

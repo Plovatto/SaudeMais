@@ -1,11 +1,13 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useState } from 'react';
+
+type Size = { width: number; height: number };
 
 export function useElementSize<T extends HTMLElement>() {
-  const ref = useRef<T>(null);
-  const [size, setSize] = useState<{ width: number; height: number } | null>(null);
+  const [node, setNode] = useState<T | null>(null);
+  const [size, setSize] = useState<Size | null>(null);
+  const ref = useCallback((next: T | null) => setNode(next), []);
 
   useLayoutEffect(() => {
-    const node = ref.current;
     if (!node) return;
     const measure = () => setSize({ width: node.offsetWidth, height: node.offsetHeight });
     measure();
@@ -13,7 +15,7 @@ export function useElementSize<T extends HTMLElement>() {
     const observer = new ResizeObserver(measure);
     observer.observe(node);
     return () => observer.disconnect();
-  }, []);
+  }, [node]);
 
-  return [ref, size] as const;
+  return [ref, node ? size : null] as const;
 }

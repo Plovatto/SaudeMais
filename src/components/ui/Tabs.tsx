@@ -105,7 +105,16 @@ export function Tabs<T extends string>({
 }: TabsProps<T>) {
   const listRef = useRef<HTMLDivElement>(null);
   const indicator = useIndicator(listRef, value, variant === 'line');
-  const fade = useScrollFade(listRef, variant === 'chip');
+  const fade = useScrollFade(
+    listRef,
+    variant === 'chip',
+    items
+      .map(
+        (item) =>
+          `${item.label}:${typeof item.count === 'number' || typeof item.count === 'string' ? item.count : ''}`,
+      )
+      .join('|'),
+  );
   useLayoutEffect(() => {
     if (variant !== 'chip') return;
     listRef.current

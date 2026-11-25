@@ -174,6 +174,7 @@ export function DoctorAgendaPage() {
             today={today}
             countOf={(date) => byDay && (byDay.get(date)?.length ?? 0)}
             onSelect={pickDay}
+            isSelectable={(candidate) => isDateWithin(candidate, limits)}
             onStep={(weeks) => pickDay(clampDate(addDays(day, weeks * 7), limits))}
             canStepBack={(days[0] ?? day) > limits.min}
             canStepForward={(days[6] ?? day) < limits.max}
