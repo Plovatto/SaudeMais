@@ -205,6 +205,7 @@ export function PatientBookingsPage() {
           label="Detalhes do agendamento"
           open={selected !== undefined}
           paneKey={selected?.id}
+          className="mt-8"
           onClose={closeSheet}
         >
           {({ sheet, onClose }) =>
