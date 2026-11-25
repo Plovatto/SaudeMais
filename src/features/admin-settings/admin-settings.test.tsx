@@ -91,11 +91,24 @@ describe('admin settings', () => {
     await waitFor(() => expect(requestUrls(fetchMock).some((url) => url.includes('page=3'))).toBe(true));
   });
 
+  it('splits the settings into tabs kept in the address', async () => {
+    serve({});
+    const { router, user } = renderApp('/admin/configuracoes');
+
+    expect(await screen.findByRole('tab', { name: 'Agendamento' })).toHaveAttribute('aria-selected', 'true');
+    await user.click(screen.getByRole('tab', { name: 'Integrações' }));
+
+    expect(router.state.location.pathname).toBe('/admin/configuracoes/integracoes');
+    expect(screen.getByRole('tab', { name: 'Integrações' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tabpanel', { name: 'Integrações' })).toBeInTheDocument();
+  });
+
   it('focuses the card of a deep link and leaves unknown sections', async () => {
     serve({});
     const { router } = renderApp('/admin/configuracoes/exames');
 
     await waitFor(() => expect(document.getElementById('exames')).toHaveFocus());
+    expect(screen.getByRole('tab', { name: 'Catálogo' })).toHaveAttribute('aria-selected', 'true');
 
     await router.navigate('/admin/configuracoes/desconhecida');
     await waitFor(() => expect(router.state.location.pathname).toBe('/admin/configuracoes'));

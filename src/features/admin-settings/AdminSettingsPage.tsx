@@ -1,9 +1,10 @@
 import { useIsFetching, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { LuCheck, LuSlidersHorizontal } from 'react-icons/lu';
-import { Navigate, useParams } from 'react-router';
+import { Navigate, useNavigate, useParams } from 'react-router';
+import { PageColumn } from '@components/layout/PageColumn';
 import { PageHeader } from '@components/layout/PageHeader';
-import { Button, CtaBar, ctaButton, stagger } from '@components/ui';
+import { Button, CtaBar, ctaButton, stagger, TabPanel, Tabs } from '@components/ui';
 import { DESKTOP_QUERY, useMediaQuery } from '@hooks/useMediaQuery';
 import { cx } from '@lib/cx';
 import { queryKeys } from '@lib/query-keys';
@@ -15,15 +16,36 @@ import { POLICY_FORM_ID, usePolicySettings } from './usePolicySettings';
 import { SpecialtiesSection } from './SpecialtiesSection';
 import { UnitsSection } from './UnitsSection';
 
-const SECTIONS = ['unidades', 'ofertas', 'integracoes', 'politica', 'especialidades', 'exames'];
+const BASE = '/admin/configuracoes';
+const TABS_ID = 'admin-settings';
 
-const column = 'flex min-w-0 flex-col gap-4 lg:gap-5';
+const TABS = [
+  { value: 'agendamento', label: 'Agendamento' },
+  { value: 'unidades', label: 'Unidades' },
+  { value: 'catalogo', label: 'Catálogo' },
+  { value: 'integracoes', label: 'Integrações' },
+] as const;
+
+type TabValue = (typeof TABS)[number]['value'];
+
+const TAB_OF: Record<string, TabValue> = {
+  '': 'agendamento',
+  agendamento: 'agendamento',
+  politica: 'agendamento',
+  unidades: 'unidades',
+  ofertas: 'unidades',
+  catalogo: 'catalogo',
+  especialidades: 'catalogo',
+  exames: 'catalogo',
+  integracoes: 'integracoes',
+};
 
 export function AdminSettingsPage() {
   const desktop = useMediaQuery(DESKTOP_QUERY);
   const policy = usePolicySettings();
   const section = useParams()['*'] ?? '';
-  const known = section === '' || SECTIONS.includes(section);
+  const tab = TAB_OF[section];
+  const navigate = useNavigate();
 
   const queryClient = useQueryClient();
   const loading = useIsFetching({ queryKey: queryKeys.catalog.all });
@@ -49,7 +71,7 @@ export function AdminSettingsPage() {
     document.getElementById(section)?.scrollIntoView({ block: 'start' });
   }, [loading, section, queryClient]);
 
-  if (!known) return <Navigate to="/admin/configuracoes" replace />;
+  if (!tab) return <Navigate to={BASE} replace />;
 
   const save = (label: string, className?: string) => (
     <Button
@@ -64,25 +86,51 @@ export function AdminSettingsPage() {
     </Button>
   );
 
+  const panel = (value: TabValue, children: ReactNode) => (
+    <TabPanel
+      tabsId={TABS_ID}
+      value={value}
+      className={cx('flex flex-col gap-4 focus-visible:outline-none lg:gap-5', tab !== value && 'hidden')}
+    >
+      {children}
+    </TabPanel>
+  );
+
   return (
     <>
-      <PageHeader
-        title="Configurações"
-        subtitle="Regras que valem para toda a clínica."
-        action={desktop && policy.dirty && save('Salvar configurações')}
-      />
-      <div className="grid items-start gap-4 lg:grid-cols-2 lg:gap-5">
-        <div className={cx(column, stagger(0))}>
-          <UnitsSection />
-          <OffersSection />
-          <IntegrationsSection />
+      <PageColumn>
+        <PageHeader
+          title="Configurações"
+          subtitle="Regras que valem para toda a clínica."
+          action={desktop && policy.dirty && save('Salvar configurações')}
+        />
+        <div className={cx('flex flex-col gap-4 lg:gap-5', stagger(0))}>
+          <Tabs<TabValue>
+            id={TABS_ID}
+            label="Seções das configurações"
+            variant="line"
+            items={[...TABS]}
+            value={tab}
+            onValueChange={(next) => void navigate(next === 'agendamento' ? BASE : `${BASE}/${next}`)}
+          />
+          {panel('agendamento', <PolicySection policy={policy} />)}
+          {panel(
+            'unidades',
+            <>
+              <UnitsSection />
+              <OffersSection />
+            </>,
+          )}
+          {panel(
+            'catalogo',
+            <>
+              <SpecialtiesSection />
+              <ExamTypesSection />
+            </>,
+          )}
+          {panel('integracoes', <IntegrationsSection />)}
         </div>
-        <div className={cx(column, stagger(1))}>
-          <PolicySection policy={policy} />
-          <SpecialtiesSection />
-          <ExamTypesSection />
-        </div>
-      </div>
+      </PageColumn>
       {!desktop && policy.dirty && (
         <CtaBar aboveNav icon={<LuSlidersHorizontal />} title="Configurações" sub="Valem para toda a clínica">
           {save('Salvar', ctaButton)}

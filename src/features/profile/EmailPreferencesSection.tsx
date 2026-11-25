@@ -1,9 +1,5 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { Fragment } from 'react';
 import { QueryError, SectionCard, SettingRow, Skeleton, Switch, useToast } from '@components/ui';
-import { overline } from '@components/ui/styles';
-import { areas } from '@constants/areas';
-import { cx } from '@lib/cx';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
 import { queryKeys } from '@lib/query-keys';
 import { listEmailPreferences, updateEmailPreference, type EmailPreference } from './profile-api';
@@ -51,7 +47,7 @@ function PreferenceRow({
   );
 }
 
-export function EmailPreferencesSection() {
+export function EmailPreferencesSection({ role }: { role: EmailPreference['role'] }) {
   const queryClient = useQueryClient();
   const { show } = useToast();
   const query = useQuery({
@@ -78,32 +74,22 @@ export function EmailPreferencesSection() {
         return queryClient.invalidateQueries({ queryKey: queryKeys.emailPreferences });
     },
   });
-  const items = query.data;
-  const roles = [...new Set(items?.map((item) => item.role))];
+  const items = query.data?.filter((item) => item.role === role);
 
   return (
     <SectionCard title="Avisos por e-mail" className="lg:flex-1" aria-busy={query.isPending}>
       {query.isError && !items ? (
         <QueryError error={query.error} onRetry={() => void query.refetch()} />
       ) : items ? (
-        <div className="-my-2 flex flex-col">
-          {roles.map((role) => (
-            <Fragment key={role}>
-              {roles.length > 1 && <p className={cx(overline, 'pt-3.5')}>{areas[role].label}</p>}
-              <ul className="flex flex-col">
-                {items
-                  .filter((item) => item.role === role)
-                  .map((item) => (
-                    <PreferenceRow
-                      key={item.topic}
-                      preference={item}
-                      onChange={(enabled) => mutation.mutate({ ...item, enabled })}
-                    />
-                  ))}
-              </ul>
-            </Fragment>
+        <ul className="-my-2 flex flex-col">
+          {items.map((item) => (
+            <PreferenceRow
+              key={item.topic}
+              preference={item}
+              onChange={(enabled) => mutation.mutate({ ...item, enabled })}
+            />
           ))}
-        </div>
+        </ul>
       ) : (
         <Skeleton className="h-32" />
       )}

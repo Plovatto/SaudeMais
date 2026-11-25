@@ -59,7 +59,7 @@ function serve(user: ServedUser, routes: Record<string, Route> = {}) {
   return serveApi(user.roles, Object.fromEntries(served), user).fetchMock;
 }
 
-const openProfile = (base = '/paciente') => renderApp(`${base}/perfil`);
+const openProfile = (base = '/paciente', tab = '') => renderApp(`${base}/perfil${tab ? `?aba=${tab}` : ''}`);
 
 type User = ReturnType<typeof openProfile>['user'];
 
@@ -180,7 +180,9 @@ describe('profile page', () => {
     await user.type(drawer.getByLabelText('Data de nascimento'), '2999-01-01');
     await user.click(drawer.getByRole('button', { name: 'Salvar alterações' }));
 
-    expect(await drawer.findByText('Informe uma data de nascimento entre 1900 e hoje.')).toBeInTheDocument();
+    expect(
+      await drawer.findByText('Informe uma data de nascimento de até 120 anos atrás, sem passar de hoje.'),
+    ).toBeInTheDocument();
     expect(patch).not.toHaveBeenCalledWith('PATCH', expect.anything());
   });
 
@@ -254,7 +256,7 @@ describe('profile page', () => {
 
   it('asks before leaving the account', async () => {
     serve(testUser(), { '/api/users/logout': () => ({ status: 204 }) });
-    const { router, user } = openProfile();
+    const { router, user } = openProfile('/paciente', 'seguranca');
 
     const dialog = await openDrawer(user, 'Sair da conta');
     await user.click(dialog.getByRole('button', { name: 'Continuar aqui' }));
@@ -273,7 +275,7 @@ describe('leaving the account', () => {
   it('signs out only once when the confirmation is clicked twice', async () => {
     const logout = vi.fn(() => ({ status: 204 }));
     serve(testUser(), { '/api/users/logout': logout });
-    const { router, user } = openProfile();
+    const { router, user } = openProfile('/paciente', 'seguranca');
 
     const dialog = await openDrawer(user, 'Sair da conta');
     await user.dblClick(dialog.getByRole('button', { name: 'Sair' }));
@@ -286,7 +288,7 @@ describe('leaving the account', () => {
 describe('appearance', () => {
   it('switches between light, dark and system themes', async () => {
     serve(testUser());
-    const { user } = openProfile();
+    const { user } = openProfile('/paciente', 'preferencias');
 
     await user.click(await screen.findByRole('radio', { name: 'Escuro' }));
     expect(document.documentElement.dataset.theme).toBe('dark');
@@ -305,7 +307,7 @@ describe('appearance without storage', () => {
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('blocked');
     });
-    const { user } = openProfile();
+    const { user } = openProfile('/paciente', 'preferencias');
 
     await user.click(await screen.findByRole('radio', { name: 'Escuro' }));
 
@@ -318,6 +320,19 @@ describe('appearance without storage', () => {
 });
 
 describe('email preferences', () => {
+  it('shows only the topics of the current area', async () => {
+    serve(testUser(), {
+      '/api/me/email-preferences': () => ({
+        status: 200,
+        body: [...preferences, { topic: 'appointment_request', role: 'doctor', enabled: true }],
+      }),
+    });
+    openProfile('/paciente', 'preferencias');
+
+    expect(await screen.findByRole('switch', { name: 'Lembrete por e-mail' })).toBeInTheDocument();
+    expect(screen.queryByRole('switch', { name: 'Novos pedidos' })).not.toBeInTheDocument();
+  });
+
   it('lists the topics and saves a change', async () => {
     let server = preferences.map((item) => ({ ...item }));
     const patch = vi.fn((method: string) => {
@@ -326,7 +341,7 @@ describe('email preferences', () => {
       return { status: 200, body: server };
     });
     serve(testUser(), { '/api/me/email-preferences': patch });
-    const { user } = openProfile();
+    const { user } = openProfile('/paciente', 'preferencias');
 
     expect(await screen.findByRole('switch', { name: 'Lembrete por e-mail' })).toBeChecked();
     const result = screen.getByRole('switch', { name: 'Resultado disponível' });
@@ -344,7 +359,7 @@ describe('email preferences', () => {
       '/api/me/email-preferences': (method) => (method === 'GET' ? { status: 200, body: server } : undefined),
     });
     const held = holdPatches(fetchMock);
-    const { user } = openProfile();
+    const { user } = openProfile('/paciente', 'preferencias');
 
     await user.click(await screen.findByRole('switch', { name: 'Lembrete por e-mail' }));
     await user.click(screen.getByRole('switch', { name: 'Resultado disponível' }));
@@ -370,7 +385,7 @@ describe('email preferences', () => {
       '/api/me/email-preferences': (method) => (method === 'GET' ? { status: 200, body: server } : undefined),
     });
     const held = holdPatches(fetchMock);
-    const { user } = openProfile();
+    const { user } = openProfile('/paciente', 'preferencias');
 
     await user.click(await screen.findByRole('switch', { name: 'Resultado disponível' }));
     await user.click(screen.getByRole('switch', { name: 'Lembrete por e-mail' }));
@@ -393,7 +408,7 @@ describe('email preferences', () => {
       '/api/me/email-preferences': (method) =>
         method === 'PATCH' ? { status: 500, body: { message: 'Erro', code: 'INTERNAL_ERROR' } } : undefined,
     });
-    const { user } = openProfile();
+    const { user } = openProfile('/paciente', 'preferencias');
 
     await user.click(await screen.findByRole('switch', { name: 'Resultado disponível' }));
 
@@ -414,14 +429,14 @@ describe('password change', () => {
 
   it('shows when the password was last changed', async () => {
     serve({ ...testUser(), passwordChangedAt: new Date(Date.now() - 100 * 86_400_000).toISOString() });
-    openProfile();
+    openProfile('/paciente', 'seguranca');
 
     expect(await screen.findByText('Última alteração há 3 meses')).toBeInTheDocument();
   });
 
   it('keeps the button disabled until every rule passes', async () => {
     serve(testUser());
-    const { user } = openProfile();
+    const { user } = openProfile('/paciente', 'seguranca');
 
     const drawer = await openDrawer(user, 'Alterar senha');
     const save = drawer.getByRole('button', { name: 'Alterar senha' });
@@ -463,7 +478,7 @@ describe('password change', () => {
 
   it('shows how strong the new password is', async () => {
     serve(testUser());
-    const { user } = openProfile();
+    const { user } = openProfile('/paciente', 'seguranca');
 
     const drawer = await openDrawer(user, 'Alterar senha');
     expect(drawer.getByText('Escolha uma senha forte')).toBeInTheDocument();
@@ -484,7 +499,7 @@ describe('password change', () => {
         },
       }),
     });
-    const { user } = openProfile();
+    const { user } = openProfile('/paciente', 'seguranca');
 
     const drawer = await fill(user, 'senha-errada-000');
 
@@ -495,7 +510,7 @@ describe('password change', () => {
   it('keeps the drawer open while the password is being changed', async () => {
     const fetchMock = serve(testUser());
     const held = holdRequests(fetchMock, (path) => path === '/api/me/password');
-    const { user } = openProfile();
+    const { user } = openProfile('/paciente', 'seguranca');
 
     const drawer = await fill(user);
 
@@ -512,7 +527,7 @@ describe('password change', () => {
 
   it('changes the password, closes the drawer and refreshes the sessions', async () => {
     const fetchMock = serve(testUser(), { '/api/me/password': () => ({ status: 204 }) });
-    const { user } = openProfile();
+    const { user } = openProfile('/paciente', 'seguranca');
 
     await fill(user);
 
@@ -530,7 +545,7 @@ describe('password change', () => {
 describe('sessions', () => {
   it('lists the active sessions, marking this one', async () => {
     serve(testUser());
-    openProfile();
+    openProfile('/paciente', 'seguranca');
 
     expect(await screen.findByText('Chrome no Windows')).toBeInTheDocument();
     expect(screen.getByText('Dispositivo desconhecido')).toBeInTheDocument();
@@ -542,7 +557,7 @@ describe('sessions', () => {
   it('ends another session', async () => {
     const remove = vi.fn((method: string) => (method === 'DELETE' ? { status: 204 } : undefined));
     serve(testUser(), { '/api/me/sessions/s2': remove });
-    const { user } = openProfile();
+    const { user } = openProfile('/paciente', 'seguranca');
 
     await user.click(
       await screen.findByRole('button', { name: 'Encerrar sessão: Dispositivo desconhecido' }),
@@ -556,7 +571,7 @@ describe('sessions', () => {
     serve(testUser(), {
       '/api/me/sessions/s2': () => ({ status: 404, body: { message: 'Não encontrado.', code: 'NOT_FOUND' } }),
     });
-    const { user } = openProfile();
+    const { user } = openProfile('/paciente', 'seguranca');
 
     await user.click(
       await screen.findByRole('button', { name: 'Encerrar sessão: Dispositivo desconhecido' }),
@@ -577,7 +592,7 @@ describe('sessions', () => {
       fetchMock,
       (path, method) => path === '/api/me/sessions/s2' && method === 'DELETE',
     );
-    const { user } = openProfile();
+    const { user } = openProfile('/paciente', 'seguranca');
 
     await user.click(
       await screen.findByRole('button', { name: 'Encerrar sessão: Dispositivo desconhecido' }),
@@ -598,7 +613,7 @@ describe('sessions', () => {
         body: { message: 'Esta é a sessão em uso.', code: 'CURRENT_SESSION' },
       }),
     });
-    const { user } = openProfile();
+    const { user } = openProfile('/paciente', 'seguranca');
 
     await user.click(
       await screen.findByRole('button', { name: 'Encerrar sessão: Dispositivo desconhecido' }),
@@ -612,7 +627,7 @@ describe('sessions', () => {
   it('ends the other sessions', async () => {
     const remove = vi.fn((method: string) => (method === 'DELETE' ? { status: 204 } : undefined));
     serve(testUser(), { '/api/me/sessions/others': remove });
-    const { user } = openProfile();
+    const { user } = openProfile('/paciente', 'seguranca');
 
     await user.click(await screen.findByRole('button', { name: 'Encerrar as outras' }));
 
@@ -623,7 +638,7 @@ describe('sessions', () => {
   it('signs out everywhere after confirming', async () => {
     const remove = vi.fn((method: string) => (method === 'DELETE' ? { status: 204 } : undefined));
     serve(testUser(), { '/api/me/sessions': remove });
-    const { router, user } = openProfile();
+    const { router, user } = openProfile('/paciente', 'seguranca');
 
     await user.click(await screen.findByRole('button', { name: 'Sair de todas as sessões' }));
     await user.click(await screen.findByRole('button', { name: 'Sair de todas' }));
@@ -640,7 +655,7 @@ describe('sessions failures', () => {
       '/api/me/sessions': (method) =>
         method === 'GET' ? { status: 403, body: { message: 'Sem acesso.', code: 'FORBIDDEN' } } : undefined,
     });
-    openProfile();
+    openProfile('/paciente', 'seguranca');
 
     await waitFor(() =>
       expect(screen.getAllByRole('alert').some((element) => element.textContent?.trim())).toBe(true),
@@ -652,7 +667,7 @@ describe('sessions failures', () => {
       '/api/me/sessions': (method) =>
         method === 'DELETE' ? { status: 500, body: { message: 'Erro', code: 'INTERNAL_ERROR' } } : undefined,
     });
-    const { router, user } = openProfile();
+    const { router, user } = openProfile('/paciente', 'seguranca');
 
     await user.click(await screen.findByRole('button', { name: 'Sair de todas as sessões' }));
     await user.click(await screen.findByRole('button', { name: 'Sair de todas' }));
