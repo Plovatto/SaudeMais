@@ -247,7 +247,7 @@ function RescheduleForm<B extends Reschedulable>({
               'inline-flex h-6 items-center gap-1 rounded-full px-2.5 text-xs font-semibold',
             )}
           >
-            <LuLock aria-hidden className="size-3" />
+            <LuLock aria-hidden className="size-3 shrink-0 -translate-y-px" />
             Não muda
           </span>
         }
