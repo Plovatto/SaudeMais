@@ -551,7 +551,10 @@ describe('doctor schedule', { timeout: 15_000 }, () => {
 });
 
 describe('doctor time off', { timeout: 15_000 }, () => {
-  const soon = addDays(todayInSaoPaulo(), 30);
+  const soon =
+    [30, 31, 32]
+      .map((days) => addDays(todayInSaoPaulo(), days))
+      .find((date) => !blocked.some((item) => item.date === date)) ?? addDays(todayInSaoPaulo(), 30);
 
   const createRoute =
     (create: (body: unknown) => MockResponse): ApiRoute =>
