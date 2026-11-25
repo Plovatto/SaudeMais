@@ -72,7 +72,9 @@ export function ResetPasswordPage() {
       {invalid ? (
         <div ref={invalidAlert} tabIndex={-1} className="focus-visible:outline-none">
           <FormAlert>
-            Este link é inválido ou já venceu. <TextLink to="/esqueci-senha">Peça um novo link</TextLink>.
+            <span>
+              Este link é inválido ou já venceu. <TextLink to="/esqueci-senha">Peça um novo link</TextLink>.
+            </span>
           </FormAlert>
         </div>
       ) : (
