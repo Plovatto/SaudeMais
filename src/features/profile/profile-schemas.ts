@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { todayInSaoPaulo } from '@lib/date';
+import { addYears, isDateWithin, todayInSaoPaulo, type DateLimits } from '@lib/date';
 import {
   confirmationMatches,
   hasLettersAndNumbers,
@@ -29,18 +29,18 @@ export const passwordSchema = z
 
 export type PasswordValues = z.infer<typeof passwordSchema>;
 
-const EARLIEST_BIRTH_DATE = '1900-01-01';
+export const MAX_AGE_YEARS = 120;
 
-export const birthDateLimits = () => ({ min: EARLIEST_BIRTH_DATE, max: todayInSaoPaulo() });
+export function birthDateLimits(today = todayInSaoPaulo()): DateLimits {
+  return { min: addYears(today, -MAX_AGE_YEARS), max: today };
+}
 
 export const profileSchema = personalDataSchema.extend({
   birthDate: z
     .string()
     .refine(
-      (value) =>
-        value === '' ||
-        (/^\d{4}-\d{2}-\d{2}$/.test(value) && value >= EARLIEST_BIRTH_DATE && value <= todayInSaoPaulo()),
-      'Informe uma data de nascimento entre 1900 e hoje.',
+      (value) => value === '' || isDateWithin(value, birthDateLimits()),
+      `Informe uma data de nascimento de até ${MAX_AGE_YEARS} anos atrás, sem passar de hoje.`,
     ),
 });
 

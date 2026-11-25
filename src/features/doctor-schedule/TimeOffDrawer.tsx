@@ -6,11 +6,14 @@ import { LuCalendar, LuPencilLine } from 'react-icons/lu';
 import { FormShell } from '@components/forms/FormShell';
 import { Drawer, Input, useToast } from '@components/ui';
 import { useFormSubmit } from '@hooks/useFormSubmit';
-import { addDays, todayInSaoPaulo } from '@lib/date';
 import { timeOffApi, timeOffQuery, type ScheduleWarning, type TimeOffBody } from './schedule-api';
-import { REASON_MAX, timeOffSchema, toTimeOffBody, type TimeOffValues } from './time-off-schema';
-
-const DAYS_AHEAD = 365;
+import {
+  REASON_MAX,
+  timeOffLimits,
+  timeOffSchema,
+  toTimeOffBody,
+  type TimeOffValues,
+} from './time-off-schema';
 
 interface TimeOffFormProps {
   loading: boolean;
@@ -19,7 +22,6 @@ interface TimeOffFormProps {
 }
 
 function TimeOffForm({ loading, onSubmit, onClose }: TimeOffFormProps) {
-  const today = todayInSaoPaulo();
   const {
     register,
     handleSubmit,
@@ -47,8 +49,7 @@ function TimeOffForm({ loading, onSubmit, onClose }: TimeOffFormProps) {
         label="Data"
         type="date"
         icon={<LuCalendar />}
-        min={today}
-        max={addDays(today, DAYS_AHEAD)}
+        {...timeOffLimits()}
         error={errors.date?.message}
         {...register('date')}
       />

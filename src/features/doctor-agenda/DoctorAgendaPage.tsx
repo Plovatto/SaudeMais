@@ -13,10 +13,20 @@ import { useSearchDraft } from '@hooks/useSearchDraft';
 import { useSearchParam } from '@hooks/useSearchParam';
 import { useTabbedList } from '@hooks/useTabbedList';
 import type { DoctorAppointment } from '@lib/api/models';
-import { addDays, civilDateInSaoPaulo, formatLongDay, isCivilDate, middayOf, weekOf } from '@lib/date';
+import {
+  addDays,
+  addYears,
+  civilDateInSaoPaulo,
+  clampDate,
+  formatLongDay,
+  isDateWithin,
+  middayOf,
+  weekOf,
+} from '@lib/date';
 import { dayPeriodOf } from '@lib/day-periods';
 import { groupBy } from '@lib/group';
 import { plural } from '@lib/plural';
+import { cx } from '@lib/cx';
 import { queryKeys } from '@lib/query-keys';
 import { AgendaRow, AgendaRows } from './AgendaRows';
 import { AppointmentDetail } from './AppointmentDetail';
@@ -41,6 +51,8 @@ const STATUS_TABS = [
 
 type View = (typeof AGENDA_VIEWS)[keyof typeof AGENDA_VIEWS];
 type StatusValue = (typeof STATUS_TABS)[number]['value'];
+
+const agendaLimits = (today: string) => ({ min: addYears(today, -1), max: addDays(today, 365) });
 
 const consultas = (total: number) => plural(total, 'consulta', 'consultas');
 const civilDay = (appointment: DoctorAppointment) => civilDateInSaoPaulo(new Date(appointment.startsAt));
@@ -76,7 +88,8 @@ export function DoctorAgendaPage() {
   const dayList = useRef<HTMLElement>(null);
   const [view, setView] = useSearchParam(TAB_PARAM, AGENDA_VIEWS.week);
   const [dayParam, setDay] = useSearchParam(DAY_PARAM, today);
-  const day = isCivilDate(dayParam) ? dayParam : today;
+  const limits = agendaLimits(today);
+  const day = isDateWithin(dayParam, limits) ? dayParam : today;
   const { search, setSearch, searchParam } = useSearchDraft(SEARCH_PARAM, RESET_SELECTION);
   const current: View = view === AGENDA_VIEWS.list ? AGENDA_VIEWS.list : AGENDA_VIEWS.week;
   const actions = useAppointmentActions(current === AGENDA_VIEWS.week ? dayList : results);
@@ -161,7 +174,9 @@ export function DoctorAgendaPage() {
             today={today}
             countOf={(date) => byDay && (byDay.get(date)?.length ?? 0)}
             onSelect={pickDay}
-            onStep={(weeks) => pickDay(addDays(day, weeks * 7))}
+            onStep={(weeks) => pickDay(clampDate(addDays(day, weeks * 7), limits))}
+            canStepBack={(days[0] ?? day) > limits.min}
+            canStepForward={(days[6] ?? day) < limits.max}
             onToday={() => pickDay(today)}
           />
         )}
@@ -261,6 +276,7 @@ export function DoctorAgendaPage() {
             open={selected !== undefined}
             paneKey={selected?.id}
             desktopVisible={visible !== undefined}
+            className={cx(current === AGENDA_VIEWS.list && (list.items?.length ?? 0) > 0 && 'mt-8')}
             onClose={closeSheet}
           >
             {({ sheet, onClose }) =>

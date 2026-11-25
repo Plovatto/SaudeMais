@@ -130,6 +130,37 @@ describe('admin reports', () => {
     expect(calls).toHaveLength(requests);
   });
 
+  it.each([
+    ['De', '1999-01-01', 'Escolha uma data dos últimos 5 anos até 1 ano à frente.'],
+    ['Até', '2099-01-01', 'Escolha uma data dos últimos 5 anos até 1 ano à frente.'],
+  ])('refuses a %s date of %s', async (label, value, message) => {
+    const { calls } = serve(() => ({ status: 200, body: report() }));
+    const { user } = renderApp('/admin/relatorios?de=2026-03-01&ate=2026-03-31');
+    await section('Agendamentos por dia');
+    const requests = calls.length;
+    const field = screen.getByLabelText(label);
+
+    await user.clear(field);
+    await user.type(field, value);
+    await user.click(screen.getByRole('button', { name: 'Aplicar' }));
+
+    expect(field).toHaveAccessibleDescription(message);
+    expect(calls).toHaveLength(requests);
+  });
+
+  it('refuses a custom period longer than the API allows', async () => {
+    serve(() => ({ status: 200, body: report() }));
+    const { user } = renderApp('/admin/relatorios?de=2025-01-01&ate=2025-03-31');
+    await section('Agendamentos por dia');
+    const to = screen.getByLabelText('Até');
+
+    await user.clear(to);
+    await user.type(to, '2026-06-01');
+    await user.click(screen.getByRole('button', { name: 'Aplicar' }));
+
+    expect(to).toHaveAccessibleDescription('Escolha um período de no máximo 366 dias.');
+  });
+
   it('reads a custom period from the URL and applies a new one', async () => {
     const { calls } = serve(() => ({ status: 200, body: report() }));
     const { user, router } = renderApp('/admin/relatorios?de=2026-01-01&ate=2026-03-31');

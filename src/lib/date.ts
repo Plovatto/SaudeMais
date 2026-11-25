@@ -90,6 +90,22 @@ export function addDays(date: string, days: number): string {
   return value.toISOString().slice(0, 10);
 }
 
+export function addYears(date: string, years: number): string {
+  const shifted = `${String(Number(date.slice(0, 4)) + years).padStart(4, '0')}${date.slice(4)}`;
+  return isCivilDate(shifted) ? shifted : `${shifted.slice(0, 8)}28`;
+}
+
+export interface DateLimits {
+  min: string;
+  max: string;
+}
+
+export const isDateWithin = (value: string, { min, max }: DateLimits) =>
+  isCivilDate(value) && value >= min && value <= max;
+
+export const clampDate = (value: string, { min, max }: DateLimits) =>
+  value < min ? min : value > max ? max : value;
+
 export const daysBetween = (from: string, to: string) =>
   Math.round((utcDay(to).getTime() - utcDay(from).getTime()) / DAY_MS);
 

@@ -1,5 +1,5 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { stubMatchMedia } from '@/test/match-media';
 import { renderApp, serveApi, type ApiCall } from '@/test/render-app';
 import { SEARCH_DELAY_MS } from '@hooks/useDebouncedValue';
@@ -53,8 +53,18 @@ const openCancel = async (user: User, title = 'Cancelar consulta?') => {
   return screen.getByRole('dialog', { name: title });
 };
 
+const nearDay = () => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2030-01-08T15:00:00.000Z'));
+};
+
 describe('doctor agenda', { timeout: 15_000 }, () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('shows the week with the appointments of the chosen day by period', async () => {
+    nearDay();
     const { calls } = serve({
       lists: {
         all: [
@@ -100,6 +110,7 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
   });
 
   it('steps between weeks and comes back to today', async () => {
+    nearDay();
     const { calls } = serve({ lists: { all: [] } });
     const { user, router } = renderApp(`/medico/agenda?dia=${DAY}`);
 
@@ -117,13 +128,16 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     expect(screen.getByRole('button', { current: 'date' })).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('falls back to today for an invalid day in the URL', async () => {
-    serve({ lists: { all: [] } });
-    renderApp('/medico/agenda?dia=2030-13-40');
+  it.each(['2030-13-40', '2999-01-01', '1990-01-01'])(
+    'falls back to today for the day %s in the URL',
+    async (day) => {
+      serve({ lists: { all: [] } });
+      renderApp(`/medico/agenda?dia=${day}`);
 
-    expect(await screen.findByText('Nenhuma consulta neste dia')).toBeVisible();
-    expect(screen.getByRole('button', { current: 'date' })).toHaveAttribute('aria-pressed', 'true');
-  });
+      expect(await screen.findByText('Nenhuma consulta neste dia')).toBeVisible();
+      expect(screen.getByRole('button', { current: 'date' })).toHaveAttribute('aria-pressed', 'true');
+    },
+  );
 
   it('switches to the appointment list and its status chips through the URL', async () => {
     const { calls } = serve({ lists: { pending: [appointment('a1')], confirmed: [confirmed('a2')] } });
@@ -287,7 +301,7 @@ describe('doctor agenda', { timeout: 15_000 }, () => {
     const { user } = renderApp(HISTORY_URL);
 
     const detail = await openDetail(user);
-    expect(detail.getByText('Telefone indisponível')).toBeVisible();
+    expect(detail.getByText('Não informado')).toBeVisible();
     expect(detail.queryByRole('link')).not.toBeInTheDocument();
     expect(detail.getByText(/^Cancelada pelo paciente em/)).toBeVisible();
     expect(detail.getByText('Motivo: Viagem.')).toBeVisible();

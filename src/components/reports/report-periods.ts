@@ -1,5 +1,12 @@
-import { addDays, daysBetween, formatMonthName, todayInSaoPaulo } from '@lib/date';
+import { addDays, addYears, daysBetween, formatMonthName, todayInSaoPaulo, type DateLimits } from '@lib/date';
 import type { Period } from './reports-api';
+
+export const MAX_REPORT_DAYS = 366;
+export const REPORT_YEARS_BACK = 5;
+
+export function reportLimits(today = todayInSaoPaulo()): DateLimits {
+  return { min: addYears(today, -REPORT_YEARS_BACK), max: addDays(today, 365) };
+}
 
 const monthStart = (date: string) => `${date.slice(0, 8)}01`;
 

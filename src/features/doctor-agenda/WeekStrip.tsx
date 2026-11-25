@@ -14,9 +14,21 @@ export interface WeekStripProps {
   onSelect: (day: string) => void;
   onStep: (weeks: number) => void;
   onToday: () => void;
+  canStepBack?: boolean;
+  canStepForward?: boolean;
 }
 
-export function WeekStrip({ days, selected, today, countOf, onSelect, onStep, onToday }: WeekStripProps) {
+export function WeekStrip({
+  days,
+  selected,
+  today,
+  countOf,
+  onSelect,
+  onStep,
+  onToday,
+  canStepBack = true,
+  canStepForward = true,
+}: WeekStripProps) {
   return (
     <Card as="section" variant="plain" aria-label="Semana" className="flex flex-col gap-3 p-3 lg:p-4">
       <div className="flex items-center gap-3">
@@ -26,6 +38,7 @@ export function WeekStrip({ days, selected, today, countOf, onSelect, onStep, on
             label="Semana anterior"
             icon={<LuChevronLeft />}
             className={stepButton}
+            disabled={!canStepBack}
             onClick={() => onStep(-1)}
           />
           <Button variant="secondary" size="sm" className="lg:min-h-9" onClick={onToday}>
@@ -35,6 +48,7 @@ export function WeekStrip({ days, selected, today, countOf, onSelect, onStep, on
             label="Próxima semana"
             icon={<LuChevronRight />}
             className={stepButton}
+            disabled={!canStepForward}
             onClick={() => onStep(1)}
           />
         </div>
