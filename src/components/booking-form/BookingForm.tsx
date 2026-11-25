@@ -7,7 +7,6 @@ import {
   ctaButton,
   FieldError,
   FormAlert,
-  ListMessage,
   QueryError,
   SectionCard,
   Skeleton,
@@ -28,20 +27,12 @@ export const fieldGrid = 'grid grid-cols-[repeat(auto-fit,minmax(min(260px,100%)
 interface WhenCardProps {
   booking: BookingFormState;
   emptyNote: string;
-  waitingNote?: string | undefined;
   title?: string;
   hint?: string | undefined;
   current?: string | undefined;
 }
 
-export function WhenCard({
-  booking,
-  emptyNote,
-  waitingNote,
-  title = 'Data e horário',
-  hint,
-  current,
-}: WhenCardProps) {
+export function WhenCard({ booking, emptyNote, title = 'Data e horário', hint, current }: WhenCardProps) {
   const { days, slots, loading, loadingMore, failure, retry, empty, reach, showUntil, sourceKey, messages } =
     booking.slots;
   const error = booking.errors.date ?? booking.errors.startsAt;
@@ -53,9 +44,7 @@ export function WhenCard({
       flush
       action={hint && <span className="text-text-muted text-[0.8125rem]">{hint}</span>}
     >
-      {waitingNote && days.length === 0 && !loading && !failure && !empty ? (
-        <ListMessage>{waitingNote}</ListMessage>
-      ) : loading ? (
+      {loading ? (
         <div className={cx(whenGrid, 'gap-4', sectionPad)}>
           <Skeleton className="h-64" />
           <Skeleton className="h-64" />

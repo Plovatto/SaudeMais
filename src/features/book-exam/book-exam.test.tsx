@@ -144,7 +144,7 @@ describe('book exam', { timeout: 20_000 }, () => {
     const { calls } = serve();
     const { user } = await start();
     expect(dropdown('Unidade')).toBeDisabled();
-    expect(screen.getByText('Escolha o exame e a unidade para ver os dias e horários livres.')).toBeVisible();
+    expect(screen.queryByRole('heading', { name: 'Data e horário' })).not.toBeInTheDocument();
 
     await pick(user, 'Exame', 'Raio-X');
     await waitFor(() => expect(dropdown('Unidade')).toBeEnabled());

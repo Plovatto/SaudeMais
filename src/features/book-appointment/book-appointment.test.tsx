@@ -189,7 +189,7 @@ describe('book appointment', { timeout: 20_000 }, () => {
   it('offers only the days and times with free slots, shown in São Paulo time', async () => {
     const { calls } = serve();
     const { user } = await start();
-    expect(screen.getByText('Escolha o médico para ver os dias e horários livres.')).toBeVisible();
+    expect(screen.queryByRole('heading', { name: 'Data e horário' })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('radio', { name: /Carlos Mendes/ }));
 
