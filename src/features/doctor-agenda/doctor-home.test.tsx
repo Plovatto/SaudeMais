@@ -244,7 +244,7 @@ describe('doctor home', { timeout: 15_000 }, () => {
 
     const detail = within(screen.getByRole('dialog', { name: 'Detalhes da consulta' }));
     expect(detail.getByText('Hospital Central')).toBeVisible();
-    expect(detail.getByText('Telefone indisponível')).toBeVisible();
+    expect(detail.getByText('Não informado')).toBeVisible();
     expect(detail.getByText('Trazer o hemograma de outubro.')).toBeVisible();
     expect(detail.getByRole('button', { name: /^Cancelar consulta: Carlos Pereira/ })).toBeVisible();
   });

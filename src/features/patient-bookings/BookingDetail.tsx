@@ -60,17 +60,17 @@ function detailItems(booking: PatientBooking): InfoItem[] {
     {
       key: 'when',
       icon: <LuClock />,
-      label: 'Data e horário',
-      labelHidden: true,
+      label: 'Quando',
       boxed: false,
-      value: <span className="tabular-nums">{`${formatLongDay(startsAt)} · ${formatTime(startsAt)}`}</span>,
-      hint: formatDuration(startsAt, endsAt),
+      value: formatLongDay(startsAt),
+      hint: (
+        <span className="tabular-nums">{`${formatTime(startsAt)} · ${formatDuration(startsAt, endsAt)}`}</span>
+      ),
     },
     {
       key: 'unit',
       icon: <LuMapPin />,
-      label: 'Local',
-      labelHidden: true,
+      label: 'Onde',
       boxed: false,
       value: unit.name,
       hint: unit.address,
@@ -78,10 +78,9 @@ function detailItems(booking: PatientBooking): InfoItem[] {
     {
       key: 'phone',
       icon: <LuPhone />,
-      label: 'Telefone',
-      labelHidden: true,
+      label: 'Telefone da unidade',
       boxed: false,
-      value: <PhoneLink phone={unit.phone} plain />,
+      value: <PhoneLink phone={unit.phone} />,
     },
   ];
   if (publicCode) {
@@ -99,11 +98,8 @@ function detailItems(booking: PatientBooking): InfoItem[] {
       key: 'notes',
       icon: <LuFileText />,
       label: 'Observações',
-      labelHidden: true,
       boxed: false,
-      value: (
-        <span className="text-text-secondary text-[0.8125rem] font-normal whitespace-pre-line">{notes}</span>
-      ),
+      value: <span className="font-normal whitespace-pre-line">{notes}</span>,
     });
   }
   return items;
@@ -123,7 +119,9 @@ export function BookingDetail({ booking, titleId, onCancel, onClose, tips = fals
   const leftId = useId();
   const tipsId = useId();
   const status = bookingStatus(booking, 'patient');
-  const { title, subtitle } = bookingTitle(booking);
+  const { title, kindLabel } = bookingTitle(booking);
+  const [lead, detail] =
+    booking.kind === 'exam' ? ['Exame'] : [booking.specialty?.name ?? 'Consulta', kindLabel];
   const { actions, cancellation } = booking;
   const muted = isMuted(booking);
   const blocked = [
@@ -139,15 +137,17 @@ export function BookingDetail({ booking, titleId, onCancel, onClose, tips = fals
         {onClose && <CloseButton onClick={onClose} />}
       </header>
       <div className="flex flex-col gap-[18px] px-4 pb-5 lg:px-5">
-        <div className="flex items-center gap-4">
+        <div className="border-border flex items-center gap-4 border-b pb-[18px]">
           <DateTile startsAt={booking.startsAt} size="lg" muted={muted} />
-          <div className="flex min-w-0 flex-col gap-1">
-            <h2 id={titleId} className="text-text text-[1.375rem] leading-tight font-bold tracking-[-0.02em]">
+          <div className="flex min-w-0 flex-col">
+            <h2
+              id={titleId}
+              className="text-text text-xl leading-tight font-bold tracking-[-0.02em] text-balance break-words"
+            >
               {title}
             </h2>
-            <p className="text-text-secondary text-[0.8125rem]">
-              {booking.kind === 'exam' ? 'Exame' : `Consulta · ${subtitle}`}
-            </p>
+            <p className="text-text-secondary mt-1.5 text-sm">{lead}</p>
+            {detail && <p className="text-text-muted text-[0.8125rem]">{detail}</p>}
           </div>
         </div>
         <InfoList items={detailItems(booking)} />

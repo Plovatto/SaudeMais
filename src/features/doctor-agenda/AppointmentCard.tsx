@@ -1,18 +1,16 @@
-import { LuCircleX, LuFileText, LuMapPin, LuPhone } from 'react-icons/lu';
-import { AppointmentHeadline } from '@components/bookings/AppointmentHeadline';
-import { CancellationNote, Detail, Note, PhoneLink } from '@components/bookings/BookingDetails';
-import { bookingStatus } from '@components/bookings/booking-display';
-import { Button, ButtonLink } from '@components/ui';
+import { LuCircleX, LuClock, LuFileText, LuMapPin, LuPhone } from 'react-icons/lu';
+import { CancellationNote, Note, PhoneLink } from '@components/bookings/BookingDetails';
+import { bookingStatus, hasStarted } from '@components/bookings/booking-display';
+import { DateTile } from '@components/bookings/DateTile';
+import { Button, ButtonLink, InfoList, StatusChip } from '@components/ui';
 import { footerBar } from '@components/ui/styles';
-import { areas } from '@constants/areas';
 import { resultsLink } from '@constants/patient-results';
 import { visitTypeLabels } from '@constants/visit-types';
 import type { DoctorAppointment } from '@lib/api/models';
 import { cx } from '@lib/cx';
+import { formatDuration, formatLongDay, formatTime } from '@lib/date';
 import { availableActions } from './appointment-actions';
 import { ActionTarget, DecisionButton, type DecisionState } from './DecisionButton';
-
-const PatientIcon = areas.patient.icon;
 
 export interface AppointmentActionsProps extends DecisionState {
   appointment: DoctorAppointment;
@@ -20,33 +18,90 @@ export interface AppointmentActionsProps extends DecisionState {
   footer?: boolean;
 }
 
-export function AppointmentHeading({ appointment }: { appointment: DoctorAppointment }) {
+export function AppointmentStatus({
+  appointment,
+  className,
+}: {
+  appointment: DoctorAppointment;
+  className?: string;
+}) {
+  const status = bookingStatus(appointment, 'doctor');
   return (
-    <AppointmentHeadline
-      iconRole="patient"
-      icon={<PatientIcon />}
-      title={appointment.patient.fullName}
-      subtitle={visitTypeLabels[appointment.visitType]}
-      startsAt={appointment.startsAt}
-      status={bookingStatus(appointment, 'doctor')}
-    />
+    <StatusChip tone={status.tone} icon={status.icon} className={className}>
+      {status.label}
+    </StatusChip>
+  );
+}
+
+interface AppointmentHeadingProps {
+  appointment: DoctorAppointment;
+  titleId?: string;
+  withStatus?: boolean;
+}
+
+export function AppointmentHeading({ appointment, titleId, withStatus = true }: AppointmentHeadingProps) {
+  const Title = titleId ? 'h2' : 'p';
+  return (
+    <div className="border-border flex items-center gap-4 border-b pb-[18px]">
+      <DateTile startsAt={appointment.startsAt} size="lg" muted={hasStarted(appointment.startsAt)} />
+      <div className="flex min-w-0 flex-col items-start">
+        {withStatus && <AppointmentStatus appointment={appointment} className="mb-2" />}
+        <Title
+          id={titleId}
+          className="text-text text-xl leading-tight font-bold tracking-[-0.02em] text-balance break-words"
+        >
+          {appointment.patient.fullName}
+        </Title>
+        <p className="text-text-secondary mt-1 text-sm">{visitTypeLabels[appointment.visitType]}</p>
+      </div>
+    </div>
   );
 }
 
 export function AppointmentInfo({ appointment }: { appointment: DoctorAppointment }) {
-  const { patient, unit, notes, cancellation } = appointment;
+  const { patient, unit, notes, cancellation, startsAt, endsAt } = appointment;
   return (
-    <dl className="text-text-secondary flex flex-col gap-3 text-sm">
-      <Detail icon={<LuPhone />} label="Telefone do paciente">
-        {patient.phone ? <PhoneLink phone={patient.phone} /> : 'Telefone indisponível'}
-      </Detail>
-      <Detail icon={<LuMapPin />} label="Local">
-        <span className="text-text block font-medium">{unit.name}</span>
-        {unit.address}
-      </Detail>
-      {notes && <Note label="Observações do paciente">{notes}</Note>}
-      {cancellation && <CancellationNote cancellation={cancellation} viewer="doctor" />}
-    </dl>
+    <>
+      <InfoList
+        items={[
+          {
+            key: 'when',
+            icon: <LuClock />,
+            label: 'Quando',
+            boxed: false,
+            value: formatLongDay(startsAt),
+            hint: (
+              <span className="tabular-nums">{`${formatTime(startsAt)} · ${formatDuration(startsAt, endsAt)}`}</span>
+            ),
+          },
+          {
+            key: 'phone',
+            icon: <LuPhone />,
+            label: 'Telefone do paciente',
+            boxed: false,
+            value: patient.phone ? (
+              <PhoneLink phone={patient.phone} />
+            ) : (
+              <span className="text-text-muted font-normal">Não informado</span>
+            ),
+          },
+          {
+            key: 'unit',
+            icon: <LuMapPin />,
+            label: 'Local',
+            boxed: false,
+            value: unit.name,
+            hint: unit.address,
+          },
+        ]}
+      />
+      {(notes || cancellation) && (
+        <dl className="flex flex-col gap-3 text-sm">
+          {notes && <Note label="Observações do paciente">{notes}</Note>}
+          {cancellation && <CancellationNote cancellation={cancellation} viewer="doctor" />}
+        </dl>
+      )}
+    </>
   );
 }
 

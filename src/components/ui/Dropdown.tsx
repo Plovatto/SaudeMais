@@ -101,7 +101,7 @@ export function Dropdown({
   ...field
 }: DropdownProps) {
   const desktop = useMediaQuery(DESKTOP_QUERY);
-  const { open, setOpen, dismiss, rootRef, contentId, triggerProps } = useFloating();
+  const { open, setOpen, dismiss, rootRef, contentId, triggerProps, placement } = useFloating();
   const listId = useId();
   const initialRef = useRef<HTMLButtonElement>(null);
   const chosen = options.find((option) => option.value === value);
@@ -170,7 +170,11 @@ export function Dropdown({
       {open && desktop && (
         <div
           id={contentId}
-          className={cx(floatingPanel('start'), 'mt-1.5 max-h-80 w-full overflow-y-auto p-1.5')}
+          style={placement.style}
+          className={cx(
+            floatingPanel('start', placement.side),
+            'max-h-[min(20rem,var(--floating-room,20rem))] w-full p-1.5',
+          )}
         >
           {list}
         </div>

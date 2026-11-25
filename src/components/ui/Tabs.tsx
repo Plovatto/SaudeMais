@@ -7,6 +7,7 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react';
+import { scrollFadeClass, useScrollFade } from '@hooks/useScrollFade';
 import { cx } from '@lib/cx';
 import { rovingIndex } from '@lib/roving-index';
 import { CountBadge } from './CountBadge';
@@ -33,7 +34,7 @@ export interface TabsProps<T extends string> {
 const listLayout: Record<NonNullable<TabsProps<string>['variant']>, string> = {
   pill: 'gap-3',
   tile: 'gap-3',
-  line: 'border-border gap-1 border-b',
+  line: 'border-border gap-6 border-b',
   chip: '-mx-1 gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] lg:flex-wrap lg:overflow-visible lg:pb-0 [&::-webkit-scrollbar]:hidden',
 };
 
@@ -104,6 +105,16 @@ export function Tabs<T extends string>({
 }: TabsProps<T>) {
   const listRef = useRef<HTMLDivElement>(null);
   const indicator = useIndicator(listRef, value, variant === 'line');
+  const fade = useScrollFade(
+    listRef,
+    variant === 'chip',
+    items
+      .map(
+        (item) =>
+          `${item.label}:${typeof item.count === 'number' || typeof item.count === 'string' ? item.count : ''}`,
+      )
+      .join('|'),
+  );
   useLayoutEffect(() => {
     if (variant !== 'chip') return;
     listRef.current
@@ -126,7 +137,14 @@ export function Tabs<T extends string>({
       role="tablist"
       aria-label={label}
       onKeyDown={onKeyDown}
-      className={cx('flex', variant === 'line' && 'relative', listLayout[variant], className)}
+      data-fade={fade}
+      className={cx(
+        'flex',
+        variant === 'line' && 'relative',
+        variant === 'chip' && scrollFadeClass,
+        listLayout[variant],
+        className,
+      )}
     >
       {variant === 'line' && indicator && <LineIndicator box={indicator} />}
       {items.map((item) => {
@@ -146,7 +164,7 @@ export function Tabs<T extends string>({
               type="button"
               {...tab}
               className={cx(
-                '-mb-px inline-flex min-h-11 items-center gap-2 border-b-2 border-transparent px-3 text-sm font-semibold whitespace-nowrap transition-colors duration-150 forced-colors:border-transparent',
+                '-mb-px inline-flex min-h-11 items-center gap-2 border-b-2 border-transparent text-sm font-semibold whitespace-nowrap transition-colors duration-150 forced-colors:border-transparent',
                 selected ? 'text-role-text' : 'text-text-secondary can-hover:text-text',
               )}
             >

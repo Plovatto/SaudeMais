@@ -1,11 +1,32 @@
 import { useEffect, useRef, useState } from 'react';
-import { PERIOD_PRESETS } from '@components/reports/report-periods';
+import {
+  MAX_REPORT_DAYS,
+  PERIOD_PRESETS,
+  REPORT_YEARS_BACK,
+  reportLimits,
+} from '@components/reports/report-periods';
 import type { Period } from '@components/reports/reports-api';
 import { Button, Card, Input, RadioChips } from '@components/ui';
 import type { FieldErrors } from '@lib/api/api-error';
+import { daysBetween, isDateWithin, type DateLimits } from '@lib/date';
 import { usePeriod } from './usePeriod';
 
 const REVERSED_MESSAGE = 'A data final deve ser igual ou posterior à inicial.';
+const OUT_OF_RANGE_MESSAGE = `Escolha uma data dos últimos ${REPORT_YEARS_BACK} anos até 1 ano à frente.`;
+const TOO_LONG_MESSAGE = `Escolha um período de no máximo ${MAX_REPORT_DAYS} dias.`;
+
+type Draft = { from: string; to: string };
+type DraftErrors = Partial<Record<keyof Draft, string>>;
+
+function validate({ from, to }: Draft, limits: DateLimits): DraftErrors {
+  const issues: DraftErrors = {};
+  if (from !== '' && !isDateWithin(from, limits)) issues.from = OUT_OF_RANGE_MESSAGE;
+  if (to !== '' && !isDateWithin(to, limits)) issues.to = OUT_OF_RANGE_MESSAGE;
+  if (issues.from || issues.to || from === '' || to === '') return issues;
+  if (from > to) return { to: REVERSED_MESSAGE };
+  if (daysBetween(from, to) >= MAX_REPORT_DAYS) return { to: TOO_LONG_MESSAGE };
+  return issues;
+}
 
 interface CustomPeriodProps {
   period: Period;
@@ -15,14 +36,16 @@ interface CustomPeriodProps {
 
 function CustomPeriodForm({ period, errors, onApply }: CustomPeriodProps) {
   const [draft, setDraft] = useState(period);
-  const [reversed, setReversed] = useState(false);
-  const toError = reversed ? REVERSED_MESSAGE : errors['to'];
+  const [issues, setIssues] = useState<DraftErrors>({});
+  const limits = reportLimits();
+  const fromError = issues.from ?? errors['from'];
+  const toError = issues.to ?? errors['to'];
   const fromRef = useRef<HTMLInputElement>(null);
   const toRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    if (errors['from']) fromRef.current?.focus();
+    if (fromError) fromRef.current?.focus();
     else if (toError) toRef.current?.focus();
-  }, [errors, toError]);
+  }, [fromError, toError]);
 
   return (
     <form
@@ -31,9 +54,9 @@ function CustomPeriodForm({ period, errors, onApply }: CustomPeriodProps) {
       className="flex flex-col gap-3 sm:flex-row sm:items-start"
       onSubmit={(event) => {
         event.preventDefault();
-        const invalid = draft.from !== '' && draft.to !== '' && draft.from > draft.to;
-        setReversed(invalid);
-        if (!invalid) onApply(draft);
+        const found = validate(draft, limits);
+        setIssues(found);
+        if (!found.from && !found.to) onApply(draft);
       }}
     >
       <Input
@@ -41,9 +64,10 @@ function CustomPeriodForm({ period, errors, onApply }: CustomPeriodProps) {
         type="date"
         label="De"
         value={draft.from}
-        error={errors['from']}
+        {...limits}
+        error={fromError}
         onChange={(event) => {
-          setReversed(false);
+          setIssues({});
           setDraft({ ...draft, from: event.target.value });
         }}
         className="sm:flex-1"
@@ -53,9 +77,10 @@ function CustomPeriodForm({ period, errors, onApply }: CustomPeriodProps) {
         type="date"
         label="Até"
         value={draft.to}
+        {...limits}
         error={toError}
         onChange={(event) => {
-          setReversed(false);
+          setIssues({});
           setDraft({ ...draft, to: event.target.value });
         }}
         className="sm:flex-1"

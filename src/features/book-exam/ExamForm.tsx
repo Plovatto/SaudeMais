@@ -4,6 +4,7 @@ import { useEffect, useEffectEvent } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { LuClock, LuFlaskConical, LuMapPin } from 'react-icons/lu';
 import { BookingForm, fieldGrid, NotesCard, WhenCard } from '@components/booking-form/BookingForm';
+import { Reveal } from '@components/booking-form/Reveal';
 import { whenItem } from '@components/booking-form/when';
 import { toBody } from '@components/booking-form/slot-schema';
 import { useBookingForm } from '@components/booking-form/useBookingForm';
@@ -172,12 +173,13 @@ export function ExamForm({ onBooked }: { onBooked: (exam: ExamBooking) => void }
           </FormAlert>
         )}
       </SectionCard>
-      <WhenCard
-        booking={booking}
-        waitingNote="Escolha o exame e a unidade para ver os dias e horários livres."
-        emptyNote="Este local não tem vagas livres para o exame nas próximas semanas. Escolha outro local."
-      />
-      <NotesCard booking={booking} placeholder="Algo que a unidade deva saber antes do exame" />
+      <Reveal show={examTypeId !== '' && unitId !== ''} className="flex flex-col gap-4 lg:gap-5">
+        <WhenCard
+          booking={booking}
+          emptyNote="Este local não tem vagas livres para o exame nas próximas semanas. Escolha outro local."
+        />
+        <NotesCard booking={booking} placeholder="Algo que a unidade deva saber antes do exame" />
+      </Reveal>
     </BookingForm>
   );
 }

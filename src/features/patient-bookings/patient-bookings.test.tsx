@@ -196,9 +196,10 @@ describe('patient bookings', { timeout: 15_000 }, () => {
 
     expect(router.state.location.search).toBe('?id=b1');
     expect(detail.getByRole('heading', { name: 'Dr. João Silveira' })).toBeVisible();
-    expect(detail.getByText('Consulta · Cardiologia · Rotina')).toBeVisible();
-    expect(detail.getByText('Quinta, 10 de janeiro · 10:00')).toBeVisible();
-    expect(detail.getByText('30 minutos')).toBeVisible();
+    expect(detail.getByText('Cardiologia')).toBeVisible();
+    expect(detail.getByText('Rotina')).toBeVisible();
+    expect(detail.getByText('Quinta, 10 de janeiro')).toBeVisible();
+    expect(detail.getByText('10:00 · 30 minutos')).toBeVisible();
     expect(detail.getByText('Rua das Flores, 123')).toBeVisible();
     expect(detail.getByRole('link', { name: '(11) 3333-4444' })).toHaveAttribute('href', 'tel:+551133334444');
     expect(detail.getByText('Consulta de rotina')).toBeVisible();

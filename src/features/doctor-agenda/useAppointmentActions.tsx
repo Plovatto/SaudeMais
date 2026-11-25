@@ -39,9 +39,7 @@ export function useAppointmentActions(fallbackFocus: RefObject<HTMLElement | nul
         >
           {viewing && (
             <DrawerBody>
-              <div className="flex items-start gap-3">
-                <AppointmentHeading appointment={viewing} />
-              </div>
+              <AppointmentHeading appointment={viewing} />
               <AppointmentInfo appointment={viewing} />
               <AppointmentActions
                 appointment={viewing}

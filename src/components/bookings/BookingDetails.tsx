@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { LuTriangleAlert } from 'react-icons/lu';
-import { IconSlot, StatusChip } from '@components/ui';
+import { StatusChip } from '@components/ui';
 import type { Role } from '@constants/areas';
 import type { PatientBooking } from '@lib/api/models';
 import { formatDateTime } from '@lib/date';
@@ -8,16 +8,6 @@ import { cancellers } from '@lib/messages/notifications.pt-BR';
 import { formatPhone } from '@lib/phone';
 
 type Cancellation = NonNullable<PatientBooking['cancellation']>;
-
-export function Detail({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
-  return (
-    <div className="flex items-start gap-2">
-      <IconSlot className="text-text-secondary mt-0.5">{icon}</IconSlot>
-      <dt className="sr-only">{label}</dt>
-      <dd className="min-w-0">{children}</dd>
-    </div>
-  );
-}
 
 export function Note({ label, children }: { label: string; children: ReactNode }) {
   return (

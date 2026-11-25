@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { LuFileText, LuMapPin, LuStethoscope, LuUserRound } from 'react-icons/lu';
 import { BookingForm, fieldGrid, NotesCard, WhenCard } from '@components/booking-form/BookingForm';
+import { Reveal } from '@components/booking-form/Reveal';
 import { whenItem } from '@components/booking-form/when';
 import { toBody } from '@components/booking-form/slot-schema';
 import { useBookingForm } from '@components/booking-form/useBookingForm';
@@ -195,12 +196,13 @@ export function AppointmentForm({ onBooked }: { onBooked: (appointment: Appointm
           />
         )}
       />
-      <WhenCard
-        booking={booking}
-        waitingNote="Escolha o médico para ver os dias e horários livres."
-        emptyNote="Este médico não tem vagas livres nas próximas semanas. Escolha outro médico."
-      />
-      <NotesCard booking={booking} placeholder="Algo que o médico deva saber antes da consulta" />
+      <Reveal show={doctorId !== ''} className="flex flex-col gap-4 lg:gap-5">
+        <WhenCard
+          booking={booking}
+          emptyNote="Este médico não tem vagas livres nas próximas semanas. Escolha outro médico."
+        />
+        <NotesCard booking={booking} placeholder="Algo que o médico deva saber antes da consulta" />
+      </Reveal>
     </BookingForm>
   );
 }

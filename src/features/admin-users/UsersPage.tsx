@@ -6,6 +6,7 @@ import { Button, Card, EmptyState, SearchInput, Select, TabPanel, Tabs } from '@
 import { NEW_USER, USER_PARAM } from '@constants/admin-users';
 import { RESET_PAGE } from '@hooks/usePageParam';
 import { useSearchDraft } from '@hooks/useSearchDraft';
+import { scrollFadeClass, useScrollFade } from '@hooks/useScrollFade';
 import { useSearchParam } from '@hooks/useSearchParam';
 import { useTabbedList } from '@hooks/useTabbedList';
 import { useCurrentUser } from '@lib/auth/useSession';
@@ -43,6 +44,8 @@ const found = (total: number) => plural(total, 'usuário encontrado', 'usuários
 export function UsersPage() {
   const currentUser = useCurrentUser();
   const results = useRef<HTMLParagraphElement>(null);
+  const tabsScroller = useRef<HTMLDivElement>(null);
+  const tabsFade = useScrollFade(tabsScroller);
   const { search, setSearch, searchParam } = useSearchDraft('busca');
   const [statusParam, setStatusParam] = useSearchParam('situacao', 'todos');
   const [, setUserParam] = useSearchParam(USER_PARAM);
@@ -73,7 +76,7 @@ export function UsersPage() {
           </Button>
         }
       />
-      <div className="overflow-x-auto">
+      <div ref={tabsScroller} data-fade={tabsFade} className={`overflow-x-auto ${scrollFadeClass}`}>
         <Tabs<RoleTab>
           id={TABS_ID}
           label="Filtrar por perfil"

@@ -575,7 +575,7 @@ describe('doctor time off', { timeout: 15_000 }, () => {
     expect(rows).toHaveLength(2);
     expect(rows[0]).toHaveTextContent('Véspera de Natal');
     expect(rows[0]).toHaveTextContent('Quinta, 24 de dezembro');
-    expect(rows[1]).toHaveTextContent('Dia bloqueado');
+    expect(rows[1]).toHaveTextContent('Sem motivo informado');
     expect(
       within(rows[1] as HTMLElement).getByRole('button', {
         name: 'Remover bloqueio de Sexta, 25 de dezembro',
@@ -592,7 +592,7 @@ describe('doctor time off', { timeout: 15_000 }, () => {
     serve();
     renderApp(PAGE);
 
-    expect(await (await timeOffCard()).findByText('Nenhuma data bloqueada.')).toBeInTheDocument();
+    expect(await (await timeOffCard()).findByText('Nenhuma data bloqueada')).toBeInTheDocument();
   });
 
   it('blocks a day with a trimmed reason and keeps the hours form untouched', async () => {

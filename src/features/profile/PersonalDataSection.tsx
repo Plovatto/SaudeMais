@@ -51,7 +51,7 @@ export function PersonalDataSection({ user, withBirthDate, onEdit }: PersonalDat
           value={user.email}
           extra={
             <span className="text-text-muted inline-flex items-center gap-1.5 text-xs">
-              <LuLock aria-hidden />
+              <LuLock aria-hidden className="size-3 shrink-0 -translate-y-px" />
               Fixo
               <span className="sr-only">: usado para entrar, não pode ser alterado.</span>
             </span>

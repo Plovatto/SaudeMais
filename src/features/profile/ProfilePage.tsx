@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { LuArrowUpDown, LuLogOut } from 'react-icons/lu';
-import { Link } from 'react-router';
+import { PageColumn } from '@components/layout/PageColumn';
 import { PageHeader } from '@components/layout/PageHeader';
 import { useAreaRole } from '@components/layout/route-handle';
-import { ConfirmDialog, stagger } from '@components/ui';
-import { areas } from '@constants/areas';
+import { useSignOutConfirm } from '@components/layout/useSignOutConfirm';
+import { stagger, TabPanel, Tabs } from '@components/ui';
+import { areas, TAB_PARAM } from '@constants/areas';
+import { useSearchParam } from '@hooks/useSearchParam';
 import { useCurrentUser } from '@lib/auth/useSession';
-import { useSignOut } from '@lib/auth/useSignOut';
 import { AppearanceSection } from './AppearanceSection';
 import { EditProfileDrawer } from './EditProfileDrawer';
 import { EmailPreferencesSection } from './EmailPreferencesSection';
@@ -16,71 +16,85 @@ import { ProfileHero } from './ProfileHero';
 import { SecuritySection } from './SecuritySection';
 import { SessionsSection } from './SessionsSection';
 
-type Panel = 'edit' | 'password' | 'logout' | null;
+type Panel = 'edit' | 'password' | null;
+
+const TABS_ID = 'profile';
+
+const TABS = [
+  { value: 'dados', label: 'Dados pessoais' },
+  { value: 'seguranca', label: 'Segurança' },
+  { value: 'preferencias', label: 'Preferências' },
+] as const;
+
+type TabValue = (typeof TABS)[number]['value'];
+
+const isTab = (value: string): value is TabValue => TABS.some((tab) => tab.value === value);
 
 export function ProfilePage() {
   const user = useCurrentUser();
   const role = useAreaRole();
-  const signOut = useSignOut();
+  const logout = useSignOutConfirm();
   const [panel, setPanel] = useState<Panel>(null);
-  const [leaving, setLeaving] = useState(false);
   const close = () => setPanel(null);
   const withBirthDate = role === 'patient';
   const Area = areas[role];
+  const [tabParam, setTab] = useSearchParam(TAB_PARAM, TABS[0].value);
+  const tab = isTab(tabParam) ? tabParam : TABS[0].value;
 
   return (
     <>
-      <PageHeader
-        title="Meu perfil"
-        subtitle="Seus dados, segurança e preferências."
-        back
-        backFallback={Area.base}
-      />
-      <div className="flex flex-col gap-4 lg:gap-5">
-        {user.roles.length > 1 && (
-          <Link
-            to="/perfis"
-            className="rounded-card border-border bg-surface shadow-field can-hover:border-border-strong flex items-center gap-3 border px-3.5 py-3 transition-colors duration-150"
-          >
-            <span
-              aria-hidden
-              className="bg-role-strong text-on-role rounded-field grid size-8 shrink-0 place-items-center"
-            >
-              <Area.icon />
-            </span>
-            <span className="flex min-w-0 flex-1 flex-col">
-              <span className="text-text-muted text-[0.6875rem] font-medium tracking-[0.02em]">
-                Perfil atual
-              </span>{' '}
-              <b className="text-text text-[0.9375rem] font-[650]">{Area.label}</b>
-            </span>{' '}
-            <span className="text-role-text inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold">
-              Trocar
-              <LuArrowUpDown aria-hidden />
-            </span>
-          </Link>
-        )}
-        <div className={stagger(0)}>
-          <ProfileHero user={user} role={role} onEdit={() => setPanel('edit')} />
-        </div>
-        <div className={`grid items-start gap-4 lg:grid-cols-2 lg:gap-5 ${stagger(1)}`}>
-          <div className="flex min-w-0 flex-col gap-4 lg:gap-5">
-            <PersonalDataSection user={user} withBirthDate={withBirthDate} onEdit={() => setPanel('edit')} />
-            <SecuritySection
-              passwordChangedAt={user.passwordChangedAt}
-              onChangePassword={() => setPanel('password')}
-              onLogout={() => setPanel('logout')}
+      <PageColumn>
+        <PageHeader
+          title="Meu perfil"
+          subtitle="Seus dados, segurança e preferências."
+          back
+          backFallback={Area.base}
+        />
+        <div className="flex flex-col gap-4 lg:gap-5">
+          <div className={stagger(0)}>
+            <ProfileHero user={user} role={role} onEdit={() => setPanel('edit')} />
+          </div>
+          <div className={stagger(1)}>
+            <Tabs<TabValue>
+              id={TABS_ID}
+              label="Seções do perfil"
+              variant="line"
+              items={[...TABS]}
+              value={tab}
+              onValueChange={(next) => setTab(next, { replace: true })}
             />
-            <AppearanceSection />
-          </div>
-          <div className="flex min-w-0 flex-col gap-4 lg:gap-5">
-            <EmailPreferencesSection />
+            <TabPanel
+              tabsId={TABS_ID}
+              value={tab}
+              className="mt-4 flex flex-col gap-4 focus-visible:outline-none lg:mt-5 lg:gap-5"
+            >
+              {tab === 'dados' && (
+                <PersonalDataSection
+                  user={user}
+                  withBirthDate={withBirthDate}
+                  onEdit={() => setPanel('edit')}
+                />
+              )}
+              {tab === 'seguranca' && (
+                <>
+                  <SecuritySection
+                    passwordChangedAt={user.passwordChangedAt}
+                    onChangePassword={() => setPanel('password')}
+                    onLogout={logout.ask}
+                  />
+                  <SessionsSection />
+                </>
+              )}
+              {tab === 'preferencias' && (
+                <>
+                  <EmailPreferencesSection role={role} />
+                  <AppearanceSection />
+                </>
+              )}
+            </TabPanel>
           </div>
         </div>
-        <div className={stagger(2)}>
-          <SessionsSection />
-        </div>
-      </div>
+      </PageColumn>
       <EditProfileDrawer
         open={panel === 'edit'}
         user={user}
@@ -89,22 +103,7 @@ export function ProfilePage() {
         onClose={close}
       />
       <PasswordDrawer open={panel === 'password'} onClose={close} />
-      <ConfirmDialog
-        open={panel === 'logout'}
-        onClose={close}
-        title="Sair da conta?"
-        description="Você vai precisar entrar de novo com seu e-mail e senha."
-        icon={<LuLogOut />}
-        centered
-        tone="primary"
-        cancelLabel="Continuar aqui"
-        confirmLabel="Sair"
-        loading={leaving}
-        onConfirm={() => {
-          setLeaving(true);
-          void signOut();
-        }}
-      />
+      {logout.dialog}
     </>
   );
 }

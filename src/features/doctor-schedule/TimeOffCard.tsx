@@ -1,10 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type RefObject } from 'react';
+import { LuCalendarOff, LuPlus } from 'react-icons/lu';
 import { DateTile } from '@components/bookings/DateTile';
 import {
+  Button,
   CloseButton,
   ConfirmDialog,
-  ListPlaceholder,
+  EmptyState,
+  ListSkeleton,
   QueryError,
   SectionCard,
   SettingRow,
@@ -14,7 +17,6 @@ import { sectionPad } from '@components/ui/styles';
 import { ApiError } from '@lib/api/api-error';
 import { formatLongDay, middayOf } from '@lib/date';
 import { errorMessage } from '@lib/messages/errors.pt-BR';
-import { AddButton } from './AddButton';
 import { timeOffApi, timeOffQuery, type ScheduleWarning, type TimeOff } from './schedule-api';
 import { WarningAlert } from './WarningAlert';
 
@@ -55,7 +57,24 @@ export function TimeOffCard({ warnings, addRef, onAdd, onRemoved }: TimeOffCardP
   });
 
   return (
-    <SectionCard title="Folgas e bloqueios" flush className="lg:flex-[1_0_auto]">
+    <SectionCard
+      title="Folgas e bloqueios"
+      description="Dias sem horários livres para os pacientes."
+      flush
+      className="lg:flex-[1_0_auto]"
+      action={
+        <Button
+          ref={addRef}
+          variant="secondary"
+          size="sm"
+          icon={<LuPlus />}
+          aria-label="Bloquear uma data"
+          onClick={onAdd}
+        >
+          Bloquear
+        </Button>
+      }
+    >
       <WarningAlert
         warnings={warnings}
         one="consulta já estava marcada nesta data"
@@ -74,8 +93,8 @@ export function TimeOffCard({ warnings, addRef, onAdd, onRemoved }: TimeOffCardP
                 as="li"
                 className="gap-3.5 px-4 py-3 lg:px-5"
                 leading={<DateTile startsAt={middayOf(item.date)} />}
-                title={item.reason ?? 'Dia bloqueado'}
-                meta={day}
+                title={day}
+                meta={item.reason ?? 'Sem motivo informado'}
                 trailing={
                   <CloseButton
                     label={`Remover bloqueio de ${day}${item.reason ? ` (${item.reason})` : ''}`}
@@ -86,14 +105,16 @@ export function TimeOffCard({ warnings, addRef, onAdd, onRemoved }: TimeOffCardP
             );
           })}
         </ul>
+      ) : list.isPending ? (
+        <ListSkeleton />
       ) : (
-        <ListPlaceholder pending={list.isPending} message="Nenhuma data bloqueada." />
+        <EmptyState
+          icon={<LuCalendarOff />}
+          title="Nenhuma data bloqueada"
+          description="Bloqueie dias de férias, congressos ou feriados."
+          className="py-8"
+        />
       )}
-      <div className={sectionPad}>
-        <AddButton ref={addRef} onClick={onAdd}>
-          Bloquear uma data
-        </AddButton>
-      </div>
       <ConfirmDialog
         open={pending !== null}
         onClose={() => setPending(null)}

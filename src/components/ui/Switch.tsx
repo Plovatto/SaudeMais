@@ -39,6 +39,7 @@ export function Switch({
       }}
       className={cx(
         'rounded-field text-text inline-flex min-h-11 min-w-11 items-center gap-3 text-sm font-medium',
+        labelHidden && 'justify-end',
         disabledState,
         className,
       )}

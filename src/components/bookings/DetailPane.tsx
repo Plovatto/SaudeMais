@@ -13,6 +13,7 @@ interface DetailPaneProps {
   open: boolean;
   paneKey: string | undefined;
   desktopVisible?: boolean;
+  className?: string;
   onClose: () => void;
   children: (view: DetailPaneView) => ReactNode;
 }
@@ -23,6 +24,7 @@ export function DetailPane({
   open,
   paneKey,
   desktopVisible = open,
+  className,
   onClose,
   children,
 }: DetailPaneProps) {
@@ -34,6 +36,7 @@ export function DetailPane({
           aria-label={label}
           className={cx(
             'rounded-card border-border bg-surface motion-safe:animate-pop sticky top-4 border',
+            className,
             paneKey === undefined ? 'shadow-card' : 'shadow-raised',
           )}
         >

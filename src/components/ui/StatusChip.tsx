@@ -8,7 +8,7 @@ export interface StatusChipProps {
   icon?: ReactNode;
   dot?: boolean;
   children: ReactNode;
-  className?: string;
+  className?: string | undefined;
 }
 
 export function StatusChip({ tone, icon, dot = true, children, className }: StatusChipProps) {

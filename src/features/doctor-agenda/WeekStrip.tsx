@@ -14,9 +14,23 @@ export interface WeekStripProps {
   onSelect: (day: string) => void;
   onStep: (weeks: number) => void;
   onToday: () => void;
+  isSelectable?: (day: string) => boolean;
+  canStepBack?: boolean;
+  canStepForward?: boolean;
 }
 
-export function WeekStrip({ days, selected, today, countOf, onSelect, onStep, onToday }: WeekStripProps) {
+export function WeekStrip({
+  days,
+  selected,
+  today,
+  countOf,
+  onSelect,
+  onStep,
+  onToday,
+  isSelectable = () => true,
+  canStepBack = true,
+  canStepForward = true,
+}: WeekStripProps) {
   return (
     <Card as="section" variant="plain" aria-label="Semana" className="flex flex-col gap-3 p-3 lg:p-4">
       <div className="flex items-center gap-3">
@@ -26,6 +40,7 @@ export function WeekStrip({ days, selected, today, countOf, onSelect, onStep, on
             label="Semana anterior"
             icon={<LuChevronLeft />}
             className={stepButton}
+            disabled={!canStepBack}
             onClick={() => onStep(-1)}
           />
           <Button variant="secondary" size="sm" className="lg:min-h-9" onClick={onToday}>
@@ -35,6 +50,7 @@ export function WeekStrip({ days, selected, today, countOf, onSelect, onStep, on
             label="Próxima semana"
             icon={<LuChevronRight />}
             className={stepButton}
+            disabled={!canStepForward}
             onClick={() => onStep(1)}
           />
         </div>
@@ -50,9 +66,10 @@ export function WeekStrip({ days, selected, today, countOf, onSelect, onStep, on
               type="button"
               aria-pressed={on}
               aria-current={day === today ? 'date' : undefined}
+              disabled={!isSelectable(day)}
               onClick={() => onSelect(day)}
               className={cx(
-                'rounded-tile flex min-h-16 cursor-pointer flex-col items-center justify-center gap-1 border px-1 py-2 transition-[background-color,border-color,box-shadow] duration-150',
+                'rounded-tile flex min-h-16 cursor-pointer flex-col items-center justify-center gap-1 border px-1 py-2 transition-[background-color,border-color,box-shadow] duration-150 disabled:cursor-not-allowed disabled:opacity-40',
                 on
                   ? 'border-role-strong bg-role-strong text-on-role shadow-button'
                   : cx(

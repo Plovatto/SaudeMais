@@ -154,31 +154,50 @@ describe('role areas', () => {
 });
 
 describe('account', { timeout: 15_000 }, () => {
-  it('opens the profile of the current area and switches the profile', async () => {
+  it('switches the profile from the account menu and marks the current one', async () => {
     const { user, router } = renderAt('/medico');
 
-    await user.click((await navigation('Conta')).getByRole('link', { name: 'Meu perfil' }));
+    const [trigger] = await screen.findAllByRole('button', { name: /abrir menu da conta/ });
+    if (!trigger) throw new Error('Account menu not found');
+    await user.click(trigger);
+    const menu = screen.getByRole('menu', { name: 'Menu da conta' });
+
+    expect(within(menu).getByRole('menuitemradio', { name: 'Médico' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    await user.click(within(menu).getByRole('menuitemradio', { name: 'Paciente' }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/paciente'));
+  });
+
+  it('opens the profile of the current area from the account menu', async () => {
+    const { user, router } = renderAt('/medico');
+
+    const [trigger] = await screen.findAllByRole('button', { name: /abrir menu da conta/ });
+    if (!trigger) throw new Error('Account menu not found');
+    await user.click(trigger);
+    await user.click(screen.getByRole('menuitem', { name: 'Meu perfil' }));
+
     expect(await screen.findByRole('heading', { level: 1, name: 'Meu perfil' })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/medico/perfil');
-
-    await user.click(screen.getByRole('link', { name: 'Perfil atual Médico Trocar' }));
-    expect(
-      await screen.findByRole('heading', { level: 1, name: 'Escolha seu perfil' }, { timeout: 5000 }),
-    ).toBeInTheDocument();
   });
 
   it('hides the profile switch for accounts with a single role', async () => {
-    renderApp('/paciente/perfil', { signedInAs: ['patient'] });
+    const { user } = renderApp('/paciente', { signedInAs: ['patient'] });
 
-    await screen.findByRole('heading', { level: 1, name: 'Meu perfil' });
+    const [trigger] = await screen.findAllByRole('button', { name: /abrir menu da conta/ });
+    if (!trigger) throw new Error('Account menu not found');
+    await user.click(trigger);
 
-    expect(screen.queryByRole('link', { name: /^Perfil atual/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Meu perfil' })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitemradio')).not.toBeInTheDocument();
   });
 
   it('leaves the account from the profile page', async () => {
     mockApi({ status: 204 });
     const { user, router } = renderAt('/admin/perfil');
 
+    await user.click(await screen.findByRole('tab', { name: 'Segurança' }));
     await user.click(await screen.findByRole('button', { name: 'Sair da conta' }));
     await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Sair' }));
 

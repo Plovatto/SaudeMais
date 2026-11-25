@@ -25,7 +25,7 @@ export function Popover({
   className,
   panelClassName,
 }: PopoverProps) {
-  const { open, setOpen, dismiss, rootRef, contentId, triggerProps } = useFloating();
+  const { open, setOpen, dismiss, rootRef, contentId, triggerProps, placement } = useFloating();
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -50,13 +50,14 @@ export function Popover({
           id={contentId}
           role="dialog"
           aria-label={title}
+          style={placement.style}
           tabIndex={-1}
           onClick={(event) => {
             if (event.target instanceof Element && event.target.closest('a')) dismiss('outside');
           }}
           className={cx(
-            floatingPanel(align),
-            'mt-2 w-[min(22rem,calc(100vw-2rem))] p-4 focus-visible:-outline-offset-2',
+            floatingPanel(align, placement.side),
+            'w-[min(22rem,calc(100vw-2rem))] p-4 focus-visible:-outline-offset-2',
             panelClassName,
           )}
         >

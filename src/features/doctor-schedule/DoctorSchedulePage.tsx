@@ -175,7 +175,7 @@ function ScheduleForm({ schedule }: { schedule: DoctorSchedule }) {
               />
             ))}
           </div>
-          <div className={cx('flex min-w-0 flex-col gap-4 lg:gap-5', stagger(1))}>
+          <div className={cx('flex min-w-0 flex-col gap-4 max-lg:order-first lg:gap-5', stagger(1))}>
             <DurationCard control={control} schedule={base} slots={slots} />
             {timeOff.card}
           </div>
@@ -211,12 +211,12 @@ export function DoctorSchedulePage() {
       {schedule.isPending && (
         <div className={layout} aria-busy>
           <span className="sr-only">Carregando horários</span>
+          <Skeleton className="rounded-card h-48 lg:order-last" />
           <div className={column}>
             {DAY_ORDER.map((weekday) => (
               <Skeleton key={weekday} className="rounded-card h-[74px]" />
             ))}
           </div>
-          <Skeleton className="rounded-card h-48" />
         </div>
       )}
       {schedule.isError && (

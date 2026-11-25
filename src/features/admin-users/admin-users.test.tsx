@@ -91,7 +91,10 @@ const phone = () => {
   );
 };
 
-const rowOf = (name: string) => screen.findByRole('button', { name: new RegExp(`^${name}`) });
+const rowOf = async (name: string) =>
+  within(await screen.findByRole('region', { name: 'Lista de usuários' })).findByRole('button', {
+    name: new RegExp(`^${name}`),
+  });
 const panel = (name: string) => screen.findByRole('dialog', { name });
 const searchOf = (router: ReturnType<typeof renderApp>['router']) =>
   Object.fromEntries(new URLSearchParams(router.state.location.search));

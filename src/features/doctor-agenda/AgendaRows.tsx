@@ -38,7 +38,6 @@ export function AgendaRow({
       onClick={() => onView(appointment)}
       aria-haspopup={opensDialog ? 'dialog' : undefined}
       selected={selected}
-      className="flex-wrap gap-y-2"
       leading={
         <DateTile startsAt={appointment.startsAt} muted={hasStarted(appointment.startsAt, now.getTime())} />
       }
@@ -51,11 +50,7 @@ export function AgendaRow({
           · {visitTypeLabels[appointment.visitType]}
         </>
       }
-      trailing={
-        <span className="flex shrink-0 @max-[25rem]:order-last @max-[25rem]:basis-full @max-[25rem]:ps-[66px]">
-          <StatusChip tone={status.tone}>{status.label}</StatusChip>
-        </span>
-      }
+      trailing={<StatusChip tone={status.tone}>{status.label}</StatusChip>}
     />
   );
 }

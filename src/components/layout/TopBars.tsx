@@ -2,8 +2,7 @@ import { LuChevronRight } from 'react-icons/lu';
 import { Link, useLocation } from 'react-router';
 import { NOTIFICATIONS_PATH, parentLink, profileUrl, type Area } from '@constants/areas';
 import { NotificationBell } from '@features/notifications';
-import { useCurrentUser } from '@lib/auth/useSession';
-import { RoleLogo } from './RoleLogo';
+import { AccountMenu } from './AccountMenu';
 import { useRouteHandle } from './route-handle';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -13,25 +12,6 @@ function useCrumb(area: Area): { label: string; to: string } | undefined {
   return pathname === NOTIFICATIONS_PATH || pathname === profile
     ? { label: 'Conta', to: profile }
     : parentLink(area, pathname);
-}
-
-function Who({ area }: { area: Area }) {
-  const user = useCurrentUser();
-  return (
-    <Link to={profileUrl(area.role)} className="flex min-w-0 flex-1 items-center gap-3 lg:hidden">
-      <RoleLogo area={area} />
-      <span className="flex min-w-0 flex-col">
-        <span className="text-text-secondary text-[1.0625rem] leading-tight font-bold tracking-[-0.01em]">
-          {area.label}
-        </span>
-        <span className="text-text-muted truncate text-[0.78125rem]">
-          <span className="sr-only">, </span>
-          {user.fullName}
-          <span className="sr-only">, meu perfil</span>
-        </span>
-      </span>
-    </Link>
-  );
 }
 
 function Crumbs({ area }: { area: Area }) {
@@ -60,7 +40,7 @@ function Crumbs({ area }: { area: Area }) {
 export function TopBar({ area }: { area: Area }) {
   return (
     <header className="max-lg:border-border max-lg:bg-surface/88 dark:max-lg:bg-surface/92 sticky top-0 z-20 flex min-h-[68px] items-center gap-3 px-4 pt-[env(safe-area-inset-top)] max-lg:border-b max-lg:ps-[max(1rem,env(safe-area-inset-left))] max-lg:pe-[max(1rem,env(safe-area-inset-right))] max-lg:shadow-[0_8px_20px_-16px_rgb(16_42_41/0.35)] max-lg:backdrop-blur-[14px] lg:static lg:min-h-16 lg:px-8 lg:pt-0 print:hidden">
-      <Who area={area} />
+      <AccountMenu area={area} placement="topbar" />
       <Crumbs area={area} />
       <div className="-me-0.5 flex items-center gap-2 lg:me-0 lg:gap-1">
         <ThemeToggle />
