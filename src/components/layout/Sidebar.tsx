@@ -1,10 +1,10 @@
-import { LuChevronRight } from 'react-icons/lu';
 import { Link } from 'react-router';
-import { Avatar, CountBadge } from '@components/ui';
-import { profileUrl, type Area } from '@constants/areas';
-import { useCurrentUser } from '@lib/auth/useSession';
+import { CountBadge } from '@components/ui';
+import type { Area } from '@constants/areas';
 import { cx } from '@lib/cx';
-import { Brand, brandSurface } from './Brand';
+import { brandSurface } from '@components/ui/styles';
+import { AccountMenu } from './AccountMenu';
+import { Brand } from './Brand';
 import { ariaCurrent, badgeText, countLabel, type NavItem } from './useNavItems';
 
 function SideLink({ item }: { item: NavItem }) {
@@ -60,7 +60,6 @@ function NavGroup({ label, items }: { label: string; items: NavItem[] }) {
 }
 
 export function Sidebar({ area, menu, account }: { area: Area; menu: NavItem[]; account: NavItem[] }) {
-  const user = useCurrentUser();
   return (
     <aside
       aria-label="Menu lateral"
@@ -72,17 +71,9 @@ export function Sidebar({ area, menu, account }: { area: Area; menu: NavItem[]; 
       <Brand icon={area.icon} subtitle={area.title} />
       <NavGroup label="Menu" items={menu} />
       <NavGroup label="Conta" items={account} />
-      <Link
-        to={profileUrl(area.role)}
-        className="can-hover:rounded-tile can-hover:bg-white/7 rounded-b-tile mt-auto flex items-center gap-2.5 border-t border-white/10 p-2 pt-3.5 transition-colors duration-150"
-      >
-        <Avatar name={user.fullName} role={area.role} className="shadow-[0_0_0_2px_rgb(255_255_255/0.18)]" />
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[0.8125rem] leading-snug font-semibold">{user.fullName}</span>
-          <span className="block truncate text-xs text-white/60">{user.email}</span>
-        </span>
-        <LuChevronRight aria-hidden className="size-4 text-white/60" />
-      </Link>
+      <div className="mt-auto border-t border-white/10 pt-2">
+        <AccountMenu area={area} placement="sidebar" />
+      </div>
     </aside>
   );
 }

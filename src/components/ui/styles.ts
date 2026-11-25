@@ -80,10 +80,20 @@ export function controlBox(invalid: boolean): string {
   );
 }
 
-export function floatingPanel(align: 'start' | 'end'): string {
+export function floatingPanel(align: 'start' | 'end', side: 'top' | 'bottom' = 'bottom'): string {
   return cx(
-    'absolute top-full z-40 origin-top rounded-card border border-border bg-surface text-text shadow-overlay motion-safe:animate-drop',
-    align === 'end' ? 'end-0 origin-top-right' : 'start-0 origin-top-left',
+    'absolute z-40 max-h-(--floating-room,100dvh) overflow-y-auto overscroll-contain rounded-card border border-border bg-surface text-text shadow-overlay',
+    side === 'top'
+      ? 'bottom-full mb-1.5 motion-safe:animate-lift'
+      : 'top-full mt-1.5 motion-safe:animate-drop',
+    align === 'end' ? 'end-0' : 'start-0',
+    side === 'top'
+      ? align === 'end'
+        ? 'origin-bottom-right'
+        : 'origin-bottom-left'
+      : align === 'end'
+        ? 'origin-top-right'
+        : 'origin-top-left',
   );
 }
 
@@ -115,3 +125,6 @@ export const textLink =
   'text-role-text can-hover:decoration-2 font-medium underline decoration-1 underline-offset-2';
 
 export const overline = 'text-[0.6875rem] font-semibold tracking-[0.06em] text-text-muted uppercase';
+
+export const brandSurface =
+  'bg-role-deep bg-[radial-gradient(120%_60%_at_0%_0%,rgb(255_255_255/0.08),transparent_60%),radial-gradient(circle,rgb(255_255_255/0.06)_1px,transparent_1.4px)] bg-size-[100%_100%,18px_18px] text-white [--focus:#fff] dark:bg-[color-mix(in_oklab,var(--role-deep)_70%,#000)]';
